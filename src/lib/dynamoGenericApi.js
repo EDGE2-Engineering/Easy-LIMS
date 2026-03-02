@@ -122,6 +122,40 @@ export const dynamoGenericApi = {
     },
 
     /**
+     * Partially update a record by merging fields
+     * @param {string} id - The record ID
+     * @param {Object} partialData - The fields to update/merge
+     * @param {string} idToken - Cognito ID Token
+     */
+    async patch(id, partialData, idToken) {
+        try {
+            const docClient = getDocClient(idToken);
+            const existing = await this.getById(id, idToken);
+
+            if (!existing) {
+                throw new Error(`Record with ID ${id} not found`);
+            }
+
+            const updatedItem = {
+                ...existing,
+                ...partialData,
+                updated_at: new Date().toISOString()
+            };
+
+            const command = new PutCommand({
+                TableName: TABLE_NAME,
+                Item: updatedItem
+            });
+
+            await docClient.send(command);
+            return updatedItem;
+        } catch (error) {
+            console.error(`DynamoDB patch error for ${id}:`, error);
+            throw error;
+        }
+    },
+
+    /**
      * Find records of a specific type by an attribute
      * @param {string} type - The record type
      * @param {string} attrName - The attribute name to filter by

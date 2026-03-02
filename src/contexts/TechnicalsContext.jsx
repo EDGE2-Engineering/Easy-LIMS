@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, useEffect, useCallback, use
 import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import { DB_TYPES } from '@/data/config';
 
 const TechnicalsContext = createContext();
 
@@ -16,7 +17,7 @@ const TechnicalsProvider = ({ children }) => {
         if (!idToken) return;
         setLoading(true);
         try {
-            const data = await dynamoGenericApi.listByType('technical', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.TECHNICAL, idToken);
             setTechnicals(data || []);
         } catch (error) {
             console.error('Error fetching technicals from DynamoDB:', error);
@@ -29,7 +30,7 @@ const TechnicalsProvider = ({ children }) => {
         if (!idToken) throw new Error("User not authenticated");
         try {
             const payload = { text, tech_type };
-            const savedItem = await dynamoGenericApi.save('technical', payload, idToken);
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.TECHNICAL, payload, idToken);
             setTechnicals(prev => [...prev.filter(t => t.id !== savedItem.id), savedItem]);
             return [savedItem];
         } catch (error) {
@@ -42,7 +43,7 @@ const TechnicalsProvider = ({ children }) => {
         if (!idToken) throw new Error("User not authenticated");
         try {
             const payload = { id, text, tech_type };
-            const savedItem = await dynamoGenericApi.save('technical', payload, idToken);
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.TECHNICAL, payload, idToken);
             setTechnicals(prev => prev.map(tech => tech.id === id ? savedItem : tech));
             return [savedItem];
         } catch (error) {

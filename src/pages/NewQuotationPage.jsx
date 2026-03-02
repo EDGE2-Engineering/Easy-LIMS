@@ -15,6 +15,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import { format } from 'date-fns';
+import { DB_TYPES } from '@/data/config';
 import { sendTelegramNotification } from '@/lib/notifier';
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue
@@ -196,9 +197,9 @@ const NewQuotationPage = () => {
         setLoading(true);
         try {
             const [clientsData, servicesData, usersData] = await Promise.all([
-                dynamoGenericApi.listByType('client', idToken),
-                dynamoGenericApi.listByType('service', idToken),
-                dynamoGenericApi.listByType('user', idToken)
+                dynamoGenericApi.listByType(DB_TYPES.CLIENT, idToken),
+                dynamoGenericApi.listByType(DB_TYPES.SERVICE, idToken),
+                dynamoGenericApi.listByType(DB_TYPES.USER, idToken)
             ]);
             setClients(clientsData || []);
             setServices(servicesData || []);
@@ -261,18 +262,22 @@ const NewQuotationPage = () => {
 
         setSaving(true);
         try {
-            const record = {
+            const quotationData = {
                 ...formData,
                 created_by: formData.created_by || user.id || user.name || user.username,
                 updated_at: new Date().toISOString()
             };
 
-            const saved = await dynamoGenericApi.save('quotation', record, idToken);
+            // NEW LOGIC: Always treat quotations as part of a Job
+            // We use patch to avoid overwriting material_inward or report data
+            const record = await dynamoGenericApi.patch(quotationData.id || `JOB-${Date.now()}`, {
+                quotation: quotationData
+            }, idToken);
 
             toast({ title: "Success", description: "Quotation saved successfully" });
 
             if (!id || id === 'new') {
-                navigate(`/quotation/${saved.id}`);
+                navigate(`/quotation/${record.id}`);
             }
 
             // Telegram notification

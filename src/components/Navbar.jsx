@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database } from 'lucide-react';
+import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, LayoutDashboard } from 'lucide-react';
 import { getSiteContent } from '@/data/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -46,6 +46,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     { path: '/settings/material-inward', label: 'Inward', icon: Package, roles: ['admin', 'standard'] },
     { path: '/settings/reports', label: 'Reports', icon: FileText, roles: ['admin', 'standard'] },
     { path: '/settings/accounts', label: 'Accounts', icon: Database, roles: ['admin', 'standard'] },
+    { path: '/settings/jobs', label: 'Jobs', icon: LayoutDashboard, roles: ['admin', 'standard'] },
     { path: '/settings/clients', label: 'Settings', icon: Settings, roles: ['admin', 'standard'] }
   ].filter(item => {
     if (!item.roles) return true;
@@ -59,7 +60,8 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
       // Highlight settings only for explicitly settings tabs, not for Inward/Reports/Accounts
       const isManagementTab = location.pathname.includes('/material-inward') ||
         location.pathname.includes('/reports') ||
-        location.pathname.includes('/accounts');
+        location.pathname.includes('/accounts') ||
+        location.pathname.includes('/jobs');
 
       return (location.pathname.startsWith('/settings') && !isManagementTab) ||
         location.pathname.startsWith('/service/') ||

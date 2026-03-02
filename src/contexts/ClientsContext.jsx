@@ -2,6 +2,7 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import { useAuth } from '@/contexts/AuthContext';
+import { DB_TYPES } from '@/data/config';
 
 const ClientsContext = createContext();
 
@@ -54,7 +55,7 @@ const ClientsProvider = ({ children }) => {
         }
 
         try {
-            const data = await dynamoGenericApi.listByType('client', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.CLIENT, idToken);
 
             if (data && data.length > 0) {
                 const mappedData = data.map(mapFromDb);
@@ -98,7 +99,7 @@ const ClientsProvider = ({ children }) => {
 
         try {
             const dbPayload = mapToDb(updatedClient);
-            const savedItem = await dynamoGenericApi.save('client', dbPayload, idToken);
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.CLIENT, dbPayload, idToken);
             const updated = mapFromDb(savedItem);
             setClients(prev => prev.map(c => c.id === updated.id ? updated : c));
         } catch (err) {
@@ -129,7 +130,7 @@ const ClientsProvider = ({ children }) => {
 
         try {
             const dbPayload = mapToDb(clientWithId);
-            const savedItem = await dynamoGenericApi.save('client', dbPayload, idToken);
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.CLIENT, dbPayload, idToken);
             const added = mapFromDb(savedItem);
             setClients(prev => prev.map(c => c.id === tempId ? added : c));
         } catch (err) {

@@ -32,7 +32,7 @@ import reportTemplateHtml from '@/templates/report-template.html?raw'
 import { useAuth } from '@/contexts/AuthContext';
 import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import { sendTelegramNotification } from '@/lib/notifier';
-import { getSiteContent } from '@/data/config';
+import { getSiteContent, DB_TYPES } from '@/data/config';
 
 
 const soilTypes = [
@@ -104,7 +104,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
         const fetchClients = async () => {
             if (!idToken) return;
             try {
-                const data = await dynamoGenericApi.listByType('client', idToken);
+                const data = await dynamoGenericApi.listByType(DB_TYPES.CLIENT, idToken);
                 if (data) setClients(data);
             } catch (error) {
                 console.error('Error fetching clients:', error);
@@ -119,7 +119,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
         const fetchJobOrders = async () => {
             if (!idToken) return;
             try {
-                const data = await dynamoGenericApi.listByType('material_inward', idToken);
+                const data = await dynamoGenericApi.listByType(DB_TYPES.JOB, idToken);
                 // Map to match expected structure jo.clients?.client_name
                 const mappedData = data.map(jo => ({
                     ...jo,

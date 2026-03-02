@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import { Textarea } from '@/components/ui/textarea';
+import { DB_TYPES } from '@/data/config';
 
 const MaterialInwardManager = () => {
     const [records, setRecords] = useState([]);
@@ -54,7 +55,7 @@ const MaterialInwardManager = () => {
     const [isSaving, setIsSaving] = useState(false);
 
     const statusOptions = [
-        'RECEIVED', 'UIN_GENERATED', 'SENT_TO_DEPARTMENT', 'UNDER_TESTING',
+        'RECEIVED', 'SENT_TO_DEPARTMENT', 'UNDER_TESTING',
         'TEST_COMPLETED', 'REPORT_GENERATED', 'UNDER_REVIEW', 'SIGNED',
         'PAYMENT_PENDING', 'PAYMENT_RECEIVED', 'REPORT_RELEASED', 'COMPLETED'
     ];
@@ -62,7 +63,7 @@ const MaterialInwardManager = () => {
     const fetchClients = async () => {
         if (!idToken) return;
         try {
-            const data = await dynamoGenericApi.listByType('client', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.CLIENT, idToken);
             setClientsList(data || []);
         } catch (error) {
             console.error('Error fetching clients:', error);
@@ -72,7 +73,7 @@ const MaterialInwardManager = () => {
     const fetchUsers = async () => {
         if (!idToken) return;
         try {
-            const data = await dynamoGenericApi.listByType('user', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.USER, idToken);
             setAppUsers(data || []);
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -83,9 +84,12 @@ const MaterialInwardManager = () => {
         if (!idToken) return;
         setLoading(true);
         try {
-            const data = await dynamoGenericApi.listByType('material_inward', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.JOB, idToken);
 
-            let filteredData = data || [];
+            let filteredData = (data || []).map(item => ({
+                ...item,
+                ...item.material_inward // Flatten material_inward data for the table/UI
+            }));
             if (isStandard()) {
                 filteredData = filteredData.filter(r =>
                     r.created_by === user.id ||
@@ -192,11 +196,13 @@ const MaterialInwardManager = () => {
             const clientName = client?.client_name || client?.clientName || 'Unknown Client';
 
             const recordData = {
-                ...editingRecord,
+                id: editingRecord.id || `JOB-${Date.now()}`,
                 job_order_no: editingRecord.job_order_no || `JO-${Date.now()}`,
                 client_name: clientName,
+                client_id: editingRecord.client_id,
                 status: isAddingNew ? 'RECEIVED' : editingRecord.status,
-                content: {
+                material_inward: {
+                    po_wo_number: editingRecord.po_wo_number,
                     samples: editingRecord.samples.map(sample => ({
                         ...sample,
                         quantity: parseFloat(sample.quantity) || 0,
@@ -208,10 +214,7 @@ const MaterialInwardManager = () => {
                 updated_at: new Date().toISOString()
             };
 
-            // Remove samples from top level before saving as they are nested in content
-            delete recordData.samples;
-
-            await dynamoGenericApi.save('material_inward', recordData, idToken);
+            await dynamoGenericApi.save(DB_TYPES.JOB, recordData, idToken);
 
             toast({
                 title: "Success",
@@ -221,7 +224,7 @@ const MaterialInwardManager = () => {
             // Telegram Notification
             const action = isAddingNew ? 'New Entry' : 'Entry Updated';
             const emoji = isAddingNew ? '📥' : '✏️';
-            const message = `${emoji} *Material Inward ${action}*\n\nJob Order No: \`${recordData.job_order_no}\`\nClient: \`${clientName}\`\nSamples: \`${recordData.content.samples.length}\`\nBy: \`${user?.full_name || user?.name || 'Unknown'}\``;
+            const message = `${emoji} *Material Inward ${action}*\n\nJob Order No: \`${recordData.job_order_no}\`\nClient: \`${clientName}\`\nSamples: \`${recordData.material_inward.samples.length}\`\nBy: \`${user?.full_name || user?.name || 'Unknown'}\``;
             sendTelegramNotification(message);
 
             setEditingRecord(null);

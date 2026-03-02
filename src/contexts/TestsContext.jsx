@@ -2,6 +2,7 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import { useAuth } from '@/contexts/AuthContext';
+import { DB_TYPES } from '@/data/config';
 
 const TestsContext = createContext();
 
@@ -45,7 +46,7 @@ const TestsProvider = ({ children }) => {
     const fetchTests = useCallback(async () => {
         if (!idToken) return;
         try {
-            const data = await dynamoGenericApi.listByType('test', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.TEST, idToken);
 
             if (data && data.length > 0) {
                 const mappedData = data.map(mapFromDb);
@@ -64,7 +65,7 @@ const TestsProvider = ({ children }) => {
     const fetchClientTestPrices = useCallback(async () => {
         if (!idToken) return;
         try {
-            const data = await dynamoGenericApi.listByType('client_test_price', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.CLIENT_TEST_PRICE, idToken);
             if (data) {
                 setClientTestPrices(data);
             }
@@ -90,7 +91,7 @@ const TestsProvider = ({ children }) => {
         setTests(prev => prev.map(t => t.id === updatedTest.id ? updatedTest : t));
         try {
             const dbPayload = mapToDb(updatedTest);
-            await dynamoGenericApi.save('test', dbPayload, idToken);
+            await dynamoGenericApi.save(DB_TYPES.TEST, dbPayload, idToken);
         } catch (err) {
             console.warn("Update Test Exception:", err);
             throw err;
@@ -104,7 +105,7 @@ const TestsProvider = ({ children }) => {
         setTests(prev => [...prev, testWithId]);
         try {
             const dbPayload = mapToDb(testWithId);
-            await dynamoGenericApi.save('test', dbPayload, idToken);
+            await dynamoGenericApi.save(DB_TYPES.TEST, dbPayload, idToken);
         } catch (err) {
             console.warn("Add Test Exception:", err);
             throw err;
@@ -131,7 +132,7 @@ const TestsProvider = ({ children }) => {
                 test_id: testId,
                 price: price
             };
-            const savedItem = await dynamoGenericApi.save('client_test_price', payload, idToken);
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.CLIENT_TEST_PRICE, payload, idToken);
             setClientTestPrices(prev => {
                 const filtered = prev.filter(p => p.id !== priceId);
                 return [...filtered, savedItem];

@@ -5,6 +5,7 @@ import { cognitoAuth } from '@/lib/cognitoAuth';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { cognitoConfig } from '@/config';
 import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
+import { DB_TYPES } from '@/data/config';
 
 
 const AuthContext = createContext();
@@ -21,8 +22,9 @@ const AuthProvider = ({ children }) => {
     }, []);
 
     const syncUserToDb = useCallback(async (userData, token) => {
+        console.log('AuthContext: Syncing user to database:', { userData, token });
         try {
-            await dynamoGenericApi.save('user', {
+            await dynamoGenericApi.save(DB_TYPES.USER, {
                 id: userData.id,
                 username: userData.username,
                 full_name: userData.full_name,
@@ -48,6 +50,7 @@ const AuthProvider = ({ children }) => {
         if (auth.isAuthenticated && auth.user) {
             const session = cognitoAuth.getSession(auth);
             if (session) {
+                console.log('AuthContext: Session:', { session });
                 // Use a stable identifier (ID) to check if we actually need to update user
                 if (!user || user.id !== session.user.id) {
                     // Only notify on first-time user recognition in this session
@@ -90,7 +93,10 @@ const AuthProvider = ({ children }) => {
 
     const isAdmin = useCallback(() => {
         const role = user?.role?.toLowerCase();
-        return role === 'admin' || role === 'superadmin' || role === 'super_admin' || role === 'administrator';
+        const result = role === 'admin' || role === 'superadmin' || role === 'super_admin' || role === 'administrator';
+        // console.log(user)
+        console.log('AuthContext: isAdmin check:', { role, result });
+        return result;
     }, [user?.role]);
 
     const isStandard = useCallback(() => {

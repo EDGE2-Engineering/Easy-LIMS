@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DB_TYPES } from '@/data/config';
 
 const AccountsManager = () => {
   const [accounts, setAccounts] = useState([]);
@@ -72,7 +73,7 @@ const AccountsManager = () => {
     if (!idToken) return;
     setLoading(true);
     try {
-      const data = await dynamoGenericApi.listByType('account', idToken);
+      const data = await dynamoGenericApi.listByType(DB_TYPES.ACCOUNT, idToken);
 
       // Filter by standard user if applicable
       let filteredData = data || [];
@@ -99,7 +100,7 @@ const AccountsManager = () => {
   const fetchUsers = async () => {
     if (!idToken) return;
     try {
-      const data = await dynamoGenericApi.listByType('user', idToken);
+      const data = await dynamoGenericApi.listByType(DB_TYPES.USER, idToken);
       setAppUsers(data || []);
     } catch (error) {
       console.error('Error fetching users:', error);

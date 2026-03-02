@@ -2,6 +2,7 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import { useAuth } from '@/contexts/AuthContext';
+import { DB_TYPES } from '@/data/config';
 
 const ServicesContext = createContext();
 
@@ -47,7 +48,7 @@ const ServicesProvider = ({ children }) => {
     const fetchServices = useCallback(async () => {
         if (!idToken) return;
         try {
-            const data = await dynamoGenericApi.listByType('service', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.SERVICE, idToken);
 
             if (data && data.length > 0) {
                 const mappedData = data.map(mapFromDb);
@@ -66,7 +67,7 @@ const ServicesProvider = ({ children }) => {
     const fetchClientServicePrices = useCallback(async () => {
         if (!idToken) return;
         try {
-            const data = await dynamoGenericApi.listByType('client_service_price', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.CLIENT_SERVICE_PRICE, idToken);
             if (data) {
                 setClientServicePrices(data);
             }
@@ -94,7 +95,7 @@ const ServicesProvider = ({ children }) => {
 
         try {
             const dbPayload = mapToDb(updatedService);
-            const savedItem = await dynamoGenericApi.save('service', dbPayload, idToken);
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.SERVICE, dbPayload, idToken);
             const updated = mapFromDb(savedItem);
             setServices(prev => prev.map(s => s.id === updated.id ? updated : s));
         } catch (err) {
@@ -113,7 +114,7 @@ const ServicesProvider = ({ children }) => {
 
         try {
             const dbPayload = mapToDb(serviceWithId);
-            const savedItem = await dynamoGenericApi.save('service', dbPayload, idToken);
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.SERVICE, dbPayload, idToken);
             const added = mapFromDb(savedItem);
             setServices(prev => prev.map(s => s.id === tempId ? added : s));
         } catch (err) {
@@ -147,7 +148,7 @@ const ServicesProvider = ({ children }) => {
                 service_id: serviceId,
                 price: price
             };
-            const savedItem = await dynamoGenericApi.save('client_service_price', payload, idToken);
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.CLIENT_SERVICE_PRICE, payload, idToken);
             setClientServicePrices(prev => {
                 const filtered = prev.filter(p => p.id !== priceId);
                 return [...filtered, savedItem];

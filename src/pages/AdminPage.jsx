@@ -15,6 +15,7 @@ import AdminReportsManager from '@/components/admin/AdminReportsManager.jsx';
 import MaterialInwardManager from '@/components/admin/MaterialInwardManager';
 import AdminServicesManager from '@/components/admin/AdminServicesManager';
 import AdminTestsManager from '@/components/admin/AdminTestsManager';
+import AdminJobsManager from '@/components/admin/AdminJobsManager';
 import SystemInfo from '@/components/admin/SystemInfo';
 
 import AdminLogin from '@/components/admin/AdminLogin';
@@ -56,7 +57,7 @@ const AdminPage = () => {
     //   }
     // }, [mainTab, navigate]);
 
-    const settingsTabs = ['clients', 'pricing', 'services', 'tests', 'system', 'info'];
+    const settingsTabs = ['clients', 'pricing', 'services', 'tests', 'system', 'info', 'jobs'];
     const isSettingsTab = settingsTabs.includes(mainTab);
 
     const handleTabChange = (value) => {
@@ -125,6 +126,7 @@ const AdminPage = () => {
                                     <option value="pricing">Pricing</option>
                                     <option value="services">Services</option>
                                     <option value="tests">Tests</option>
+                                    {/* <option value="jobs">Jobs</option> */}
                                     <option value="system">Others</option>
                                     <option value="info">Info</option>
                                 </select>
@@ -142,6 +144,7 @@ const AdminPage = () => {
                                     <TabsTrigger value="pricing" className="px-3 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-1.5"><IndianRupee className="w-4 h-4" /> Pricing</TabsTrigger>
                                     <TabsTrigger value="services" className="px-3 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-1.5"><HandHeart className="w-4 h-4" /> Services</TabsTrigger>
                                     <TabsTrigger value="tests" className="px-3 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-1.5"><TestTube className="w-4 h-4" /> Tests</TabsTrigger>
+                                    {/* <TabsTrigger value="jobs" className="px-3 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-1.5"><LayoutDashboard className="w-4 h-4" /> Jobs</TabsTrigger> */}
                                     <TabsTrigger value="system" className="px-3 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-1.5"><Cpu className="w-4 h-4" /> Others</TabsTrigger>
                                     <TabsTrigger value="info" className="px-3 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-1.5"><Info className="w-4 h-4" /> Info</TabsTrigger>
                                 </TabsList>
@@ -167,6 +170,10 @@ const AdminPage = () => {
 
                     <TabsContent value="reports" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">
                         <AdminReportsManager />
+                    </TabsContent>
+
+                    <TabsContent value="jobs" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <AdminJobsManager />
                     </TabsContent>
 
 

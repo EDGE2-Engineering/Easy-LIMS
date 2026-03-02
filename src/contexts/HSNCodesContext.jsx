@@ -2,6 +2,7 @@
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import { useAuth } from '@/contexts/AuthContext';
+import { DB_TYPES } from '@/data/config';
 
 const HSNCodesContext = createContext();
 
@@ -14,7 +15,7 @@ const HSNCodesProvider = ({ children }) => {
         if (!idToken) return;
         setLoading(true);
         try {
-            const data = await dynamoGenericApi.listByType('hsn_sac_code', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.HSN_SAC_CODE, idToken);
             if (data) {
                 setHsnCodes(data.sort((a, b) => (a.code || '').localeCompare(b.code || '')));
             }
@@ -28,7 +29,7 @@ const HSNCodesProvider = ({ children }) => {
     const addHsnCode = useCallback(async (hsnData) => {
         if (!idToken) throw new Error("User not authenticated");
         try {
-            const savedItem = await dynamoGenericApi.save('hsn_sac_code', hsnData, idToken);
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.HSN_SAC_CODE, hsnData, idToken);
             setHsnCodes(prev => [...prev.filter(h => h.id !== savedItem.id), savedItem].sort((a, b) => (a.code || '').localeCompare(b.code || '')));
         } catch (error) {
             console.error("Error adding HSN code:", error);
@@ -39,7 +40,7 @@ const HSNCodesProvider = ({ children }) => {
     const updateHsnCode = useCallback(async (id, hsnData) => {
         if (!idToken) throw new Error("User not authenticated");
         try {
-            const savedItem = await dynamoGenericApi.save('hsn_sac_code', { ...hsnData, id }, idToken);
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.HSN_SAC_CODE, { ...hsnData, id }, idToken);
             setHsnCodes(prev => prev.map(h => h.id === id ? savedItem : h).sort((a, b) => (a.code || '').localeCompare(b.code || '')));
         } catch (error) {
             console.error("Error updating HSN code:", error);

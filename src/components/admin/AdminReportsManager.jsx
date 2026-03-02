@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import NewReportForm from './NewReportForm';
+import { DB_TYPES } from '@/data/config';
 
 const AdminReportsManager = () => {
     const [reports, setReports] = useState([]);
@@ -40,7 +41,7 @@ const AdminReportsManager = () => {
     const fetchUsers = async () => {
         if (!idToken) return;
         try {
-            const data = await dynamoGenericApi.listByType('user', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.USER, idToken);
             setAppUsers(data || []);
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -51,7 +52,8 @@ const AdminReportsManager = () => {
         if (!idToken) return;
         setLoading(true);
         try {
-            const data = await dynamoGenericApi.listByType('report', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.JOB, idToken);
+            // Filter only jobs that have report data or are ready for reports
             setReports(data || []);
         } catch (error) {
             console.error('Error fetching reports:', error);
@@ -178,9 +180,9 @@ const AdminReportsManager = () => {
                             filteredReports.map((report) => (
                                 <tr key={report.id} className="hover:bg-gray-50/80 transition-colors">
                                     <td className="py-4 px-6">
-                                        <span className="font-mono font-semibold text-gray-900">{report.report_number || report.reportId}</span>
+                                        <span className="font-mono font-semibold text-gray-900">{report.report?.reportId || report.report_number || report.job_order_no}</span>
                                     </td>
-                                    <td className="py-4 px-6 text-sm text-gray-700">{report.client_name || report.client || '-'}</td>
+                                    <td className="py-4 px-6 text-sm text-gray-700">{report.client_name || report.report?.client || '-'}</td>
                                     <td className="py-4 px-6 text-sm text-gray-700">
                                         {(() => {
                                             const u = appUsers.find(u => u.id === report.created_by || u.sub === report.created_by || u.username === report.created_by || u.email === report.created_by);

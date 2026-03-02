@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import { useAuth } from '@/contexts/AuthContext';
+import { DB_TYPES } from '@/data/config';
 
 const SettingsContext = createContext();
 
@@ -25,7 +26,7 @@ const SettingsProvider = ({ children }) => {
         if (!idToken) return;
         setLoading(true);
         try {
-            const data = await dynamoGenericApi.listByType('app_setting', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.APP_SETTING, idToken);
             if (data && data.length > 0) {
                 const newSettings = {};
                 data.forEach(item => {
@@ -51,7 +52,7 @@ const SettingsProvider = ({ children }) => {
                 setting_key: key,
                 setting_value: String(value)
             };
-            await dynamoGenericApi.save('app_setting', payload, idToken);
+            await dynamoGenericApi.save(DB_TYPES.APP_SETTING, payload, idToken);
         } catch (err) {
             console.error("Update Setting Exception in DynamoDB:", err);
             await fetchSettings();

@@ -1,4 +1,5 @@
 import { dynamoGenericApi } from '../lib/dynamoGenericApi';
+import { DB_TYPES } from '../data/config';
 
 const DOC_TYPE_CODES = {
     'Quotation': 'QN',
@@ -36,7 +37,7 @@ export const getNextDocNumber = async (_unused, docType, idToken) => {
     try {
         // Fetch all accounts from DynamoDB
         // Note: For better performance in large datasets, a GSI with sort key on quote_number would be better
-        const accounts = await dynamoGenericApi.listByType('account', idToken);
+        const accounts = await dynamoGenericApi.listByType(DB_TYPES.ACCOUNT, idToken);
 
         // Filter those that match the prefix and type
         const matchingAccounts = accounts

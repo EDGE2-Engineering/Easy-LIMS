@@ -2,6 +2,7 @@
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import { useAuth } from '@/contexts/AuthContext';
+import { DB_TYPES } from '@/data/config';
 
 const UnitTypesContext = createContext();
 
@@ -14,7 +15,7 @@ const UnitTypesProvider = ({ children }) => {
         if (!idToken) return;
         setLoading(true);
         try {
-            const data = await dynamoGenericApi.listByType('service_unit_type', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.SERVICE_UNIT_TYPE, idToken);
             if (data) {
                 setUnitTypes(data);
             }
@@ -29,7 +30,7 @@ const UnitTypesProvider = ({ children }) => {
         if (!idToken) throw new Error("User not authenticated");
         try {
             const payload = { unit_type: unitType };
-            const savedItem = await dynamoGenericApi.save('service_unit_type', payload, idToken);
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.SERVICE_UNIT_TYPE, payload, idToken);
             setUnitTypes(prev => [...prev.filter(u => u.id !== savedItem.id), savedItem]);
         } catch (error) {
             console.error("Error adding unit type to DynamoDB:", error);
@@ -41,7 +42,7 @@ const UnitTypesProvider = ({ children }) => {
         if (!idToken) throw new Error("User not authenticated");
         try {
             const payload = { id, unit_type: unitType };
-            const savedItem = await dynamoGenericApi.save('service_unit_type', payload, idToken);
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.SERVICE_UNIT_TYPE, payload, idToken);
             setUnitTypes(prev => prev.map(u => u.id === id ? savedItem : u));
         } catch (error) {
             console.error("Error updating unit type in DynamoDB:", error);

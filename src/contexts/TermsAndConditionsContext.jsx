@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, useEffect, useCallback, use
 import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import { DB_TYPES } from '@/data/config';
 
 const TermsAndConditionsContext = createContext();
 
@@ -16,7 +17,7 @@ const TermsAndConditionsProvider = ({ children }) => {
         if (!idToken) return;
         setLoading(true);
         try {
-            const data = await dynamoGenericApi.listByType('term_and_condition', idToken);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.TERM_AND_CONDITION, idToken);
             setTerms(data || []);
         } catch (error) {
             console.error('Error fetching terms from DynamoDB:', error);
@@ -29,7 +30,7 @@ const TermsAndConditionsProvider = ({ children }) => {
         if (!idToken) throw new Error("User not authenticated");
         try {
             const payload = { text, term_type };
-            const savedItem = await dynamoGenericApi.save('term_and_condition', payload, idToken);
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.TERM_AND_CONDITION, payload, idToken);
             setTerms(prev => [...prev.filter(t => t.id !== savedItem.id), savedItem]);
             return [savedItem];
         } catch (error) {
@@ -42,7 +43,7 @@ const TermsAndConditionsProvider = ({ children }) => {
         if (!idToken) throw new Error("User not authenticated");
         try {
             const payload = { id, text, term_type };
-            const savedItem = await dynamoGenericApi.save('term_and_condition', payload, idToken);
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.TERM_AND_CONDITION, payload, idToken);
             setTerms(prev => prev.map(term => term.id === id ? savedItem : term));
             return [savedItem];
         } catch (error) {

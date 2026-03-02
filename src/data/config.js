@@ -39,3 +39,37 @@ export const TG_NOTIFIER_CONFIG = {
 
 export const enableInfoDiagramZoom = false;
 
+export const DB_TYPES = {
+    ACCOUNT: 'account',
+    APP_SETTING: 'app_setting',
+    CLIENT: 'client',
+    CLIENT_SERVICE_PRICE: 'client_service_price',
+    CLIENT_TEST_PRICE: 'client_test_price',
+    HSN_SAC_CODE: 'hsn_sac_code',
+    MATERIAL_INWARD: 'job',
+    QUOTATION: 'job',
+    REPORT: 'job',
+    REPORT_NUMBER: 'job',
+    JOB: 'job',
+    SERVICE: 'service',
+    SERVICE_UNIT_TYPE: 'service_unit_type',
+    TECHNICAL: 'technical',
+    TERM_AND_CONDITION: 'term_and_condition',
+    TEST: 'test',
+    USER: 'user'
+};
+
+export const WORKFLOW_STEPS = [
+    { id: 'RECEIVED', label: 'Material Received', action: 'Send for Testing', roles: ['superadmin', 'admin', 'mro'] },
+    { id: 'SENT_TO_DEPARTMENT', label: 'Sent for Testing', action: 'Start Testing', roles: ['superadmin', 'admin', 'test-staff'] },
+    { id: 'UNDER_TESTING', label: 'Under Testing', action: 'Mark Test Completed', roles: ['superadmin', 'admin', 'test-staff'] },
+    { id: 'TEST_COMPLETED', label: 'Testing Completed', action: 'Generate Report', roles: ['superadmin', 'admin', 'mro'] },
+    { id: 'REPORT_GENERATED', label: 'Report Generated', action: 'Submit for Review', roles: ['superadmin', 'admin', 'mro'] },
+    { id: 'UNDER_REVIEW', label: 'Under Review', action: 'Sign Report', roles: ['superadmin', 'admin'] },
+    { id: 'SIGNED', label: 'Signed', action: 'Mark Payment Pending', roles: ['superadmin', 'admin', 'mro', 'accountant'] },
+    { id: 'PAYMENT_PENDING', label: 'Payment Pending', action: 'Mark Payment Received', roles: ['superadmin', 'admin', 'accountant'] },
+    { id: 'PAYMENT_RECEIVED', label: 'Payment Received', action: 'Release Report', roles: ['superadmin', 'admin', 'accountant'] },
+    { id: 'REPORT_RELEASED', label: 'Report Released', action: 'Complete Job', roles: ['superadmin', 'admin', 'accountant'] },
+    { id: 'COMPLETED', label: 'Completed', action: null, roles: [] }
+];
+
