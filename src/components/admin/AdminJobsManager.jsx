@@ -268,7 +268,7 @@ const AdminJobsManager = () => {
                         <Button variant="ghost" size="icon" onClick={() => setShowInwardForm(false)} className="rounded-full">
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
-                        <h2 className="text-xl font-bold">{selectedJob.material_inward ? 'Edit' : 'Add'} Material Inward for {selectedJob.job_order_no}</h2>
+                        <h2 className="text-lg font-bold">{selectedJob.material_inward ? 'Edit' : 'Add'} Material Inward for {selectedJob.job_order_no}</h2>
                     </div>
                     <MaterialInwardForm
                         initialData={initialInwardData}
@@ -289,7 +289,7 @@ const AdminJobsManager = () => {
                         <Button variant="ghost" size="icon" onClick={() => setShowTestingForm(false)} className="rounded-full">
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
-                        <h2 className="text-xl font-bold">{selectedJob.lab_test_results ? 'Edit' : 'Add'} Testing Details for {selectedJob.job_order_no}</h2>
+                        <h2 className="text-lg font-bold">{selectedJob.lab_test_results ? 'Edit' : 'Add'} Testing Details for {selectedJob.job_order_no}</h2>
                     </div>
                     <TestingDetailsForm
                         initialData={{
@@ -310,12 +310,12 @@ const AdminJobsManager = () => {
             <div className="space-y-6 animate-in fade-in duration-500">
                 <div className="flex items-center justify-between pb-4 border-b">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" onClick={() => setSelectedJob(null)} className="rounded-full">
-                            <ArrowLeft className="w-5 h-5" />
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedJob(null)} className="rounded-full h-8 w-8 p-0">
+                            <ArrowLeft className="w-4 h-4" />
                         </Button>
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900">{selectedJob.job_order_no}</h2>
-                            <p className="text-sm text-gray-500">{selectedJob.client_name}</p>
+                            <h2 className="text-lg font-bold text-gray-900 leading-tight">{selectedJob.job_order_no}</h2>
+                            <p className="text-xs text-gray-500">{selectedJob.client_name}</p>
                         </div>
                     </div>
 
@@ -350,52 +350,57 @@ const AdminJobsManager = () => {
                                 {selectedJob.status === 'MATERIAL_RECEIVED' && canPerformAction && (
                                     <Button
                                         variant="outline"
+                                        size="sm"
                                         onClick={() => setShowInwardForm(true)}
-                                        className="border-primary text-primary hover:bg-primary/5 rounded-xl px-4 flex items-center gap-2 h-11 transition-all"
+                                        className="border-primary text-primary hover:bg-primary/5 rounded-lg px-3 flex items-center gap-2 h-9 transition-all"
                                     >
-                                        <Edit className="w-4 h-4" />
+                                        <Edit className="w-3.5 h-3.5" />
                                         Edit Material Inward
                                     </Button>
                                 )}
                                 {selectedJob.status === 'QUOTATION_CREATED' && canPerformAction && (
                                     <Button
                                         variant="outline"
+                                        size="sm"
                                         onClick={() => navigate(`/doc/${selectedJob.id}`)}
-                                        className="border-primary text-primary hover:bg-primary/5 rounded-xl px-4 flex items-center gap-2 h-11 transition-all"
+                                        className="border-primary text-primary hover:bg-primary/5 rounded-lg px-3 flex items-center gap-2 h-9 transition-all"
                                     >
-                                        <FileText className="w-4 h-4" />
+                                        <FileText className="w-3.5 h-3.5" />
                                         Edit Quotation
                                     </Button>
                                 )}
                                 {selectedJob.status === 'REPORT_GENERATED' && canPerformAction && (
                                     <Button
                                         variant="outline"
+                                        size="sm"
                                         onClick={() => setShowReportPreview(true)}
-                                        className="border-primary text-primary hover:bg-primary/5 rounded-xl px-4 flex items-center gap-2 h-11 transition-all"
+                                        className="border-primary text-primary hover:bg-primary/5 rounded-lg px-3 flex items-center gap-2 h-9 transition-all"
                                     >
-                                        <Eye className="w-4 h-4" />
+                                        <Eye className="w-3.5 h-3.5" />
                                         Preview Report
                                     </Button>
                                 )}
                                 {selectedJob.status === 'UNDER_TESTING' && canPerformAction && (
                                     <Button
                                         variant="outline"
+                                        size="sm"
                                         onClick={() => setShowTestingForm(true)}
-                                        className="border-primary text-primary hover:bg-primary/5 rounded-xl px-4 flex items-center gap-2 h-11 transition-all"
+                                        className="border-primary text-primary hover:bg-primary/5 rounded-lg px-3 flex items-center gap-2 h-9 transition-all"
                                     >
-                                        <Beaker className="w-4 h-4" />
-                                        {selectedJob.lab_test_results ? 'Edit Testing Details' : 'Add Testing Details'}
+                                        <Beaker className="w-3.5 h-3.5" />
+                                        {selectedJob.lab_test_results ? 'Edit Testing' : 'Add Testing'}
                                     </Button>
                                 )}
                                 <Button
                                     onClick={() => setShowConfirmDialog(true)}
                                     disabled={loading}
-                                    className="bg-primary hover:bg-primary/90 text-white rounded-xl px-6 flex items-center gap-2 h-11 shadow-sm transition-all active:scale-95"
+                                    size="sm"
+                                    className="bg-primary hover:bg-primary/90 text-white rounded-lg px-4 flex items-center gap-2 h-9 shadow-sm transition-all active:scale-95"
                                 >
                                     {loading ? (
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     ) : (
-                                        <ArrowRight className="w-4 h-4" />
+                                        <ArrowRight className="w-3.5 h-3.5" />
                                     )}
                                     {currentStep.action}
                                 </Button>
@@ -749,12 +754,13 @@ const AdminJobsManager = () => {
                             placeholder="Search jobs, clients, POs..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 h-11 border-gray-100 bg-gray-50/50 focus:bg-white transition-all rounded-xl"
+                            className="pl-10 h-9 border-gray-100 bg-gray-50/50 focus:bg-white transition-all rounded-lg text-sm"
                         />
                     </div>
                     <Button
                         onClick={() => navigate('/doc/new')}
-                        className="bg-primary hover:bg-primary/90 text-white rounded-xl p-2 flex items-center gap-2 h-11"
+                        size="sm"
+                        className="bg-primary hover:bg-primary/90 text-white rounded-lg px-4 flex items-center gap-2 h-9"
                     >
                         <Plus className="w-4 h-4" /> New Job
                     </Button>

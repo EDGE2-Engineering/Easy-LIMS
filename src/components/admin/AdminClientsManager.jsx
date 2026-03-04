@@ -266,17 +266,18 @@ const AdminClientsManager = () => {
         return (
             <div className="bg-white p-6 rounded-lg shadow-sm animate-in slide-in-from-right-4 duration-300">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <h2 className="text-xl font-bold">{isAddingNew ? 'Add New Client' : 'Edit Client'}</h2>
+                    <h2 className="text-lg font-bold">{isAddingNew ? 'Add New Client' : 'Edit Client'}</h2>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={() => setEditingClient(null)} disabled={isSaving}>
+                        <Button variant="outline" size="sm" onClick={() => setEditingClient(null)} disabled={isSaving} className="h-9">
                             Cancel
                         </Button>
                         <Button
                             onClick={handleSave}
-                            className="bg-primary hover:bg-primary-dark flex items-center text-white"
+                            size="sm"
+                            className="bg-primary hover:bg-primary-dark flex items-center text-white h-9"
                             disabled={isSaving}
                         >
-                            <Save className="w-4 h-4 mr-2" />
+                            <Save className="w-3.5 h-3.5 mr-2" />
                             {isSaving ? 'Saving...' : 'Save Changes'}
                         </Button>
                     </div>
@@ -384,7 +385,7 @@ const AdminClientsManager = () => {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
                         placeholder="Search Clients..."
-                        className="pl-10"
+                        className="pl-10 h-9"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -403,7 +404,7 @@ const AdminClientsManager = () => {
                     <Button variant="outline" onClick={handleExport} className="flex-1 sm:flex-none border-gray-300">
                         <Download className="w-4 h-4 mr-2" /> Export
                     </Button> */}
-                    <Button onClick={handleAddNew} className="flex-1 sm:flex-none bg-primary hover:bg-primary-dark text-white">
+                    <Button onClick={handleAddNew} size="sm" className="flex-1 sm:flex-none bg-primary hover:bg-primary-dark text-white h-9 rounded-lg">
                         <Plus className="w-4 h-4 mr-2" /> Add Client
                     </Button>
                 </div>
@@ -437,8 +438,8 @@ const AdminClientsManager = () => {
                 <table className="w-full">
                     <thead className="bg-gray-50 border-b">
                         <tr>
-                            <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Client Details</th>
-                            <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600">Actions</th>
+                            <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Client Details</th>
+                            <th className="text-right py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Actions</th>
                         </tr>
                     </thead>
                     <tbody>

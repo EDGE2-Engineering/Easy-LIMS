@@ -100,18 +100,19 @@ const AdminHSNCodesManager = () => {
     if (editingHsnCode) {
         return (
             <div className="bg-white p-6 rounded-lg shadow-sm animate-in slide-in-from-right-4 duration-300">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">{isAddingNew ? 'Add New HSN/SAC Code' : 'Edit HSN/SAC Code'}</h2>
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => setEditingHsnCode(null)} disabled={isSaving}>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <h2 className="text-lg font-bold">{isAddingNew ? 'Add New HSN/SAC Code' : 'Edit HSN/SAC Code'}</h2>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setEditingHsnCode(null)} disabled={isSaving} className="h-9">
                             Cancel
                         </Button>
                         <Button
                             onClick={handleSave}
-                            className="bg-primary hover:bg-primary-dark text-white"
+                            size="sm"
+                            className="bg-primary hover:bg-primary-dark flex items-center text-white h-9"
                             disabled={isSaving}
                         >
-                            <Save className="w-4 h-4 mr-2" />
+                            <Save className="w-3.5 h-3.5 mr-2" />
                             {isSaving ? 'Saving...' : 'Save Changes'}
                         </Button>
                     </div>
@@ -142,21 +143,18 @@ const AdminHSNCodesManager = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-                <div className="relative w-full sm:max-w-md">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="relative w-full sm:w-72">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
-                        placeholder="Search HSN/SAC codes..."
-                        className="pl-10"
+                        placeholder="Search HSN/SAC..."
+                        className="pl-10 h-9"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <Button
-                    onClick={handleAddNew}
-                    className="bg-primary hover:bg-primary-dark text-white"
-                >
-                    <Plus className="w-4 h-4 mr-2" /> Add HSN/SAC Code
+                <Button onClick={handleAddNew} size="sm" className="w-full sm:w-auto bg-primary hover:bg-primary-dark text-white h-9">
+                    <Plus className="w-4 h-4 mr-2" /> Add Code
                 </Button>
             </div>
 
@@ -164,9 +162,9 @@ const AdminHSNCodesManager = () => {
                 <table className="w-full">
                     <thead className="bg-gray-50 border-b">
                         <tr>
-                            <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600 w-32">Code</th>
-                            <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Description</th>
-                            <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600 w-24">Actions</th>
+                            <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Code</th>
+                            <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Description</th>
+                            <th className="text-right py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Actions</th>
                         </tr>
                     </thead>
                     <tbody>

@@ -363,12 +363,12 @@ const MaterialInwardManager = () => {
                         <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <Input
                             placeholder="Search by Job Order #, PO/WO # or Client..."
-                            className="pl-12 h-12 text-sm bg-gray-50/30 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
+                            className="pl-12 h-10 text-sm bg-gray-50/30 border-gray-200 rounded-lg focus:ring-primary focus:border-primary transition-all shadow-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <div className="flex items-center gap-2 px-6 h-12 bg-primary/5 rounded-xl border border-primary/10 whitespace-nowrap">
+                    <div className="flex items-center gap-2 px-6 h-10 bg-primary/5 rounded-lg border border-primary/10 whitespace-nowrap">
                         <Package className="w-4 h-4 text-primary/60" />
                         <span className="text-sm font-semibold text-gray-700">
                             {sortedRecords.length} <span className="text-gray-400 font-normal">records</span>
@@ -452,15 +452,16 @@ const MaterialInwardManager = () => {
                             variant="ghost"
                             size="sm"
                             onClick={resetFilters}
-                            className="text-gray-400 hover:text-red-500 h-10 text-sm font-bold uppercase tracking-widest transition-colors"
+                            className="text-gray-400 hover:text-red-500 h-9 text-xs font-bold uppercase tracking-widest transition-colors"
                         >
                             Reset
                         </Button>
                         <Button
                             onClick={handleAddNew}
-                            className="bg-primary hover:bg-primary-dark text-white h-10 px-4 rounded-xl shadow-sm text-xs font-semibold"
+                            size="sm"
+                            className="bg-primary hover:bg-primary-dark text-white h-9 px-4 rounded-lg shadow-sm text-xs font-semibold"
                         >
-                            <Plus className="w-4 h-4 mr-2" /> New Material Inward Entry
+                            <Plus className="w-4 h-4 mr-2" /> New Material Inward
                         </Button>
                     </div>
                 </div>
@@ -493,14 +494,14 @@ const MaterialInwardManager = () => {
                     <table className="w-full">
                         <thead className="bg-gray-50 border-b">
                             <tr>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Job Order #</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">PO/WO #</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Created Date</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Received Date</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Client</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Status</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Created By</th>
-                                <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600">Actions</th>
+                                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Job Order #</th>
+                                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">PO/WO #</th>
+                                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Created Date</th>
+                                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Received Date</th>
+                                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Client</th>
+                                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Status</th>
+                                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Created By</th>
+                                <th className="text-right py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Actions</th>
                             </tr>
                         </thead>
                         <tbody>

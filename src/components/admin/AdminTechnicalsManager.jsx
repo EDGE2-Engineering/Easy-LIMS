@@ -100,17 +100,18 @@ const AdminTechnicalsManager = () => {
         return (
             <div className="bg-white p-6 rounded-lg shadow-sm animate-in slide-in-from-right-4 duration-300">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">{isAddingNew ? 'Add New Technical' : 'Edit Technical'}</h2>
+                    <h2 className="text-lg font-bold">{isAddingNew ? 'Add New Technical' : 'Edit Technical'}</h2>
                     <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => setEditingTech(null)} disabled={isSaving}>
+                        <Button variant="outline" size="sm" onClick={() => setEditingTech(null)} disabled={isSaving} className="h-9">
                             Cancel
                         </Button>
                         <Button
                             onClick={handleSave}
-                            className="bg-primary hover:bg-primary-dark text-white"
+                            size="sm"
+                            className="bg-primary hover:bg-primary-dark flex items-center text-white h-9"
                             disabled={isSaving}
                         >
-                            <Save className="w-4 h-4 mr-2" />
+                            <Save className="w-3.5 h-3.5 mr-2" />
                             {isSaving ? 'Saving...' : 'Save Changes'}
                         </Button>
                     </div>
@@ -141,19 +142,20 @@ const AdminTechnicalsManager = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-                <div className="relative w-full sm:max-w-md">
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <div className="relative w-full sm:w-72">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
                         placeholder="Search technicals..."
-                        className="pl-10"
+                        className="pl-10 h-9"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
                 <Button
                     onClick={handleAddNew}
-                    className="bg-primary hover:bg-primary-dark text-white"
+                    size="sm"
+                    className="bg-primary hover:bg-primary-dark text-white h-9"
                 >
                     <Plus className="w-4 h-4 mr-2" /> Add Technical
                 </Button>

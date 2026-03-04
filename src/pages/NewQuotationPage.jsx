@@ -571,18 +571,27 @@ const NewQuotationPage = () => {
                     <div className="flex items-center gap-4">
                         {!isStandard() && (
                             <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-gray-900 transition-colors">
-                                <ArrowLeft className="w-6 h-6" />
+                                <ArrowLeft className="w-5 h-5" />
                             </button>
                         )}
-                        <h1 className="text-xl font-bold text-gray-900">{savedRecordId ? 'Update' : 'Create new'} {documentType}</h1>
+                        <h1 className="text-lg font-bold text-gray-900">{savedRecordId ? 'Update' : 'Create new'} {documentType}</h1>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button onClick={handleSaveToDatabase} disabled={isSavingRecord} className="bg-green-800 hover:bg-green-900 text-white">
-                            {isSavingRecord ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                        <Button
+                            onClick={handleSaveToDatabase}
+                            disabled={isSavingRecord}
+                            size="sm"
+                            className="bg-green-800 hover:bg-green-900 text-white h-9 px-3 rounded-lg"
+                        >
+                            {isSavingRecord ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Save className="w-3.5 h-3.5 mr-2" />}
                             {savedRecordId ? 'Update' : 'Save'} {documentType}
                         </Button>
-                        <Button onClick={triggerPrint} className="bg-blue-800 hover:bg-blue-900 text-white">
-                            <Printer className="w-4 h-4 mr-2" /> Print / PDF
+                        <Button
+                            onClick={triggerPrint}
+                            size="sm"
+                            className="bg-blue-800 hover:bg-blue-900 text-white h-9 px-3 rounded-lg"
+                        >
+                            <Printer className="w-3.5 h-3.5 mr-2" /> Print / PDF
                         </Button>
                     </div>
                 </div>

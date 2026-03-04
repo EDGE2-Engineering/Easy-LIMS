@@ -141,12 +141,12 @@ const AdminReportsManager = () => {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
                         placeholder="Search reports..."
-                        className="pl-10"
+                        className="pl-10 h-9"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <Button onClick={handleCreateNew} className="bg-primary hover:bg-primary-dark text-white">
+                <Button onClick={handleCreateNew} size="sm" className="bg-primary hover:bg-primary-dark text-white h-9 rounded-lg">
                     <Plus className="w-4 h-4 mr-2" /> Create Report
                 </Button>
             </div>
@@ -155,11 +155,11 @@ const AdminReportsManager = () => {
                 <table className="w-full">
                     <thead className="bg-gray-50/50 border-b">
                         <tr>
-                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Report #</th>
-                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Client</th>
-                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Created By</th>
-                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Date</th>
-                            <th className="text-right py-4 px-6 font-semibold text-sm text-gray-600">Actions</th>
+                            <th className="text-left py-4 px-6 font-bold text-xs uppercase tracking-wider text-gray-500">Report #</th>
+                            <th className="text-left py-4 px-6 font-bold text-xs uppercase tracking-wider text-gray-500">Client</th>
+                            <th className="text-left py-4 px-6 font-bold text-xs uppercase tracking-wider text-gray-500">Created By</th>
+                            <th className="text-left py-4 px-6 font-bold text-xs uppercase tracking-wider text-gray-500">Date</th>
+                            <th className="text-right py-4 px-6 font-bold text-xs uppercase tracking-wider text-gray-500">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">

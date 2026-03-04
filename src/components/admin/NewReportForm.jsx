@@ -1792,50 +1792,54 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
             {/* Unified Top Header matching AdminReportsManager style */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm gap-4">
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={onCancel} title="Cancel and go back">
-                        <X className="w-5 h-5 text-gray-400" />
+                    <Button variant="ghost" size="sm" onClick={onCancel} title="Cancel and go back" className="h-8 w-8 p-0 rounded-full">
+                        <X className="w-4 h-4 text-gray-400" />
                     </Button>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900">
+                        <h2 className="text-lg font-bold text-gray-900 leading-tight">
                             {editReport?.id ? 'Edit Report' : 'Create New Report'}
                         </h2>
-                        <p className="text-xs text-gray-500 font-mono">{formData.reportId || 'New'}</p>
+                        <p className="text-[10px] text-gray-500 font-mono">{formData.reportId || 'New'}</p>
                     </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                     {user?.role === 'super_admin' && (
                         <Button
                             type="button"
+                            size="sm"
                             onClick={fillWithRandomData}
                             variant="outline"
-                            className="border-green-300 text-green-600 hover:bg-green-50"
+                            className="border-green-300 text-green-600 hover:bg-green-50 h-9 rounded-lg"
                         >
-                            <Zap className="w-4 h-4 mr-2" /> Sample Data
+                            <Zap className="w-3.5 h-3.5 mr-2" /> Sample Data
                         </Button>
                     )}
                     <Button
                         type="button"
+                        size="sm"
                         onClick={clearForm}
                         variant="outline"
-                        className="border-red-300 text-red-600 hover:bg-red-50"
+                        className="border-red-300 text-red-600 hover:bg-red-50 h-9 rounded-lg"
                     >
-                        <Trash2 className="w-4 h-4 mr-2" /> Clear Form
+                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Clear Form
                     </Button>
                     <Button
                         type="button"
+                        size="sm"
                         onClick={handlePreview}
                         variant="outline"
-                        className="border-primary text-primary hover:bg-primary/5"
+                        className="border-primary text-primary hover:bg-primary/5 h-9 rounded-lg"
                     >
-                        <Eye className="w-4 h-4 mr-2" /> Preview Report
+                        <Eye className="w-3.5 h-3.5 mr-2" /> Preview Report
                     </Button>
                     <Button
                         type="button"
+                        size="sm"
                         onClick={handleSaveOnly}
                         disabled={isSaving}
-                        className="bg-primary hover:bg-primary-dark text-white"
+                        className="bg-primary hover:bg-primary-dark text-white h-9 rounded-lg"
                     >
-                        {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                        {isSaving ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Save className="w-3.5 h-3.5 mr-2" />}
                         Save Report
                     </Button>
                     {/* Hidden Actual Submit */}

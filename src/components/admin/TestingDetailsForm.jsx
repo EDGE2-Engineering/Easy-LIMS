@@ -228,24 +228,25 @@ const TestingDetailsForm = ({
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                        <Beaker className="w-6 h-6 text-primary" /> Testing Details
+                    <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <Beaker className="w-5 h-5 text-primary" /> Testing Details
                     </h2>
-                    <p className="text-sm text-gray-500 mt-1">Enter lab test results, chemical analysis and grain size data</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Enter lab test results, chemical analysis and grain size data</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={onCancel} disabled={isSaving} className="rounded-xl border-gray-200">
+                    <Button variant="outline" size="sm" onClick={onCancel} disabled={isSaving} className="rounded-lg border-gray-200 h-9">
                         Cancel
                     </Button>
                     <Button
                         onClick={() => onSave(formData)}
-                        className="bg-primary hover:bg-primary/90 text-white rounded-xl px-6 flex items-center gap-2 h-11 transition-all shadow-sm"
+                        size="sm"
+                        className="bg-primary hover:bg-primary/90 text-white rounded-lg px-4 flex items-center gap-2 h-9 transition-all shadow-sm"
                         disabled={isSaving}
                     >
                         {isSaving ? (
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         ) : (
-                            <Save className="w-4 h-4" />
+                            <Save className="w-3.5 h-3.5" />
                         )}
                         {isSaving ? 'Saving...' : 'Save Details'}
                     </Button>
