@@ -421,7 +421,7 @@ const AdminJobsManager = () => {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle className="flex items-center gap-2">
                                         <ArrowRight className="w-5 h-5 text-primary" />
-                                        Confirm Status Transition
+                                        Confirm Status Update
                                     </AlertDialogTitle>
                                     <AlertDialogDescription asChild>
                                         <div className="space-y-3 pt-1">
@@ -430,7 +430,7 @@ const AdminJobsManager = () => {
                                                 <span className="font-semibold text-gray-800">{selectedJob.job_order_no}</span>{' '}
                                                 to the next stage?
                                             </p>
-                                            <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl p-3">
+                                            <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl p-3 align-center justify-center">
                                                 <span className="text-xs font-semibold px-2 py-1 bg-gray-200 text-gray-700 rounded-lg">
                                                     {currentStep?.label || selectedJob.status.replace(/_/g, ' ')}
                                                 </span>
@@ -440,7 +440,7 @@ const AdminJobsManager = () => {
                                                 </span>
                                             </div>
                                             <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                                                ⚠️ This action cannot be undone.
+                                                ⚠️ Note: This action cannot be undone.
                                             </p>
                                         </div>
                                     </AlertDialogDescription>
@@ -567,33 +567,33 @@ const AdminJobsManager = () => {
                                 )} */}
 
                                 <div className="pt-4 border-t">
-                                    <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-3 mt-4">
+                                    <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-4 mt-4">
                                         <p className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2">
                                             <Package className="w-3.5 h-3.5" /> Summary of Material Inward
                                         </p>
-                                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Samples ({(selectedJob.material_inward?.samples || selectedJob.content?.samples)?.length || 0})</p>
-                                        <div className="space-y-2">
+                                        <div>
+                                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Samples ({(selectedJob.material_inward?.samples || selectedJob.content?.samples)?.length || 0})</p>
                                             <div className="w-full overflow-x-auto">
                                                 <table className="w-full border border-gray-200 text-xs">
-                                                    <thead className="bg-gray-100">
+                                                    <thead className="bg-blue-50">
                                                         <tr>
-                                                            <th className="p-2 border text-left">Sample Code</th>
-                                                            <th className="p-2 border text-left">Sample Description</th>
-                                                            <th className="p-2 border text-left">Quantity</th>
-                                                            <th className="p-2 border text-left">Expected Test Days</th>
-                                                            <th className="p-2 border text-left">Received Date</th>
-                                                            <th className="p-2 border text-left">Received By</th>
+                                                            <th className="p-2 border text-left text-blue-700">Sample Code</th>
+                                                            <th className="p-2 border text-left text-blue-700">Sample Description</th>
+                                                            <th className="p-2 border text-left text-blue-700">Quantity</th>
+                                                            <th className="p-2 border text-left text-blue-700">Expected Test Days</th>
+                                                            <th className="p-2 border text-left text-blue-700">Received Date</th>
+                                                            <th className="p-2 border text-left text-blue-700">Received By</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         {(selectedJob.material_inward?.samples || selectedJob.content?.samples)?.map((sample, idx) => (
-                                                            <tr key={idx} className="bg-white even:bg-gray-50">
+                                                            <tr key={idx} className="bg-white even:bg-blue-50/30">
                                                                 <td className="p-2 border">{sample.sample_code}</td>
                                                                 <td className="p-2 border">{sample.sample_description}</td>
                                                                 <td className="p-2 border">{sample.quantity}</td>
                                                                 <td className="p-2 border">{sample.expected_test_days}</td>
                                                                 <td className="p-2 border">{sample.received_date}</td>
-                                                                <td className="p-2 border">{sample.received_by}</td>
+                                                                <td className="p-2 border font-medium">{getUserName(sample.received_by)}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
