@@ -13,7 +13,7 @@ const cognitoDomainPrefix = "edge2-lims";
 const domain = `https://${cognitoDomainPrefix}.auth.${region}.amazoncognito.com`;
 
 const origin_url = typeof window !== 'undefined'
-    ? window.location.origin
+    ? window.location.origin + window.location.pathname
     : "http://localhost:3000";
 
 // Cognito Configuration
