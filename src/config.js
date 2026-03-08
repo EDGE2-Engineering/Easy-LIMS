@@ -13,7 +13,11 @@ const cognitoDomainPrefix = "edge2-lims";
 const domain = `https://${cognitoDomainPrefix}.auth.${region}.amazoncognito.com`;
 
 const origin_url = typeof window !== 'undefined'
-    ? window.location.origin
+    ? window.location.origin + window.location.pathname
+    : "http://localhost:3000";
+
+const login_origin_url = typeof window !== 'undefined'
+    ? window.location.origin + window.location.pathname
     : "http://localhost:3000";
 
 // Cognito Configuration
@@ -28,10 +32,10 @@ export const cognitoConfig = {
     oidc: {
         authority: `https://cognito-idp.${region}.amazonaws.com/${userPoolId}`,
         client_id: clientId,
-        redirect_uri: origin_url,
+        redirect_uri: login_origin_url,
         response_type: "code",
         scope: "phone openid profile email aws.cognito.signin.user.admin",
-        post_logout_redirect_uri: origin_url,
+        post_logout_redirect_uri: login_origin_url,
         userStore: new WebStorageStateStore({ store: window.localStorage }),
         automaticSilentRenew: true,
         loadUserInfo: true,
@@ -39,7 +43,7 @@ export const cognitoConfig = {
 
     // Logout Configuration
     getLogoutUrl: () => {
-        const encodedLogoutUri = encodeURIComponent(origin_url);
+        const encodedLogoutUri = encodeURIComponent(login_origin_url);
         return `${domain}/logout?client_id=${clientId}&logout_uri=${encodedLogoutUri}`;
     },
 };
