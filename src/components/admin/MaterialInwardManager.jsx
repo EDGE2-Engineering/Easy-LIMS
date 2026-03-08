@@ -533,16 +533,12 @@ const MaterialInwardManager = () => {
                                             </span>
                                         </td>
                                         <td className="py-3 px-4 text-sm text-gray-600">
-                                            {(() => {
-                                                const u = appUsers.find(u => u.id === record.created_by || u.sub === record.created_by || u.username === record.created_by || u.email === record.created_by);
-                                                if (!u && record.created_by && record.created_by.length > 20) {
-                                                    console.log(`[Diagnostic] User not found for ID: "${record.created_by}". appUsers count: ${appUsers.length}`);
-                                                    if (appUsers.length > 0) {
-                                                        console.log('[Diagnostic] First user in list:', appUsers[0]);
-                                                    }
-                                                }
-                                                return u ? (u.full_name || u.fullName || u.name) : (record.created_by || '-');
-                                            })()}
+                                            <span title={record.created_by}>
+                                                {(() => {
+                                                    const u = appUsers.find(u => u.id === record.created_by || u.sub === record.created_by || u.username === record.created_by || u.email === record.created_by);
+                                                    return u ? (u.full_name || u.fullName || u.name) : (record.created_by || '-');
+                                                })()}
+                                            </span>
                                         </td>
                                         <td className="py-3 px-4 text-right">
                                             <div className="flex justify-end space-x-4">

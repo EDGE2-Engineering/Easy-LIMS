@@ -16,13 +16,14 @@ import MaterialInwardManager from '@/components/admin/MaterialInwardManager';
 import AdminServicesManager from '@/components/admin/AdminServicesManager';
 import AdminTestsManager from '@/components/admin/AdminTestsManager';
 import AdminJobsManager from '@/components/admin/AdminJobsManager';
+import AdminUsersManager from '@/components/admin/AdminUsersManager';
 import SystemInfo from '@/components/admin/SystemInfo';
 
 import AdminLogin from '@/components/admin/AdminLogin';
 import UpdatePassword from '@/components/admin/UpdatePassword';
 import { useToast } from '@/components/ui/use-toast';
 
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSiteContent } from '@/config';
 
@@ -30,8 +31,12 @@ const AdminPage = () => {
     const { user, loading, logout, isAdmin, isStandard } = useAuth();
     const siteName = getSiteContent().global?.siteName || "Easy Billing";
     const { tab } = useParams();
+    const location = useLocation();
     const navigate = useNavigate();
-    const [mainTab, setMainTab] = useState(tab || 'accounts');
+    const [mainTab, setMainTab] = useState(() => {
+        if (location.pathname === '/jobs') return 'jobs';
+        return tab || 'accounts';
+    });
     const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
     const { toast } = useToast();
@@ -45,10 +50,12 @@ const AdminPage = () => {
     // }, [user, navigate, mainTab, isStandard]);
 
     useEffect(() => {
-        if (tab) {
+        if (location.pathname === '/jobs') {
+            setMainTab('jobs');
+        } else if (tab) {
             setMainTab(tab);
         }
-    }, [tab]);
+    }, [tab, location.pathname]);
 
     // No longer redirect - everything is top level
     // useEffect(() => {
@@ -57,12 +64,16 @@ const AdminPage = () => {
     //   }
     // }, [mainTab, navigate]);
 
-    const settingsTabs = ['clients', 'pricing', 'services', 'tests', 'system', 'info'];
+    const settingsTabs = ['clients', 'pricing', 'services', 'tests', 'users', 'system', 'info'];
     const isSettingsTab = settingsTabs.includes(mainTab);
 
     const handleTabChange = (value) => {
         setMainTab(value);
-        navigate(`/settings/${value}`);
+        if (value === 'jobs') {
+            navigate('/jobs');
+        } else {
+            navigate(`/settings/${value}`);
+        }
     };
 
     const handleLoginSuccess = () => {
@@ -126,6 +137,7 @@ const AdminPage = () => {
                                     <option value="pricing">Pricing</option>
                                     <option value="services">Services</option>
                                     <option value="tests">Tests</option>
+                                    <option value="users">Users</option>
                                     {/* <option value="jobs">Jobs</option> */}
                                     <option value="system">Others</option>
                                     <option value="info">Info</option>
@@ -144,6 +156,7 @@ const AdminPage = () => {
                                     <TabsTrigger value="pricing" className="px-3 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-1.5"><IndianRupee className="w-4 h-4" /> Pricing</TabsTrigger>
                                     <TabsTrigger value="services" className="px-3 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-1.5"><HandHeart className="w-4 h-4" /> Services</TabsTrigger>
                                     <TabsTrigger value="tests" className="px-3 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-1.5"><TestTube className="w-4 h-4" /> Tests</TabsTrigger>
+                                    <TabsTrigger value="users" className="px-3 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-1.5"><UserCog className="w-4 h-4" /> Users</TabsTrigger>
                                     {/* <TabsTrigger value="jobs" className="px-3 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-1.5"><LayoutDashboard className="w-4 h-4" /> Jobs</TabsTrigger> */}
                                     <TabsTrigger value="system" className="px-3 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-1.5"><Cpu className="w-4 h-4" /> Others</TabsTrigger>
                                     <TabsTrigger value="info" className="px-3 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-1.5"><Info className="w-4 h-4" /> Info</TabsTrigger>
@@ -182,6 +195,10 @@ const AdminPage = () => {
 
                     <TabsContent value="tests" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">
                         <AdminTestsManager />
+                    </TabsContent>
+
+                    <TabsContent value="users" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <AdminUsersManager />
                     </TabsContent>
 
                     <TabsContent value="info" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">

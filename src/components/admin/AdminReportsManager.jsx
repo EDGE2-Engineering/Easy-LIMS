@@ -129,6 +129,11 @@ const AdminReportsManager = () => {
         );
     }
 
+    const getUserName = (id) => {
+        const u = appUsers.find(u => u.id === id || u.sub === id || u.username === id || u.email === id);
+        return u ? (u.full_name || u.fullName || u.name) : id;
+    };
+
     const filteredReports = reports.filter(r =>
         (r.report_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (r.client_name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
@@ -184,10 +189,7 @@ const AdminReportsManager = () => {
                                     </td>
                                     <td className="py-4 px-6 text-sm text-gray-700">{report.client_name || report.report?.client || '-'}</td>
                                     <td className="py-4 px-6 text-sm text-gray-700">
-                                        {(() => {
-                                            const u = appUsers.find(u => u.id === report.created_by || u.sub === report.created_by || u.username === report.created_by || u.email === report.created_by);
-                                            return u ? (u.full_name || u.fullName || u.name) : (report.created_by || '-');
-                                        })()}
+                                        <span title={report.created_by}>{getUserName(report.created_by)}</span>
                                     </td>
                                     <td className="py-4 px-6 text-sm text-gray-500">
                                         {format(new Date(report.created_at || report.updated_at), 'dd MMM yyyy')}

@@ -505,7 +505,7 @@ const AdminJobsManager = () => {
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Created By</p>
-                                        <p className="text-sm font-medium">{getUserName(selectedJob.created_by)}</p>
+                                        <p className="text-sm font-medium" title={selectedJob.created_by}>{getUserName(selectedJob.created_by)}</p>
                                     </div>
                                 </div>
 
@@ -806,7 +806,9 @@ const AdminJobsManager = () => {
                                 <TableCell className="text-gray-500 text-sm">{job.po_wo_number || '-'}</TableCell>
                                 <TableCell className="text-gray-500 text-sm">{format(new Date(job.created_at), 'dd MMM yyyy')}</TableCell>
                                 <TableCell>{getStatusBadge(job.status)}</TableCell>
-                                <TableCell className="text-sm text-gray-600 font-medium">{getUserName(job.created_by)}</TableCell>
+                                <TableCell className="text-sm text-gray-600 font-medium">
+                                    <span title={job.created_by}>{getUserName(job.created_by)}</span>
+                                </TableCell>
                                 <TableCell className="text-right">
                                     <Button variant="ghost" size="icon" className="group-hover:text-primary transition-colors">
                                         <Eye className="w-4 h-4" />

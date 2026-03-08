@@ -13,7 +13,7 @@ const cognitoDomainPrefix = "edge2-lims";
 const domain = `https://${cognitoDomainPrefix}.auth.${region}.amazoncognito.com`;
 
 const origin_url = typeof window !== 'undefined'
-    ? window.location.origin + window.location.pathname
+    ? window.location.origin
     : "http://localhost:3000";
 
 // Cognito Configuration
@@ -46,6 +46,7 @@ export const cognitoConfig = {
 
 // Hardcoded Departments
 export const DEPARTMENTS = {
+    ALL: "All",
     ACCOUNTS: "Accounts",
     CHEMICAL_ANALYSIS: "Chemical Analysis",
     LOGISTICS: "Logistics",

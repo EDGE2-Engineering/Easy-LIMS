@@ -43,10 +43,10 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
   };
 
   const navItems = [
-    { path: '/settings/material-inward', label: 'Inward', icon: Package, roles: ['admin', 'standard'] },
-    { path: '/settings/reports', label: 'Reports', icon: FileText, roles: ['admin', 'standard'] },
-    { path: '/settings/accounts', label: 'Accounts', icon: Database, roles: ['admin', 'standard'] },
-    { path: '/settings/jobs', label: 'Jobs', icon: LayoutDashboard, roles: ['admin', 'standard'] },
+    // { path: '/settings/material-inward', label: 'Inward', icon: Package, roles: ['admin', 'standard'] },
+    // { path: '/settings/reports', label: 'Reports', icon: FileText, roles: ['admin', 'standard'] },
+    // { path: '/settings/accounts', label: 'Accounts', icon: Database, roles: ['admin', 'standard'] },
+    { path: '/jobs', label: 'Jobs', icon: LayoutDashboard, roles: ['admin', 'standard'] },
     { path: '/settings/clients', label: 'Settings', icon: Settings, roles: ['admin', 'standard'] }
   ].filter(item => {
     if (!item.roles) return true;

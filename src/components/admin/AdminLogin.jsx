@@ -19,23 +19,22 @@ const AdminLogin = ({ onLoginSuccess }) => {
 
     // Auto-redirect to Cognito if not already authenticated
     useEffect(() => {
-        // Check if we just logged out intentionally
-        const justLoggedOut = localStorage.getItem('edge2_just_logged_out');
-        if (justLoggedOut === 'true') {
-            console.log("AdminLogin: Detected 'just_logged_out' flag. Preventing auto-redirect to Cognito.");
-            localStorage.removeItem('edge2_just_logged_out');
-            setHasAttemptedAutoLogin(true);
+        const justLoggedOut = localStorage.getItem('edge2_just_logged_out') === 'true';
+        
+        // Skip auto-redirect if loading, if we already tried, or if we just intentionally logged out
+        if (hasAttemptedAutoLogin || isLoading || justLoggedOut) {
+            if (justLoggedOut && !hasAttemptedAutoLogin) {
+                console.log("AdminLogin: Suppressing auto-login due to recent logout.");
+                setHasAttemptedAutoLogin(true);
+            }
             return;
         }
 
-        // Only attempt auto-redirect once to prevent loops
-        if (!hasAttemptedAutoLogin && !isLoading) {
-            console.log("AdminLogin: No logout flag detected. Attempting automatic redirect to Cognito...");
-            setHasAttemptedAutoLogin(true);
-            login().catch(err => {
-                console.error("AdminLogin: Auto-login failed:", err);
-            });
-        }
+        console.log("AdminLogin: Attempting automatic redirect to Cognito...");
+        setHasAttemptedAutoLogin(true);
+        login().catch(err => {
+            console.error("AdminLogin: Auto-login failed:", err);
+        });
     }, [login, hasAttemptedAutoLogin, isLoading]);
 
     const handleSubmit = async (e) => {
@@ -89,7 +88,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
                         </>
                     ) : (
                         <>
-                            Sign In with Cognito
+                            Sign In
                         </>
                     )}
                 </Button>

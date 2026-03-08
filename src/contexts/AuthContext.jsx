@@ -6,7 +6,7 @@ import { sendTelegramNotification } from '@/lib/notifier';
 import { cognitoConfig } from '@/config';
 import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import { DB_TYPES } from '@/config';
-
+import { DEPARTMENTS } from '@/config';
 
 const AuthContext = createContext();
 
@@ -23,20 +23,36 @@ const AuthProvider = ({ children }) => {
     }, []);
 
     const syncUserToDb = useCallback(async (userData, token) => {
-        // console.log('AuthContext: Syncing user to database:', { userData, token });
-        console.log('AuthContext: User data:', { userData });
         try {
-            await dynamoGenericApi.save(DB_TYPES.USER, {
+            // Check if user already exists
+            const existingUser = await dynamoGenericApi.getById(userData.id, token);
+            if (existingUser) {
+                console.log('AuthContext: User already exists in database, skipping creation.');
+                return;
+            }
+
+            let department = DEPARTMENTS.ACCOUNTS;
+            if (userData.role === 'admin' || userData.role === 'superadmin' || userData.role === 'super_admin' || userData.role === 'administrator') {
+                department = DEPARTMENTS.ALL;
+            }else{
+                department = userData.department;
+            }
+
+            console.log('AuthContext: Creating new user record in database...');
+            const newUser = {
                 id: userData.id,
                 username: userData.username,
                 full_name: userData.full_name,
-                fullName: userData.full_name,
-                name: userData.full_name,
-                email: userData.email,
+                created_at: new Date().toISOString(),
+                created_by: userData.id,
                 role: userData.role,
+                department: department,
                 is_active: true,
-                skipCheck: true // Avoid redundant getById
-            }, token);
+                type: 'user'
+            };
+
+            await dynamoGenericApi.save(DB_TYPES.USER, newUser, token);
+            console.log('AuthContext: User record created successfully.');
         } catch (error) {
             console.error('Failed to sync user to database:', error);
         }
@@ -44,10 +60,20 @@ const AuthProvider = ({ children }) => {
 
     // Sync OIDC auth state to our internal user state
     useEffect(() => {
-        // Skip syncing if we just logged out to prevent auto-login loop
-        if (localStorage.getItem('edge2_just_logged_out') === 'true') {
+        const justLoggedOut = localStorage.getItem('edge2_just_logged_out') === 'true';
+
+        // Skip syncing if we just logged out AND the OIDC lib still thinks we are authenticated
+        // This prevents the auto-login loop if Cognito's session is still briefly active
+        if (justLoggedOut && auth.isAuthenticated) {
+            console.log('AuthContext: Logout flag active and authenticated. Delaying sync...');
             setLoading(false);
             return;
+        }
+
+        // If we are definitely NOT authenticated anymore, it's safe to clear the flag
+        if (!auth.isAuthenticated && justLoggedOut) {
+            console.log('AuthContext: Session cleared, removing logout flag.');
+            localStorage.removeItem('edge2_just_logged_out');
         }
 
         if (auth.isAuthenticated && auth.user) {
@@ -59,7 +85,7 @@ const AuthProvider = ({ children }) => {
                     // Only notify/sync if we haven't synced for THIS specific user ID yet
                     if (!hasSynced.current || hasSynced.current !== session.user.id) {
                         notifyLogin(session.user.username, session.user.full_name);
-                        // syncUserToDb(session.user, session.idToken); // Disabled as per user request
+                        syncUserToDb(session.user, session.idToken);
                         hasSynced.current = session.user.id;
                     }
 
@@ -86,10 +112,25 @@ const AuthProvider = ({ children }) => {
     }, [auth]);
 
     const logout = useCallback(async () => {
-        setUser(null);
-        await auth.removeUser();
-        localStorage.setItem('edge2_just_logged_out', 'true');
-        window.location.href = cognitoConfig.getLogoutUrl();
+        try {
+            setUser(null);
+            localStorage.setItem('edge2_just_logged_out', 'true');
+            
+            // Clear OIDC storage
+            await auth.removeUser();
+            
+            // Ensure session storage is also cleared (oidc-client-ts often uses both)
+            sessionStorage.clear();
+            
+            // Construct and redirect to Cognito logout
+            const logoutUrl = cognitoConfig.getLogoutUrl();
+            console.log('AuthContext: Logging out via:', logoutUrl);
+            window.location.href = logoutUrl;
+        } catch (error) {
+            console.error('Logout failed:', error);
+            // Fallback: reload the page
+            window.location.href = '/';
+        }
     }, [auth]);
 
     const isSuperAdmin = useCallback(() => {

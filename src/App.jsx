@@ -1,9 +1,9 @@
-import { createHashRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { AuthProvider as OidcProvider } from 'react-oidc-context';
 import { cognitoConfig } from '@/config';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import { ServicesProvider } from '@/contexts/ServicesContext';
 import { TestsProvider } from '@/contexts/TestsContext';
@@ -19,14 +19,39 @@ import TestDetailPage from '@/pages/TestDetailPage.jsx';
 import AdminPage from '@/pages/AdminPage';
 import NewQuotationPage from '@/pages/NewQuotationPage.jsx';
 import DeviceRestriction from '@/components/DeviceRestriction';
+import { Loader2 } from 'lucide-react';
 
-const router = createHashRouter([
+const RootRedirect = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (user) {
+    return <Navigate to="/jobs" replace />;
+  }
+
+  return <Navigate to="/jobs" replace />;
+};
+
+const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/settings/accounts" replace />,
+    element: <RootRedirect />,
   },
+// ... (trimmed for this thought, I will use full content in actual call)
+
   {
     path: "/settings/:tab?",
+    element: <AdminPage />,
+  },
+  {
+    path: "/jobs",
     element: <AdminPage />,
   },
   {
