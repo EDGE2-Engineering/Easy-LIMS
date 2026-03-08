@@ -227,9 +227,11 @@ const AdminJobsManager = () => {
             if (isCompleted) nodeStyle = ":::completed";
             // Overwrite or append current style to the active node for thicker border
             if (isCurrentNode) nodeStyle = ":::currentNode";
+            // Apply pending style to all nodes after current
+            if (!isCompleted && !isCurrentNode) nodeStyle = ":::pending";
 
-            // const icon = isCompleted ? " ✅" : "";
-            const icon = "";
+            const icon = isCompleted ? " ✅" : "";
+            // const icon = "";
             source += `  ${step.id}["${label}${icon}"]${nodeStyle}\n`;
 
             if (index < WORKFLOW_STEPS.length - 1) {
@@ -237,9 +239,11 @@ const AdminJobsManager = () => {
             }
         });
 
-        source += "\n  classDef completed fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#166534\n";
-        source += "  classDef currentNode fill:#dcfce7,stroke:#2563eb,stroke-width:4px,color:#166534,font-weight:bold\n";
+        source += "\n  classDef completed fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#166534,font-weight:bold,font-size:35px\n";
+        source += "  classDef currentNode fill:#dcfce7,stroke:#2563eb,stroke-width:4px,color:#166534,font-weight:bold,font-size:35px\n";
+        source += "  classDef pending fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#92400e,font-size:35px\n";
 
+        // console.log(source);
         return source;
     };
 
@@ -331,12 +335,12 @@ const AdminJobsManager = () => {
                         const userRole = user?.role?.toLowerCase() || 'user';
                         const canPerformAction = actualIsAdmin || currentStep.roles?.some(r => r.toLowerCase() === userRole);
 
-                        console.log('AdminJobsManager: RBAC Evaluation:', {
-                            userRole,
-                            actualIsAdmin,
-                            stepRoles: currentStep.roles,
-                            canPerformAction
-                        });
+                        // console.log('AdminJobsManager: RBAC Evaluation:', {
+                        //     userRole,
+                        //     actualIsAdmin,
+                        //     stepRoles: currentStep.roles,
+                        //     canPerformAction
+                        // });
 
                         if (!canPerformAction) return (
                             <div className="flex items-center gap-2 text-gray-400 text-sm italic">
