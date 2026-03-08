@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { createHashRouter, RouterProvider, Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { AuthProvider as OidcProvider } from 'react-oidc-context';
@@ -39,13 +39,11 @@ const RootRedirect = () => {
   return <Navigate to="/jobs" replace />;
 };
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: "/",
     element: <RootRedirect />,
   },
-  // ... (trimmed for this thought, I will use full content in actual call)
-
   {
     path: "/settings/:tab?",
     element: <AdminPage />,
