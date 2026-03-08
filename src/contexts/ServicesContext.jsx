@@ -1,11 +1,13 @@
 
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
-import { initialServices } from '@/data/services';
+import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
+import { useAuth } from '@/contexts/AuthContext';
+import { DB_TYPES } from '@/config';
 
 const ServicesContext = createContext();
 
 const ServicesProvider = ({ children }) => {
+    const { idToken, isAuthenticated, loading: authLoading } = useAuth();
     const [services, setServices] = useState([]);
     const [clientServicePrices, setClientServicePrices] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -44,227 +46,130 @@ const ServicesProvider = ({ children }) => {
     }), []);
 
     const fetchServices = useCallback(async () => {
+        if (!idToken) return;
         try {
-            const { data, error } = await supabase
-                .from('services')
-                .select('*')
-                .order('created_at', { ascending: true });
-
-            if (error) {
-                console.warn("Supabase fetch error (services):", error.message);
-                const stored = localStorage.getItem('services');
-                if (stored) {
-                    try {
-                        const parsed = JSON.parse(stored);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                            setServices(parsed);
-                            return;
-                        }
-                    } catch (e) { }
-                }
-                if (services.length === 0) setServices(initialServices);
-                return;
-            }
+            const data = await dynamoGenericApi.listByType(DB_TYPES.SERVICE, idToken);
 
             if (data && data.length > 0) {
                 const mappedData = data.map(mapFromDb);
                 setServices(mappedData);
             } else {
-                const stored = localStorage.getItem('services');
-                if (stored) {
-                    try {
-                        const parsed = JSON.parse(stored);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                            setServices(parsed);
-                            return;
-                        }
-                    } catch (e) { }
-                }
-                setServices(initialServices);
+                setServices([]);
             }
         } catch (error) {
-            console.error("Error loading services:", error);
-            if (services.length === 0) setServices(initialServices);
+            console.error("Error loading services from DynamoDB:", error);
+            if (services.length === 0) setServices([]);
         } finally {
             setLoading(false);
         }
-    }, [mapFromDb]);
+    }, [mapFromDb, idToken]);
 
     const fetchClientServicePrices = useCallback(async () => {
+        if (!idToken) return;
         try {
-            const { data, error } = await supabase
-                .from('client_service_prices')
-                .select('*');
-
-            if (error) {
-                console.warn("Supabase fetch error (client_service_prices):", error.message);
-                return;
-            }
-
+            const data = await dynamoGenericApi.listByType(DB_TYPES.CLIENT_SERVICE_PRICE, idToken);
             if (data) {
                 setClientServicePrices(data);
             }
         } catch (error) {
-            console.error("Error loading client service prices:", error);
+            console.error("Error loading client service prices from DynamoDB:", error);
         }
-    }, []);
+    }, [idToken]);
 
     useEffect(() => {
-        fetchServices();
-        fetchClientServicePrices();
-        const handleStorageChange = () => {
-            const stored = localStorage.getItem('services');
-            if (stored) {
-                try {
-                    const parsed = JSON.parse(stored);
-                    if (Array.isArray(parsed)) setServices(parsed);
-                } catch (e) { }
-            }
-        };
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
-    }, [fetchServices, fetchClientServicePrices]);
-
-    useEffect(() => {
-        if (services.length > 0) {
-            localStorage.setItem('services', JSON.stringify(services));
+        if (!authLoading && isAuthenticated) {
+            fetchServices();
+            fetchClientServicePrices();
+        } else if (!authLoading && !isAuthenticated) {
+            setServices([]);
+            setClientServicePrices([]);
+            setLoading(false);
         }
-    }, [services]);
+    }, [fetchServices, fetchClientServicePrices, authLoading, isAuthenticated]);
+
 
     const updateService = useCallback(async (updatedService) => {
-
+        if (!idToken) throw new Error("User not authenticated");
         const previousServices = [...services];
         setServices(prev => prev.map(s => s.id === updatedService.id ? updatedService : s));
 
         try {
             const dbPayload = mapToDb(updatedService);
-            const { id, ...updates } = dbPayload;
-            updates.updated_at = new Date().toISOString();
-
-            const { error, data } = await supabase
-                .from('services')
-                .update(updates)
-                .eq('id', id)
-                .select();
-
-            if (error) {
-                console.error("Supabase Update Failed (services):", error);
-                setServices(previousServices);
-                throw new Error(`Failed to update service: ${error.message}`);
-            }
-
-            if (data && data.length > 0) {
-                const updated = mapFromDb(data[0]);
-                setServices(prev => prev.map(s => s.id === updated.id ? updated : s));
-            }
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.SERVICE, dbPayload, idToken);
+            const updated = mapFromDb(savedItem);
+            setServices(prev => prev.map(s => s.id === updated.id ? updated : s));
         } catch (err) {
             console.error("Update Service Exception:", err);
             setServices(previousServices);
             throw err;
         }
-    }, [services, mapToDb, mapFromDb]);
+    }, [services, idToken, mapToDb, mapFromDb]);
 
     const addService = useCallback(async (newService) => {
-
+        if (!idToken) throw new Error("User not authenticated");
         const tempId = newService.id || `srv_${Date.now()}`;
         const serviceWithId = { ...newService, id: tempId, created_at: new Date().toISOString() };
-
         const previousServices = [...services];
         setServices(prev => [...prev, serviceWithId]);
 
         try {
             const dbPayload = mapToDb(serviceWithId);
-            dbPayload.created_at = new Date().toISOString();
-            dbPayload.updated_at = new Date().toISOString();
-
-            const { error, data } = await supabase
-                .from('services')
-                .insert(dbPayload)
-                .select();
-
-            if (error) {
-                console.error("Supabase Add Failed (services):", error);
-                setServices(previousServices);
-                throw new Error(`Failed to add service: ${error.message}`);
-            }
-
-            if (data && data.length > 0) {
-                const added = mapFromDb(data[0]);
-                setServices(prev => prev.map(s => s.id === tempId ? added : s));
-            }
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.SERVICE, dbPayload, idToken);
+            const added = mapFromDb(savedItem);
+            setServices(prev => prev.map(s => s.id === tempId ? added : s));
         } catch (err) {
             console.error("Add Service Exception:", err);
             setServices(previousServices);
             throw err;
         }
-    }, [services, mapToDb, mapFromDb]);
+    }, [services, idToken, mapToDb, mapFromDb]);
 
     const deleteService = useCallback(async (id) => {
+        if (!idToken) throw new Error("User not authenticated");
         const previousServices = [...services];
         setServices(prev => prev.filter(s => s.id !== id));
 
         try {
-            const { error } = await supabase
-                .from('services')
-                .delete()
-                .eq('id', id);
-
-            if (error) {
-                console.error("Supabase Delete Failed (services):", error);
-                setServices(previousServices);
-                throw new Error(`Failed to delete service: ${error.message}`);
-            }
+            await dynamoGenericApi.delete(id, idToken);
         } catch (err) {
             console.error("Delete Service Exception:", err);
             setServices(previousServices);
             throw err;
         }
-    }, [services]);
+    }, [services, idToken]);
 
     const updateClientServicePrice = useCallback(async (clientId, serviceId, price) => {
+        if (!idToken) throw new Error("User not authenticated");
         try {
-            console.log(`Updating client service price: client=${clientId}, service=${serviceId}, price=${price}`);
-            const { data, error } = await supabase
-                .from('client_service_prices')
-                .upsert({
-                    client_id: clientId,
-                    service_id: serviceId,
-                    price: price,
-                    updated_at: new Date().toISOString()
-                })
-                .select();
-
-            if (error) {
-                console.error("Supabase Upsert Error (client_service_prices):", error);
-                throw error;
-            }
-            if (data) {
-                setClientServicePrices(prev => {
-                    const filtered = prev.filter(p => !(p.client_id === clientId && p.service_id === serviceId));
-                    return [...filtered, data[0]];
-                });
-            }
+            const priceId = `csp_${clientId}_${serviceId}`;
+            const payload = {
+                id: priceId,
+                client_id: clientId,
+                service_id: serviceId,
+                price: price
+            };
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.CLIENT_SERVICE_PRICE, payload, idToken);
+            setClientServicePrices(prev => {
+                const filtered = prev.filter(p => p.id !== priceId);
+                return [...filtered, savedItem];
+            });
         } catch (err) {
             console.error("Exception in updateClientServicePrice:", err);
             throw err;
         }
-    }, []);
+    }, [idToken]);
 
     const deleteClientServicePrice = useCallback(async (clientId, serviceId) => {
+        if (!idToken) throw new Error("User not authenticated");
         try {
-            const { error } = await supabase
-                .from('client_service_prices')
-                .delete()
-                .eq('client_id', clientId)
-                .eq('service_id', serviceId);
-
-            if (error) throw error;
-            setClientServicePrices(prev => prev.filter(p => !(p.client_id === clientId && p.service_id === serviceId)));
+            const priceId = `csp_${clientId}_${serviceId}`;
+            await dynamoGenericApi.delete(priceId, idToken);
+            setClientServicePrices(prev => prev.filter(p => p.id !== priceId));
         } catch (err) {
             console.error("Error deleting client service price:", err);
             throw err;
         }
-    }, []);
+    }, [idToken]);
 
     const contextValue = useMemo(() => ({
         services,

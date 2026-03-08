@@ -1,89 +1,74 @@
 
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
+import { useAuth } from '@/contexts/AuthContext';
+import { DB_TYPES } from '@/config';
 
 const UnitTypesContext = createContext();
 
 const UnitTypesProvider = ({ children }) => {
+    const { idToken, isAuthenticated, loading: authLoading } = useAuth();
     const [unitTypes, setUnitTypes] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const fetchUnitTypes = useCallback(async () => {
+        if (!idToken) return;
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('service_unit_types')
-                .select('*')
-                .order('id', { ascending: true });
-
-            if (error) {
-                console.error("Error fetching unit types:", error.message);
-                return;
-            }
-
+            const data = await dynamoGenericApi.listByType(DB_TYPES.SERVICE_UNIT_TYPE, idToken);
             if (data) {
                 setUnitTypes(data);
             }
         } catch (error) {
-            console.error("Error loading unit types:", error);
+            console.error("Error loading unit types from DynamoDB:", error);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [idToken]);
 
     const addUnitType = useCallback(async (unitType) => {
+        if (!idToken) throw new Error("User not authenticated");
         try {
-            const { data, error } = await supabase
-                .from('service_unit_types')
-                .insert([{ unit_type: unitType }])
-                .select();
-
-            if (error) throw error;
-            if (data) {
-                setUnitTypes(prev => [...prev, data[0]]);
-            }
+            const payload = { unit_type: unitType };
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.SERVICE_UNIT_TYPE, payload, idToken);
+            setUnitTypes(prev => [...prev.filter(u => u.id !== savedItem.id), savedItem]);
         } catch (error) {
-            console.error("Error adding unit type:", error);
+            console.error("Error adding unit type to DynamoDB:", error);
             throw error;
         }
-    }, []);
+    }, [idToken]);
 
     const updateUnitType = useCallback(async (id, unitType) => {
+        if (!idToken) throw new Error("User not authenticated");
         try {
-            const { data, error } = await supabase
-                .from('service_unit_types')
-                .update({ unit_type: unitType })
-                .eq('id', id)
-                .select();
-
-            if (error) throw error;
-            if (data) {
-                setUnitTypes(prev => prev.map(u => u.id === id ? data[0] : u));
-            }
+            const payload = { id, unit_type: unitType };
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.SERVICE_UNIT_TYPE, payload, idToken);
+            setUnitTypes(prev => prev.map(u => u.id === id ? savedItem : u));
         } catch (error) {
-            console.error("Error updating unit type:", error);
+            console.error("Error updating unit type in DynamoDB:", error);
             throw error;
         }
-    }, []);
+    }, [idToken]);
 
     const deleteUnitType = useCallback(async (id) => {
+        if (!idToken) throw new Error("User not authenticated");
         try {
-            const { error } = await supabase
-                .from('service_unit_types')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
+            await dynamoGenericApi.delete(id, idToken);
             setUnitTypes(prev => prev.filter(u => u.id !== id));
         } catch (error) {
-            console.error("Error deleting unit type:", error);
+            console.error("Error deleting unit type from DynamoDB:", error);
             throw error;
         }
-    }, []);
+    }, [idToken]);
 
     useEffect(() => {
-        fetchUnitTypes();
-    }, [fetchUnitTypes]);
+        if (!authLoading && isAuthenticated) {
+            fetchUnitTypes();
+        } else if (!authLoading && !isAuthenticated) {
+            setUnitTypes([]);
+            setLoading(false);
+        }
+    }, [fetchUnitTypes, authLoading, isAuthenticated]);
 
     const contextValue = useMemo(() => ({
         unitTypes,

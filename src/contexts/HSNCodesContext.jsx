@@ -1,89 +1,72 @@
 
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
+import { useAuth } from '@/contexts/AuthContext';
+import { DB_TYPES } from '@/config';
 
 const HSNCodesContext = createContext();
 
 const HSNCodesProvider = ({ children }) => {
+    const { idToken, isAuthenticated, loading: authLoading } = useAuth();
     const [hsnCodes, setHsnCodes] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const fetchHsnCodes = useCallback(async () => {
+        if (!idToken) return;
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('hsn_sac_codes')
-                .select('*')
-                .order('code', { ascending: true });
-
-            if (error) {
-                console.error("Error fetching HSN codes:", error.message);
-                return;
-            }
-
+            const data = await dynamoGenericApi.listByType(DB_TYPES.HSN_SAC_CODE, idToken);
             if (data) {
-                setHsnCodes(data);
+                setHsnCodes(data.sort((a, b) => (a.code || '').localeCompare(b.code || '')));
             }
         } catch (error) {
-            console.error("Error loading HSN codes:", error);
+            console.error("Error loading HSN codes from DynamoDB:", error);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [idToken]);
 
     const addHsnCode = useCallback(async (hsnData) => {
+        if (!idToken) throw new Error("User not authenticated");
         try {
-            const { data, error } = await supabase
-                .from('hsn_sac_codes')
-                .insert([hsnData])
-                .select();
-
-            if (error) throw error;
-            if (data) {
-                setHsnCodes(prev => [...prev, data[0]].sort((a, b) => a.code.localeCompare(b.code)));
-            }
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.HSN_SAC_CODE, hsnData, idToken);
+            setHsnCodes(prev => [...prev.filter(h => h.id !== savedItem.id), savedItem].sort((a, b) => (a.code || '').localeCompare(b.code || '')));
         } catch (error) {
             console.error("Error adding HSN code:", error);
             throw error;
         }
-    }, []);
+    }, [idToken]);
 
     const updateHsnCode = useCallback(async (id, hsnData) => {
+        if (!idToken) throw new Error("User not authenticated");
         try {
-            const { data, error } = await supabase
-                .from('hsn_sac_codes')
-                .update(hsnData)
-                .eq('id', id)
-                .select();
-
-            if (error) throw error;
-            if (data) {
-                setHsnCodes(prev => prev.map(h => h.id === id ? data[0] : h).sort((a, b) => a.code.localeCompare(b.code)));
-            }
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.HSN_SAC_CODE, { ...hsnData, id }, idToken);
+            setHsnCodes(prev => prev.map(h => h.id === id ? savedItem : h).sort((a, b) => (a.code || '').localeCompare(b.code || '')));
         } catch (error) {
             console.error("Error updating HSN code:", error);
             throw error;
         }
-    }, []);
+    }, [idToken]);
 
     const deleteHsnCode = useCallback(async (id) => {
+        if (!idToken) throw new Error("User not authenticated");
         try {
-            const { error } = await supabase
-                .from('hsn_sac_codes')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
+            await dynamoGenericApi.delete(id, idToken);
             setHsnCodes(prev => prev.filter(h => h.id !== id));
         } catch (error) {
             console.error("Error deleting HSN code:", error);
             throw error;
         }
-    }, []);
+    }, [idToken]);
 
     useEffect(() => {
-        fetchHsnCodes();
-    }, [fetchHsnCodes]);
+        if (!authLoading && isAuthenticated) {
+            fetchHsnCodes();
+        } else if (!authLoading && !isAuthenticated) {
+            setHsnCodes([]);
+            setLoading(false);
+        }
+    }, [fetchHsnCodes, authLoading, isAuthenticated]);
 
     const contextValue = useMemo(() => ({
         hsnCodes,

@@ -160,8 +160,7 @@ create table public.material_inward_register (
   client_id text not null references public.clients(id) on delete cascade,
   status varchar(30) not null default 'RECEIVED' check (status in (
     'RECEIVED',
-    'UIN_GENERATED',
-    'SENT_TO_DEPARTMENT',
+    'SENT_TO_TESTING_DEPARTMENT',
     'UNDER_TESTING',
     'TEST_COMPLETED',
     'REPORT_GENERATED',

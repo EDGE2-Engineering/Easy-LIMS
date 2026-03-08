@@ -1,79 +1,114 @@
 
 import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth as useOidcAuth } from "react-oidc-context";
+import { cognitoAuth } from '@/lib/cognitoAuth';
 import { sendTelegramNotification } from '@/lib/notifier';
+import { cognitoConfig } from '@/config';
+import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
+import { DB_TYPES } from '@/config';
 
 
 const AuthContext = createContext();
 
 
 const AuthProvider = ({ children }) => {
+    const auth = useOidcAuth();
     const [user, setUser] = useState(null);
-    const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+    const hasSynced = React.useRef(false); // Ref to prevent multiple syncs per login
 
     const notifyLogin = useCallback(async (username, fullName) => {
         const message = `🔔 *Login Alert*\n\nUser: \`${fullName}\` (@${username})`;
         await sendTelegramNotification(message);
     }, []);
 
-    useEffect(() => {
-        // Check for existing session in localStorage
-        const storedUser = localStorage.getItem('app_session');
-        if (storedUser) {
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (e) {
-                console.error("Failed to parse stored user", e);
-                localStorage.removeItem('app_session');
-            }
-        }
-        setLoading(false);
-    }, []);
-
-    const login = useCallback(async (username, password) => {
+    const syncUserToDb = useCallback(async (userData, token) => {
+        // console.log('AuthContext: Syncing user to database:', { userData, token });
+        console.log('AuthContext: User data:', { userData });
         try {
-            const { data, error } = await supabase
-                .from('users')
-                .select('*')
-                .eq('username', username)
-                .eq('password', password)
-                .eq('is_active', true)
-                .single();
-
-            if (error || !data) {
-                throw new Error("Invalid username or password");
-            }
-
-            const sessionUser = {
-                id: data.id,
-                username: data.username,
-                fullName: data.full_name,
-                department: data.department,
-                role: data.role
-            };
-
-            setUser(sessionUser);
-            localStorage.setItem('app_session', JSON.stringify(sessionUser));
-
-            // Send login notification
-            notifyLogin(sessionUser.username, sessionUser.fullName);
-
-            return sessionUser;
-        } catch (err) {
-            console.error("Login error:", err.message);
-            throw err;
+            await dynamoGenericApi.save(DB_TYPES.USER, {
+                id: userData.id,
+                username: userData.username,
+                full_name: userData.full_name,
+                fullName: userData.full_name,
+                name: userData.full_name,
+                email: userData.email,
+                role: userData.role,
+                is_active: true,
+                skipCheck: true // Avoid redundant getById
+            }, token);
+        } catch (error) {
+            console.error('Failed to sync user to database:', error);
         }
-    }, [notifyLogin]);
-
-    const logout = useCallback(() => {
-        setUser(null);
-        localStorage.removeItem('app_session');
     }, []);
 
-    const isSuperAdmin = useCallback(() => user?.role === 'super_admin', [user?.role]);
-    const isAdmin = useCallback(() => user?.role === 'admin' || user?.role === 'super_admin', [user?.role]);
-    const isStandard = useCallback(() => user?.role === 'standard', [user?.role]);
+    // Sync OIDC auth state to our internal user state
+    useEffect(() => {
+        // Skip syncing if we just logged out to prevent auto-login loop
+        if (localStorage.getItem('edge2_just_logged_out') === 'true') {
+            setLoading(false);
+            return;
+        }
+
+        if (auth.isAuthenticated && auth.user) {
+            const session = cognitoAuth.getSession(auth);
+            if (session) {
+                // console.log('AuthContext: Session:', { session });
+                // Use a stable identifier (ID) to check if we actually need to update user
+                if (!user || user.id !== session.user.id) {
+                    // Only notify/sync if we haven't synced for THIS specific user ID yet
+                    if (!hasSynced.current || hasSynced.current !== session.user.id) {
+                        notifyLogin(session.user.username, session.user.full_name);
+                        // syncUserToDb(session.user, session.idToken); // Disabled as per user request
+                        hasSynced.current = session.user.id;
+                    }
+
+                    setUser({
+                        ...session.user,
+                        idToken: session.idToken,
+                        accessToken: auth.user.access_token
+                    });
+                }
+            }
+        } else if (!auth.isLoading && !auth.isAuthenticated) {
+            if (user) setUser(null);
+            hasSynced.current = false;
+        }
+
+        // Only update loading if it has actually changed
+        if (loading !== auth.isLoading) {
+            setLoading(auth.isLoading);
+        }
+    }, [auth.isAuthenticated, auth.user, auth.isLoading, user, notifyLogin, loading]);
+
+    const login = useCallback(async () => {
+        await auth.signinRedirect();
+    }, [auth]);
+
+    const logout = useCallback(async () => {
+        setUser(null);
+        await auth.removeUser();
+        localStorage.setItem('edge2_just_logged_out', 'true');
+        window.location.href = cognitoConfig.getLogoutUrl();
+    }, [auth]);
+
+    const isSuperAdmin = useCallback(() => {
+        const role = user?.role?.toLowerCase();
+        return role === 'superadmin' || role === 'super_admin';
+    }, [user?.role]);
+
+    const isAdmin = useCallback(() => {
+        const role = user?.role?.toLowerCase();
+        const result = role === 'admin' || role === 'superadmin' || role === 'super_admin' || role === 'administrator';
+        // console.log(user)
+        // console.log('AuthContext: isAdmin check:', { role, result });
+        return result;
+    }, [user?.role]);
+
+    const isStandard = useCallback(() => {
+        const role = user?.role?.toLowerCase();
+        return role === 'standard' || !role;
+    }, [user?.role]);
 
     const contextValue = useMemo(() => ({
         user,
@@ -82,8 +117,12 @@ const AuthProvider = ({ children }) => {
         logout,
         isSuperAdmin,
         isAdmin,
-        isStandard
-    }), [user, loading, login, logout, isSuperAdmin, isAdmin, isStandard]);
+        isStandard,
+        idToken: user?.idToken, // Expose idToken for DynamoDB APIs
+        accessToken: user?.accessToken, // Expose accessToken for Cognito APIs
+        isAuthenticated: !!user,
+        auth // Expose raw auth object if needed
+    }), [user, loading, login, logout, isSuperAdmin, isAdmin, isStandard, auth]);
 
     return (
         <AuthContext.Provider value={contextValue}>

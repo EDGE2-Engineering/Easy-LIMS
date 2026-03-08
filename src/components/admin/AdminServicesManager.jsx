@@ -236,17 +236,18 @@ const AdminServicesManager = () => {
         return (
             <div className="bg-white p-6 rounded-lg shadow-sm animate-in slide-in-from-right-4 duration-300">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <h2 className="text-xl font-bold">{isAddingNew ? 'Add New Service' : 'Edit Service'}</h2>
+                    <h2 className="text-lg font-bold">{isAddingNew ? 'Add New Service' : 'Edit Service'}</h2>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={() => setEditingService(null)} disabled={isSaving}>
+                        <Button variant="outline" size="sm" onClick={() => setEditingService(null)} disabled={isSaving} className="h-9">
                             Cancel
                         </Button>
                         <Button
                             onClick={handleSave}
-                            className="bg-primary hover:bg-primary-dark flex items-center text-white"
+                            size="sm"
+                            className="bg-primary hover:bg-primary-dark flex items-center text-white h-9"
                             disabled={isSaving}
                         >
-                            <Save className="w-4 h-4 mr-2" />
+                            <Save className="w-3.5 h-3.5 mr-2" />
                             {isSaving ? 'Saving...' : 'Save Changes'}
                         </Button>
                     </div>
@@ -369,7 +370,7 @@ const AdminServicesManager = () => {
                         <ReactSelect
                             isMulti
                             name="tcList"
-                            options={[...new Set(terms.map(t => t.type))].map(type => ({ value: type, label: type }))}
+                            options={[...new Set(terms.map(t => t.term_type))].map(type => ({ value: type, label: type }))}
                             className="basic-multi-select"
                             classNamePrefix="select"
                             placeholder="Select Terms and Conditions..."
@@ -401,7 +402,7 @@ const AdminServicesManager = () => {
                         <ReactSelect
                             isMulti
                             name="techList"
-                            options={[...new Set(technicals.map(t => t.type))].map(type => ({ value: type, label: type }))}
+                            options={[...new Set(technicals.map(t => t.tech_type))].map(type => ({ value: type, label: type }))}
                             className="basic-multi-select"
                             classNamePrefix="select"
                             placeholder="Select Technical Lists..."
@@ -440,7 +441,7 @@ const AdminServicesManager = () => {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
                         placeholder="Search services..."
-                        className="pl-10 w-full h-12 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
+                        className="pl-10 w-full h-9 text-sm bg-gray-50/50 border-gray-200 rounded-lg focus:ring-primary focus:border-primary transition-all shadow-sm"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -450,9 +451,9 @@ const AdminServicesManager = () => {
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex flex-wrap items-center gap-4">
                         <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Filter</span>
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">Filter</span>
                             <Select value={filterUnit} onValueChange={setFilterUnit}>
-                                <SelectTrigger className="w-32 h-10 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
+                                <SelectTrigger className="w-32 h-9 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
                                     <SelectValue placeholder="Units" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -464,9 +465,9 @@ const AdminServicesManager = () => {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Sort</span>
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">Sort</span>
                             <Select value={sortField} onValueChange={setSortField}>
-                                <SelectTrigger className="w-32 h-10 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
+                                <SelectTrigger className="w-32 h-9 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -478,7 +479,7 @@ const AdminServicesManager = () => {
                             <Button
                                 variant="outline"
                                 size="icon"
-                                className="h-10 w-10 border-gray-200 bg-gray-50/50 rounded-lg"
+                                className="h-9 w-9 border-gray-200 bg-gray-50/50 rounded-lg"
                                 onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
                                 title={`Order: ${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
                             >
@@ -491,7 +492,7 @@ const AdminServicesManager = () => {
                             size="sm"
                             onClick={resetAll}
                             disabled={!searchTerm && sortField === 'name' && sortOrder === 'asc' && filterUnit === 'all'}
-                            className="text-gray-400 hover:text-red-500 h-10 text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2"
+                            className="text-gray-400 hover:text-red-500 h-9 text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2"
                         >
                             Reset
                         </Button>
@@ -527,7 +528,8 @@ const AdminServicesManager = () => {
 
                             <Button
                                 onClick={handleAddNew}
-                                className="bg-primary hover:bg-primary-dark text-white h-10 px-4 rounded-xl shadow-sm text-xs font-semibold"
+                                size="sm"
+                                className="bg-primary hover:bg-primary-dark text-white h-9 px-4 rounded-lg shadow-sm text-xs font-semibold"
                             >
                                 <Plus className="w-4 h-4 mr-2" /> Add Service
                             </Button>
@@ -565,8 +567,8 @@ const AdminServicesManager = () => {
                 <table className="w-full">
                     <thead className="bg-gray-50 border-b">
                         <tr>
-                            <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Service Type</th>
-                            <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600">Actions</th>
+                            <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Service Type</th>
+                            <th className="text-right py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Actions</th>
                         </tr>
                     </thead>
                     <tbody>

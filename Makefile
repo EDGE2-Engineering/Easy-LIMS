@@ -53,3 +53,24 @@ preview:
 stop:
 	@echo "Stopping servers on port 3000..."
 	@lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "No process found on port 3000"
+
+
+# Initialize Terraform
+tf-init:
+	terraform -chdir=infrastructure init
+
+# Show execution plan
+tf-plan: tf-init
+	terraform -chdir=infrastructure plan
+
+# Apply changes
+deploy: tf-init
+	terraform -chdir=infrastructure apply -auto-approve
+
+# Destroy resources
+destroy: tf-init
+	terraform -chdir=infrastructure destroy -auto-approve
+
+# Validate syntax
+tf-validate: tf-init
+	terraform -chdir=infrastructure validate

@@ -1,30 +1,14 @@
+
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
+import { useAuth } from '@/contexts/AuthContext';
+import { DB_TYPES } from '@/config';
 
 const ClientsContext = createContext();
 
-const initialClients = [
-    {
-        id: 'C1',
-        clientName: 'Indus Towers Ltd.',
-        clientAddress: 'No.12, Subramanya Arcade, \'D\' Block, 7th Floor, Bannerghatta Road, Bengaluru.',
-        contacts: [{ contact_person: '', contact_email: 'indus@email.com', contact_phone: '123', is_primary: true }]
-    },
-    {
-        id: 'C2',
-        clientName: 'Reliance Jio Infocomm Ltd.',
-        clientAddress: 'Bengaluru, Karnataka',
-        contacts: [{ contact_person: '', contact_email: 'jio@email.com', contact_phone: '456', is_primary: true }]
-    },
-    {
-        id: 'C3',
-        clientName: 'ATC Telecom Infrastructure Pvt. Ltd.',
-        clientAddress: 'HM Tower, 1st Floor, Magrath Road Junction, Brigade Road, Ashok Nagar, Bengaluru - 560001, Karnataka, INDIA',
-        contacts: [{ contact_person: '', contact_email: 'atc@email.com', contact_phone: '789', is_primary: true }]
-    }
-];
 
 const ClientsProvider = ({ children }) => {
+    const { idToken, isAuthenticated, loading: authLoading } = useAuth();
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -65,74 +49,41 @@ const ClientsProvider = ({ children }) => {
     }), []);
 
     const fetchClients = useCallback(async () => {
-        try {
-            const { data, error } = await supabase
-                .from('clients')
-                .select('*')
-                .order('created_at', { ascending: true });
+        if (!idToken) {
+            setLoading(false);
+            return;
+        }
 
-            if (error) {
-                console.warn("Supabase fetch error (clients):", error.message);
-                const stored = localStorage.getItem('clients');
-                if (stored) {
-                    try {
-                        const parsed = JSON.parse(stored);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                            setClients(parsed.map(mapFromDb));
-                            return;
-                        }
-                    } catch (e) { }
-                }
-                if (clients.length === 0) setClients(initialClients.map(mapFromDb));
-                return;
-            }
+        try {
+            const data = await dynamoGenericApi.listByType(DB_TYPES.CLIENT, idToken);
 
             if (data && data.length > 0) {
                 const mappedData = data.map(mapFromDb);
                 setClients(mappedData);
             } else {
-                const stored = localStorage.getItem('clients');
-                if (stored) {
-                    try {
-                        const parsed = JSON.parse(stored);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                            setClients(parsed.map(mapFromDb));
-                            return;
-                        }
-                    } catch (e) { }
-                }
-                setClients(initialClients.map(mapFromDb));
+                setClients([]);
             }
         } catch (error) {
-            console.error("Error loading clients:", error);
-            if (clients.length === 0) setClients(initialClients.map(mapFromDb));
+            console.error("Error loading clients from DynamoDB:", error);
+            if (clients.length === 0) setClients([]);
         } finally {
             setLoading(false);
         }
-    }, [mapFromDb]);
+    }, [mapFromDb, idToken]);
 
     useEffect(() => {
-        fetchClients();
-        const handleStorageChange = () => {
-            const stored = localStorage.getItem('clients');
-            if (stored) {
-                try {
-                    const parsed = JSON.parse(stored);
-                    if (Array.isArray(parsed)) setClients(parsed.map(mapFromDb));
-                } catch (e) { }
-            }
-        };
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
-    }, [fetchClients]);
-
-    useEffect(() => {
-        if (clients.length > 0) {
-            localStorage.setItem('clients', JSON.stringify(clients));
+        if (!authLoading && isAuthenticated) {
+            fetchClients();
+        } else if (!authLoading && !isAuthenticated) {
+            setClients([]);
+            setLoading(false);
         }
-    }, [clients]);
+    }, [fetchClients, authLoading, isAuthenticated]);
+
 
     const updateClient = useCallback(async (updatedClient) => {
+        if (!idToken) throw new Error("User not authenticated");
+
         // Check for duplicate client names
         if (updatedClient.clientName) {
             const existingWithName = clients.find(
@@ -148,33 +99,19 @@ const ClientsProvider = ({ children }) => {
 
         try {
             const dbPayload = mapToDb(updatedClient);
-            const { id, ...updates } = dbPayload;
-            updates.updated_at = new Date().toISOString();
-
-            const { error, data } = await supabase
-                .from('clients')
-                .update(updates)
-                .eq('id', id)
-                .select();
-
-            if (error) {
-                console.error("Supabase Update Failed (clients):", error);
-                setClients(previousClients);
-                throw new Error(`Failed to update client: ${error.message}`);
-            }
-
-            if (data && data.length > 0) {
-                const updated = mapFromDb(data[0]);
-                setClients(prev => prev.map(c => c.id === updated.id ? updated : c));
-            }
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.CLIENT, dbPayload, idToken);
+            const updated = mapFromDb(savedItem);
+            setClients(prev => prev.map(c => c.id === updated.id ? updated : c));
         } catch (err) {
             console.error("Update Client Exception:", err);
             setClients(previousClients);
             throw err;
         }
-    }, [clients, mapToDb, mapFromDb]);
+    }, [clients, idToken, mapToDb, mapFromDb]);
 
     const addClient = useCallback(async (newClient) => {
+        if (!idToken) throw new Error("User not authenticated");
+
         // Check for duplicate client names
         if (newClient.clientName) {
             const existingWithName = clients.find(
@@ -193,52 +130,30 @@ const ClientsProvider = ({ children }) => {
 
         try {
             const dbPayload = mapToDb(clientWithId);
-            dbPayload.created_at = new Date().toISOString();
-            dbPayload.updated_at = new Date().toISOString();
-
-            const { error, data } = await supabase
-                .from('clients')
-                .insert(dbPayload)
-                .select();
-
-            if (error) {
-                console.error("Supabase Add Failed (clients):", error);
-                setClients(previousClients);
-                throw new Error(`Failed to add client: ${error.message}`);
-            }
-
-            if (data && data.length > 0) {
-                const added = mapFromDb(data[0]);
-                setClients(prev => prev.map(c => c.id === tempId ? added : c));
-            }
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.CLIENT, dbPayload, idToken);
+            const added = mapFromDb(savedItem);
+            setClients(prev => prev.map(c => c.id === tempId ? added : c));
         } catch (err) {
             console.error("Add Client Exception:", err);
             setClients(previousClients);
             throw err;
         }
-    }, [clients, mapToDb, mapFromDb]);
+    }, [clients, idToken, mapToDb, mapFromDb]);
 
     const deleteClient = useCallback(async (id) => {
+        if (!idToken) throw new Error("User not authenticated");
+
         const previousClients = [...clients];
         setClients(prev => prev.filter(c => c.id !== id));
 
         try {
-            const { error } = await supabase
-                .from('clients')
-                .delete()
-                .eq('id', id);
-
-            if (error) {
-                console.error("Supabase Delete Failed (clients):", error);
-                setClients(previousClients);
-                throw new Error(`Failed to delete client: ${error.message}`);
-            }
+            await dynamoGenericApi.delete(id, idToken);
         } catch (err) {
             console.error("Delete Client Exception:", err);
             setClients(previousClients);
             throw err;
         }
-    }, [clients]);
+    }, [clients, idToken]);
 
     const contextValue = useMemo(() => ({
         clients,

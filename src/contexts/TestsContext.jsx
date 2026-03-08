@@ -1,11 +1,13 @@
 
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
-import { initialTests } from '@/data/tests';
+import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
+import { useAuth } from '@/contexts/AuthContext';
+import { DB_TYPES } from '@/config';
 
 const TestsContext = createContext();
 
 const TestsProvider = ({ children }) => {
+    const { idToken, isAuthenticated, loading: authLoading } = useAuth();
     const [tests, setTests] = useState([]);
     const [clientTestPrices, setClientTestPrices] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -42,175 +44,116 @@ const TestsProvider = ({ children }) => {
     }), []);
 
     const fetchTests = useCallback(async () => {
+        if (!idToken) return;
         try {
-            const { data, error } = await supabase
-                .from('tests')
-                .select('*')
-                .order('created_at', { ascending: true });
-
-            if (error) {
-                console.warn("Supabase fetch error (tests):", error.message);
-                const stored = localStorage.getItem('tests');
-                if (stored) {
-                    try {
-                        const parsed = JSON.parse(stored);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                            setTests(parsed);
-                            return;
-                        }
-                    } catch (e) { }
-                }
-                if (tests.length === 0) setTests(initialTests);
-                return;
-            }
+            const data = await dynamoGenericApi.listByType(DB_TYPES.TEST, idToken);
 
             if (data && data.length > 0) {
                 const mappedData = data.map(mapFromDb);
                 setTests(mappedData);
             } else {
-                const stored = localStorage.getItem('tests');
-                if (stored) {
-                    try {
-                        const parsed = JSON.parse(stored);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                            setTests(parsed);
-                            return;
-                        }
-                    } catch (e) { }
-                }
-                setTests(initialTests);
+                setTests([]);
             }
         } catch (error) {
-            console.error("Error loading tests:", error);
-            if (tests.length === 0) setTests(initialTests);
+            console.error("Error loading tests from DynamoDB:", error);
+            if (tests.length === 0) setTests([]);
         } finally {
             setLoading(false);
         }
-    }, [mapFromDb]);
+    }, [mapFromDb, idToken]);
 
     const fetchClientTestPrices = useCallback(async () => {
+        if (!idToken) return;
         try {
-            const { data, error } = await supabase
-                .from('client_test_prices')
-                .select('*');
-
-            if (error) {
-                console.warn("Supabase fetch error (client_test_prices):", error.message);
-                return;
-            }
-
+            const data = await dynamoGenericApi.listByType(DB_TYPES.CLIENT_TEST_PRICE, idToken);
             if (data) {
                 setClientTestPrices(data);
             }
         } catch (error) {
-            console.error("Error loading client test prices:", error);
+            console.error("Error loading client test prices from DynamoDB:", error);
         }
-    }, []);
+    }, [idToken]);
 
     useEffect(() => {
-        fetchTests();
-        fetchClientTestPrices();
-        const handleStorageChange = () => {
-            const stored = localStorage.getItem('tests');
-            if (stored) {
-                try {
-                    const parsed = JSON.parse(stored);
-                    if (Array.isArray(parsed)) setTests(parsed);
-                } catch (e) { }
-            }
-        };
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
-    }, [fetchTests, fetchClientTestPrices]);
-
-    useEffect(() => {
-        if (tests.length > 0) {
-            localStorage.setItem('tests', JSON.stringify(tests));
+        if (!authLoading && isAuthenticated) {
+            fetchTests();
+            fetchClientTestPrices();
+        } else if (!authLoading && !isAuthenticated) {
+            setTests([]);
+            setClientTestPrices([]);
+            setLoading(false);
         }
-    }, [tests]);
+    }, [fetchTests, fetchClientTestPrices, authLoading, isAuthenticated]);
+
 
     const updateTest = useCallback(async (updatedTest) => {
-
+        if (!idToken) throw new Error("User not authenticated");
         setTests(prev => prev.map(t => t.id === updatedTest.id ? updatedTest : t));
         try {
             const dbPayload = mapToDb(updatedTest);
-            const { id, ...updates } = dbPayload;
-            const { error } = await supabase.from('tests').update(updates).eq('id', id);
-            if (error) console.warn("Supabase Update Failed (tests):", error.message);
+            await dynamoGenericApi.save(DB_TYPES.TEST, dbPayload, idToken);
         } catch (err) {
             console.warn("Update Test Exception:", err);
             throw err;
         }
-    }, [mapToDb]);
+    }, [mapToDb, idToken]);
 
     const addTest = useCallback(async (newTest) => {
-
+        if (!idToken) throw new Error("User not authenticated");
         const tempId = newTest.id || `tst_${Date.now()}`;
         const testWithId = { ...newTest, id: tempId, created_at: new Date().toISOString() };
         setTests(prev => [...prev, testWithId]);
         try {
-            const { error } = await supabase.from('tests').insert(mapToDb(testWithId));
-            if (error) console.warn("Supabase Add Failed (tests):", error.message);
+            const dbPayload = mapToDb(testWithId);
+            await dynamoGenericApi.save(DB_TYPES.TEST, dbPayload, idToken);
         } catch (err) {
             console.warn("Add Test Exception:", err);
             throw err;
         }
-    }, [mapToDb]);
+    }, [mapToDb, idToken]);
 
     const deleteTest = useCallback(async (id) => {
+        if (!idToken) throw new Error("User not authenticated");
         setTests(prev => prev.filter(t => t.id !== id));
         try {
-            const { error } = await supabase.from('tests').delete().eq('id', id);
-            if (error) console.warn("Supabase Delete Failed (tests):", error.message);
+            await dynamoGenericApi.delete(id, idToken);
         } catch (err) {
             console.warn("Delete Test Exception:", err);
         }
-    }, []);
+    }, [idToken]);
 
     const updateClientTestPrice = useCallback(async (clientId, testId, price) => {
+        if (!idToken) throw new Error("User not authenticated");
         try {
-            console.log(`Updating client test price: client=${clientId}, test=${testId}, price=${price}`);
-            const { data, error } = await supabase
-                .from('client_test_prices')
-                .upsert({
-                    client_id: clientId,
-                    test_id: testId,
-                    price: price,
-                    updated_at: new Date().toISOString()
-                })
-                .select();
-
-            if (error) {
-                console.error("Supabase Upsert Error (client_test_prices):", error);
-                throw error;
-            }
-            if (data) {
-                setClientTestPrices(prev => {
-                    const filtered = prev.filter(p => !(p.client_id === clientId && p.test_id === testId));
-                    return [...filtered, data[0]];
-                });
-            }
+            const priceId = `ctp_${clientId}_${testId}`;
+            const payload = {
+                id: priceId,
+                client_id: clientId,
+                test_id: testId,
+                price: price
+            };
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.CLIENT_TEST_PRICE, payload, idToken);
+            setClientTestPrices(prev => {
+                const filtered = prev.filter(p => p.id !== priceId);
+                return [...filtered, savedItem];
+            });
         } catch (err) {
             console.error("Exception in updateClientTestPrice:", err);
             throw err;
         }
-    }, []);
+    }, [idToken]);
 
     const deleteClientTestPrice = useCallback(async (clientId, testId) => {
+        if (!idToken) throw new Error("User not authenticated");
         try {
-            const { error } = await supabase
-                .from('client_test_prices')
-                .delete()
-                .eq('client_id', clientId)
-                .eq('test_id', testId);
-
-            if (error) throw error;
-            setClientTestPrices(prev => prev.filter(p => !(p.client_id === clientId && p.test_id === testId)));
+            const priceId = `ctp_${clientId}_${testId}`;
+            await dynamoGenericApi.delete(priceId, idToken);
+            setClientTestPrices(prev => prev.filter(p => p.id !== priceId));
         } catch (err) {
             console.error("Error deleting client test price:", err);
             throw err;
         }
-    }, []);
+    }, [idToken]);
 
     const contextValue = useMemo(() => ({
         tests,

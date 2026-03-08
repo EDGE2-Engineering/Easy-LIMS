@@ -1,84 +1,76 @@
+
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import { DB_TYPES } from '@/config';
 
 const TermsAndConditionsContext = createContext();
 
-
 const TermsAndConditionsProvider = ({ children }) => {
+    const { idToken, isAuthenticated, loading: authLoading } = useAuth();
     const [terms, setTerms] = useState([]);
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
 
     const fetchTerms = useCallback(async () => {
+        if (!idToken) return;
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('terms_and_conditions')
-                .select('*')
-                .order('id', { ascending: true });
-
-            if (error) throw error;
+            const data = await dynamoGenericApi.listByType(DB_TYPES.TERM_AND_CONDITION, idToken);
             setTerms(data || []);
         } catch (error) {
-            console.error('Error fetching terms:', error);
-            // toast({ title: "Error", description: "Failed to fetch terms and conditions.", variant: "destructive" });
+            console.error('Error fetching terms from DynamoDB:', error);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [idToken]);
 
-    const addTerm = useCallback(async (text, type = 'general') => {
+    const addTerm = useCallback(async (text, term_type = 'general') => {
+        if (!idToken) throw new Error("User not authenticated");
         try {
-            const { data, error } = await supabase
-                .from('terms_and_conditions')
-                .insert([{ text, type }])
-                .select();
-
-            if (error) throw error;
-            setTerms(prev => [...prev, ...data]);
-            return data;
+            const payload = { text, term_type };
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.TERM_AND_CONDITION, payload, idToken);
+            setTerms(prev => [...prev.filter(t => t.id !== savedItem.id), savedItem]);
+            return [savedItem];
         } catch (error) {
-            console.error('Error adding term:', error);
+            console.error('Error adding term to DynamoDB:', error);
             throw error;
         }
-    }, []);
+    }, [idToken]);
 
-    const updateTerm = useCallback(async (id, text, type) => {
+    const updateTerm = useCallback(async (id, text, term_type) => {
+        if (!idToken) throw new Error("User not authenticated");
         try {
-            const { data, error } = await supabase
-                .from('terms_and_conditions')
-                .update({ text, type, updated_at: new Date() })
-                .eq('id', id)
-                .select();
-
-            if (error) throw error;
-            setTerms(prev => prev.map(term => term.id === id ? data[0] : term));
-            return data;
+            const payload = { id, text, term_type };
+            const savedItem = await dynamoGenericApi.save(DB_TYPES.TERM_AND_CONDITION, payload, idToken);
+            setTerms(prev => prev.map(term => term.id === id ? savedItem : term));
+            return [savedItem];
         } catch (error) {
-            console.error('Error updating term:', error);
+            console.error('Error updating term in DynamoDB:', error);
             throw error;
         }
-    }, []);
+    }, [idToken]);
 
     const deleteTerm = useCallback(async (id) => {
+        if (!idToken) throw new Error("User not authenticated");
         try {
-            const { error } = await supabase
-                .from('terms_and_conditions')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
+            await dynamoGenericApi.delete(id, idToken);
             setTerms(prev => prev.filter(term => term.id !== id));
         } catch (error) {
-            console.error('Error deleting term:', error);
+            console.error('Error deleting term from DynamoDB:', error);
             throw error;
         }
-    }, []);
+    }, [idToken]);
 
     useEffect(() => {
-        fetchTerms();
-    }, [fetchTerms]);
+        if (!authLoading && isAuthenticated) {
+            fetchTerms();
+        } else if (!authLoading && !isAuthenticated) {
+            setTerms([]);
+            setLoading(false);
+        }
+    }, [fetchTerms, authLoading, isAuthenticated]);
 
     const contextValue = useMemo(() => ({
         terms,

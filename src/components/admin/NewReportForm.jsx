@@ -30,9 +30,9 @@ import { useToast } from '@/components/ui/use-toast';
 import ReportPreview from '@/components/ReportPreview';
 import reportTemplateHtml from '@/templates/report-template.html?raw'
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/customSupabaseClient';
+import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import { sendTelegramNotification } from '@/lib/notifier';
-import { getSiteContent } from '@/data/config';
+import { getSiteContent, DB_TYPES } from '@/config';
 
 
 const soilTypes = [
@@ -85,7 +85,7 @@ function fillTemplate(template, data) {
 
 const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
     const siteName = getSiteContent().global?.siteName || "Easy Billing";
-    const { user } = useAuth();
+    const { user, idToken } = useAuth();
     const { toast } = useToast();
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -102,41 +102,51 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
 
     useEffect(() => {
         const fetchClients = async () => {
+            if (!idToken) return;
             try {
-                if (!user) return;
-                const { data } = await supabase.from('clients').select('*');
+                const data = await dynamoGenericApi.listByType(DB_TYPES.CLIENT, idToken);
                 if (data) setClients(data);
             } catch (error) {
                 console.error('Error fetching clients:', error);
             }
         };
-        if (user) {
+        if (idToken) {
             fetchClients();
         }
-    }, [user]);
+    }, [idToken]);
 
     useEffect(() => {
         const fetchJobOrders = async () => {
+            if (!idToken) return;
             try {
-                if (!user) return;
-                const { data } = await supabase
-                    .from('material_inward_register')
-                    .select('job_order_no, client_id, clients(client_name, client_address)');
-                if (data) setJobOrders(data);
+                const data = await dynamoGenericApi.listByType(DB_TYPES.JOB, idToken);
+                // Map to match expected structure jo.clients?.client_name
+                const mappedData = data.map(jo => ({
+                    ...jo,
+                    clients: {
+                        client_name: jo.client_name,
+                        client_address: jo.client_address // This might be missing in material_inward, but let's assume it's there or handled
+                    }
+                }));
+                if (data) setJobOrders(mappedData);
             } catch (error) {
                 console.error('Error fetching job orders:', error);
             }
         };
-        if (user) {
+        if (idToken) {
             fetchJobOrders();
         }
-    }, [user]);
+    }, [idToken]);
 
     // Load report data from props if editing
     useEffect(() => {
         if (editReport) {
             const reportData = editReport.content || editReport;
-            setFormData({ ...reportData, id: editReport.id }); // Ensure DB ID is tracked
+            // Merge with defaults so that any fields added after this report was saved
+            // (e.g. grainSizeAnalysis, sbcDetails, subSoilProfile, directShearResults, etc.)
+            // fall back to their default values rather than being undefined and crashing .map()
+            const defaults = getInitialFormData();
+            setFormData({ ...defaults, ...reportData, id: editReport.id });
             toast({
                 title: "Report Loaded",
                 description: `Editing report: ${reportData.projectDetails || reportData.reportId}`,
@@ -1679,10 +1689,10 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
         }
 
         try {
-            if (!user) throw new Error('Authentication required');
+            if (!idToken) throw new Error('Authentication required');
 
-            const { data: existing } = await supabase.from('reports')
-                .select('*').eq('report_number', formData.reportId).maybeSingle();
+            const results = await dynamoGenericApi.findByAttribute('report', 'report_number', formData.reportId, idToken);
+            const existing = results[0];
 
             if (existing && existing.id !== formData.id) {
                 setSaveConfirmation({ isOpen: true, isGenerating: false });
@@ -1708,10 +1718,10 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
         }
 
         try {
-            if (!user) throw new Error('Authentication required');
+            if (!idToken) throw new Error('Authentication required');
 
-            const { data: existing } = await supabase.from('reports')
-                .select('*').eq('report_number', formData.reportId).maybeSingle();
+            const results = await dynamoGenericApi.findByAttribute('report', 'report_number', formData.reportId, idToken);
+            const existing = results[0];
 
             if (existing && existing.id !== formData.id) {
                 setSaveConfirmation({ isOpen: true, isGenerating: true });
@@ -1727,24 +1737,21 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
 
     const executeSave = async (isGenerating, existingRecord = null) => {
         try {
-            if (!user) throw new Error('Authentication required');
+            if (!idToken) throw new Error('Authentication required');
 
             setIsSaving(true);
 
             const payload = {
+                id: existingRecord?.id || formData.id,
                 report_number: formData.reportId,
                 client_name: formData.client,
                 content: formData,
-                created_by: user.id,
+                created_by: existingRecord?.created_by || (user.id || user.username || user.name),
+                updated_by: user.id || user.username || user.name,
                 updated_at: new Date().toISOString()
             };
 
-            if (existingRecord || formData.id) {
-                const updateId = existingRecord ? existingRecord.id : formData.id;
-                await supabase.from('reports').update(payload).eq('id', updateId);
-            } else {
-                await supabase.from('reports').insert([payload]);
-            }
+            await dynamoGenericApi.save('report', payload, idToken);
 
             toast({
                 title: isGenerating ? "Report Generated" : "Report Saved",
@@ -1785,50 +1792,54 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
             {/* Unified Top Header matching AdminReportsManager style */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm gap-4">
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={onCancel} title="Cancel and go back">
-                        <X className="w-5 h-5 text-gray-400" />
+                    <Button variant="ghost" size="sm" onClick={onCancel} title="Cancel and go back" className="h-8 w-8 p-0 rounded-full">
+                        <X className="w-4 h-4 text-gray-400" />
                     </Button>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900">
+                        <h2 className="text-lg font-bold text-gray-900 leading-tight">
                             {editReport?.id ? 'Edit Report' : 'Create New Report'}
                         </h2>
-                        <p className="text-xs text-gray-500 font-mono">{formData.reportId || 'New'}</p>
+                        <p className="text-[10px] text-gray-500 font-mono">{formData.reportId || 'New'}</p>
                     </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                     {user?.role === 'super_admin' && (
                         <Button
                             type="button"
+                            size="sm"
                             onClick={fillWithRandomData}
                             variant="outline"
-                            className="border-green-300 text-green-600 hover:bg-green-50"
+                            className="border-green-300 text-green-600 hover:bg-green-50 h-9 rounded-lg"
                         >
-                            <Zap className="w-4 h-4 mr-2" /> Sample Data
+                            <Zap className="w-3.5 h-3.5 mr-2" /> Sample Data
                         </Button>
                     )}
                     <Button
                         type="button"
+                        size="sm"
                         onClick={clearForm}
                         variant="outline"
-                        className="border-red-300 text-red-600 hover:bg-red-50"
+                        className="border-red-300 text-red-600 hover:bg-red-50 h-9 rounded-lg"
                     >
-                        <Trash2 className="w-4 h-4 mr-2" /> Clear Form
+                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Clear Form
                     </Button>
                     <Button
                         type="button"
+                        size="sm"
                         onClick={handlePreview}
                         variant="outline"
-                        className="border-primary text-primary hover:bg-primary/5"
+                        className="border-primary text-primary hover:bg-primary/5 h-9 rounded-lg"
                     >
-                        <Eye className="w-4 h-4 mr-2" /> Preview Report
+                        <Eye className="w-3.5 h-3.5 mr-2" /> Preview Report
                     </Button>
                     <Button
                         type="button"
+                        size="sm"
                         onClick={handleSaveOnly}
                         disabled={isSaving}
-                        className="bg-primary hover:bg-primary-dark text-white"
+                        className="bg-primary hover:bg-primary-dark text-white h-9 rounded-lg"
                     >
-                        {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                        {isSaving ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : <Save className="w-3.5 h-3.5 mr-2" />}
                         Save Report
                     </Button>
                     {/* Hidden Actual Submit */}

@@ -1,72 +1,50 @@
 /**
- * Document type code mapping and ID generation utility.
- *
- * Format: EESIPL/{YYYY}/{MM}/{CODE}/{NNN}
- *   - YYYY  = current 4-digit year
- *   - MM    = current 2-digit month (01–12)
- *   - CODE  = 2-letter document type code
- *   - NNN   = 3-digit sequential number (zero-padded)
+ * Document numbering utility
  */
 
-const DOC_TYPE_CODES = {
-    'Quotation': 'QN',
-    'Tax Invoice': 'TI',
-    'Proforma Invoice': 'PI',
-    'Purchase Order': 'PO',
-    'Delivery Challan': 'DC',
-};
-
-/**
- * Build a document ID string from its parts.
- */
-const buildDocID = (code, yyyy, mm, seq) =>
-    `EESIPL/${yyyy}/${mm}/${code}/${String(seq).padStart(3, '0')}`;
-
-/**
- * Query the database for the highest existing sequence number
- * for the given document type in the current year/month,
- * then return the next sequential document ID.
- *
- * @param {object} supabaseClient – Supabase client instance
- * @param {string} docType – e.g. 'Quotation', 'Tax Invoice', etc.
- * @returns {Promise<string>} e.g. "EESIPL/2026/02/QN/003"
- */
-export const getNextDocNumber = async (supabaseClient, docType) => {
-    const code = DOC_TYPE_CODES[docType] || 'QN';
-    const now = new Date();
-    const yyyy = String(now.getFullYear());
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-
-    // Prefix that all doc numbers for this type + month share
-    const prefix = `EESIPL/${yyyy}/${mm}/${code}/`;
-
+export const getNextDocNumber = async (api, type, idToken) => {
     try {
-        // Fetch all matching records for this type + year/month, sorted desc
-        const { data, error } = await supabaseClient
-            .from('accounts')
-            .select('quote_number')
-            .eq('document_type', docType)
-            .like('quote_number', `${prefix}%`)
-            .order('quote_number', { ascending: false })
-            .limit(1);
-
-        if (error) throw error;
-
-        let nextSeq = 1;
-
-        if (data && data.length > 0) {
-            const lastNumber = data[0].quote_number; // e.g. "EESIPL/2026/02/QN/005"
-            const parts = lastNumber.split('/');
-            const lastSeq = parseInt(parts[parts.length - 1], 10);
-            if (!isNaN(lastSeq)) {
-                nextSeq = lastSeq + 1;
-            }
+        const records = await api.listByType('job', idToken);
+        if (!records || records.length === 0) {
+            return generateFirstNumber(type);
         }
 
-        return buildDocID(code, yyyy, mm, nextSeq);
-    } catch (err) {
-        console.error('Error fetching next doc number:', err);
-        // Fallback: return sequence 001 if DB query fails
-        return buildDocID(code, yyyy, mm, 1);
+        // Filter by document type if stored in a field, OR just prefix match
+        const prefix = getPrefix(type);
+
+        // Some records might have the number in `quote_number` or inside `quotation.quotation_no`
+        const numbers = records
+            .map(r => {
+                const numStr = r.job_order_no || r.quote_number || (r.quotation && r.quotation.quotation_no) || '';
+                if (numStr.startsWith(prefix)) {
+                    const num = parseInt(numStr.replace(prefix, ''));
+                    return isNaN(num) ? 0 : num;
+                }
+                return 0;
+            })
+            .filter(n => n > 0);
+
+        const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
+        const nextNum = (maxNum + 1).toString().padStart(4, '0');
+
+        return `${prefix}${nextNum}`;
+    } catch (error) {
+        console.error("Error getting next doc number:", error);
+        return `${getPrefix(type)}${Date.now()}`; // Fallback
     }
+};
+
+const getPrefix = (type) => {
+    switch (type) {
+        case 'Tax Invoice': return 'INV-';
+        case 'Quotation': return 'QT-';
+        case 'Proforma Invoice': return 'PI-';
+        case 'Purchase Order': return 'PO-';
+        case 'Delivery Challan': return 'DC-';
+        default: return 'DOC-';
+    }
+};
+
+const generateFirstNumber = (type) => {
+    return `${getPrefix(type)}0001`;
 };

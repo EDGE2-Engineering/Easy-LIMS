@@ -1,4 +1,4 @@
-import { TG_NOTIFIER_CONFIG } from '@/data/config';
+import { TG_NOTIFIER_CONFIG } from '@/config';
 
 export const sendTelegramNotification = async (message) => {
     const { BOT_TOKEN, CHAT_ID } = TG_NOTIFIER_CONFIG;

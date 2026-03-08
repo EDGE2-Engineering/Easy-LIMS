@@ -68,22 +68,23 @@ const AdminSettingsManager = () => {
         <div className="space-y-6 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h2 className="text-xl font-bold hidden">Tax and Bank Details</h2>
-                    <p className="text-gray-500 text-sm mt-1 hidden">Configure tax rates and bank details for invoices.</p>
+                    <h2 className="text-lg font-bold">Tax and Bank Details</h2>
+                    <p className="text-gray-500 text-xs mt-1">Configure tax rates and bank details for invoices.</p>
                 </div>
                 <Button
                     onClick={handleSave}
-                    className="bg-primary hover:bg-primary-dark flex items-center text-white"
+                    size="sm"
+                    className="bg-primary hover:bg-primary-dark flex items-center text-white h-9"
                     disabled={isSaving}
                 >
-                    <Save className="w-4 h-4 mr-2" />
+                    <Save className="w-3.5 h-3.5 mr-2" />
                     {isSaving ? 'Saving...' : 'Save Settings'}
                 </Button>
             </div>
 
             {/* Tax Configuration Section */}
             <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Tax Configuration</h3>
+                <h3 className="text-md font-semibold text-gray-700">Tax Configuration</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl">
                     <div className="space-y-2">
                         <Label>CGST (%)</Label>
@@ -124,7 +125,7 @@ const AdminSettingsManager = () => {
 
             {/* Bank Details Section */}
             <div className="space-y-4 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold">Bank Details</h3>
+                <h3 className="text-md font-semibold text-gray-700">Bank Details</h3>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label>Bank Name</Label>
@@ -191,7 +192,7 @@ const AdminSettingsManager = () => {
 
             {/* Payment Terms Section */}
             <div className="space-y-4 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold">Payment Terms</h3>
+                <h3 className="text-md font-semibold text-gray-700">Payment Terms</h3>
                 <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-2">
                         <Label className="hidden">Payment Terms</Label>

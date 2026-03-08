@@ -1,6 +1,8 @@
 import { createHashRouter, RouterProvider, Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
+import { AuthProvider as OidcProvider } from 'react-oidc-context';
+import { cognitoConfig } from '@/config';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import { ServicesProvider } from '@/contexts/ServicesContext';
@@ -85,41 +87,43 @@ const router = createHashRouter([
 function App() {
   return (
     <HelmetProvider>
-      <DeviceRestriction>
-        <AuthProvider>
-          <ServicesProvider>
-            <TestsProvider>
-              <ClientsProvider>
-                <SettingsProvider>
-                  <UnitTypesProvider>
-                    <HSNCodesProvider>
-                      <TermsAndConditionsProvider>
-                        <TechnicalsProvider>
-                          <Helmet>
-                            <link rel="preconnect" href="https://fonts.googleapis.com" />
-                            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-                            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-                          </Helmet>
-                          <div className="min-h-screen bg-[#F5F1ED]">
-                            <RouterProvider
-                              router={router}
-                              future={{
-                                v7_startTransition: true,
-                                v7_relativeSplatPath: true,
-                              }}
-                            />
-                            <Toaster />
-                          </div>
-                        </TechnicalsProvider>
-                      </TermsAndConditionsProvider>
-                    </HSNCodesProvider>
-                  </UnitTypesProvider>
-                </SettingsProvider>
-              </ClientsProvider>
-            </TestsProvider>
-          </ServicesProvider>
-        </AuthProvider>
-      </DeviceRestriction>
+      <OidcProvider {...cognitoConfig.oidc}>
+        <DeviceRestriction>
+          <AuthProvider>
+            <ServicesProvider>
+              <TestsProvider>
+                <ClientsProvider>
+                  <SettingsProvider>
+                    <UnitTypesProvider>
+                      <HSNCodesProvider>
+                        <TermsAndConditionsProvider>
+                          <TechnicalsProvider>
+                            <Helmet>
+                              <link rel="preconnect" href="https://fonts.googleapis.com" />
+                              <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+                              <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+                            </Helmet>
+                            <div className="min-h-screen bg-[#F5F1ED]">
+                              <RouterProvider
+                                router={router}
+                                future={{
+                                  v7_startTransition: true,
+                                  v7_relativeSplatPath: true,
+                                }}
+                              />
+                              <Toaster />
+                            </div>
+                          </TechnicalsProvider>
+                        </TermsAndConditionsProvider>
+                      </HSNCodesProvider>
+                    </UnitTypesProvider>
+                  </SettingsProvider>
+                </ClientsProvider>
+              </TestsProvider>
+            </ServicesProvider>
+          </AuthProvider>
+        </DeviceRestriction>
+      </OidcProvider>
     </HelmetProvider >
   );
 }

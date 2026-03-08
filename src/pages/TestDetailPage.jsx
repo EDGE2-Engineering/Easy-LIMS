@@ -8,7 +8,7 @@ import { Helmet } from 'react-helmet-async';
 import { useTests } from '@/contexts/TestsContext';
 import Rupee from '../components/Rupee';
 import { useAuth } from '@/contexts/AuthContext';
-import { getSiteContent } from '@/data/config';
+import { getSiteContent } from '@/config';
 
 
 const TestDetailPage = () => {

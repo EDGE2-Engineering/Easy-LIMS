@@ -1,5 +1,8 @@
+
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
+import { useAuth } from '@/contexts/AuthContext';
+import { DB_TYPES } from '@/config';
 
 const SettingsContext = createContext();
 
@@ -12,6 +15,7 @@ const useSettings = () => {
 };
 
 const SettingsProvider = ({ children }) => {
+    const { idToken, isAuthenticated, loading: authLoading } = useAuth();
     const [settings, setSettings] = useState({
         tax_cgst: 9,
         tax_sgst: 9
@@ -19,61 +23,51 @@ const SettingsProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     const fetchSettings = useCallback(async () => {
+        if (!idToken) return;
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('app_settings')
-                .select('*');
-
-            if (error) {
-                console.warn("Supabase Fetch Failed (settings), using defaults:", error);
-                return;
-            }
-
+            const data = await dynamoGenericApi.listByType(DB_TYPES.APP_SETTING, idToken);
             if (data && data.length > 0) {
                 const newSettings = {};
                 data.forEach(item => {
-                    // Try to parse numbers, otherwise keep as string
                     const numVal = Number(item.setting_value);
                     newSettings[item.setting_key] = isNaN(numVal) ? item.setting_value : numVal;
                 });
                 setSettings(prev => ({ ...prev, ...newSettings }));
             }
         } catch (err) {
-            console.error("Fetch Settings Exception:", err);
+            console.error("Fetch Settings Exception from DynamoDB:", err);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [idToken]);
 
     const updateSetting = useCallback(async (key, value) => {
-        // Optimistic update
+        if (!idToken) throw new Error("User not authenticated");
         setSettings(prev => ({ ...prev, [key]: value }));
 
         try {
-            const { error } = await supabase
-                .from('app_settings')
-                .upsert({
-                    setting_key: key,
-                    setting_value: String(value),
-                    updated_at: new Date().toISOString()
-                });
-
-            if (error) {
-                console.error(`Failed to update setting ${key}:`, error);
-                // Re-fetch to revert if needed, or implement proper revert logic
-                await fetchSettings();
-                throw error;
-            }
+            const payload = {
+                id: `setting_${key}`,
+                setting_key: key,
+                setting_value: String(value)
+            };
+            await dynamoGenericApi.save(DB_TYPES.APP_SETTING, payload, idToken);
         } catch (err) {
-            console.error("Update Setting Exception:", err);
+            console.error("Update Setting Exception in DynamoDB:", err);
+            await fetchSettings();
             throw err;
         }
-    }, [fetchSettings]);
+    }, [idToken, fetchSettings]);
 
     useEffect(() => {
-        fetchSettings();
-    }, [fetchSettings]);
+        if (!authLoading && isAuthenticated) {
+            fetchSettings();
+        } else if (!authLoading && !isAuthenticated) {
+            setSettings({ tax_cgst: 9, tax_sgst: 9 });
+            setLoading(false);
+        }
+    }, [fetchSettings, authLoading, isAuthenticated]);
 
     const contextValue = useMemo(() => ({
         settings,

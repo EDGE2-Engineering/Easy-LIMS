@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { UserCog, Lock, Save, Loader2, ShieldCheck, Eye, EyeOff, Database, Download, Upload, AlertTriangle } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
-import { getSiteContent } from '@/data/config';
+import { CognitoIdentityProviderClient, ChangePasswordCommand } from "@aws-sdk/client-cognito-identity-provider";
+import { cognitoConfig } from '@/config';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSiteContent } from '@/config';
 
 const PasswordField = ({ id, label, value, onChange, show, setShow, placeholder, icon: Icon, required = false }) => (
     <div className="space-y-2">
@@ -36,6 +38,7 @@ const PasswordField = ({ id, label, value, onChange, show, setShow, placeholder,
 );
 
 const AdminSettings = () => {
+    const { user, accessToken, isFetchingUser } = useAuth();
     const [currentUsername, setCurrentUsername] = useState('');
     const [currentUserEmail, setCurrentUserEmail] = useState('');
     const [formData, setFormData] = useState({
@@ -49,22 +52,15 @@ const AdminSettings = () => {
     const [showConfirmPass, setShowConfirmPass] = useState(false);
 
     const [isLoading, setIsLoading] = useState(false);
-    const [isFetchingUser, setIsFetchingUser] = useState(true);
     const fileImportRef = useRef(null);
     const { toast } = useToast();
 
     useEffect(() => {
-        const fetchUser = async () => {
-            setIsFetchingUser(true);
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                setCurrentUsername(user.email);
-                setCurrentUserEmail(user.email);
-            }
-            setIsFetchingUser(false);
-        };
-        fetchUser();
-    }, []);
+        if (user) {
+            setCurrentUsername(user.username || user.email);
+            setCurrentUserEmail(user.email);
+        }
+    }, [user]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -81,36 +77,33 @@ const AdminSettings = () => {
             return;
         }
 
+        if (!accessToken) {
+            toast({ title: "Error", description: "Session expired. Please log in again.", variant: "destructive" });
+            setIsLoading(false);
+            return;
+        }
+
         try {
-            // Verify current password by attempting a sign-in
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-                email: currentUserEmail,
-                password: formData.currentPassword
+            const client = new CognitoIdentityProviderClient({ region: cognitoConfig.region });
+
+            const command = new ChangePasswordCommand({
+                PreviousPassword: formData.currentPassword,
+                ProposedPassword: formData.newPassword,
+                AccessToken: accessToken
             });
 
-            if (signInError) {
-                toast({ title: "Authentication Failed", description: "Incorrect current password.", variant: "destructive" });
-                setIsLoading(false);
-                return;
-            }
+            await client.send(command);
 
-            // Update password if new password is provided
-            if (formData.newPassword) {
-                const { error: updateError } = await supabase.auth.updateUser({
-                    password: formData.newPassword
-                });
-
-                if (updateError) throw updateError;
-
-                toast({ title: "Success", description: "Password updated successfully." });
-                setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-            } else {
-                toast({ title: "Info", description: "No changes to save." });
-            }
+            toast({ title: "Success", description: "Password updated successfully." });
+            setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
         } catch (error) {
-            console.error(error);
-            toast({ title: "Error", description: error.message || "Something went wrong.", variant: "destructive" });
+            console.error('Cognito change password error:', error);
+            toast({
+                title: "Error",
+                description: error.message || "Failed to update password. Check your current password.",
+                variant: "destructive"
+            });
         } finally {
             setIsLoading(false);
         }

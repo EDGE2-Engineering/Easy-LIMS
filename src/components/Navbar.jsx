@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database } from 'lucide-react';
-import { getSiteContent } from '@/data/config';
+import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, LayoutDashboard } from 'lucide-react';
+import { getSiteContent } from '@/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 
@@ -43,10 +43,11 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
   };
 
   const navItems = [
-    { path: '/settings/inward_register', label: 'Inward', icon: Package, roles: ['admin', 'standard'] },
+    { path: '/settings/material-inward', label: 'Inward', icon: Package, roles: ['admin', 'standard'] },
     { path: '/settings/reports', label: 'Reports', icon: FileText, roles: ['admin', 'standard'] },
     { path: '/settings/accounts', label: 'Accounts', icon: Database, roles: ['admin', 'standard'] },
-    { path: '/settings/clients', label: 'Settings', icon: Settings, roles: ['admin'] }
+    { path: '/settings/jobs', label: 'Jobs', icon: LayoutDashboard, roles: ['admin', 'standard'] },
+    { path: '/settings/clients', label: 'Settings', icon: Settings, roles: ['admin', 'standard'] }
   ].filter(item => {
     if (!item.roles) return true;
     if (item.roles.includes('admin') && isAdmin()) return true;
@@ -57,9 +58,10 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
   const isActive = (path) => {
     if (path === '/settings/clients') { // Changed from /settings/services to /settings/clients
       // Highlight settings only for explicitly settings tabs, not for Inward/Reports/Accounts
-      const isManagementTab = location.pathname.includes('/inward_register') ||
+      const isManagementTab = location.pathname.includes('/material-inward') ||
         location.pathname.includes('/reports') ||
-        location.pathname.includes('/accounts');
+        location.pathname.includes('/accounts') ||
+        location.pathname.includes('/jobs');
 
       return (location.pathname.startsWith('/settings') && !isManagementTab) ||
         location.pathname.startsWith('/service/') ||
@@ -111,7 +113,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
               <div className="flex items-center gap-4">
                 <div className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center">
                   <User className="w-3.5 h-3.5 mr-1.5" />
-                  {user?.fullName || user?.username || 'Admin'}
+                  {user?.name || user?.username || 'Admin'}
                 </div>
                 <Button
                   variant="ghost"
@@ -170,7 +172,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                   <div className="flex items-center space-x-3 py-3 px-4 rounded-lg bg-blue-50 text-blue-700 mb-2">
                     <User className="w-5 h-5" />
                     <span className="font-medium text-sm">
-                      Logged in as {user?.fullName || user?.username || 'Admin'}
+                      Logged in as {user?.name || user?.username || 'Admin'}
                     </span>
                   </div>
                   <button

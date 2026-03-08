@@ -5,7 +5,6 @@ import {
     Search, Trash2, ExternalLink, FileText, Loader2, Plus, Save, ChevronLeft,
     MapPin, ClipboardList, TestTube, FileCheck, Mountain, HardHat, MessageSquare, Info
 } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,7 +23,9 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import NewReportForm from './NewReportForm';
+import { DB_TYPES } from '@/config';
 
 const AdminReportsManager = () => {
     const [reports, setReports] = useState([]);
@@ -33,18 +34,26 @@ const AdminReportsManager = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editingReport, setEditingReport] = useState(null);
     const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, reportId: null, reportNumber: '' });
+    const [appUsers, setAppUsers] = useState([]);
     const { toast } = useToast();
-    const { user } = useAuth();
+    const { user, idToken } = useAuth();
+
+    const fetchUsers = async () => {
+        if (!idToken) return;
+        try {
+            const data = await dynamoGenericApi.listByType(DB_TYPES.USER, idToken);
+            setAppUsers(data || []);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+        }
+    };
 
     const fetchReports = async () => {
+        if (!idToken) return;
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('reports')
-                .select('*, users(full_name)')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
+            const data = await dynamoGenericApi.listByType(DB_TYPES.JOB, idToken);
+            // Filter only jobs that have report data or are ready for reports
             setReports(data || []);
         } catch (error) {
             console.error('Error fetching reports:', error);
@@ -55,8 +64,13 @@ const AdminReportsManager = () => {
     };
 
     useEffect(() => {
-        fetchReports();
-    }, []);
+        if (idToken) {
+            fetchReports();
+            fetchUsers();
+        }
+    }, [idToken]);
+
+    // ... handle functions ...
 
     const handleCreateNew = () => {
         setEditingReport(null);
@@ -77,13 +91,9 @@ const AdminReportsManager = () => {
     };
 
     const confirmDelete = async () => {
+        if (!idToken) return;
         try {
-            const { error } = await supabase
-                .from('reports')
-                .delete()
-                .eq('id', deleteConfirmation.reportId);
-
-            if (error) throw error;
+            await dynamoGenericApi.delete(deleteConfirmation.reportId, idToken);
             toast({ title: "Record Deleted", variant: "destructive" });
 
             // Telegram Notification
@@ -131,12 +141,12 @@ const AdminReportsManager = () => {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
                         placeholder="Search reports..."
-                        className="pl-10"
+                        className="pl-10 h-9"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <Button onClick={handleCreateNew} className="bg-primary hover:bg-primary-dark text-white">
+                <Button onClick={handleCreateNew} size="sm" className="bg-primary hover:bg-primary-dark text-white h-9 rounded-lg">
                     <Plus className="w-4 h-4 mr-2" /> Create Report
                 </Button>
             </div>
@@ -145,11 +155,11 @@ const AdminReportsManager = () => {
                 <table className="w-full">
                     <thead className="bg-gray-50/50 border-b">
                         <tr>
-                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Report #</th>
-                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Client</th>
-                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Created By</th>
-                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Date</th>
-                            <th className="text-right py-4 px-6 font-semibold text-sm text-gray-600">Actions</th>
+                            <th className="text-left py-4 px-6 font-bold text-xs uppercase tracking-wider text-gray-500">Report #</th>
+                            <th className="text-left py-4 px-6 font-bold text-xs uppercase tracking-wider text-gray-500">Client</th>
+                            <th className="text-left py-4 px-6 font-bold text-xs uppercase tracking-wider text-gray-500">Created By</th>
+                            <th className="text-left py-4 px-6 font-bold text-xs uppercase tracking-wider text-gray-500">Date</th>
+                            <th className="text-right py-4 px-6 font-bold text-xs uppercase tracking-wider text-gray-500">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -170,12 +180,17 @@ const AdminReportsManager = () => {
                             filteredReports.map((report) => (
                                 <tr key={report.id} className="hover:bg-gray-50/80 transition-colors">
                                     <td className="py-4 px-6">
-                                        <span className="font-mono font-semibold text-gray-900">{report.report_number}</span>
+                                        <span className="font-mono font-semibold text-gray-900">{report.report?.reportId || report.report_number || report.job_order_no}</span>
                                     </td>
-                                    <td className="py-4 px-6 text-sm text-gray-700">{report.client_name || '-'}</td>
-                                    <td className="py-4 px-6 text-sm text-gray-700">{report.users?.full_name || '-'}</td>
+                                    <td className="py-4 px-6 text-sm text-gray-700">{report.client_name || report.report?.client || '-'}</td>
+                                    <td className="py-4 px-6 text-sm text-gray-700">
+                                        {(() => {
+                                            const u = appUsers.find(u => u.id === report.created_by || u.sub === report.created_by || u.username === report.created_by || u.email === report.created_by);
+                                            return u ? (u.full_name || u.fullName || u.name) : (report.created_by || '-');
+                                        })()}
+                                    </td>
                                     <td className="py-4 px-6 text-sm text-gray-500">
-                                        {format(new Date(report.created_at), 'dd MMM yyyy')}
+                                        {format(new Date(report.created_at || report.updated_at), 'dd MMM yyyy')}
                                     </td>
                                     <td className="py-3 px-2 text-right space-x-0">
                                         <Button variant="ghost" className="px-2" size="icon" title="Edit Report" onClick={() => handleEdit(report)}>

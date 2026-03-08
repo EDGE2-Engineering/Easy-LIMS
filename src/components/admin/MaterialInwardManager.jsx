@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, Trash2, Edit, ExternalLink, FileText, Loader2, AlertCircle, ArrowUpDown, SortAsc, SortDesc, Calendar, Package, Plus, X, Save, ArrowLeft } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,11 +26,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import { Textarea } from '@/components/ui/textarea';
+import { DB_TYPES, WORKFLOW_STATUS_OPTIONS } from '@/config';
+import MaterialInwardForm from './MaterialInwardForm';
 
 const MaterialInwardManager = () => {
     const [records, setRecords] = useState([]);
-    const [clients, setClients] = useState([]);
+    const [clientsList, setClientsList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [fromDate, setFromDate] = useState('');
@@ -46,40 +48,28 @@ const MaterialInwardManager = () => {
     const [appUsers, setAppUsers] = useState([]);
     const { toast } = useToast();
     const navigate = useNavigate();
-    const { user, isStandard } = useAuth();
+    const { user, isStandard, idToken } = useAuth();
 
     // Management State (Consistent with AdminServicesManager)
     const [editingRecord, setEditingRecord] = useState(null);
     const [isAddingNew, setIsAddingNew] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    const statusOptions = [
-        'RECEIVED', 'UIN_GENERATED', 'SENT_TO_DEPARTMENT', 'UNDER_TESTING',
-        'TEST_COMPLETED', 'REPORT_GENERATED', 'UNDER_REVIEW', 'SIGNED',
-        'PAYMENT_PENDING', 'PAYMENT_RECEIVED', 'REPORT_RELEASED', 'COMPLETED'
-    ];
 
     const fetchClients = async () => {
+        if (!idToken) return;
         try {
-            const { data, error } = await supabase
-                .from('clients')
-                .select('id, client_name')
-                .order('client_name');
-            if (error) throw error;
-            setClients(data || []);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.CLIENT, idToken);
+            setClientsList(data || []);
         } catch (error) {
             console.error('Error fetching clients:', error);
         }
     };
 
     const fetchUsers = async () => {
+        if (!idToken) return;
         try {
-            const { data, error } = await supabase
-                .from('users')
-                .select('id, full_name')
-                .eq('is_active', true)
-                .order('full_name');
-            if (error) throw error;
+            const data = await dynamoGenericApi.listByType(DB_TYPES.USER, idToken);
             setAppUsers(data || []);
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -87,25 +77,24 @@ const MaterialInwardManager = () => {
     };
 
     const fetchRecords = async () => {
+        if (!idToken) return;
         setLoading(true);
         try {
-            let query = supabase
-                .from('material_inward_register')
-                .select(`
-          *,
-          clients(client_name),
-          users!material_inward_register_created_by_fkey(full_name),
-          material_samples(received_date)
-        `);
+            const data = await dynamoGenericApi.listByType(DB_TYPES.JOB, idToken);
 
+            let filteredData = (data || []).map(item => ({
+                ...item,
+                ...item.material_inward // Flatten material_inward data for the table/UI
+            }));
             if (isStandard()) {
-                query = query.eq('created_by', user.id);
+                filteredData = filteredData.filter(r =>
+                    r.created_by === user.id ||
+                    r.created_by === user.username ||
+                    r.created_by === user.name
+                );
             }
 
-            const { data, error } = await query.order('created_at', { ascending: false });
-
-            if (error) throw error;
-            setRecords(data || []);
+            setRecords(filteredData);
         } catch (error) {
             console.error('Error fetching material inward records:', error);
             toast({
@@ -119,10 +108,12 @@ const MaterialInwardManager = () => {
     };
 
     useEffect(() => {
-        fetchRecords();
-        fetchClients();
-        fetchUsers();
-    }, []);
+        if (idToken) {
+            fetchRecords();
+            fetchClients();
+            fetchUsers();
+        }
+    }, [idToken]);
 
     const handleAddNew = () => {
         setEditingRecord({
@@ -136,7 +127,7 @@ const MaterialInwardManager = () => {
                     quantity: '',
                     received_date: format(new Date(), 'yyyy-MM-dd'),
                     received_time: format(new Date(), 'HH:mm'),
-                    received_by: user.id,
+                    received_by: user.id || user.username,
                     expected_test_days: 7
                 }
             ]
@@ -145,53 +136,15 @@ const MaterialInwardManager = () => {
     };
 
     const handleEdit = async (record) => {
-        setLoading(true);
-        try {
-            const { data: samples, error } = await supabase
-                .from('material_samples')
-                .select('*')
-                .eq('inward_id', record.id);
-
-            if (error) throw error;
-
-            setEditingRecord({
-                ...record,
-                samples: samples.map(s => ({
-                    ...s,
-                    received_date: format(new Date(s.received_date), 'yyyy-MM-dd'),
-                    received_by: s.received_by || user.id
-                })) || []
-            });
-            setIsAddingNew(false);
-        } catch (error) {
-            console.error('Error fetching samples:', error);
-            toast({ title: "Error", description: "Failed to load samples for editing.", variant: "destructive" });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleAddSample = () => {
-        setEditingRecord(prev => ({
-            ...prev,
-            samples: [
-                ...prev.samples,
-                {
-                    sample_code: '',
-                    sample_description: '',
-                    quantity: '',
-                    received_date: format(new Date(), 'yyyy-MM-dd'),
-                    received_time: format(new Date(), 'HH:mm'),
-                    received_by: user.id,
-                    expected_test_days: 7
-                }
-            ]
-        }));
-    };
-
-    const handleRemoveSample = (index) => {
-        const updatedSamples = editingRecord.samples.filter((_, i) => i !== index);
-        setEditingRecord(prev => ({ ...prev, samples: updatedSamples }));
+        setEditingRecord({
+            ...record,
+            samples: record.content?.samples?.map(s => ({
+                ...s,
+                received_date: s.received_date ? format(new Date(s.received_date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+                received_by: s.received_by || user.id || user.username
+            })) || []
+        });
+        setIsAddingNew(false);
     };
 
     const handleSampleChange = (index, field, value) => {
@@ -200,78 +153,48 @@ const MaterialInwardManager = () => {
         setEditingRecord(prev => ({ ...prev, samples: updatedSamples }));
     };
 
-    const handleSave = async () => {
-        if (!editingRecord.client_id) {
+    const handleSaveFromForm = async (updatedRecord) => {
+        setEditingRecord(updatedRecord);
+        // We'll call the actual handleSave but we need to pass the updated record or set it first
+        // Since setEditingRecord is async, we'll use a functional update or just pass the data directly
+        await performSave(updatedRecord);
+    };
+
+    const performSave = async (dataToSave) => {
+        if (!dataToSave.client_id) {
             toast({ title: "Error", description: "Please select a client", variant: "destructive" });
             return;
         }
-        if (editingRecord.samples.length === 0) {
+        if (dataToSave.samples.length === 0) {
             toast({ title: "Error", description: "Please add at least one sample", variant: "destructive" });
             return;
         }
 
         setIsSaving(true);
         try {
-            let inwardId = editingRecord.id;
+            const client = clientsList.find(c => c.id === dataToSave.client_id);
+            const clientName = client?.client_name || client?.clientName || 'Unknown Client';
 
-            if (isAddingNew) {
-                // Create Register Entry
-                const { data: inwardData, error: inwardError } = await supabase
-                    .from('material_inward_register')
-                    .insert({
-                        job_order_no: editingRecord.job_order_no || `JO-${Date.now()}`,
-                        po_wo_number: editingRecord.po_wo_number,
-                        client_id: editingRecord.client_id,
-                        created_by: user.id,
-                        status: 'RECEIVED'
-                    })
-                    .select()
-                    .single();
+            const recordData = {
+                id: dataToSave.id || `JOB-${Date.now()}`,
+                job_order_no: dataToSave.job_order_no || `JO-${Date.now()}`,
+                client_name: clientName,
+                client_id: dataToSave.client_id,
+                status: isAddingNew ? 'MATERIAL_RECEIVED' : dataToSave.status,
+                material_inward: {
+                    po_wo_number: dataToSave.po_wo_number,
+                    samples: dataToSave.samples.map(sample => ({
+                        ...sample,
+                        quantity: parseFloat(sample.quantity) || 0,
+                        expected_test_days: parseInt(sample.expected_test_days) || 7
+                    }))
+                },
+                created_by: isAddingNew ? (user.id || user.name || user.username) : dataToSave.created_by,
+                updated_by: user.id || user.name || user.username,
+                updated_at: new Date().toISOString()
+            };
 
-                if (inwardError) throw inwardError;
-                inwardId = inwardData.id;
-            } else {
-                // Update Register Entry
-                const { error: inwardError } = await supabase
-                    .from('material_inward_register')
-                    .update({
-                        job_order_no: editingRecord.job_order_no,
-                        po_wo_number: editingRecord.po_wo_number,
-                        client_id: editingRecord.client_id,
-                        status: editingRecord.status,
-                        updated_by: user.id,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', editingRecord.id);
-
-                if (inwardError) throw inwardError;
-
-                // Delete existing samples to rebuild them (simplest approach for batch sync)
-                const { error: deleteError } = await supabase
-                    .from('material_samples')
-                    .delete()
-                    .eq('inward_id', inwardId);
-
-                if (deleteError) throw deleteError;
-            }
-
-            // Create/Recreate Samples
-            const samplesToInsert = editingRecord.samples.map(sample => ({
-                inward_id: inwardId,
-                sample_code: sample.sample_code,
-                sample_description: sample.sample_description,
-                quantity: parseFloat(sample.quantity) || 0,
-                received_date: sample.received_date,
-                received_time: sample.received_time,
-                received_by: sample.received_by,
-                expected_test_days: parseInt(sample.expected_test_days) || 7
-            }));
-
-            const { error: samplesError } = await supabase
-                .from('material_samples')
-                .insert(samplesToInsert);
-
-            if (samplesError) throw samplesError;
+            await dynamoGenericApi.save(DB_TYPES.JOB, recordData, idToken);
 
             toast({
                 title: "Success",
@@ -279,10 +202,9 @@ const MaterialInwardManager = () => {
             });
 
             // Telegram Notification
-            const clientName = clients.find(c => c.id === editingRecord.client_id)?.client_name || 'Unknown Client';
             const action = isAddingNew ? 'New Entry' : 'Entry Updated';
             const emoji = isAddingNew ? '📥' : '✏️';
-            const message = `${emoji} *Material Inward ${action}*\n\nJob OrderNo: \`${editingRecord.job_order_no || inwardId}\`\nClient: \`${clientName}\`\nSamples: \`${editingRecord.samples.length}\`\nBy: \`${user?.fullName || 'Unknown'}\``;
+            const message = `${emoji} *Material Inward ${action}*\n\nJob Order No: \`${recordData.job_order_no}\`\nClient: \`${clientName}\`\nSamples: \`${recordData.material_inward.samples.length}\`\nBy: \`${user?.full_name || user?.name || 'Unknown'}\``;
             sendTelegramNotification(message);
 
             setEditingRecord(null);
@@ -294,6 +216,10 @@ const MaterialInwardManager = () => {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const handleSave = async () => {
+        await performSave(editingRecord);
     };
 
     const handleDeleteClick = (record) => {
@@ -308,17 +234,12 @@ const MaterialInwardManager = () => {
         if (!deleteConfirmation.recordId) return;
 
         try {
-            const { error } = await supabase
-                .from('material_inward_register')
-                .delete()
-                .eq('id', deleteConfirmation.recordId);
-
-            if (error) throw error;
+            await dynamoGenericApi.delete(deleteConfirmation.recordId, idToken);
 
             toast({ title: "Record Deleted", description: "The inward record has been removed.", variant: "destructive" });
 
             // Telegram Notification
-            const message = `🗑️ *Material Inward Deleted*\n\nJob Order No: \`${deleteConfirmation.jobOrderNo}\`\nBy: \`${user?.fullName || 'Unknown'}\``;
+            const message = `🗑️ *Material Inward Deleted*\n\nJob Order No: \`${deleteConfirmation.jobOrderNo}\`\nBy: \`${user?.full_name || user?.name || 'Unknown'}\``;
             sendTelegramNotification(message);
 
             fetchRecords();
@@ -331,19 +252,19 @@ const MaterialInwardManager = () => {
     };
 
     const uniqueClientsInList = Array.from(new Set(records
-        .map(r => r.clients?.client_name)
+        .map(r => r.client_name)
         .filter(Boolean)))
         .sort();
 
     const filteredRecords = records.filter(r => {
         const matchesSearch = (r.job_order_no?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
             (r.po_wo_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-            (r.clients?.client_name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+            (r.client_name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
         if (!matchesSearch) return false;
 
         if (filterStatus !== 'all' && r.status !== filterStatus) return false;
-        if (filterClient !== 'all' && r.clients?.client_name !== filterClient) return false;
+        if (filterClient !== 'all' && r.client_name !== filterClient) return false;
 
         if (fromDate || toDate) {
             const recordDate = new Date(r.created_at);
@@ -369,16 +290,16 @@ const MaterialInwardManager = () => {
         let valA, valB;
         switch (sortField) {
             case 'client':
-                valA = (a.clients?.client_name || '').toLowerCase();
-                valB = (b.clients?.client_name || '').toLowerCase();
+                valA = (a.client_name || '').toLowerCase();
+                valB = (b.client_name || '').toLowerCase();
                 break;
             case 'status':
                 valA = (a.status || '').toLowerCase();
                 valB = (b.status || '').toLowerCase();
                 break;
             case 'date':
-                valA = new Date(a.created_at).getTime();
-                valB = new Date(b.created_at).getTime();
+                valA = new Date(a.created_at || a.updated_at).getTime();
+                valB = new Date(b.created_at || b.updated_at).getTime();
                 break;
             default:
                 return 0;
@@ -421,182 +342,15 @@ const MaterialInwardManager = () => {
     // --- RENDERING EDIT FORM (Consistent with AdminServicesManager) ---
     if (editingRecord) {
         return (
-            <div className="bg-white p-6 rounded-lg shadow-sm animate-in slide-in-from-right-4 duration-300">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <div className="flex items-center gap-3">
-                        <Button variant="ghost" size="icon" onClick={() => setEditingRecord(null)} className="rounded-full">
-                            <ArrowLeft className="w-5 h-5 text-gray-400" />
-                        </Button>
-                        <h2 className="text-xl font-bold">{isAddingNew ? 'Add New Material Inward Entry' : 'Edit Material Inward Entry'}</h2>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={() => setEditingRecord(null)} disabled={isSaving}>
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleSave}
-                            className="bg-primary hover:bg-primary-dark flex items-center text-white"
-                            disabled={isSaving}
-                        >
-                            <Save className="w-4 h-4 mr-2" />
-                            {isSaving ? 'Saving...' : 'Save Changes'}
-                        </Button>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="po_wo_number">Purchase Order/Work Order Number</Label>
-                        <Input
-                            id="po_wo_number"
-                            placeholder="e.g. PO/2026/001"
-                            value={editingRecord.po_wo_number}
-                            onChange={(e) => setEditingRecord(prev => ({ ...prev, po_wo_number: e.target.value }))}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="client">Client *</Label>
-                        <Select
-                            value={editingRecord.client_id}
-                            onValueChange={(value) => setEditingRecord(prev => ({ ...prev, client_id: value }))}
-                        >
-                            <SelectTrigger id="client">
-                                <SelectValue placeholder="Select a client" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {clients.map(client => (
-                                    <SelectItem key={client.id} value={client.id}>{client.client_name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    {!isAddingNew && (
-                        <div className="space-y-2">
-                            <Label>Status</Label>
-                            <Select
-                                value={editingRecord.status}
-                                onValueChange={(value) => setEditingRecord(prev => ({ ...prev, status: value }))}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {statusOptions.map(opt => <SelectItem key={opt} value={opt}>{opt.replace(/_/g, ' ')}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )}
-                </div>
-
-                <div className="mt-8 space-y-4">
-                    <div className="flex items-center justify-between border-b pb-2">
-                        <h3 className="text-lg font-semibold flex items-center gap-2">
-                            <Package className="w-5 h-5 text-primary" /> Samples
-                        </h3>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={handleAddSample}
-                            className="text-xs h-8"
-                        >
-                            <Plus className="w-4 h-4 mr-1" /> Add Sample
-                        </Button>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                        {editingRecord.samples.map((sample, index) => (
-                            <div key={index} className="p-4 bg-gray-50/50 rounded-xl border border-gray-100 space-y-4 relative group">
-                                {editingRecord.samples.length > 1 && (
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="absolute top-2 right-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        onClick={() => handleRemoveSample(index)}
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </Button>
-                                )}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Sample Code *</Label>
-                                        <Input
-                                            placeholder="e.g. CUBE-01"
-                                            className="h-9 text-sm"
-                                            value={sample.sample_code}
-                                            onChange={(e) => handleSampleChange(index, 'sample_code', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-1 md:col-span-2">
-                                        <Label className="text-xs">Description</Label>
-                                        <Input
-                                            placeholder="e.g. M25 Grade Concrete"
-                                            className="h-9 text-sm"
-                                            value={sample.sample_description}
-                                            onChange={(e) => handleSampleChange(index, 'sample_description', e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Quantity</Label>
-                                        <Input
-                                            type="number"
-                                            placeholder="e.g. 6"
-                                            className="h-9 text-sm"
-                                            value={sample.quantity}
-                                            onChange={(e) => handleSampleChange(index, 'quantity', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Received Date</Label>
-                                        <Input
-                                            type="date"
-                                            className="h-9 text-sm"
-                                            value={sample.received_date}
-                                            onChange={(e) => handleSampleChange(index, 'received_date', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Time</Label>
-                                        <Input
-                                            type="time"
-                                            className="h-9 text-sm"
-                                            value={sample.received_time}
-                                            onChange={(e) => handleSampleChange(index, 'received_time', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Received By</Label>
-                                        <Select
-                                            value={sample.received_by}
-                                            onValueChange={(value) => handleSampleChange(index, 'received_by', value)}
-                                        >
-                                            <SelectTrigger className="h-9 text-sm">
-                                                <SelectValue placeholder="User" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {appUsers.map(u => (
-                                                    <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Test Days</Label>
-                                        <Input
-                                            type="number"
-                                            className="h-9 text-sm"
-                                            value={sample.expected_test_days}
-                                            onChange={(e) => handleSampleChange(index, 'expected_test_days', e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
+            <MaterialInwardForm
+                initialData={editingRecord}
+                clientsList={clientsList}
+                appUsers={appUsers}
+                onSave={handleSaveFromForm}
+                onCancel={() => setEditingRecord(null)}
+                isSaving={isSaving}
+                isAddingNew={isAddingNew}
+            />
         );
     }
 
@@ -609,12 +363,12 @@ const MaterialInwardManager = () => {
                         <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <Input
                             placeholder="Search by Job Order #, PO/WO # or Client..."
-                            className="pl-12 h-12 text-sm bg-gray-50/30 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
+                            className="pl-12 h-10 text-sm bg-gray-50/30 border-gray-200 rounded-lg focus:ring-primary focus:border-primary transition-all shadow-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <div className="flex items-center gap-2 px-6 h-12 bg-primary/5 rounded-xl border border-primary/10 whitespace-nowrap">
+                    <div className="flex items-center gap-2 px-6 h-10 bg-primary/5 rounded-lg border border-primary/10 whitespace-nowrap">
                         <Package className="w-4 h-4 text-primary/60" />
                         <span className="text-sm font-semibold text-gray-700">
                             {sortedRecords.length} <span className="text-gray-400 font-normal">records</span>
@@ -652,7 +406,7 @@ const MaterialInwardManager = () => {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="all">All Statuses</SelectItem>
-                                            {statusOptions.map(opt => <SelectItem key={opt} value={opt}>{opt.replace(/_/g, ' ')}</SelectItem>)}
+                                            {WORKFLOW_STATUS_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt.replace(/_/g, ' ')}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <Select value={filterClient} onValueChange={setFilterClient}>
@@ -698,15 +452,16 @@ const MaterialInwardManager = () => {
                             variant="ghost"
                             size="sm"
                             onClick={resetFilters}
-                            className="text-gray-400 hover:text-red-500 h-10 text-sm font-bold uppercase tracking-widest transition-colors"
+                            className="text-gray-400 hover:text-red-500 h-9 text-xs font-bold uppercase tracking-widest transition-colors"
                         >
                             Reset
                         </Button>
                         <Button
                             onClick={handleAddNew}
-                            className="bg-primary hover:bg-primary-dark text-white h-10 px-4 rounded-xl shadow-sm text-xs font-semibold"
+                            size="sm"
+                            className="bg-primary hover:bg-primary-dark text-white h-9 px-4 rounded-lg shadow-sm text-xs font-semibold"
                         >
-                            <Plus className="w-4 h-4 mr-2" /> New Material Inward Entry
+                            <Plus className="w-4 h-4 mr-2" /> New Material Inward
                         </Button>
                     </div>
                 </div>
@@ -739,14 +494,14 @@ const MaterialInwardManager = () => {
                     <table className="w-full">
                         <thead className="bg-gray-50 border-b">
                             <tr>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Job Order #</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">PO/WO #</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Created Date</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Received Date</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Client</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Status</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Created By</th>
-                                <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600">Actions</th>
+                                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Job Order #</th>
+                                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">PO/WO #</th>
+                                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Created Date</th>
+                                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Received Date</th>
+                                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Client</th>
+                                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Status</th>
+                                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Created By</th>
+                                <th className="text-right py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -764,13 +519,13 @@ const MaterialInwardManager = () => {
                                             {record.po_wo_number || '-'}
                                         </td>
                                         <td className="py-3 px-4 text-sm text-gray-600">
-                                            {format(new Date(record.created_at), 'dd MMM yyyy')}
+                                            {format(new Date(record.created_at || record.updated_at), 'dd MMM yyyy')}
                                         </td>
                                         <td className="py-3 px-4 text-sm text-gray-600">
-                                            {record.material_samples?.[0]?.received_date ? format(new Date(record.material_samples[0].received_date), 'dd MMM yyyy') : '-'}
+                                            {record.content?.samples?.[0]?.received_date ? format(new Date(record.content.samples[0].received_date), 'dd MMM yyyy') : '-'}
                                         </td>
                                         <td className="py-3 px-4 text-sm text-gray-600">
-                                            {record.clients?.client_name || '-'}
+                                            {record.client_name || '-'}
                                         </td>
                                         <td className="py-3 px-4">
                                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800`}>
@@ -778,7 +533,16 @@ const MaterialInwardManager = () => {
                                             </span>
                                         </td>
                                         <td className="py-3 px-4 text-sm text-gray-600">
-                                            {record.users?.full_name || '-'}
+                                            {(() => {
+                                                const u = appUsers.find(u => u.id === record.created_by || u.sub === record.created_by || u.username === record.created_by || u.email === record.created_by);
+                                                if (!u && record.created_by && record.created_by.length > 20) {
+                                                    console.log(`[Diagnostic] User not found for ID: "${record.created_by}". appUsers count: ${appUsers.length}`);
+                                                    if (appUsers.length > 0) {
+                                                        console.log('[Diagnostic] First user in list:', appUsers[0]);
+                                                    }
+                                                }
+                                                return u ? (u.full_name || u.fullName || u.name) : (record.created_by || '-');
+                                            })()}
                                         </td>
                                         <td className="py-3 px-4 text-right">
                                             <div className="flex justify-end space-x-4">

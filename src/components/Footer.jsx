@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ClipboardCheck } from 'lucide-react';
-import { getSiteContent } from '@/data/config';
+import { getSiteContent } from '@/config';
 
 const Footer = () => {
   const content = getSiteContent();

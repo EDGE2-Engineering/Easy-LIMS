@@ -1,7 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
 import { Search, Trash2, ExternalLink, FileText, Loader2, AlertCircle, ArrowUpDown, SortAsc, SortDesc, Calendar, Plus } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -20,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { dynamoGenericApi } from '@/lib/dynamoGenericApi';
 import {
   Select,
   SelectContent,
@@ -27,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DB_TYPES } from '@/config';
 
 const AccountsManager = () => {
   const [accounts, setAccounts] = useState([]);
@@ -37,15 +37,16 @@ const AccountsManager = () => {
   const [filterDocType, setFilterDocType] = useState('all');
   const [filterUser, setFilterUser] = useState('all');
   const [filterClient, setFilterClient] = useState('all');
-  const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, recordId: null, quoteNumber: '' });
+  const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, recordId: null, jobOrderNo: '' });
   const [sortField, setSortField] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [appUsers, setAppUsers] = useState([]);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { settings } = useSettings();
-  const { user, isStandard } = useAuth();
+  const { user, isStandard, idToken } = useAuth();
 
   const taxCGST = settings?.tax_cgst ? Number(settings.tax_cgst) : 9;
   const taxSGST = settings?.tax_sgst ? Number(settings.tax_sgst) : 9;
@@ -69,25 +70,23 @@ const AccountsManager = () => {
   };
 
   const fetchAccounts = async () => {
+    if (!idToken) return;
     setLoading(true);
     try {
-      let query = supabase
-        .from('accounts')
-        .select('*, users(full_name)');
+      const data = await dynamoGenericApi.listByType(DB_TYPES.ACCOUNT, idToken);
 
+      // Filter by standard user if applicable
+      let filteredData = data || [];
       if (isStandard()) {
-        query = query.eq('created_by', user.id);
+        filteredData = filteredData.filter(item => item.created_by === user.username);
       }
 
       // Hide 'Report' type documents as they are now managed in their own tab
-      query = query.neq('document_type', 'Report');
+      filteredData = filteredData.filter(item => item.document_type !== 'Report');
 
-      const { data, error } = await query.order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setAccounts(data || []);
+      setAccounts(filteredData);
     } catch (error) {
-      console.error('Error fetching accounts:', error);
+      console.error('Error fetching accounts from DynamoDB:', error);
       toast({
         title: "Error",
         description: "Failed to load accounts. " + error.message,
@@ -98,45 +97,55 @@ const AccountsManager = () => {
     }
   };
 
+  const fetchUsers = async () => {
+    if (!idToken) return;
+    try {
+      const data = await dynamoGenericApi.listByType(DB_TYPES.USER, idToken);
+      setAppUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
   useEffect(() => {
-    fetchAccounts();
-  }, []);
+    if (idToken) {
+      fetchAccounts();
+      fetchUsers();
+    }
+  }, [idToken]);
 
   const handleDeleteClick = (record) => {
     setDeleteConfirmation({
       isOpen: true,
       recordId: record.id,
-      quoteNumber: record.quote_number
+      jobOrderNo: record.job_order_no
     });
   };
 
   const confirmDelete = async () => {
-    if (!deleteConfirmation.recordId) return;
+    if (!deleteConfirmation.recordId || !idToken) return;
 
     try {
-      const { error } = await supabase
-        .from('accounts')
-        .delete()
-        .eq('id', deleteConfirmation.recordId);
-
-      if (error) throw error;
-
+      await dynamoGenericApi.delete(deleteConfirmation.recordId, idToken);
       toast({ title: "Account Deleted", description: "The account record has been removed.", variant: "destructive" });
       fetchAccounts();
     } catch (error) {
-      console.error('Error deleting account:', error);
+      console.error('Error deleting account from DynamoDB:', error);
       toast({ title: "Error", description: "Failed to delete account.", variant: "destructive" });
     } finally {
-      setDeleteConfirmation({ isOpen: false, recordId: null, quoteNumber: '' });
+      setDeleteConfirmation({ isOpen: false, recordId: null, jobOrderNo: '' });
     }
   };
 
   const handleOpen = (recordId, docNumber) => {
-    navigate(`/doc/${recordId}`);
+    navigate(`/ doc / ${recordId} `);
   };
 
-  const uniqueUsers = Array.from(new Set(accounts
-    .map(r => r.users?.full_name)
+  const uniqueUsersInList = Array.from(new Set(accounts
+    .map(r => {
+      const u = appUsers.find(u => u.id === r.created_by || u.sub === r.created_by || u.username === r.created_by || u.email === r.created_by);
+      return u ? (u.full_name || u.fullName || u.name) : r.created_by;
+    })
     .filter(Boolean)))
     .sort();
 
@@ -146,7 +155,7 @@ const AccountsManager = () => {
     .sort();
 
   const filteredAccounts = accounts.filter(r => {
-    const matchesSearch = (r.quote_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = (r.job_order_no?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (r.client_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (r.document_type?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
@@ -156,7 +165,9 @@ const AccountsManager = () => {
     if (filterDocType !== 'all' && r.document_type !== filterDocType) return false;
 
     // User Filter
-    if (filterUser !== 'all' && r.users?.full_name !== filterUser) return false;
+    const uMatch = appUsers.find(u => u.id === r.created_by || u.sub === r.created_by || u.username === r.created_by || u.email === r.created_by);
+    const userName = uMatch ? (uMatch.full_name || uMatch.fullName || uMatch.name) : r.created_by;
+    if (filterUser !== 'all' && userName !== filterUser) return false;
 
     // Client Filter
     if (filterClient !== 'all' && r.client_name !== filterClient) return false;
@@ -193,8 +204,10 @@ const AccountsManager = () => {
         valB = (b.client_name || '').toLowerCase();
         break;
       case 'user':
-        valA = (a.users?.full_name || '').toLowerCase();
-        valB = (b.users?.full_name || '').toLowerCase();
+        const uA = appUsers.find(u => u.id === a.created_by || u.sub === a.created_by || u.username === a.created_by || u.email === a.created_by);
+        const uB = appUsers.find(u => u.id === b.created_by || u.sub === b.created_by || u.username === b.created_by || u.email === b.created_by);
+        valA = (uA ? (uA.full_name || uA.fullName || uA.name) : (a.created_by || '')).toLowerCase();
+        valB = (uB ? (uB.full_name || uB.fullName || uB.name) : (b.created_by || '')).toLowerCase();
         break;
       case 'date':
         valA = new Date(a.created_at).getTime();
@@ -251,13 +264,13 @@ const AccountsManager = () => {
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
               placeholder="Search by invoice/quote number or client name..."
-              className="pl-12 h-12 text-sm bg-gray-50/30 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
+              className="pl-12 h-10 text-sm bg-gray-50/30 border-gray-200 rounded-lg focus:ring-primary focus:border-primary transition-all shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           {/* Record Count Status */}
-          <div className="flex items-center gap-2 px-6 h-12 bg-primary/5 rounded-xl border border-primary/10 whitespace-nowrap">
+          <div className="flex items-center gap-2 px-6 h-10 bg-primary/5 rounded-lg border border-primary/10 whitespace-nowrap">
             <FileText className="w-4 h-4 text-primary/60" />
             <span className="text-sm font-semibold text-gray-700">
               {sortedAccounts.length} <span className="text-gray-400 font-normal">accounts found</span>
@@ -322,7 +335,7 @@ const AccountsManager = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Users</SelectItem>
-                        {uniqueUsers.map(user => (
+                        {uniqueUsersInList.map(user => (
                           <SelectItem key={user} value={user}>
                             {user}
                           </SelectItem>
@@ -377,7 +390,7 @@ const AccountsManager = () => {
                   onClick={() =>
                     setSortOrder(prev => (prev === "asc" ? "desc" : "asc"))
                   }
-                  title={`Order: ${sortOrder === "asc" ? "Ascending" : "Descending"}`}
+                  title={`Order: ${sortOrder === "asc" ? "Ascending" : "Descending"} `}
                 >
                   {sortOrder === "asc" ? (
                     <SortAsc className="w-4 h-4" />
@@ -405,15 +418,16 @@ const AccountsManager = () => {
                 sortField === "date" &&
                 sortOrder === "desc"
               }
-              className="text-red-900 bg-red-50 hover:bg-red-500 hover:text-white h-9 text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2 whitespace-nowrap"
+              className="text-red-900 bg-red-50 hover:bg-red-500 hover:text-white h-9 text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 whitespace-nowrap"
             >
               Reset All
             </Button>
             <Button
               onClick={() => navigate('/doc/new', { state: { forceReset: Date.now() } })}
-              className="bg-primary hover:bg-primary-dark text-white h-10 px-4 rounded-xl shadow-sm text-xs font-semibold"
+              size="sm"
+              className="bg-primary hover:bg-primary-dark text-white h-9 px-4 rounded-lg shadow-sm text-xs font-semibold"
             >
-              <Plus className="w-4 h-4 mr-2" /> Create Invoice / Quotation
+              <Plus className="w-4 h-4 mr-2" /> Create Doc
             </Button>
           </div>
         </div>
@@ -449,13 +463,13 @@ const AccountsManager = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left py-2 px-4 font-semibold text-sm text-gray-600 pr-0">Document #</th>
-                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-4">Created On</th>
-                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-2">Client</th>
-                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-2">Total Amount</th>
-                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-10">Created By</th>
-                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600">Document Type</th>
-                <th className="text-right py-3 px-2 font-semibold text-sm text-gray-600">Actions</th>
+                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Document #</th>
+                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Created On</th>
+                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Client</th>
+                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Total Amount</th>
+                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Created By</th>
+                <th className="text-left py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Document Type</th>
+                <th className="text-right py-3 px-4 font-bold text-xs uppercase tracking-wider text-gray-500">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -468,34 +482,9 @@ const AccountsManager = () => {
               ) : (
                 paginatedAccounts.map((record) => (
                   <tr key={record.id} className="border-b hover:bg-gray-50 transition-colors">
-                    {/* Document # + other details */}
                     <td className="py-2 px-4 text-sm text-gray-600">
                       <div className="font-semibold text-gray-900 flex items-center gap-2">
-                        <span className="font-semibold font-mono text-black text-md bg-gray-200 p-1 rounded">{record.quote_number}</span>
-                        {/* <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${record.document_type === 'Tax Invoice'
-                          ? 'bg-blue-100 text-blue-800'
-                          : record.document_type === 'Proforma Invoice'
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-green-100 text-green-800'
-                          }`}>
-                          {record.document_type}
-                        </span> */}
-                      </div>
-                      <div className="text-gray-600 text-xs mt-1 space-y-1">
-                        <div>
-                          {/* <span className="font-semibold text-gray-900 font-bold text-sm">Created on: </span>{' '}
-                           <span className="font-semibold text-blue-600 font-semibold text-sm"> {format(new Date(record.created_at), 'dd MMM yyyy')}</span> */}
-                          {/* <span className="mx-4"></span> */}
-                          {/* <span className="font-semibold text-gray-900 font-bold text-sm">Created By:</span>{' '}
-                          <span className="font-semibold text-blue-600 font-semibold text-sm"> {record.app_users?.full_name || '-'}</span> */}
-                        </div>
-                        <div>
-                          {/* <span className="font-semibold text-gray-900 font-bold text-sm">For Client:</span>{' '}
-                          <span className="font-semibold text-blue-600 font-semibold text-sm"> {record.client_name || '-'}</span> */}
-                        </div>
-                        <div className="font-semibold text-blue-900">
-                          {/* <span className="font-semibold text-gray-900 font-bold text-sm">Total Amount:</span> <span className="font-semibold text-blue-600 font-semibold text-sm"> <Rupee />{calculateRecordTotal(record).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> */}
-                        </div>
+                        <span className="font-semibold font-mono text-black text-md bg-gray-200 p-1 rounded">{record.job_order_no}</span>
                       </div>
                     </td>
 
@@ -513,12 +502,16 @@ const AccountsManager = () => {
                     </td>
 
                     <td className="justify-left items-center">
-                      <span className="text-black font-regular text-sm"> {record.users?.full_name || '-'}
+                      <span className="text-black font-regular text-sm">
+                        {(() => {
+                          const u = appUsers.find(u => u.id === record.created_by || u.sub === record.created_by || u.username === record.created_by || u.email === record.created_by);
+                          return u ? (u.full_name || u.fullName || u.name) : (record.created_by || '-');
+                        })()}
                       </span>
                     </td>
 
                     <td className="justify-left items-center">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${record.document_type === 'Tax Invoice'
+                      <span className={`inline - flex items - center px - 2 py - 0.5 rounded text - xs font - medium ${record.document_type === 'Tax Invoice'
                         ? 'bg-blue-100 text-blue-800'
                         : record.document_type === 'Proforma Invoice'
                           ? 'bg-purple-100 text-purple-800'
@@ -527,20 +520,20 @@ const AccountsManager = () => {
                             : record.document_type === 'Delivery Challan'
                               ? 'bg-teal-100 text-teal-800'
                               : 'bg-green-100 text-green-800'
-                        }`}>
+                        } `}>
                         {record.document_type}
                       </span>
                     </td>
 
                     {/* Actions */}
-                    <td className="py-1 px-1 text-right">
+                    < td className="py-1 px-1 text-right" >
                       <div className="flex justify-end space-x-2">
                         <Button
                           variant="ghost"
                           size="sm"
                           title="Open Document"
                           className="text-primary hover:text-primary-dark hover:bg-primary/10 px-0 text-blue-600 text-xs px-1"
-                          onClick={() => handleOpen(record.id, record.quote_number)}
+                          onClick={() => handleOpen(record.id, record.job_order_no)}
                         >
                           <ExternalLink className="w-4 h-4 mr-1 text-blue-600" />
                         </Button>
@@ -562,38 +555,40 @@ const AccountsManager = () => {
 
           </table>
         </div>
-      </div>
+      </div >
 
       {/* Pagination Controls - Bottom */}
-      {totalPages > 1 && (
-        <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-lg shadow border border-gray-100">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="h-9 px-4 text-sm border-gray-200 bg-gray-50/50 rounded-lg disabled:opacity-50"
-            >
-              Previous
-            </Button>
-            <span className="text-sm text-gray-600 px-3">
-              Page {currentPage} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="h-9 px-4 text-sm border-gray-200 bg-gray-50/50 rounded-lg disabled:opacity-50"
-            >
-              Next
-            </Button>
+      {
+        totalPages > 1 && (
+          <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-lg shadow border border-gray-100">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="h-9 px-4 text-sm border-gray-200 bg-gray-50/50 rounded-lg disabled:opacity-50"
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-gray-600 px-3">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="h-9 px-4 text-sm border-gray-200 bg-gray-50/50 rounded-lg disabled:opacity-50"
+              >
+                Next
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      <AlertDialog open={deleteConfirmation.isOpen} onOpenChange={(isOpen) => !isOpen && setDeleteConfirmation({ isOpen: false, recordId: null, quoteNumber: '' })}>
+      <AlertDialog open={deleteConfirmation.isOpen} onOpenChange={(isOpen) => !isOpen && setDeleteConfirmation({ isOpen: false, recordId: null, jobOrderNo: '' })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center text-red-600">
@@ -601,7 +596,7 @@ const AccountsManager = () => {
               Delete Account?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <span className="font-semibold text-gray-900">{deleteConfirmation.quoteNumber}</span>?
+              Are you sure you want to delete <span className="font-semibold text-gray-900">{deleteConfirmation.jobOrderNo}</span>?
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -613,7 +608,7 @@ const AccountsManager = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </div >
   );
 };
 
