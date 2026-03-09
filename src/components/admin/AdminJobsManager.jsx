@@ -488,28 +488,32 @@ const AdminJobsManager = () => {
 
                     <div className="lg:col-span-2 space-y-6">
                         <Card className="rounded-2xl border-gray-100 shadow-sm overflow-hidden">
-                            <CardHeader className="bg-gray-50/50 border-b">
+                            <CardHeader className="bg-gray-50/50 border-b p-2 px-4">
                                 <CardTitle className="text-lg flex items-center gap-2">
                                     <Clock className="w-5 h-5 text-primary" /> Job Details
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="p-6 space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                            <CardContent className="p-2 space-y-4">
+                                <div className="grid grid-cols-5 gap-4">
                                     <div className="space-y-1">
-                                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</p>
-                                        <div>{getStatusBadge(selectedJob.status)}</div>
+                                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Client</p>
+                                        <p className="text-sm font-medium" title={selectedJob.client_name}>{selectedJob.client_name}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Created Date</p>
-                                        <p className="text-sm font-medium">{format(new Date(selectedJob.created_at), 'dd MMM yyyy')}</p>
+                                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Project</p>
+                                        <p className="text-sm font-medium" title={selectedJob.project_name}>{selectedJob.project_name}</p>
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">PO/WO #</p>
                                         <p className="text-sm font-medium">{selectedJob.material_inward?.po_wo_number || selectedJob.po_wo_number || '-'}</p>
                                     </div>
+                                     <div className="space-y-1">
+                                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Created On</p>
+                                        <p className="text-sm font-medium">{format(new Date(selectedJob.created_at), 'dd MMM yyyy')}</p>
+                                    </div>
                                     <div className="space-y-1">
-                                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Created By</p>
-                                        <p className="text-sm font-medium" title={selectedJob.created_by}>{getUserName(selectedJob.created_by)}</p>
+                                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</p>
+                                        <div>{getStatusBadge(selectedJob.status)}</div>
                                     </div>
                                 </div>
 
@@ -762,7 +766,7 @@ const AdminJobsManager = () => {
                         />
                     </div>
                     <Button
-                        onClick={() => navigate('/doc/new')}
+                        onClick={() => navigate('/doc/new?mode=newjob')}
                         size="sm"
                         className="bg-primary hover:bg-primary/90 text-white rounded-lg px-4 flex items-center gap-2 h-9"
                     >

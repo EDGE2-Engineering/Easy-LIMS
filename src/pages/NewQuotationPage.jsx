@@ -322,6 +322,21 @@ const NewQuotationPage = () => {
             return;
         }
 
+        if (!quoteDetails.client_address) {
+            toast({ title: "Client Address Required", description: "Please enter client address.", variant: "destructive" });
+            return;
+        }
+
+        if (!quoteDetails.project_name) {
+            toast({ title: "Project Name Required", description: "Please enter project name.", variant: "destructive" });
+            return;
+        }
+
+        if (!quoteDetails.project_address) {
+            toast({ title: "Project Address Required", description: "Please enter project address.", variant: "destructive" });
+            return;
+        }
+
         setIsSavingRecord(true);
         try {
             const isTypeChanged = savedRecordId && loadedDocumentType && documentType !== loadedDocumentType;
@@ -606,10 +621,14 @@ const NewQuotationPage = () => {
                                     <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="Quotation">Quotation</SelectItem>
-                                        <SelectItem value="Tax Invoice">Tax Invoice</SelectItem>
-                                        <SelectItem value="Proforma Invoice">Proforma Invoice</SelectItem>
-                                        <SelectItem value="Purchase Order">Purchase Order</SelectItem>
-                                        <SelectItem value="Delivery Challan">Delivery Challan</SelectItem>
+                                        {searchParams.get('mode') !== 'newjob' && (
+                                            <>
+                                                <SelectItem value="Tax Invoice">Tax Invoice</SelectItem>
+                                                <SelectItem value="Proforma Invoice">Proforma Invoice</SelectItem>
+                                                <SelectItem value="Purchase Order">Purchase Order</SelectItem>
+                                                <SelectItem value="Delivery Challan">Delivery Challan</SelectItem>
+                                            </>
+                                        )}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -688,7 +707,7 @@ const NewQuotationPage = () => {
                                 })()}
 
                                 <div>
-                                    <Label>Client Address</Label>
+                                    <Label>Client Address <span className="text-red-500">*</span></Label>
                                     <Textarea value={quoteDetails.client_address} onChange={e => setQuoteDetails({ ...quoteDetails, client_address: e.target.value })} rows={2} />
                                 </div>
                                 <div className="grid grid-cols-1 gap-4 pt-2 border-t">
@@ -696,8 +715,8 @@ const NewQuotationPage = () => {
                                     <div><Label>Contractor Address</Label><Textarea value={quoteDetails.contractor_address} onChange={e => setQuoteDetails({ ...quoteDetails, contractor_address: e.target.value })} rows={2} /></div>
                                 </div>
                                 <div className="grid grid-cols-1 gap-4 pt-2 border-t">
-                                    <div><Label>Project Name</Label><Textarea value={quoteDetails.project_name} onChange={e => setQuoteDetails({ ...quoteDetails, project_name: e.target.value })} rows={2} /></div>
-                                    <div><Label>Project Address</Label><Textarea value={quoteDetails.project_address} onChange={e => setQuoteDetails({ ...quoteDetails, project_address: e.target.value })} rows={2} /></div>
+                                    <div><Label>Project Name <span className="text-red-500">*</span></Label><Textarea value={quoteDetails.project_name} onChange={e => setQuoteDetails({ ...quoteDetails, project_name: e.target.value })} rows={2} /></div>
+                                    <div><Label>Project Address <span className="text-red-500">*</span></Label><Textarea value={quoteDetails.project_address} onChange={e => setQuoteDetails({ ...quoteDetails, project_address: e.target.value })} rows={2} /></div>
                                 </div>
                             </div>
                         </div>

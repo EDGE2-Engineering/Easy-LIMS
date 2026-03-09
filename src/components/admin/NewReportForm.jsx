@@ -1796,7 +1796,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
                         <X className="w-4 h-4 text-gray-400" />
                     </Button>
                     <div>
-                        <h2 className="text-lg font-bold text-gray-900 leading-tight">
+                        <h2 className="text-md font-bold text-gray-900 leading-tight">
                             {editReport?.id ? 'Edit Report' : 'Create New Report'}
                         </h2>
                         <p className="text-[10px] text-gray-500 font-mono">{formData.reportId || 'New'}</p>
