@@ -142,19 +142,19 @@ const AdminHSNCodesManager = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-                <div className="relative w-full sm:max-w-md">
+            <div className="flex items-center gap-4">
+                <div className="relative flex-grow">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
                         placeholder="Search HSN/SAC codes..."
-                        className="pl-10"
+                        className="pl-10 w-full h-12 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
                 <Button
                     onClick={handleAddNew}
-                    className="bg-primary hover:bg-primary-dark text-white"
+                    className="bg-primary hover:bg-primary-dark text-white h-12 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
                 >
                     <Plus className="w-4 h-4 mr-2" /> Add HSN/SAC Code
                 </Button>

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, UserMinus, UserCheck } from 'lucide-react';
+import { Plus, Pencil, UserMinus, UserCheck, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,7 @@ const AdminUsersManager = () => {
     const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
     const [userToToggle, setUserToToggle] = useState(null);
     const [departments, setDepartments] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
     const [formData, setFormData] = useState({
         username: '',
         password: '',
@@ -55,6 +56,12 @@ const AdminUsersManager = () => {
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
         } finally { setLoading(false); }
     };
+
+    const filteredUsers = users.filter(u =>
+        u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (u.full_name && u.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (u.department && u.department.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
     const handleNewUser = () => {
         setEditingUser(null);
@@ -137,9 +144,22 @@ const AdminUsersManager = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold">User Management</h2>
-                <Button onClick={handleNewUser}><Plus className="w-4 h-4 mr-2" /> Add User</Button>
+            <div className="flex items-center gap-4">
+                <div className="relative flex-grow">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                        placeholder="Search users..."
+                        className="pl-10 w-full h-12 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <Button
+                    onClick={handleNewUser}
+                    className="bg-primary hover:bg-primary-dark text-white h-12 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                >
+                    <Plus className="w-4 h-4 mr-2" /> Add User
+                </Button>
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -155,7 +175,7 @@ const AdminUsersManager = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map(u => (
+                        {filteredUsers.map(u => (
                             <tr key={u.id} className="border-b hover:bg-gray-50">
                                 <td className="p-4 font-medium">{u.full_name}</td>
                                 <td className="p-4">

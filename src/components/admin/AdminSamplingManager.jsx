@@ -336,15 +336,22 @@ const AdminSamplingManager = () => {
     return (
         <div className="space-y-6">
             <div className="flex flex-col gap-4">
-                {/* Search Row */}
-                <div className="relative w-full">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                        placeholder="Search sampling items..."
-                        className="pl-10 w-full h-12 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                <div className="flex items-center gap-4">
+                    <div className="relative flex-grow">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                            placeholder="Search sampling items..."
+                            className="pl-10 w-full h-12 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <Button
+                        onClick={handleAddNew}
+                        className="bg-primary hover:bg-primary-dark text-white h-12 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                    >
+                        <Plus className="w-4 h-4 mr-2" /> Add Sampling Record
+                    </Button>
                 </div>
 
                 {/* Filters and Actions Row */}
@@ -399,14 +406,6 @@ const AdminSamplingManager = () => {
                         </Button>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                            onClick={handleAddNew}
-                            className="bg-primary hover:bg-primary-dark text-white h-10 px-4 rounded-xl shadow-sm text-xs font-semibold"
-                        >
-                            <Plus className="w-4 h-4 mr-2" /> Add Sampling Record
-                        </Button>
-                    </div>
                 </div>
             </div>
 

@@ -380,34 +380,22 @@ const AdminClientsManager = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="relative w-full sm:w-72">
+            <div className="flex items-center gap-4">
+                <div className="relative flex-grow">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
                         placeholder="Search Clients..."
-                        className="pl-10"
+                        className="pl-10 w-full h-12 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                    <input
-                        type="file"
-                        ref={fileImportRef}
-                        onChange={handleImportFile}
-                        accept=".json"
-                        className="hidden"
-                    />
-                    {/* <Button variant="outline" onClick={handleImportClick} className="flex-1 sm:flex-none border-gray-300">
-                        <Upload className="w-4 h-4 mr-2" /> Import
-                    </Button>
-                    <Button variant="outline" onClick={handleExport} className="flex-1 sm:flex-none border-gray-300">
-                        <Download className="w-4 h-4 mr-2" /> Export
-                    </Button> */}
-                    <Button onClick={handleAddNew} className="flex-1 sm:flex-none bg-primary hover:bg-primary-dark text-white">
-                        <Plus className="w-4 h-4 mr-2" /> Add Client
-                    </Button>
-                </div>
+                <Button
+                    onClick={handleAddNew}
+                    className="bg-primary hover:bg-primary-dark text-white h-12 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                >
+                    <Plus className="w-4 h-4 mr-2" /> Add Client
+                </Button>
             </div>
 
             {/* Pagination Controls - Top */}
