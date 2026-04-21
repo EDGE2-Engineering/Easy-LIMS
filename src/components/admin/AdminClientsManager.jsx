@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, Search, Download, Upload, AlertCircle, Mail, Phone } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Plus, Edit, Trash2, Save, Search, Download, Upload, AlertCircle, Mail, Phone, SortAsc, SortDesc } from 'lucide-react';
 import { useClients } from '@/contexts/ClientsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendTelegramNotification } from '@/lib/notifier';
@@ -26,6 +26,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+
+const CLIENT_CATEGORIES = ['General', 'Telecom', 'Construction', 'Government', 'Private', 'Individual'];
 
 const AdminClientsManager = () => {
     const { clients, updateClient, addClient, deleteClient, setClients } = useClients();
@@ -45,22 +48,64 @@ const AdminClientsManager = () => {
     };
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [sortField, setSortField] = useState('clientName');
+    const [sortOrder, setSortOrder] = useState('asc');
+    const [filterCategory, setFilterCategory] = useState('all');
+    const [filterStatus, setFilterStatus] = useState('all');
     const fileImportRef = useRef(null);
 
-    const filteredClients = (clients || []).filter(c => {
-        const searchStr = searchTerm.toLowerCase();
-        const inMainFields = (c.clientName?.toLowerCase() || '').includes(searchStr) ||
-            (c.clientAddress?.toLowerCase() || '').includes(searchStr) ||
-            (c.id?.toString().toLowerCase() || '').includes(searchStr);
+    const filteredClients = useMemo(() => {
+        let result = (clients || []).filter(c => {
+            const searchStr = searchTerm.toLowerCase();
+            const inMainFields = (c.clientName?.toLowerCase() || '').includes(searchStr) ||
+                (c.clientAddress?.toLowerCase() || '').includes(searchStr) ||
+                (c.id?.toString().toLowerCase() || '').includes(searchStr);
 
-        const inContacts = (c.contacts || []).some(con =>
-            (con.contact_person?.toLowerCase() || '').includes(searchStr) ||
-            (con.contact_email?.toLowerCase() || '').includes(searchStr) ||
-            (con.contact_phone?.toLowerCase() || '').includes(searchStr)
-        );
+            const inContacts = (c.contacts || []).some(con =>
+                (con.contact_person?.toLowerCase() || '').includes(searchStr) ||
+                (con.contact_email?.toLowerCase() || '').includes(searchStr) ||
+                (con.contact_phone?.toLowerCase() || '').includes(searchStr)
+            );
 
-        return inMainFields || inContacts;
-    });
+            if (!(inMainFields || inContacts)) return false;
+
+            // Category filter
+            if (filterCategory !== 'all' && (c.category || 'General') !== filterCategory) return false;
+
+            // Status filter
+            if (filterStatus !== 'all') {
+                const isActive = c.status !== false;
+                if (filterStatus === 'active' && !isActive) return false;
+                if (filterStatus === 'inactive' && isActive) return false;
+            }
+
+            return true;
+        });
+
+        // Sorting
+        result.sort((a, b) => {
+            let valA = a[sortField] || '';
+            let valB = b[sortField] || '';
+
+            if (typeof valA === 'string') valA = valA.toLowerCase();
+            if (typeof valB === 'string') valB = valB.toLowerCase();
+
+            if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return result;
+    }, [clients, searchTerm, sortField, sortOrder]);
+
+    const resetAll = () => {
+        setSearchTerm('');
+        setSortField('clientName');
+        setSortOrder('asc');
+        setFilterCategory('all');
+        setFilterStatus('all');
+        setCurrentPage(1);
+    };
 
     // Pagination calculations
     const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
@@ -95,6 +140,8 @@ const AdminClientsManager = () => {
         setEditingClient({
             clientName: '',
             clientAddress: '',
+            category: 'General',
+            status: true,
             contacts: [{ contact_person: '', contact_email: '', contact_phone: '', is_primary: true }]
         });
         setContactErrors({});
@@ -303,6 +350,39 @@ const AdminClientsManager = () => {
                                 placeholder="Enter client address"
                             />
                         </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Category</Label>
+                                <Select
+                                    value={editingClient.category || 'General'}
+                                    onValueChange={(v) => handleChange('category', v)}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select Category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {CLIENT_CATEGORIES.map(cat => (
+                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Status</Label>
+                                <Select
+                                    value={editingClient.status !== false ? 'active' : 'inactive'}
+                                    onValueChange={(v) => handleChange('status', v === 'active')}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="active">Active</SelectItem>
+                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="space-y-4">
@@ -380,22 +460,113 @@ const AdminClientsManager = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <div className="relative flex-grow">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                        placeholder="Search Clients..."
-                        className="pl-10 w-full h-12 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="relative flex-grow">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                            placeholder="Search Clients..."
+                            className="pl-10 w-full h-12 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <Button
+                        onClick={handleAddNew}
+                        className="bg-primary hover:bg-primary-dark text-white h-12 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                    >
+                        <Plus className="w-4 h-4 mr-2" /> Add Client
+                    </Button>
                 </div>
-                <Button
-                    onClick={handleAddNew}
-                    className="bg-primary hover:bg-primary-dark text-white h-12 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
-                >
-                    <Plus className="w-4 h-4 mr-2" /> Add Client
-                </Button>
+
+                {/* Filters and Actions Row */}
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Filter</span>
+                            <Select value={filterCategory} onValueChange={setFilterCategory}>
+                                <SelectTrigger className="w-40 h-10 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
+                                    <SelectValue placeholder="Category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Categories</SelectItem>
+                                    {CLIENT_CATEGORIES.map(cat => (
+                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            <Select value={filterStatus} onValueChange={setFilterStatus}>
+                                <SelectTrigger className="w-32 h-10 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
+                                    <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Sort</span>
+                            <Select value={sortField} onValueChange={setSortField}>
+                                <SelectTrigger className="w-40 h-10 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="clientName">Client Name</SelectItem>
+                                    <SelectItem value="createdAt">Date Added</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-10 w-10 border-gray-200 bg-gray-50/50 rounded-lg"
+                                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                title={`Order: ${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
+                            >
+                                {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                            </Button>
+                        </div>
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={resetAll}
+                            disabled={!searchTerm && sortField === 'clientName' && sortOrder === 'asc' && filterCategory === 'all' && filterStatus === 'all'}
+                            className="text-gray-400 hover:text-red-500 h-10 text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2"
+                        >
+                            Reset
+                        </Button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="file"
+                            ref={fileImportRef}
+                            onChange={handleImportFile}
+                            accept=".json"
+                            className="hidden"
+                        />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleImportClick}
+                            className="hidden h-9 px-3 text-xs text-gray-600 border-gray-200 bg-gray-50/50 rounded-lg hover:bg-white transition-all"
+                        >
+                            <Upload className="w-3.5 h-3.5 mr-2" /> Import
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleExport}
+                            className="hidden h-9 px-3 text-xs text-gray-600 border-gray-200 bg-gray-50/50 rounded-lg hover:bg-white transition-all"
+                        >
+                            <Download className="w-3.5 h-3.5 mr-2" /> Export
+                        </Button>
+                    </div>
+                </div>
             </div>
 
             {/* Pagination Controls - Top */}
@@ -440,9 +611,19 @@ const AdminClientsManager = () => {
                                         {/* Single content column */}
                                         <td className="py-3 px-4">
                                             <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700">
-                                                <p className="font-semibold text-gray-900 text-base">
-                                                    {client.clientName}
-                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-semibold text-gray-900 text-base">
+                                                        {client.clientName}
+                                                    </p>
+                                                    <Badge variant="secondary" className="text-[10px] py-0 px-1 h-4 bg-blue-50 text-blue-600 border-blue-100 uppercase tracking-wider font-bold">
+                                                        {client.category || 'General'}
+                                                    </Badge>
+                                                    {client.status === false ? (
+                                                        <Badge className="text-[10px] py-0 px-1 h-4 bg-red-50 text-red-600 border-red-100 uppercase tracking-wider font-bold">Inactive</Badge>
+                                                    ) : (
+                                                        <Badge className="text-[10px] py-0 px-1 h-4 bg-green-50 text-green-600 border-green-100 uppercase tracking-wider font-bold">Active</Badge>
+                                                    )}
+                                                </div>
                                                 <div className="w-full"></div>
                                                 <p className="" title={client.clientAddress}>
                                                     <span className="font-semibold text-gray-900">Address:</span>{' '}

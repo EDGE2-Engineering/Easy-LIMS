@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Search, Plus, ArrowLeft, Save, Loader2, Package, ArrowRight, FileText, ExternalLink, CheckCircle2, Edit, UserPlus, Trash2, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Search, Plus, ArrowLeft, Save, Loader2, Package, ArrowRight, FileText, ExternalLink, CheckCircle2, Edit, UserPlus, Trash2, AlertCircle, SortAsc, SortDesc } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,8 @@ const JobsManager = ({ id }) => {
     const [showingTechForm, setShowingTechForm] = useState(false);
     const [jobSamples, setJobSamples] = useState([]);
     const [techAssignments, setTechAssignments] = useState([]);
+    const [sortField, setSortField] = useState('created_at');
+    const [sortOrder, setSortOrder] = useState('desc');
     
     const { toast } = useToast();
     const navigate = useNavigate();
@@ -290,11 +292,42 @@ const JobsManager = ({ id }) => {
 
     const getStatusLabel = (status) => APP_CONFIG.workflow.states[status]?.label || status;
 
-    const filteredRecords = records.filter(r => 
-        (r.job_id?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-         r.clients?.client_name?.toLowerCase().includes(searchTerm.toLowerCase())) &&
-        (filterStatus === 'all' || r.status === filterStatus)
-    );
+    const filteredRecords = useMemo(() => {
+        let result = records.filter(r => 
+            (r.job_id?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+             r.clients?.client_name?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+            (filterStatus === 'all' || r.status === filterStatus)
+        );
+
+        // Sorting
+        result.sort((a, b) => {
+            let valA, valB;
+
+            if (sortField === 'client_name') {
+                valA = a.clients?.client_name || '';
+                valB = b.clients?.client_name || '';
+            } else {
+                valA = a[sortField] || '';
+                valB = b[sortField] || '';
+            }
+
+            if (typeof valA === 'string') valA = valA.toLowerCase();
+            if (typeof valB === 'string') valB = valB.toLowerCase();
+
+            if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return result;
+    }, [records, searchTerm, filterStatus, sortField, sortOrder]);
+
+    const resetAll = () => {
+        setSearchTerm('');
+        setFilterStatus('all');
+        setSortField('created_at');
+        setSortOrder('desc');
+    };
 
     if (editingRecord) {
         return (
@@ -450,22 +483,76 @@ const JobsManager = ({ id }) => {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                <div className="relative flex-1 w-full">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <Input className="pl-12 h-12 border-gray-200 rounded-xl" placeholder="Search by Job ID or Client..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                </div>
-                <div className="flex gap-4 w-full md:w-auto">
-                    <Select value={filterStatus} onValueChange={setFilterStatus}>
-                        <SelectTrigger className="w-48 h-12 border-gray-200 rounded-xl"><SelectValue placeholder="All States" /></SelectTrigger>
-                        <SelectContent>
-                             <SelectItem value="all">All States</SelectItem>
-                             {Object.entries(APP_CONFIG.workflow.states).map(([id, s]) => <SelectItem key={id} value={id}>{s.label}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                    <Button onClick={() => { setEditingRecord({ status: WORKFLOW_STATES.JOB_CREATED, project_name: '', client_id: '' }); setIsAddingNew(true); }} className="h-12 px-6 rounded-xl bg-primary hover:bg-primary-dark">
-                         <Plus className="mr-2 h-4 w-4" /> New Job
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="relative flex-grow">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                            placeholder="Search by Job ID or Client..."
+                            className="pl-10 w-full h-12 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <Button
+                        onClick={() => { setEditingRecord({ status: WORKFLOW_STATES.JOB_CREATED, project_name: '', client_id: '' }); setIsAddingNew(true); }}
+                        className="bg-primary hover:bg-primary-dark text-white h-12 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                    >
+                        <Plus className="w-4 h-4 mr-2" /> New Job
                     </Button>
+                </div>
+
+                {/* Filters and Actions Row */}
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Filter</span>
+                            <Select value={filterStatus} onValueChange={setFilterStatus}>
+                                <SelectTrigger className="w-48 h-10 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
+                                    <SelectValue placeholder="All States" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All States</SelectItem>
+                                    {Object.entries(APP_CONFIG.workflow.states).map(([id, s]) => (
+                                        <SelectItem key={id} value={id}>{s.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Sort</span>
+                            <Select value={sortField} onValueChange={setSortField}>
+                                <SelectTrigger className="w-40 h-10 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="created_at">Date Created</SelectItem>
+                                    <SelectItem value="job_id">Job ID</SelectItem>
+                                    <SelectItem value="client_name">Client Name</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-10 w-10 border-gray-200 bg-gray-50/50 rounded-lg"
+                                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                title={`Order: ${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
+                            >
+                                {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                            </Button>
+                        </div>
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={resetAll}
+                            disabled={!searchTerm && filterStatus === 'all' && sortField === 'created_at' && sortOrder === 'desc'}
+                            className="text-gray-400 hover:text-red-500 h-10 text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2"
+                        >
+                            Reset
+                        </Button>
+                    </div>
                 </div>
             </div>
 
