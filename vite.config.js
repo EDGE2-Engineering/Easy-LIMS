@@ -1,6 +1,7 @@
 import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import { createLogger, defineConfig } from 'vite';
+import { getSiteContent } from './src/data/config.js';
 import inlineEditPlugin from './plugins/visual-editor/vite-plugin-react-inline-editor.js';
 import editModeDevPlugin from './plugins/visual-editor/vite-plugin-edit-mode.js';
 import iframeRouteRestorationPlugin from './plugins/vite-plugin-iframe-route-restoration.js';
@@ -167,6 +168,8 @@ if (window.navigation && window.self !== window.top) {
 const addTransformIndexHtml = {
 	name: 'add-transform-index-html',
 	transformIndexHtml(html) {
+		const siteName = getSiteContent().global?.siteName || "Easy Billing";
+		html = html.replace(/<title>.*?<\/title>/, `<title>${siteName}</title>`);
 		const tags = [
 			{
 				tag: 'script',

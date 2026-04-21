@@ -8,8 +8,10 @@ import { useToast } from '@/components/ui/use-toast';
 import { UserCog, Lock, Save, Loader2, ShieldCheck, Eye, EyeOff, Database, Download, Upload, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { getSiteContent } from '@/data/config';
+import { STORAGE_KEYS } from '@/data/storageKeys';
 
 const PasswordField = ({ id, label, value, onChange, show, setShow, placeholder, icon: Icon, required = false }) => (
+// ... unchanged ...
     <div className="space-y-2">
         <Label htmlFor={id} className={required ? "text-primary font-semibold" : ""}>{label}</Label>
         <div className="relative">
@@ -120,10 +122,12 @@ const AdminSettings = () => {
     const handleFullBackup = () => {
         // Collect all local storage keys related to data
         const data = {
-            products: JSON.parse(localStorage.getItem('edge2Easy Billing_products') || '[]'),
-            siteContent: JSON.parse(localStorage.getItem('edge2Easy Billing_content') || '{}'),
-            pageImages: JSON.parse(localStorage.getItem('edge2Easy Billing_images') || '{}'),
-            blogs: JSON.parse(localStorage.getItem('edge2Easy Billing_blogs') || '[]'),
+            clients: JSON.parse(localStorage.getItem(STORAGE_KEYS.CLIENTS) || '[]'),
+            tests: JSON.parse(localStorage.getItem(STORAGE_KEYS.TESTS) || '[]'),
+            services: JSON.parse(localStorage.getItem(STORAGE_KEYS.SERVICES) || '[]'),
+            samplingData: JSON.parse(localStorage.getItem(STORAGE_KEYS.SAMPLING_DATA) || '[]'),
+            siteContent: JSON.parse(localStorage.getItem(STORAGE_KEYS.CONTENT) || '{}'),
+            pageImages: JSON.parse(localStorage.getItem(STORAGE_KEYS.IMAGES) || '{}'),
             timestamp: new Date().toISOString(),
             version: '1.0'
         };
@@ -139,7 +143,7 @@ const AdminSettings = () => {
         a.remove();
         URL.revokeObjectURL(url);
 
-        toast({ title: "Full Backup Downloaded", description: "Contains products, pages, images, and blogs." });
+        toast({ title: "Full Backup Downloaded", description: "Contains clients, tests, services, sampling data, and site assets." });
     };
 
     const handleFullRestore = (e) => {
@@ -156,10 +160,12 @@ const AdminSettings = () => {
             try {
                 const backup = JSON.parse(event.target.result);
 
-                if (backup.products) localStorage.setItem('edge2Easy Billing_products', JSON.stringify(backup.products));
-                if (backup.siteContent) localStorage.setItem('edge2Easy Billing_content', JSON.stringify(backup.siteContent));
-                if (backup.pageImages) localStorage.setItem('edge2Easy Billing_images', JSON.stringify(backup.pageImages));
-                if (backup.blogs) localStorage.setItem('edge2Easy Billing_blogs', JSON.stringify(backup.blogs));
+                if (backup.clients) localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(backup.clients));
+                if (backup.tests) localStorage.setItem(STORAGE_KEYS.TESTS, JSON.stringify(backup.tests));
+                if (backup.services) localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(backup.services));
+                if (backup.samplingData) localStorage.setItem(STORAGE_KEYS.SAMPLING_DATA, JSON.stringify(backup.samplingData));
+                if (backup.siteContent) localStorage.setItem(STORAGE_KEYS.CONTENT, JSON.stringify(backup.siteContent));
+                if (backup.pageImages) localStorage.setItem(STORAGE_KEYS.IMAGES, JSON.stringify(backup.pageImages));
 
                 toast({ title: "Restore Successful", description: "Site data has been restored. Reloading..." });
                 setTimeout(() => window.location.reload(), 1500);
@@ -261,7 +267,7 @@ const AdminSettings = () => {
                         <div className="space-y-4">
                             <div className="p-4 bg-blue-50 text-blue-800 rounded-lg text-sm border border-blue-100">
                                 <p className="font-semibold mb-1">Why Backup?</p>
-                                Since this app doesn't use a cloud database yet, all your changes (images, text, products) are stored in your browser.
+                                Since this app doesn't use a cloud database yet, all your changes (images, text, data) are stored in your browser.
                                 <strong> Download a backup regularly</strong> to ensure you don't lose data when clearing cache or switching devices.
                             </div>
 

@@ -1,24 +1,26 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<!-- Google tag (gtag.js) -->
-		<script async src="https://www.googletagmanager.com/gtag/js?id=G-KN0PQRDR90"></script>
-		<script>
-		  window.dataLayer = window.dataLayer || [];
-		  function gtag(){dataLayer.push(arguments);}
-		  gtag('js', new Date());
 
-		  gtag('config', 'G-KN0PQRDR90');
-		</script>
-		<meta charset="UTF-8" />
-		<link rel="icon" type="image/png" href="/favicon.png" />
-		<link rel="stylesheet" href="https://cdn.pannellum.org/2.5/pannellum.css" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>EDGE2 Easy Billing</title>
-	</head>
-	<body>
-		<div id="root"></div>
-		<script src="https://cdn.pannellum.org/2.5/pannellum.js"></script>
-		<script type="module" src="/src/main.jsx"></script>
-	</body>
+<head>
+	<!-- Google tag (gtag.js) -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-KN0PQRDR90"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
+		gtag('config', 'G-KN0PQRDR90');
+	</script>
+	<meta charset="UTF-8" />
+	<link rel="icon" type="image/png" href="/favicon.png" />
+	<link rel="stylesheet" href="https://cdn.pannellum.org/2.5/pannellum.css" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>{getSiteContent().global?.siteName || "Easy LIMS"}</title>
+</head>
+
+<body>
+	<div id="root"></div>
+	<script src="https://cdn.pannellum.org/2.5/pannellum.js"></script>
+	<script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

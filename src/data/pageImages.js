@@ -1,4 +1,6 @@
 
+import { STORAGE_KEYS } from './storageKeys';
+
 export const initialPageImages = {
   home: {
     heroBackground: "", // Empty defaults to CSS pattern
@@ -13,12 +15,12 @@ export const initialPageImages = {
 };
 
 export const getPageImages = () => {
-  const stored = localStorage.getItem('site_images');
+  const stored = localStorage.getItem(STORAGE_KEYS.IMAGES);
   if (stored) return JSON.parse(stored);
   return initialPageImages;
 };
 
 export const savePageImages = (images) => {
-  localStorage.setItem('site_images', JSON.stringify(images));
+  localStorage.setItem(STORAGE_KEYS.IMAGES, JSON.stringify(images));
   window.dispatchEvent(new Event('storage-images'));
 };

@@ -22,7 +22,7 @@ import { getSiteContent } from '@/data/config';
 
 const AdminPage = () => {
     const { user, loading, logout } = useAuth();
-    const siteName = getSiteContent().global?.siteName || "Easy Billing";
+    const siteName = getSiteContent().global?.siteName;
     const { tab, id } = useParams();
     const navigate = useNavigate();
     const [mainTab, setMainTab] = useState(tab || 'jobs');

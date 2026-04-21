@@ -45,7 +45,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
               className="h-16 w-auto object-contain"
             />
           </div>
-          <h1 className="text-xl font-bold text-gray-900">{content.global?.siteName || "Easy Billing"}</h1>
+          <h1 className="text-xl font-bold text-gray-900">{content.global?.siteName}</h1>
           <p className="text-gray-500 mt-2 text-sm">Sign in with your username and password</p>
         </div>
 

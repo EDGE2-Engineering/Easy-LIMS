@@ -14,7 +14,7 @@ const Footer = () => {
           <div>
             <div className="flex items-center space-x-2 mb-4">
               <ClipboardCheck className="w-8 h-8" />
-              <span className="text-xl font-bold">{content.global?.siteName || "Easy Billing"}</span>
+              <span className="text-xl font-bold">{content.global?.siteName}</span>
             </div>
             <p className="text-gray-400 mb-4 text-sm leading-relaxed">
               {content.global?.footerAbout}

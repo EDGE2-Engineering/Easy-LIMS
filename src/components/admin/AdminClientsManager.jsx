@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, Save, Search, Download, Upload, AlertCircle, Mail, 
 import { useClients } from '@/contexts/ClientsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendTelegramNotification } from '@/lib/notifier';
+import { STORAGE_KEYS } from '@/data/storageKeys';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -248,7 +249,7 @@ const AdminClientsManager = () => {
                 if (Array.isArray(importedData)) {
                     setClients(importedData);
                     // Also update localStorage immediately
-                    localStorage.setItem('clients', JSON.stringify(importedData));
+                    localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(importedData));
                     toast({ title: "Import Successful", description: `Imported ${importedData.length} clients.` });
                 } else {
                     toast({ title: "Import Failed", description: "Invalid JSON format: Expected an array.", variant: "destructive" });

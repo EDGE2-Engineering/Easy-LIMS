@@ -33,6 +33,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { getSiteContent } from '@/data/config';
+import { STORAGE_KEYS } from '@/data/storageKeys';
 
 
 const soilTypes = [
@@ -84,7 +85,7 @@ function fillTemplate(template, data) {
 }
 
 const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
-    const siteName = getSiteContent().global?.siteName || "Easy Billing";
+    const siteName = getSiteContent().global?.siteName;
     const { user } = useAuth();
     const { toast } = useToast();
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -211,8 +212,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
 
     // Get initial form data from localStorage or use defaults
     const getInitialFormData = () => {
-        const STORAGE_KEY = 'newReportFormData';
-        const saved = localStorage.getItem(STORAGE_KEY);
+        const saved = localStorage.getItem(STORAGE_KEYS.REPORT_FORM);
 
         if (saved) {
             try {
@@ -474,9 +474,8 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
 
     // Auto-save formData to localStorage whenever it changes
     useEffect(() => {
-        const STORAGE_KEY = 'newReportFormData';
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+            localStorage.setItem(STORAGE_KEYS.REPORT_FORM, JSON.stringify(formData));
         } catch (e) {
             console.error('Failed to save form data:', e);
         }
@@ -678,10 +677,8 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
 
     // Clear form and localStorage
     const clearForm = () => {
-        const STORAGE_KEY = 'newReportFormData';
-
         if (window.confirm('Are you sure you want to clear all form data? This action cannot be undone.')) {
-            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(STORAGE_KEYS.REPORT_FORM);
             setFormData(getInitialFormData());
             setErrors({});
             setActiveTab('basic');

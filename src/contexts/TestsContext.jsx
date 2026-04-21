@@ -2,6 +2,7 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { initialTests } from '@/data/tests';
+import { STORAGE_KEYS } from '@/data/storageKeys';
 
 const TestsContext = createContext();
 
@@ -58,7 +59,7 @@ const TestsProvider = ({ children }) => {
 
             if (error) {
                 console.warn("Supabase fetch error (tests):", error.message);
-                const stored = localStorage.getItem('tests');
+                const stored = localStorage.getItem(STORAGE_KEYS.TESTS);
                 if (stored) {
                     try {
                         const parsed = JSON.parse(stored);
@@ -76,7 +77,7 @@ const TestsProvider = ({ children }) => {
                 const mappedData = data.map(mapFromDb);
                 setTests(mappedData);
             } else {
-                const stored = localStorage.getItem('tests');
+                const stored = localStorage.getItem(STORAGE_KEYS.TESTS);
                 if (stored) {
                     try {
                         const parsed = JSON.parse(stored);
@@ -119,7 +120,7 @@ const TestsProvider = ({ children }) => {
         fetchTests();
         fetchClientTestPrices();
         const handleStorageChange = () => {
-            const stored = localStorage.getItem('tests');
+            const stored = localStorage.getItem(STORAGE_KEYS.TESTS);
             if (stored) {
                 try {
                     const parsed = JSON.parse(stored);
@@ -133,7 +134,7 @@ const TestsProvider = ({ children }) => {
 
     useEffect(() => {
         if (tests.length > 0) {
-            localStorage.setItem('tests', JSON.stringify(tests));
+            localStorage.setItem(STORAGE_KEYS.TESTS, JSON.stringify(tests));
         }
     }, [tests]);
 

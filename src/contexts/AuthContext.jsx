@@ -3,6 +3,7 @@ import React, { createContext, useState, useEffect, useContext, useCallback, use
 import { supabase } from '@/lib/customSupabaseClient';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { ROLES } from '@/data/config';
+import { STORAGE_KEYS } from '@/data/storageKeys';
 
 
 const AuthContext = createContext();
@@ -20,13 +21,13 @@ const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         // Check for existing session in localStorage
-        const storedUser = localStorage.getItem('app_session');
+        const storedUser = localStorage.getItem(STORAGE_KEYS.SESSION);
         if (storedUser) {
             try {
                 setUser(JSON.parse(storedUser));
             } catch (e) {
                 console.error("Failed to parse stored user", e);
-                localStorage.removeItem('app_session');
+                localStorage.removeItem(STORAGE_KEYS.SESSION);
             }
         }
         setLoading(false);
@@ -55,7 +56,7 @@ const AuthProvider = ({ children }) => {
             };
 
             setUser(sessionUser);
-            localStorage.setItem('app_session', JSON.stringify(sessionUser));
+            localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sessionUser));
 
             // Send login notification
             notifyLogin(sessionUser.username, sessionUser.fullName);
@@ -69,7 +70,7 @@ const AuthProvider = ({ children }) => {
 
     const logout = useCallback(() => {
         setUser(null);
-        localStorage.removeItem('app_session');
+        localStorage.removeItem(STORAGE_KEYS.SESSION);
     }, []);
 
     const isSuperAdmin = useCallback(() => user?.role === 'super_admin', [user?.role]);

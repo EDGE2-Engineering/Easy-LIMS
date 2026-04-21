@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { STORAGE_KEYS } from '@/data/storageKeys';
 
 const SamplingContext = createContext();
 
@@ -67,7 +68,7 @@ const SamplingProvider = ({ children }) => {
 
             if (error) {
                 console.warn("Supabase fetch error (sampling):", error.message);
-                const stored = localStorage.getItem('sampling_data');
+                const stored = localStorage.getItem(STORAGE_KEYS.SAMPLING_DATA);
                 if (stored) {
                     try {
                         const parsed = JSON.parse(stored);
@@ -94,7 +95,7 @@ const SamplingProvider = ({ children }) => {
     useEffect(() => {
         fetchSamplingData();
         const handleStorageChange = () => {
-            const stored = localStorage.getItem('sampling_data');
+            const stored = localStorage.getItem(STORAGE_KEYS.SAMPLING_DATA);
             if (stored) {
                 try {
                     const parsed = JSON.parse(stored);
@@ -108,7 +109,7 @@ const SamplingProvider = ({ children }) => {
 
     useEffect(() => {
         if (samplingData.length > 0) {
-            localStorage.setItem('sampling_data', JSON.stringify(samplingData));
+            localStorage.setItem(STORAGE_KEYS.SAMPLING_DATA, JSON.stringify(samplingData));
         }
     }, [samplingData]);
 

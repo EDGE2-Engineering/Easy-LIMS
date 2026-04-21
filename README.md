@@ -1,4 +1,4 @@
-# EDGE2 Easy Billing
+# EDGE2 Easy LIMS
 
 <!-- - Create a Supabase project
 - Run `setup.sql` on Supabase. Go to your Supabase project -> SQL Editor -> Run SQL

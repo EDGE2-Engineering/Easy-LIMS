@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { STORAGE_KEYS } from '@/data/storageKeys';
 
 const ClientsContext = createContext();
 
@@ -73,7 +74,7 @@ const ClientsProvider = ({ children }) => {
 
             if (error) {
                 console.warn("Supabase fetch error (clients):", error.message);
-                const stored = localStorage.getItem('clients');
+                const stored = localStorage.getItem(STORAGE_KEYS.CLIENTS);
                 if (stored) {
                     try {
                         const parsed = JSON.parse(stored);
@@ -91,7 +92,7 @@ const ClientsProvider = ({ children }) => {
                 const mappedData = data.map(mapFromDb);
                 setClients(mappedData);
             } else {
-                const stored = localStorage.getItem('clients');
+                const stored = localStorage.getItem(STORAGE_KEYS.CLIENTS);
                 if (stored) {
                     try {
                         const parsed = JSON.parse(stored);
@@ -114,7 +115,7 @@ const ClientsProvider = ({ children }) => {
     useEffect(() => {
         fetchClients();
         const handleStorageChange = () => {
-            const stored = localStorage.getItem('clients');
+            const stored = localStorage.getItem(STORAGE_KEYS.CLIENTS);
             if (stored) {
                 try {
                     const parsed = JSON.parse(stored);
@@ -124,11 +125,11 @@ const ClientsProvider = ({ children }) => {
         };
         window.addEventListener('storage', handleStorageChange);
         return () => window.removeEventListener('storage', handleStorageChange);
-    }, [fetchClients]);
+    }, [fetchClients, mapFromDb]);
 
     useEffect(() => {
         if (clients.length > 0) {
-            localStorage.setItem('clients', JSON.stringify(clients));
+            localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
         }
     }, [clients]);
 

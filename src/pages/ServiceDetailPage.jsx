@@ -13,7 +13,7 @@ import { getSiteContent } from '@/data/config';
 
 const ServiceDetailPage = () => {
     const { user, loading, isStandard } = useAuth();
-    const siteName = getSiteContent().global?.siteName || "Easy Billing";
+    const siteName = getSiteContent().global?.siteName;
     const navigate = useNavigate();
     const { id } = useParams();
     const { services } = useServices();

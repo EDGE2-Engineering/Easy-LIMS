@@ -13,6 +13,7 @@ import { TermsAndConditionsProvider } from '@/contexts/TermsAndConditionsContext
 import { TechnicalsProvider } from '@/contexts/TechnicalsContext';
 import { MaterialsProvider } from '@/contexts/MaterialsContext';
 import { SamplingProvider } from '@/contexts/SamplingContext';
+import { getSiteContent } from '@/data/config';
 
 
 import ServiceDetailPage from '@/pages/ServiceDetailPage.jsx';
@@ -102,6 +103,7 @@ function App() {
                             <TechnicalsProvider>
 
                             <Helmet>
+                              <title>{getSiteContent().global?.siteName}</title>
                               <link rel="preconnect" href="https://fonts.googleapis.com" />
                               <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
                               <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />

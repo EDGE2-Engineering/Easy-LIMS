@@ -2,6 +2,7 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { initialServices } from '@/data/services';
+import { STORAGE_KEYS } from '@/data/storageKeys';
 
 const ServicesContext = createContext();
 
@@ -52,7 +53,7 @@ const ServicesProvider = ({ children }) => {
 
             if (error) {
                 console.warn("Supabase fetch error (services):", error.message);
-                const stored = localStorage.getItem('services');
+                const stored = localStorage.getItem(STORAGE_KEYS.SERVICES);
                 if (stored) {
                     try {
                         const parsed = JSON.parse(stored);
@@ -70,7 +71,7 @@ const ServicesProvider = ({ children }) => {
                 const mappedData = data.map(mapFromDb);
                 setServices(mappedData);
             } else {
-                const stored = localStorage.getItem('services');
+                const stored = localStorage.getItem(STORAGE_KEYS.SERVICES);
                 if (stored) {
                     try {
                         const parsed = JSON.parse(stored);
@@ -113,7 +114,7 @@ const ServicesProvider = ({ children }) => {
         fetchServices();
         fetchClientServicePrices();
         const handleStorageChange = () => {
-            const stored = localStorage.getItem('services');
+            const stored = localStorage.getItem(STORAGE_KEYS.SERVICES);
             if (stored) {
                 try {
                     const parsed = JSON.parse(stored);
@@ -127,7 +128,7 @@ const ServicesProvider = ({ children }) => {
 
     useEffect(() => {
         if (services.length > 0) {
-            localStorage.setItem('services', JSON.stringify(services));
+            localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
         }
     }, [services]);
 

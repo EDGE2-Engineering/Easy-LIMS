@@ -1,4 +1,6 @@
 
+import { STORAGE_KEYS } from './storageKeys';
+
 export const initialTests = [
     {
         id: 'T1',
@@ -21,7 +23,7 @@ export const initialTests = [
 ];
 
 export const getTests = () => {
-    const stored = localStorage.getItem('tests');
+    const stored = localStorage.getItem(STORAGE_KEYS.TESTS);
     if (stored) {
         try {
             const parsed = JSON.parse(stored);
@@ -34,6 +36,6 @@ export const getTests = () => {
 };
 
 export const saveTests = (tests) => {
-    localStorage.setItem('tests', JSON.stringify(tests));
+    localStorage.setItem(STORAGE_KEYS.TESTS, JSON.stringify(tests));
     window.dispatchEvent(new Event('storage'));
 };

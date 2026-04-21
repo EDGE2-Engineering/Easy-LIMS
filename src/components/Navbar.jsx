@@ -79,10 +79,10 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
               />
             </div>
             <span className="text-lg font-bold text-gray-900 hidden sm:inline-block">
-              {content.global?.siteName || "Easy Billing"}
+              {content.global?.siteName}
             </span>
             <span className="text-sm font-bold text-gray-900 sm:hidden">
-              {content.global?.siteName || "Easy Billing"}
+              {content.global?.siteName}
             </span>
           </Link>
 

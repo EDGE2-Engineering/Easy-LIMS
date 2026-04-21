@@ -20,7 +20,7 @@ import AdminUsersManager from './AdminUsersManager';
 import { enableInfoDiagramZoom, getSiteContent } from '../../data/config';
 
 const AdminSystemSettings = () => {
-    const siteName = getSiteContent().global?.siteName || "Easy Billing";
+    const siteName = getSiteContent().global?.siteName;
     return (
         <div className="space-y-4">
             <Tabs defaultValue="unit_types" className="w-full">

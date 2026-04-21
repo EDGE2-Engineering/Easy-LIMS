@@ -1,4 +1,6 @@
 
+import { STORAGE_KEYS } from './storageKeys';
+
 export const initialServices = [
     {
         id: 'S1',
@@ -10,7 +12,7 @@ export const initialServices = [
 ];
 
 export const getServices = () => {
-    const stored = localStorage.getItem('services');
+    const stored = localStorage.getItem(STORAGE_KEYS.SERVICES);
     if (stored) {
         try {
             const parsed = JSON.parse(stored);
@@ -23,6 +25,6 @@ export const getServices = () => {
 };
 
 export const saveServices = (services) => {
-    localStorage.setItem('services', JSON.stringify(services));
+    localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
     window.dispatchEvent(new Event('storage'));
 };
