@@ -1,0 +1,4 @@
+1566: {tcPages.map((tcPage, tcIndex) => (
+1567: <div key={`tc-page-${tcIndex}`} className="a4-container">
+1590: {tcIndex === 0 ? "Terms & Conditions" : "Terms & Conditions (Continued)"}
+1625: <span>{documentType} #{quoteDetails.quoteNumber} | Page {totalItemPages + 2 + tcIndex} of {totalPages}</span>
