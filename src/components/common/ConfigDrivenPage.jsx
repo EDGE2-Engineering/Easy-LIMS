@@ -14,12 +14,14 @@ const AdminServicesManager = lazy(() => import('@/components/admin/AdminServices
 const AdminSystemSettings = lazy(() => import('@/components/admin/AdminSystemSettings.jsx'));
 const AdminSamplingManager = lazy(() => import('@/components/admin/AdminSamplingManager.jsx'));
 const ExpensesManager = lazy(() => import('@/components/admin/ExpensesManager.jsx'));
+const WageCalculator = lazy(() => import('@/components/admin/WageCalculator.jsx'));
 
 const COMPONENT_MAP = {
   [VIEWS.JOBS]: JobsManager,
   [VIEWS.MATERIAL_INWARD]: MaterialInwardManager,
   [VIEWS.ACCOUNTS]: AccountsManager,
   [VIEWS.EXPENSES]: ExpensesManager,
+  [VIEWS.WAGE_CALCULATOR]: WageCalculator,
   [VIEWS.SETTINGS]: AdminSystemSettings,
   [VIEWS.TESTING]: lazy(() => import('@/components/admin/TestingDashboard.jsx'))
 };
