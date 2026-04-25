@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Edit, Trash2, Save, Search, AlertCircle, IndianRupee, Calendar, User, SortAsc, SortDesc, Filter, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, Search, AlertCircle, IndianRupee, Calendar, User, SortAsc, SortDesc, Filter, X, Download, FileSpreadsheet } from 'lucide-react';
 import { useExpenses } from '@/contexts/ExpensesContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -211,6 +211,41 @@ const ExpensesManager = () => {
         setDeleteConfirmation({ isOpen: false, expenseId: null, description: '' });
     };
 
+    const downloadCSV = () => {
+        if (filteredExpenses.length === 0) return;
+
+        // Define headers
+        const headers = ['Date', 'Description', 'Amount', 'Created By', 'Remarks'];
+        
+        // Map data to rows
+        const rows = filteredExpenses.map(e => [
+            new Date(e.date).toLocaleDateString('en-IN'),
+            `"${e.description?.replace(/"/g, '""') || ''}"`, // Escape quotes and wrap in quotes
+            e.amount,
+            `"${e.createdBy?.replace(/"/g, '""') || ''}"`,
+            `"${e.remarks?.replace(/"/g, '""') || ''}"`
+        ]);
+
+        // Combine into CSV string
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(r => r.join(','))
+        ].join('\n');
+
+        // Create download link
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `Expenses_Report_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({ title: "Report Downloaded", description: `Exported ${filteredExpenses.length} records to CSV.` });
+    };
+
     if (editingExpense) {
         return (
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 animate-in slide-in-from-right-4 duration-300">
@@ -313,12 +348,24 @@ const ExpensesManager = () => {
                             <Badge className="ml-2 bg-primary text-white scale-75">!</Badge>
                         )}
                     </Button>
-                    <Button
-                        onClick={handleAddNew}
-                        className="bg-primary hover:bg-primary-dark text-white h-12 px-6 rounded-2xl shadow-sm text-sm font-semibold shrink-0"
-                    >
-                        <Plus className="w-4 h-4 mr-2" /> Add Expense
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={downloadCSV}
+                            disabled={filteredExpenses.length === 0}
+                            className="h-12 px-4 rounded-2xl border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all font-semibold"
+                            title="Download CSV Report"
+                        >
+                            <Download className="w-4 h-4 mr-2" />
+                            <span className="hidden sm:inline">Export Report</span>
+                        </Button>
+                        <Button
+                            onClick={handleAddNew}
+                            className="bg-primary hover:bg-primary-dark text-white h-12 px-6 rounded-2xl shadow-sm text-sm font-semibold shrink-0"
+                        >
+                            <Plus className="w-4 h-4 mr-2" /> Add Expense
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Advanced Filters Panel */}

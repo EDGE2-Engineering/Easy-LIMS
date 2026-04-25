@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck } from 'lucide-react';
+import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck, ChevronDown } from 'lucide-react';
 import { getSiteContent, VIEWS, ROLES, APP_CONFIG } from '@/data/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const location = useLocation();
 
   const handleLogout = () => {
@@ -113,23 +114,55 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
               );
             })}
             {user && (
-              <div className="flex items-center gap-4">
-                <div className="px-2 py-1 bg-white text-blue-700 rounded-lg text-xs font-medium flex flex-col items-center justify-center">
-                  <span className="text-[10px] font-bold text-center">Logged in as:</span>
-                  <div className="flex items-center justify-center">
-                    <User className="w-3.5 h-3.5 mr-1.5" />
-                    {user?.fullName || user?.username || 'Admin'}
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              <div className="relative">
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className={`flex flex-col items-center justify-center px-4 py-2 rounded-xl transition-all duration-300 border ${
+                    dropdownOpen 
+                      ? 'bg-primary/5 border-primary/20 shadow-inner' 
+                      : 'bg-white border-gray-100 hover:border-primary/20 hover:bg-gray-50'
+                  }`}
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  <span>Logout</span>
-                </Button>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Logged in as</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <span className="text-sm font-bold text-gray-800">{user?.fullName || user?.username || 'Admin'}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+
+                <AnimatePresence>
+                  {dropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden py-2"
+                      >
+                        <div className="px-4 py-2 border-b border-gray-50 mb-1">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Account</p>
+                          <p className="text-sm font-bold text-gray-800 truncate">{user?.username}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            handleLogout();
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                            <LogOut className="w-4 h-4" />
+                          </div>
+                          Logout
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
               </div>
             )}
           </div>
