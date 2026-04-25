@@ -46,12 +46,54 @@ const ExpensesManager = () => {
     const [filterByCreator, setFilterByCreator] = React.useState('all');
     const [filterDateStart, setFilterDateStart] = React.useState('');
     const [filterDateEnd, setFilterDateEnd] = React.useState('');
+    const [datePreset, setDatePreset] = React.useState('custom');
     const [showFilters, setShowFilters] = React.useState(false);
 
     const creators = React.useMemo(() => {
         const set = new Set((expenses || []).map(e => e.createdBy));
         return Array.from(set).sort();
     }, [expenses]);
+
+    const applyDatePreset = (preset) => {
+        const now = new Date();
+        let start = '';
+        let end = '';
+
+        const formatDate = (date) => date.toISOString().split('T')[0];
+
+        switch (preset) {
+            case 'this_month':
+                start = formatDate(new Date(now.getFullYear(), now.getMonth(), 1));
+                end = formatDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+                break;
+            case 'last_month':
+                start = formatDate(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+                end = formatDate(new Date(now.getFullYear(), now.getMonth(), 0));
+                break;
+            case 'this_year':
+                start = formatDate(new Date(now.getFullYear(), 0, 1));
+                end = formatDate(new Date(now.getFullYear(), 11, 31));
+                break;
+            case 'last_year':
+                start = formatDate(new Date(now.getFullYear() - 1, 0, 1));
+                end = formatDate(new Date(now.getFullYear() - 1, 11, 31));
+                break;
+            case 'ytd':
+                start = formatDate(new Date(now.getFullYear(), 0, 1));
+                end = formatDate(now);
+                break;
+            case 'custom':
+                start = '';
+                end = '';
+                break;
+            default:
+                break;
+        }
+
+        setFilterDateStart(start);
+        setFilterDateEnd(end);
+        setDatePreset(preset);
+    };
 
     const filteredExpenses = React.useMemo(() => {
         let result = (expenses || []).filter(e => {
@@ -96,6 +138,7 @@ const ExpensesManager = () => {
         setFilterByCreator('all');
         setFilterDateStart('');
         setFilterDateEnd('');
+        setDatePreset('custom');
         setSearchTerm('');
     };
 
@@ -281,7 +324,7 @@ const ExpensesManager = () => {
                 {/* Advanced Filters Panel */}
                 {showFilters && (
                     <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm animate-in slide-in-from-top-2 duration-200">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center justify-between mb-6">
                             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center">
                                 <Filter className="w-4 h-4 mr-2 text-primary" />
                                 Advanced Filters
@@ -290,7 +333,47 @@ const ExpensesManager = () => {
                                 <X className="w-3 h-3 mr-1" /> Reset All
                             </Button>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-semibold text-gray-500 uppercase">Quick Date</Label>
+                                <Select value={datePreset} onValueChange={applyDatePreset}>
+                                    <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
+                                        <SelectValue placeholder="Custom" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="custom">Custom Range</SelectItem>
+                                        <SelectItem value="this_month">This Month</SelectItem>
+                                        <SelectItem value="last_month">Last Month</SelectItem>
+                                        <SelectItem value="ytd">Year to Date (YTD)</SelectItem>
+                                        <SelectItem value="this_year">This Year</SelectItem>
+                                        <SelectItem value="last_year">Last Year</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-semibold text-gray-500 uppercase">From Date</Label>
+                                <Input
+                                    type="date"
+                                    value={filterDateStart}
+                                    onChange={(e) => {
+                                        setFilterDateStart(e.target.value);
+                                        setDatePreset('custom');
+                                    }}
+                                    className="h-10 text-sm bg-gray-50 border-transparent rounded-xl"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-semibold text-gray-500 uppercase">To Date</Label>
+                                <Input
+                                    type="date"
+                                    value={filterDateEnd}
+                                    onChange={(e) => {
+                                        setFilterDateEnd(e.target.value);
+                                        setDatePreset('custom');
+                                    }}
+                                    className="h-10 text-sm bg-gray-50 border-transparent rounded-xl"
+                                />
+                            </div>
                             <div className="space-y-2">
                                 <Label className="text-xs font-semibold text-gray-500 uppercase">Created By</Label>
                                 <Select value={filterByCreator} onValueChange={setFilterByCreator}>
@@ -304,24 +387,6 @@ const ExpensesManager = () => {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-semibold text-gray-500 uppercase">From Date</Label>
-                                <Input
-                                    type="date"
-                                    value={filterDateStart}
-                                    onChange={(e) => setFilterDateStart(e.target.value)}
-                                    className="h-10 text-sm bg-gray-50 border-transparent rounded-xl"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-semibold text-gray-500 uppercase">To Date</Label>
-                                <Input
-                                    type="date"
-                                    value={filterDateEnd}
-                                    onChange={(e) => setFilterDateEnd(e.target.value)}
-                                    className="h-10 text-sm bg-gray-50 border-transparent rounded-xl"
-                                />
                             </div>
                         </div>
                     </div>
@@ -349,7 +414,7 @@ const ExpensesManager = () => {
                             {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
                         </Button>
                     </div>
-                    <div className="text-sm text-gray-500 font-medium">
+                    <div className="text-sm text-gray-500 font-normal">
                         Filtered Total: <span className="text-primary font-bold">₹{filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0).toLocaleString()}</span>
                     </div>
                 </div>
@@ -426,7 +491,7 @@ const ExpensesManager = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="4" className="py-12 text-center">
+                                <td colSpan="6" className="py-12 text-center">
                                     <div className="flex flex-col items-center justify-center text-gray-400">
                                         <IndianRupee className="w-12 h-12 mb-4 opacity-20" />
                                         <p className="font-medium text-lg">No expenses found</p>
