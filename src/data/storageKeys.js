@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
     CONTENT: `${PREFIX}content`,
     IMAGES: `${PREFIX}images`,
     REPORT_FORM: `${PREFIX}report_form`,
+    EXPENSES: `${PREFIX}expenses`,
 };
 
 /**

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React from 'react';
 import { Plus, Edit, Trash2, Save, Search, Download, Upload, AlertCircle, Mail, Phone, SortAsc, SortDesc } from 'lucide-react';
 import { useClients } from '@/contexts/ClientsContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,31 +30,37 @@ import { Badge } from "@/components/ui/badge";
 
 const CLIENT_CATEGORIES = ['General', 'Telecom', 'Construction', 'Government', 'Private', 'Individual'];
 
+const isValidEmail = (email) => {
+    if (!email) return true; // Don't validate if empty
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+};
+
 const AdminClientsManager = () => {
+    // 1. Context Hooks
     const { clients, updateClient, addClient, deleteClient, setClients } = useClients();
     const { user } = useAuth();
     const { toast } = useToast();
-    const [searchTerm, setSearchTerm] = useState('');
-    const [editingClient, setEditingClient] = useState(null);
-    const [isAddingNew, setIsAddingNew] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
-    const [contactErrors, setContactErrors] = useState({});
-    const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, clientId: null, clientName: '' });
 
-    const isValidEmail = (email) => {
-        if (!email) return true; // Don't validate if empty
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    };
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
-    const [sortField, setSortField] = useState('clientName');
-    const [sortOrder, setSortOrder] = useState('asc');
-    const [filterCategory, setFilterCategory] = useState('all');
-    const [filterStatus, setFilterStatus] = useState('all');
-    const fileImportRef = useRef(null);
+    // 2. State Hooks
+    const [searchTerm, setSearchTerm] = React.useState('');
+    const [editingClient, setEditingClient] = React.useState(null);
+    const [isAddingNew, setIsAddingNew] = React.useState(false);
+    const [isSaving, setIsSaving] = React.useState(false);
+    const [contactErrors, setContactErrors] = React.useState({});
+    const [deleteConfirmation, setDeleteConfirmation] = React.useState({ isOpen: false, clientId: null, clientName: '' });
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const [itemsPerPage, setItemsPerPage] = React.useState(10);
+    const [sortField, setSortField] = React.useState('clientName');
+    const [sortOrder, setSortOrder] = React.useState('asc');
+    const [filterCategory, setFilterCategory] = React.useState('all');
+    const [filterStatus, setFilterStatus] = React.useState('all');
 
-    const filteredClients = useMemo(() => {
+    // 3. Ref Hooks
+    const fileImportRef = React.useRef(null);
+
+    // 4. Memo Hooks
+    const filteredClients = React.useMemo(() => {
         let result = (clients || []).filter(c => {
             const searchStr = searchTerm.toLowerCase();
             const inMainFields = (c.clientName?.toLowerCase() || '').includes(searchStr) ||
@@ -114,7 +120,7 @@ const AdminClientsManager = () => {
     const paginatedClients = filteredClients.slice(startIndex, endIndex);
 
     // Reset to page 1 when search changes
-    useEffect(() => {
+    React.useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm]);
 

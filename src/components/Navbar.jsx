@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase } from 'lucide-react';
+import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee } from 'lucide-react';
 import { getSiteContent, VIEWS, ROLES, APP_CONFIG } from '@/data/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
 
   const ALL_NAV_ITEMS = [
     { view: VIEWS.JOBS, path: '/settings/jobs', label: 'Jobs', icon: Briefcase },
+    { view: VIEWS.EXPENSES, path: '/settings/expenses', label: 'Expenses', icon: IndianRupee },
     { view: VIEWS.SETTINGS, path: '/settings/clients', label: 'Settings', icon: Settings }
   ];
 
@@ -53,6 +54,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     if (path === '/settings/clients') { // Changed from /settings/services to /settings/clients
       // Highlight settings only for explicitly settings tabs, not for Inward/Reports/Accounts
       const isManagementTab = location.pathname.includes('/jobs') ||
+        location.pathname.includes('/expenses') ||
         location.pathname.includes('/inward_register') ||
         location.pathname.includes('/reports') ||
         location.pathname.includes('/accounts');

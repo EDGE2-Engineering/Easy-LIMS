@@ -13,11 +13,13 @@ const AdminTestsManager = lazy(() => import('@/components/admin/AdminTestsManage
 const AdminServicesManager = lazy(() => import('@/components/admin/AdminServicesManager.jsx'));
 const AdminSystemSettings = lazy(() => import('@/components/admin/AdminSystemSettings.jsx'));
 const AdminSamplingManager = lazy(() => import('@/components/admin/AdminSamplingManager.jsx'));
+const ExpensesManager = lazy(() => import('@/components/admin/ExpensesManager.jsx'));
 
 const COMPONENT_MAP = {
   [VIEWS.JOBS]: JobsManager,
   [VIEWS.MATERIAL_INWARD]: MaterialInwardManager,
   [VIEWS.ACCOUNTS]: AccountsManager,
+  [VIEWS.EXPENSES]: ExpensesManager,
   [VIEWS.SETTINGS]: AdminSystemSettings,
   [VIEWS.TESTING]: lazy(() => import('@/components/admin/TestingDashboard.jsx'))
 };

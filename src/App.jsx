@@ -13,6 +13,7 @@ import { TermsAndConditionsProvider } from '@/contexts/TermsAndConditionsContext
 import { TechnicalsProvider } from '@/contexts/TechnicalsContext';
 import { MaterialsProvider } from '@/contexts/MaterialsContext';
 import { SamplingProvider } from '@/contexts/SamplingContext';
+import { ExpensesProvider } from '@/contexts/ExpensesContext';
 import { getSiteContent } from '@/data/config';
 
 
@@ -101,28 +102,29 @@ function App() {
                         <MaterialsProvider>
                           <TermsAndConditionsProvider>
                             <TechnicalsProvider>
+                              <ExpensesProvider>
 
-                            <Helmet>
-                              <title>{getSiteContent().global?.siteName}</title>
-                              <link rel="preconnect" href="https://fonts.googleapis.com" />
-                              <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-                              <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-                            </Helmet>
-                            <div className="min-h-screen bg-[#F5F1ED]">
-                              <RouterProvider
-                                router={router}
-                                future={{
-                                  v7_startTransition: true,
-                                  v7_relativeSplatPath: true,
-                                }}
-                              />
-                              <Toaster />
-                            </div>
-                          </TechnicalsProvider>
-                        </TermsAndConditionsProvider>
-                      </MaterialsProvider>
-                    </HSNCodesProvider>
-
+                                <Helmet>
+                                  <title>{getSiteContent().global?.siteName}</title>
+                                  <link rel="preconnect" href="https://fonts.googleapis.com" />
+                                  <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+                                  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+                                </Helmet>
+                                <div className="min-h-screen bg-[#F5F1ED]">
+                                  <RouterProvider
+                                    router={router}
+                                    future={{
+                                      v7_startTransition: true,
+                                      v7_relativeSplatPath: true,
+                                    }}
+                                  />
+                                  <Toaster />
+                                </div>
+                              </ExpensesProvider>
+                            </TechnicalsProvider>
+                          </TermsAndConditionsProvider>
+                        </MaterialsProvider>
+                      </HSNCodesProvider>
                     </UnitTypesProvider>
                   </SettingsProvider>
                 </ClientsProvider>

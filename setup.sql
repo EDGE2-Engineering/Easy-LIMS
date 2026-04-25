@@ -19,6 +19,7 @@ drop table if exists public.hsn_sac_codes cascade;
 drop table if exists public.terms_and_conditions cascade;
 drop table if exists public.departments cascade;
 drop table if exists public.collection_centers cascade;
+drop table if exists public.expenses cascade;
 
 
 -- ================================
@@ -237,6 +238,18 @@ create table public.jobs (
   updated_at timestamptz default current_timestamp
 );
 
+-- 18. expenses
+create table public.expenses (
+  id text primary key,
+  description text not null,
+  amount numeric not null default 0,
+  date date not null default current_date,
+  remarks text,
+  created_by text,
+  created_at timestamptz default current_timestamp,
+  updated_at timestamptz default current_timestamp
+);
+
 -- Sequence for Job IDs if needed (or we can use timestamp-based)
 CREATE SEQUENCE IF NOT EXISTS job_number_seq START 1;
 
@@ -334,6 +347,10 @@ create policy "Allow public management of collection centers" on public.collecti
 alter table public.jobs enable row level security;
 create policy "Jobs are viewable by everyone" on public.jobs for select using ( true );
 create policy "Allow public management of jobs" on public.jobs for all using ( true ) with check ( true );
+
+alter table public.expenses enable row level security;
+create policy "Expenses are viewable by everyone" on public.expenses for select using ( true );
+create policy "Allow public management of expenses" on public.expenses for all using ( true ) with check ( true );
 
 
 -- -----------------------------------------------------------------------------
