@@ -31,7 +31,7 @@ const AdminPage = () => {
     const URL_TO_VIEW = {
         jobs: VIEWS.JOBS,
         expenses: VIEWS.EXPENSES,
-        wage_calculator: VIEWS.WAGE_CALCULATOR,
+        work_log: VIEWS.WORK_LOG,
         inward_register: VIEWS.MATERIAL_INWARD,
         testing: VIEWS.TESTING,
         accounts: VIEWS.ACCOUNTS,
@@ -80,8 +80,8 @@ const AdminPage = () => {
 
             <main className="flex-grow container mx-auto px-4 py-6 relative">
                 <Tabs value={mainTab} onValueChange={handleTabChange} className="w-full space-y-6">
-                    {/* Responsive Tab Navigation - Only show for settings tabs, not for Jobs/Expenses/Accounts/Wage Calculator */}
-                    {mainTab !== 'jobs' && mainTab !== 'expenses' && mainTab !== 'accounts' && mainTab !== 'wage_calculator' && (
+                    {/* Responsive Tab Navigation - Only show for settings tabs, not for Jobs/Expenses/Accounts/Work Log */}
+                    {mainTab !== 'jobs' && mainTab !== 'expenses' && mainTab !== 'accounts' && mainTab !== 'work_log' && (
                         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
                             <div className="block md:hidden w-full relative">
                                 <select

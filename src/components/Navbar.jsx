@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Calculator } from 'lucide-react';
+import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck } from 'lucide-react';
 import { getSiteContent, VIEWS, ROLES, APP_CONFIG } from '@/data/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -45,25 +45,30 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
   const ALL_NAV_ITEMS = [
     { view: VIEWS.JOBS, path: '/settings/jobs', label: 'Jobs', icon: Briefcase },
     { view: VIEWS.EXPENSES, path: '/settings/expenses', label: 'Expenses', icon: IndianRupee },
-    { view: VIEWS.WAGE_CALCULATOR, path: '/settings/wage_calculator', label: 'Wage Calculator', icon: Calculator },
+    { id: 'work_log', view: VIEWS.WORK_LOG, path: '/settings/work_log', label: 'Work Log', icon: ClipboardCheck },
     { view: VIEWS.SETTINGS, path: '/settings/clients', label: 'Settings', icon: Settings }
   ];
 
   const navItems = ALL_NAV_ITEMS.filter(item => canView(item.view));
 
-  const isActive = (path) => {
+  const isActive = (path, id) => {
     if (path === '/settings/clients') { // Changed from /settings/services to /settings/clients
       // Highlight settings only for explicitly settings tabs, not for Inward/Reports/Accounts
       const isManagementTab = location.pathname.includes('/jobs') ||
         location.pathname.includes('/expenses') ||
-        location.pathname.includes('/wage_calculator') ||
+        location.pathname.includes('/wages') ||
         location.pathname.includes('/inward_register') ||
         location.pathname.includes('/reports') ||
-        location.pathname.includes('/accounts');
+        location.pathname.includes('/accounts') ||
+        location.pathname.includes('/work_log');
 
       return (location.pathname.startsWith('/settings') && !isManagementTab) ||
         location.pathname.startsWith('/service/') ||
         location.pathname.startsWith('/test/');
+    }
+
+    if (id === 'work_log') {
+        return location.pathname === path || location.pathname.startsWith('/settings/work_log');
     }
 
     // For other management tabs (Inward, Reports, Accounts), use precise matching
@@ -109,9 +114,12 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
             })}
             {user && (
               <div className="flex items-center gap-4">
-                <div className="px-4 py-4 bg-white text-blue-700 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center">
-                  <User className="w-3.5 h-3.5 mr-1.5" />
-                  {user?.fullName || user?.username || 'Admin'}
+                <div className="px-2 py-1 bg-white text-blue-700 rounded-lg text-xs font-medium flex flex-col items-center justify-center">
+                  <span className="text-[10px] font-bold text-center">Logged in as:</span>
+                  <div className="flex items-center justify-center">
+                    <User className="w-3.5 h-3.5 mr-1.5" />
+                    {user?.fullName || user?.username || 'Admin'}
+                  </div>
                 </div>
                 <Button
                   variant="ghost"
