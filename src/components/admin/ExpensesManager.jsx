@@ -293,12 +293,13 @@ const ExpensesManager = () => {
                                 <Input
                                     type="date"
                                     value={editingExpense.date || ''}
+                                    max={new Date().toISOString().split('T')[0]}
                                     onChange={(e) => setEditingExpense(prev => ({ ...prev, date: e.target.value }))}
                                     className="rounded-xl"
                                 />
                             </div>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2" hidden={true}>
                             <Label className="text-sm font-semibold text-gray-700">Created By</Label>
                             <Input
                                 value={editingExpense.createdBy || ''}
@@ -309,7 +310,7 @@ const ExpensesManager = () => {
                     </div>
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label className="text-sm font-semibold text-gray-700">Remarks (Optional)</Label>
+                            <Label className="text-sm font-semibold text-gray-700">Remarks</Label>
                             <Textarea
                                 rows={6}
                                 value={editingExpense.remarks || ''}
@@ -402,6 +403,7 @@ const ExpensesManager = () => {
                                 <Input
                                     type="date"
                                     value={filterDateStart}
+                                    max={new Date().toISOString().split('T')[0]}
                                     onChange={(e) => {
                                         setFilterDateStart(e.target.value);
                                         setDatePreset('custom');
@@ -414,6 +416,7 @@ const ExpensesManager = () => {
                                 <Input
                                     type="date"
                                     value={filterDateEnd}
+                                    max={new Date().toISOString().split('T')[0]}
                                     onChange={(e) => {
                                         setFilterDateEnd(e.target.value);
                                         setDatePreset('custom');
@@ -473,7 +476,7 @@ const ExpensesManager = () => {
                         <tr>
                             <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Date</th>
                             <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Description</th>
-                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 hidden md:table-cell">Details</th>
+                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 hidden md:table-cell">Remarks</th>
                             <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Amount</th>
                             <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 hidden md:table-cell">Created By</th>
                             <th className="text-right py-4 px-6 font-semibold text-sm text-gray-600">Actions</th>

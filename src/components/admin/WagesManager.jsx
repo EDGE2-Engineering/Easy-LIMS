@@ -55,9 +55,8 @@ const WorkLogManager = () => {
     const years = useMemo(() => {
         const currentYear = new Date().getFullYear();
         const startYear = currentYear - 5;
-        const endYear = currentYear + 1;
         const result = [];
-        for (let y = endYear; y >= startYear; y--) {
+        for (let y = currentYear; y >= startYear; y--) {
             result.push(y.toString());
         }
         return result;
