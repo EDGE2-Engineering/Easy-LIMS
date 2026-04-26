@@ -470,69 +470,48 @@ const ExpensesManager = () => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <table className="w-full">
-                    <thead className="bg-gray-50/50 border-b border-gray-100">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b">
                         <tr>
-                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Date</th>
-                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Description</th>
-                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 hidden md:table-cell">Remarks</th>
-                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Amount</th>
-                            <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600 hidden md:table-cell">Created By</th>
-                            <th className="text-right py-4 px-6 font-semibold text-sm text-gray-600">Actions</th>
+                            <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Date</th>
+                            <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Description / Remarks</th>
+                            <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Amount</th>
+                            <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] hidden md:table-cell">Created By</th>
+                            <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                         {paginatedExpenses.length > 0 ? (
                             paginatedExpenses.map((expense) => (
                                 <tr key={expense.id} className="hover:bg-gray-50/50 transition-colors group">
-                                    <td className="py-4 px-6">
-                                        <div className="flex flex-col">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                                    {new Date(expense.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                                </span>
-                                            </div>
+                                    <td className="py-5 px-6">
+                                        <span className="font-mono font-bold text-gray-700 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
+                                            {new Date(expense.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </span>
+                                    </td>
+                                    <td className="py-5 px-6">
+                                        <div className="font-bold text-gray-900 group-hover:text-primary transition-colors">{expense.description}</div>
+                                        <div className="text-xs text-gray-500 mt-1 line-clamp-1">{expense.remarks || 'No remarks'}</div>
+                                    </td>
+
+                                    <td className="py-5 px-6 text-center">
+                                        <div className="font-mono font-bold text-primary">
+                                            ₹{Number(expense.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                         </div>
                                     </td>
-                                    <td className="py-4 px-6">
-                                        <div className="flex items-center font-normal text-gray-900">
-                                            <span className="font-normal text-gray-900 group-hover:text-primary transition-colors">
-                                                {expense.description}
-                                            </span>
+                                    <td className="py-5 px-6 text-center hidden md:table-cell">
+                                        <div className="text-xs font-semibold text-gray-500 tracking-tight">
+                                            {expense.createdBy}
                                         </div>
                                     </td>
 
-                                    <td className="py-4 px-6 hidden md:table-cell">
-                                        <div className="flex flex-col gap-1 font-normal text-gray-900">
-                                            {expense.remarks && (
-                                                <p className="font-normal text-gray-900 group-hover:text-primary transition-colors" title={expense.remarks}>
-                                                    {expense.remarks}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="py-4 px-6">
-                                        <div className="flex items-center font-bold text-gray-900">
-                                            <IndianRupee className="w-3.5 h-3.5 mr-0.5 text-gray-400" />
-                                            {Number(expense.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                        </div>
-                                    </td>
-                                    <td className="py-4 px-6 hidden md:table-cell">
-                                        <div className="flex flex-col gap-1">
-                                            <div className="flex items-center text-xs text-gray-500">
-                                               {expense.createdBy}
-                                            </div>
-                                        </div>
-                                    </td>
-
-                                    <td className="py-4 px-6 text-right">
-                                        <div className="flex justify-end space-x-2">
-                                            <Button variant="ghost" size="icon" onClick={() => handleEdit(expense)} className="h-8 w-8 rounded-lg hover:bg-blue-50 hover:text-blue-600">
+                                    <td className="py-5 px-6 text-center">
+                                        <div className="flex justify-center gap-2">
+                                            <Button variant="ghost" size="sm" onClick={() => handleEdit(expense)} className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all">
                                                 <Edit className="w-4 h-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(expense)} className="h-8 w-8 rounded-lg hover:bg-red-50 hover:text-red-600">
+                                            <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(expense)} className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all">
                                                 <Trash2 className="w-4 h-4" />
                                             </Button>
                                         </div>

@@ -144,7 +144,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                         className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden py-2"
                       >
                         <div className="px-4 py-2 border-b border-gray-50 mb-1">
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Account</p>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Username</p>
                           <p className="text-sm font-bold text-gray-800 truncate">{user?.username}</p>
                         </div>
                         <button
