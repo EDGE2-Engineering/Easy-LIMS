@@ -519,10 +519,10 @@ const WorkLogManager = () => {
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2"><ClipboardCheck className="w-6 h-6 text-primary" /> Employee Work Log</h1>
-                    <p className="text-gray-500 font-medium">Track and manage monthly attendance records for all employees</p>
-                </div>
+                {/* <div>
+                    <h1 className="text-md font-bold text-gray-900 tracking-tight flex items-center gap-2"><ClipboardCheck className="w-6 h-6 text-primary" /> Employee Work Log</h1>
+                    <p className="text-gray-500 text-sm">Track and manage monthly attendance records for all employees</p>
+                </div> */}
                 <div className="relative w-full md:w-80">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input placeholder="Search employees..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 h-11 rounded-xl bg-white border-gray-200 focus:ring-primary shadow-sm" />
