@@ -240,19 +240,27 @@ const AdminUsersManager = () => {
                         </div>
                         
                         {formData.role === ROLES.TECHNICIAN && (
-                            <div className="space-y-2 border-t pt-2">
-                                <Label className="text-primary font-bold">Technician Departments</Label>
-                                <div className="grid grid-cols-1 gap-2">
-                                    {Object.values(JOB_CATEGORIES).map(cat => (
-                                        <div key={cat} className="flex items-center space-x-2">
-                                            <Checkbox 
-                                                id={`cap-${cat}`} 
-                                                checked={formData.capabilities.includes(cat)}
-                                                onCheckedChange={() => handleCapabilityToggle(cat)}
-                                            />
-                                            <Label htmlFor={`cap-${cat}`} className="text-xs">{cat}</Label>
-                                        </div>
-                                    ))}
+                            <div className="space-y-3 border-t pt-4">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-primary font-bold">Technician Departments</Label>
+                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Select one or more</span>
+                                </div>
+                                <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                    {departments.length > 0 ? (
+                                        departments.map(dept => (
+                                            <div key={dept.name} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                                                <Checkbox 
+                                                    id={`cap-${dept.name}`} 
+                                                    checked={formData.capabilities.includes(dept.name)}
+                                                    onCheckedChange={() => handleCapabilityToggle(dept.name)}
+                                                    className="rounded-md"
+                                                />
+                                                <Label htmlFor={`cap-${dept.name}`} className="text-xs font-medium cursor-pointer flex-grow">{dept.name}</Label>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-xs text-gray-400 italic">No departments found in database.</p>
+                                    )}
                                 </div>
                             </div>
                         )}

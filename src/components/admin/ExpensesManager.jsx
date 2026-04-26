@@ -333,39 +333,69 @@ const ExpensesManager = () => {
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <Input
                             placeholder="Search Expenses..."
-                            className="pl-10 w-full h-12 text-sm bg-white border-gray-200 rounded-2xl focus:ring-primary focus:border-primary transition-all shadow-sm"
+                            className="pl-10 w-full h-10 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <Button
-                        variant={showFilters ? "secondary" : "outline"}
-                        onClick={() => setShowFilters(!showFilters)}
-                        className={`h-12 px-4 rounded-2xl transition-all ${showFilters ? 'bg-primary/10 text-primary border-primary/20' : ''}`}
+                        onClick={handleAddNew}
+                        className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
                     >
-                        <Filter className="w-4 h-4 mr-2" />
-                        Filters
-                        {(filterByCreator !== 'all' || filterDateStart || filterDateEnd) && (
-                            <Badge className="ml-2 bg-primary text-white scale-75">!</Badge>
-                        )}
+                        <Plus className="w-4 h-4 mr-2" /> Add Expense
                     </Button>
-                    <div className="flex items-center gap-2">
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-4">
+                        <Button
+                            variant={showFilters ? "secondary" : "outline"}
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={`h-10 px-4 rounded-xl transition-all border-gray-200 ${showFilters ? 'bg-primary/10 text-primary border-primary/20' : 'bg-gray-50/50'}`}
+                        >
+                            <Filter className="w-4 h-4 mr-2" />
+                            <span className="text-sm font-bold uppercase tracking-widest leading-none">Filters</span>
+                            {(filterByCreator !== 'all' || filterDateStart || filterDateEnd) && (
+                                <Badge className="ml-2 bg-primary text-white scale-75">!</Badge>
+                            )}
+                        </Button>
+
                         <Button
                             variant="outline"
                             onClick={downloadCSV}
                             disabled={filteredExpenses.length === 0}
-                            className="h-12 px-4 rounded-2xl border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all font-semibold"
+                            className="h-10 px-4 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all text-sm font-bold uppercase tracking-widest leading-none"
                             title="Download CSV Report"
                         >
                             <Download className="w-4 h-4 mr-2" />
-                            <span className="hidden sm:inline">Export Report</span>
+                            <span>Export CSV</span>
                         </Button>
-                        <Button
-                            onClick={handleAddNew}
-                            className="bg-primary hover:bg-primary-dark text-white h-12 px-6 rounded-2xl shadow-sm text-sm font-semibold shrink-0"
-                        >
-                            <Plus className="w-4 h-4 mr-2" /> Add Expense
-                        </Button>
+
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Sort</span>
+                            <Select value={sortField} onValueChange={setSortField}>
+                                <SelectTrigger className="w-40 h-10 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="date">Date</SelectItem>
+                                    <SelectItem value="amount">Amount</SelectItem>
+                                    <SelectItem value="description">Description</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-10 w-10 border-gray-200 bg-gray-50/50 rounded-lg"
+                                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                            >
+                                {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">
+                        Total: <span className="text-primary">₹{filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0).toLocaleString()}</span>
                     </div>
                 </div>
 
@@ -441,33 +471,6 @@ const ExpensesManager = () => {
                         </div>
                     </div>
                 )}
-
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Sort By</span>
-                        <Select value={sortField} onValueChange={setSortField}>
-                            <SelectTrigger className="w-40 h-10 text-sm bg-white border-gray-200 rounded-xl">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="date">Date</SelectItem>
-                                <SelectItem value="amount">Amount</SelectItem>
-                                <SelectItem value="description">Description</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-10 w-10 border-gray-200 bg-white rounded-xl"
-                            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                        >
-                            {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-                        </Button>
-                    </div>
-                    <div className="text-sm text-gray-500 font-normal">
-                        Filtered Total: <span className="text-primary font-bold">₹{filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0).toLocaleString()}</span>
-                    </div>
-                </div>
             </div>
 
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
