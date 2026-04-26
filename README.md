@@ -10,6 +10,7 @@
 
 ```
 sudo apt install postgresql-client-common
+sudo apt update && sudo apt install postgresql-client
 ```
 
 ### Export Supabase Database as SQL file
@@ -18,7 +19,7 @@ sudo apt install postgresql-client-common
 #!/bin/bash
 
 # Supabase connection variables
-DB_HOST="your-project-ref.supabase.co"
+DB_HOST="ymhkdcizaurcnybkyxdm.supabase.co"
 DB_PORT="5432"
 DB_NAME="postgres"
 DB_USER="postgres"
