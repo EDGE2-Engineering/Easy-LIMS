@@ -53,3 +53,6 @@ preview:
 stop:
 	@echo "Stopping servers on port 3000..."
 	@lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "No process found on port 3000"
+
+android:
+	@cd mobile-apps/android/android && ./gradlew assembleDebug

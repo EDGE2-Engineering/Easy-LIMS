@@ -37,3 +37,19 @@ unset PGPASSWORD
 
 echo "Backup completed: $OUTPUT_FILE"
 ```
+
+### Android App
+
+```
+sudo apt update
+sudo apt install openjdk-17-jdk -y
+
+# Install SDKMAN
+curl -s "https://get.sdkman.io" | bash
+
+# Load SDKMAN into your shell
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+
+# Install Gradle (latest stable)
+sdk install gradle
+```
