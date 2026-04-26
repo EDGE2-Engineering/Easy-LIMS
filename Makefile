@@ -1,6 +1,6 @@
 # Makefile for running the project
 
-.PHONY: help install dev preview stop
+.PHONY: help install dev preview stop build build-production clean clean-build android android-install
 
 # Default target
 help:
@@ -54,5 +54,11 @@ stop:
 	@echo "Stopping servers on port 3000..."
 	@lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "No process found on port 3000"
 
-android:
-	@cd mobile-apps/android/android && ./gradlew assembleDebug
+# Mobile targets
+android-install:
+	@echo "Installing mobile dependencies..."
+	@cd mobile-apps/android && npm install
+
+android: android-install
+	@echo "Starting Android build/run process..."
+	@cd mobile-apps/android && npm run android
