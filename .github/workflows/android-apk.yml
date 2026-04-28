@@ -33,6 +33,10 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Prebuild Android
+        working-directory: mobile-apps/android
+        run: npx expo prebuild --platform android
+
       - name: Build APK
         working-directory: mobile-apps/android/android
         run: chmod +x gradlew && ./gradlew assembleDebug
