@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MermaidDiagram } from '@lightenna/react-mermaid-diagram';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -19,11 +20,18 @@ import AdminCompanyCalendar from './AdminCompanyCalendar';
 
 import { enableInfoDiagramZoom, getSiteContent } from '../../data/config';
 
-const AdminSystemSettings = () => {
+const AdminSystemSettings = ({ id }) => {
+    const navigate = useNavigate();
     const siteName = getSiteContent().global?.siteName;
+    const activeTab = id || 'unit_types';
+
+    const handleTabChange = (value) => {
+        navigate(`/settings/system/${value}`);
+    };
+
     return (
         <div className="space-y-4">
-            <Tabs defaultValue="unit_types" className="w-full">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <div className="flex justify-center mb-6">
                     <TabsList className="bg-white p-1 border border-gray-200 rounded-xl shadow-sm h-auto inline-flex flex-wrap justify-center">
                         <TabsTrigger
