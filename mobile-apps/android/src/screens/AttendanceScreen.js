@@ -143,6 +143,7 @@ export default function AttendanceScreen() {
         <TouchableOpacity 
           onPress={() => view === 'history' ? setView('list') : navigation.goBack()} 
           style={styles.backButton}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
         >
           <ChevronLeft color="#111827" size={28} />
         </TouchableOpacity>
@@ -259,7 +260,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F3F4F6',
   },
   backButton: {
-    padding: 4,
+    padding: 12,
+    marginLeft: -12,
   },
   headerTitle: {
     fontSize: 20,

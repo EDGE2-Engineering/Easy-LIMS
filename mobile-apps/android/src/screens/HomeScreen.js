@@ -1,13 +1,24 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LogOut, Receipt, Users } from 'lucide-react-native';
 import { supabase } from '../lib/supabase';
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const sessionStr = await AsyncStorage.getItem('user_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        setUserName(session.fullName || session.username || 'User');
+      }
+    };
+    fetchUser();
+  }, []);
 
   async function handleLogout() {
     await AsyncStorage.removeItem('user_session');
@@ -18,9 +29,13 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Welcome back,</Text>
-          <Text style={styles.title}>Dashboard</Text>
+          <Text style={styles.title}>{userName}</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+        <TouchableOpacity 
+          onPress={handleLogout} 
+          style={styles.logoutButton}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        >
           <LogOut color="#EF4444" size={24} />
         </TouchableOpacity>
       </View>
@@ -76,7 +91,7 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   logoutButton: {
-    padding: 8,
+    padding: 12,
     backgroundColor: '#FEE2E2',
     borderRadius: 12,
   },

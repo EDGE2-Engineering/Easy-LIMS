@@ -60,5 +60,7 @@ android-install:
 	@cd mobile-apps/android && npm install
 
 android: android-install
+	@echo "Syncing app configuration..."
+	@cd mobile-apps/android && npx expo prebuild --platform android
 	@echo "Starting Android build/run process..."
 	@cd mobile-apps/android && npm run android
