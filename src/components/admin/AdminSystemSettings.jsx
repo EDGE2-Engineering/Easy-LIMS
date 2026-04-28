@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { MermaidDiagram } from '@lightenna/react-mermaid-diagram';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Ruler, Hash, CreditCard, FileText, Axe, Building2, Info, CheckCircle2, ChevronRight, ZoomIn, ZoomOut, RotateCcw, HandHeart, SwatchBook, TestTube, MapPin, BriefcaseBusiness, Package, UsersRound, Fullscreen, IndianRupee } from 'lucide-react';
+import { Ruler, Hash, CreditCard, FileText, Axe, Building2, Info, CheckCircle2, ChevronRight, ZoomIn, ZoomOut, RotateCcw, HandHeart, SwatchBook, TestTube, MapPin, BriefcaseBusiness, Package, UsersRound, Fullscreen, IndianRupee, Calendar } from 'lucide-react';
 
 
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
@@ -16,6 +15,7 @@ import AdminDepartmentsManager from './AdminDepartmentsManager';
 import AdminCollectionCentersManager from './AdminCollectionCentersManager';
 import AdminMaterialsManager from './AdminMaterialsManager';
 import AdminUsersManager from './AdminUsersManager';
+import AdminCompanyCalendar from './AdminCompanyCalendar';
 
 import { enableInfoDiagramZoom, getSiteContent } from '../../data/config';
 
@@ -77,20 +77,18 @@ const AdminSystemSettings = () => {
                             <Package className="w-4 h-4" /> Materials
                         </TabsTrigger>
                         <TabsTrigger
+                            value="company_calendar"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Calendar className="w-4 h-4" /> Calendar
+                        </TabsTrigger>
+                        <TabsTrigger
                             value="users"
                             className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
                         >
                             <UsersRound className="w-4 h-4" /> Users
                         </TabsTrigger>
-
-
-
-                        {/* <TabsTrigger
-                            value="info"
-                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                        >
-                            <Info className="w-4 h-4" /> Info
-                        </TabsTrigger> */}
+                        
                     </TabsList>
                 </div>
 
@@ -133,6 +131,10 @@ const AdminSystemSettings = () => {
 
                 <TabsContent value="users" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <AdminUsersManager />
+                </TabsContent>
+
+                <TabsContent value="company_calendar" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <AdminCompanyCalendar />
                 </TabsContent>
 
 
