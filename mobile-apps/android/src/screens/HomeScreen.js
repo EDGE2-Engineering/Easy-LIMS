@@ -4,11 +4,13 @@ import { useNavigation } from '@react-navigation/native';
 import { LogOut, Receipt, Users } from 'lucide-react-native';
 import { supabase } from '../lib/supabase';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export default function HomeScreen() {
   const navigation = useNavigation();
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    await AsyncStorage.removeItem('user_session');
   }
 
   return (

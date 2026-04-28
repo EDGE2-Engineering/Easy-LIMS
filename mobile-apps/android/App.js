@@ -12,21 +12,34 @@ import AttendanceScreen from './src/screens/AttendanceScreen';
 
 const Stack = createNativeStackNavigator();
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+  const checkSession = async () => {
+    try {
+      const storedSession = await AsyncStorage.getItem('user_session');
+      if (storedSession) {
+        setSession(JSON.parse(storedSession));
+      } else {
+        setSession(null);
+      }
+    } catch (e) {
+      console.error('Failed to load session', e);
+    } finally {
       setLoading(false);
-    });
+    }
+  };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
+  useEffect(() => {
+    checkSession();
+    
+    // Simple polling or event listener could be added here for more complex apps
+    // For now, we'll check session on mount and provide a way to refresh
+    const interval = setInterval(checkSession, 1000); // Poll every second for demo/simplicity
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {

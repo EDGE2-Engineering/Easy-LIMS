@@ -1,22 +1,52 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
 import { supabase } from '../lib/supabase';
-import { Lock, Mail } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { User, Lock } from 'lucide-react-native';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function signInWithEmail() {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    });
+  async function signIn() {
+    if (!username || !password) {
+      Alert.alert('Error', 'Please enter both username and password');
+      return;
+    }
 
-    if (error) Alert.alert('Error', error.message);
-    setLoading(false);
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .eq('password', password)
+        .eq('is_active', true)
+        .single();
+
+      if (error || !data) {
+        Alert.alert('Authentication Failed', 'Invalid username or password');
+        setLoading(false);
+        return;
+      }
+
+      const sessionUser = {
+        id: data.id,
+        username: data.username,
+        fullName: data.full_name,
+        role: data.role,
+        user: { id: data.id } // For compatibility with existing session check
+      };
+
+      await AsyncStorage.setItem('user_session', JSON.stringify(sessionUser));
+      // The session change will be detected in App.js if we use a listener or trigger a re-render
+      // For now, we'll rely on the App.js state update logic (we might need to update App.js to listen to storage or use a global state)
+    } catch (err) {
+      Alert.alert('Error', err.message || 'An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -32,13 +62,13 @@ export default function LoginScreen() {
 
         <View style={styles.formContainer}>
           <View style={styles.inputContainer}>
-            <Mail color="#9CA3AF" size={20} style={styles.inputIcon} />
+            <User color="#9CA3AF" size={20} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Email Address"
+              placeholder="Username"
               placeholderTextColor="#9CA3AF"
-              onChangeText={(text) => setEmail(text)}
-              value={email}
+              onChangeText={(text) => setUsername(text)}
+              value={username}
               autoCapitalize={'none'}
             />
           </View>
@@ -56,7 +86,7 @@ export default function LoginScreen() {
             />
           </View>
 
-          <TouchableOpacity style={styles.button} onPress={signInWithEmail} disabled={loading}>
+          <TouchableOpacity style={styles.button} onPress={signIn} disabled={loading}>
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
