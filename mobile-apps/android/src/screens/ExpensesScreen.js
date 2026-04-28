@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { Plus, Receipt, Trash2, Edit2, X, ChevronLeft } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -43,15 +44,16 @@ export default function ExpensesScreen() {
       return;
     }
 
-    const session = await supabase.auth.getSession();
-    const userEmail = session.data.session?.user?.email || 'Mobile User';
+    const sessionStr = await AsyncStorage.getItem('user_session');
+    const session = sessionStr ? JSON.parse(sessionStr) : null;
+    const creator = session?.username || 'Mobile User';
 
     const payload = {
       description: formData.description,
       amount: parseFloat(formData.amount),
       date: formData.date,
       remarks: formData.remarks,
-      createdBy: userEmail
+      created_by: creator
     };
 
     if (editingId) {
@@ -59,7 +61,9 @@ export default function ExpensesScreen() {
       if (error) Alert.alert('Error', error.message);
       else fetchExpenses();
     } else {
-      const { error } = await supabase.from('expenses').insert([payload]);
+      // Generate a simple unique ID since the table uses 'text primary key'
+      const newPayload = { ...payload, id: `exp_${Date.now()}` };
+      const { error } = await supabase.from('expenses').insert([newPayload]);
       if (error) Alert.alert('Error', error.message);
       else fetchExpenses();
     }
@@ -121,7 +125,7 @@ export default function ExpensesScreen() {
       {item.remarks ? <Text style={styles.remarksText}>{item.remarks}</Text> : null}
       
       <View style={styles.cardActions}>
-        <Text style={styles.createdByText}>{item.createdBy}</Text>
+        <Text style={styles.createdByText}>{item.created_by}</Text>
         <View style={styles.actionButtons}>
           <TouchableOpacity onPress={() => openEditModal(item)} style={styles.actionBtn}>
             <Edit2 size={18} color="#4F46E5" />
