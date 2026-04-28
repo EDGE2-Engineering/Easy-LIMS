@@ -211,7 +211,6 @@ const AdminCompanyCalendar = () => {
                                                     ${event?.is_holiday ? 'bg-orange-100 text-orange-700 font-bold hover:bg-orange-200 ring-2 ring-orange-100 ring-offset-0' : 
                                                       isSun ? 'text-red-600 font-semibold bg-red-50 hover:bg-red-100' : 
                                                       'text-gray-700 hover:bg-gray-100'}
-                                                    ${event ? 'ring-2 ring-primary ring-offset-1' : ''}
                                                     ${isToday ? 'bg-primary/10 text-primary font-bold border border-primary/20' : ''}
                                                 `}
                                                 title={event ? event.event_name : format(day, 'PP')}
