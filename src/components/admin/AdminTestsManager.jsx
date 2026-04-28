@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Edit, Trash2, Save, Search, Download, Upload, AlertCircle, SortAsc, SortDesc } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Rupee from '../Rupee';
 import { useTests } from '@/contexts/TestsContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -450,12 +451,19 @@ const AdminTestsManager = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Button
-                        onClick={handleAddNew}
-                        className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
-                    >
-                        <Plus className="w-4 h-4 mr-2" /> Add Lab Test
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                onClick={handleAddNew}
+                                className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                            >
+                                <Plus className="w-4 h-4 mr-2" /> Add Lab Test
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Add a new laboratory test to the catalog</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
 
                 {/* Filters and Actions Row */}

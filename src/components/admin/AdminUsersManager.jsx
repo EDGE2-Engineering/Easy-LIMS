@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const AdminUsersManager = () => {
     const { user: currentUser } = useAuth();
@@ -154,12 +155,19 @@ const AdminUsersManager = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <Button
-                    onClick={handleNewUser}
-                    className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
-                >
-                    <Plus className="w-4 h-4 mr-2" /> Add User
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            onClick={handleNewUser}
+                            className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                        >
+                            <Plus className="w-4 h-4 mr-2" /> Add User
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                        <p className="text-xs">Create a new system user account</p>
+                    </TooltipContent>
+                </Tooltip>
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -202,10 +210,27 @@ const AdminUsersManager = () => {
                                     </Badge>
                                 </td>
                                 <td className="p-4 text-right flex justify-end gap-2">
-                                    <Button variant="ghost" size="sm" onClick={() => handleEditUser(u)}><Pencil className="w-4 h-4" /></Button>
-                                    <Button variant="ghost" size="sm" onClick={() => { setUserToToggle(u); setIsStatusDialogOpen(true); }}>
-                                        {u.is_active ? <UserMinus className="w-4 h-4 text-red-500" /> : <UserCheck className="w-4 h-4 text-green-500" />}
-                                    </Button>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="sm" onClick={() => handleEditUser(u)}>
+                                                <Pencil className="w-4 h-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                            <p className="text-xs">Edit user account</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="sm" onClick={() => { setUserToToggle(u); setIsStatusDialogOpen(true); }}>
+                                                {u.is_active ? <UserMinus className="w-4 h-4 text-red-500" /> : <UserCheck className="w-4 h-4 text-green-500" />}
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                            <p className="text-xs">{u.is_active ? 'Deactivate user' : 'Activate user'}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </td>
                             </tr>
                         ))}

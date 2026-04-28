@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, Trash2, ExternalLink, FileText, Loader2, AlertCircle, ArrowUpDown, SortAsc, SortDesc, Calendar, Plus } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -370,51 +371,71 @@ const AccountsManager = () => {
                   </SelectContent>
                 </Select>
 
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 hover:bg-primary/5 hover:text-primary transition-colors border-gray-200 rounded-lg flex-shrink-0"
-                  onClick={() =>
-                    setSortOrder(prev => (prev === "asc" ? "desc" : "asc"))
-                  }
-                  title={`Order: ${sortOrder === "asc" ? "Ascending" : "Descending"}`}
-                >
-                  {sortOrder === "asc" ? (
-                    <SortAsc className="w-4 h-4" />
-                  ) : (
-                    <SortDesc className="w-4 h-4" />
-                  )}
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 hover:bg-primary/5 hover:text-primary transition-colors border-gray-200 rounded-lg flex-shrink-0"
+                      onClick={() =>
+                        setSortOrder(prev => (prev === "asc" ? "desc" : "asc"))
+                      }
+                    >
+                      {sortOrder === "asc" ? (
+                        <SortAsc className="w-4 h-4" />
+                      ) : (
+                        <SortDesc className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                    <p className="text-xs">Toggle {sortOrder === 'asc' ? 'Descending' : 'Ascending'} Sort</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
 
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={resetFilters}
-              disabled={
-                !searchTerm &&
-                !fromDate &&
-                !toDate &&
-                filterDocType === "all" &&
-                filterUser === "all" &&
-                filterClient === "all" &&
-                sortField === "date" &&
-                sortOrder === "desc"
-              }
-              className="text-red-900 bg-red-50 hover:bg-red-500 hover:text-white h-9 text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2 whitespace-nowrap"
-            >
-              Reset All
-            </Button>
-            <Button
-              onClick={() => navigate('/doc/new', { state: { forceReset: Date.now() } })}
-              className="bg-primary hover:bg-primary-dark text-white h-10 px-4 rounded-xl shadow-sm text-xs font-semibold"
-            >
-              <Plus className="w-4 h-4 mr-2" /> Create Invoice / Quotation
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetFilters}
+                  disabled={
+                    !searchTerm &&
+                    !fromDate &&
+                    !toDate &&
+                    filterDocType === "all" &&
+                    filterUser === "all" &&
+                    filterClient === "all" &&
+                    sortField === "date" &&
+                    sortOrder === "desc"
+                  }
+                  className="text-red-900 bg-red-50 hover:bg-red-500 hover:text-white h-9 text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2 whitespace-nowrap"
+                >
+                  Reset All
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                <p className="text-xs">Clear all filters and sorting</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => navigate('/doc/new', { state: { forceReset: Date.now() } })}
+                  className="bg-primary hover:bg-primary-dark text-white h-10 px-4 rounded-xl shadow-sm text-xs font-semibold"
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Create Invoice / Quotation
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                <p className="text-xs">Generate a new billing or proposal document</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
@@ -535,24 +556,37 @@ const AccountsManager = () => {
                     {/* Actions */}
                     <td className="py-1 px-1 text-right">
                       <div className="flex justify-end space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="Open Document"
-                          className="text-primary hover:text-primary-dark hover:bg-primary/10 px-0 text-blue-600 text-xs px-1"
-                          onClick={() => handleOpen(record.id, record.quote_number)}
-                        >
-                          <ExternalLink className="w-4 h-4 mr-1 text-blue-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          title="Delete Document"
-                          size="sm"
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 px-1"
-                          onClick={() => handleDeleteClick(record)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-primary hover:text-primary-dark hover:bg-primary/10 px-0 text-blue-600 text-xs px-1"
+                              onClick={() => handleOpen(record.id, record.quote_number)}
+                            >
+                              <ExternalLink className="w-4 h-4 mr-1 text-blue-600" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Open document in viewer</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 px-1"
+                              onClick={() => handleDeleteClick(record)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Permanently delete this document</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </td>
                   </tr>

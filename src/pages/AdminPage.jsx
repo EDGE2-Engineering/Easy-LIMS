@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import Navbar from '@/components/Navbar';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Settings, LayoutDashboard, Home, FileText, User, Save, Loader2, UserCog, Plus, Database, HandHeart, IndianRupee, Ruler, BriefcaseBusiness, Hash, CreditCard, TestTube, Axe, Package, Cpu, ChevronDown, SwatchBook, Drill } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -44,11 +45,11 @@ const AdminPage = () => {
     };
 
     const TABS_CONFIG = [
-        { id: 'clients', label: 'Clients', icon: BriefcaseBusiness, view: VIEWS.SETTINGS },
-        { id: 'field_tests', label: 'Field Tests', icon: Drill, view: VIEWS.SETTINGS },
-        { id: 'lab_tests', label: 'Lab Tests', icon: TestTube, view: VIEWS.SETTINGS },
-        { id: 'sampling', label: 'Sampling', icon: SwatchBook, view: VIEWS.SETTINGS },
-        { id: 'system', label: 'System', icon: Cpu, view: VIEWS.SETTINGS }
+        { id: 'clients', label: 'Clients', icon: BriefcaseBusiness, view: VIEWS.SETTINGS, description: 'Manage your client database and contact information' },
+        { id: 'field_tests', label: 'Field Tests', icon: Drill, view: VIEWS.SETTINGS, description: 'Configure on-site testing services and pricing' },
+        { id: 'lab_tests', label: 'Lab Tests', icon: TestTube, view: VIEWS.SETTINGS, description: 'Manage laboratory testing parameters and standards' },
+        { id: 'sampling', label: 'Sampling', icon: SwatchBook, view: VIEWS.SETTINGS, description: 'Configure material sampling methods and types' },
+        { id: 'system', label: 'System', icon: Cpu, view: VIEWS.SETTINGS, description: 'General system settings, users, and masters' }
     ];
 
     const allowedTabs = TABS_CONFIG.filter(t => canView(t.view));
@@ -102,13 +103,19 @@ const AdminPage = () => {
                             <div className="hidden md:flex justify-center flex-1">
                                 <TabsList className="bg-white p-1 border border-gray-200 rounded-2xl shadow-sm h-auto inline-flex flex-wrap">
                                     {allowedTabs.map(t => (
-                                        <TabsTrigger
-                                            key={t.id}
-                                            value={t.id}
-                                            className="px-6 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2 font-medium"
-                                        >
-                                            <t.icon className="w-4 h-4" /> {t.label}
-                                        </TabsTrigger>
+                                        <Tooltip key={t.id}>
+                                            <TooltipTrigger asChild>
+                                                <TabsTrigger
+                                                    value={t.id}
+                                                    className="px-6 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2 font-medium"
+                                                >
+                                                    <t.icon className="w-4 h-4" /> {t.label}
+                                                </TabsTrigger>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">
+                                                <p className="text-xs">{t.description}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
                                     ))}
                                 </TabsList>
                             </div>

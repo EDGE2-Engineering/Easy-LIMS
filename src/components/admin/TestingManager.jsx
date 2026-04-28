@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, Loader2, AlertCircle, Package, CheckCircle2, FlaskConical, Beaker, Clock, Calendar, ArrowLeft, Save, X, Send, Edit } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -198,10 +199,17 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                         </div>
 
                                         <div className="flex justify-end pt-4">
-                                            <Button onClick={() => setSelectedCategory(cat)} className="bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20">
-                                                <Edit className="mr-2 h-4 w-4" />
-                                                Edit {cat} Results
-                                            </Button>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button onClick={() => setSelectedCategory(cat)} className="bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20">
+                                                        <Edit className="mr-2 h-4 w-4" />
+                                                        Edit {cat} Results
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                    <p className="text-xs">Open data entry form for {cat}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
                                         </div>
                                     </TabsContent>
                                 );

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const AdminCompanyCalendar = () => {
     const { toast } = useToast();
@@ -291,28 +292,43 @@ const AdminCompanyCalendar = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 text-gray-400 rounded-lg"
-                                                        onClick={() => handleDateClick(eventDate)}
-                                                    >
-                                                        <Pencil className="w-4 h-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                                                        onClick={() => {
-                                                            setSelectedDate(eventDate);
-                                                            setEditingEvent(event);
-                                                            handleDeleteEvent();
-                                                        }}
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
-                                                </div>
+                                                 <div className="flex justify-end gap-2">
+                                                     <Tooltip>
+                                                         <TooltipTrigger asChild>
+                                                             <Button
+                                                                 variant="ghost"
+                                                                 size="icon"
+                                                                 className="h-8 w-8 text-gray-400 rounded-lg"
+                                                                 onClick={() => handleDateClick(eventDate)}
+                                                             >
+                                                                 <Pencil className="w-4 h-4" />
+                                                             </Button>
+                                                         </TooltipTrigger>
+                                                         <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                             <p className="text-xs">Edit event details</p>
+                                                         </TooltipContent>
+                                                     </Tooltip>
+
+                                                     <Tooltip>
+                                                         <TooltipTrigger asChild>
+                                                             <Button
+                                                                 variant="ghost"
+                                                                 size="icon"
+                                                                 className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                                                                 onClick={() => {
+                                                                     setSelectedDate(eventDate);
+                                                                     setEditingEvent(event);
+                                                                     handleDeleteEvent();
+                                                                 }}
+                                                             >
+                                                                 <Trash2 className="w-4 h-4" />
+                                                             </Button>
+                                                         </TooltipTrigger>
+                                                         <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                             <p className="text-xs">Remove event from calendar</p>
+                                                         </TooltipContent>
+                                                     </Tooltip>
+                                                 </div>
                                             </td>
                                         </tr>
                                     );
@@ -337,31 +353,54 @@ const AdminCompanyCalendar = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDownloadCSV}
-                        className="rounded-xl border-gray-200 hover:bg-primary/5 hover:text-primary transition-all flex items-center gap-2 h-9"
-                    >
-                        <Download className="w-4 h-4" /> Download
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleDownloadCSV}
+                                className="rounded-xl border-gray-200 hover:bg-primary/5 hover:text-primary transition-all flex items-center gap-2 h-9"
+                            >
+                                <Download className="w-4 h-4" /> Download
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Export calendar events to CSV file</p>
+                        </TooltipContent>
+                    </Tooltip>
+
                     <div className="flex items-center gap-3 bg-gray-50 p-1.5 rounded-xl border border-gray-100">
-                        <Button
-                            variant={view === 'calendar' ? 'default' : 'ghost'}
-                            size="sm"
-                            onClick={() => setView('calendar')}
-                            className={`rounded-lg flex items-center gap-2 ${view === 'calendar' ? 'shadow-sm' : ''}`}
-                        >
-                            <CalendarIcon className="w-4 h-4" /> Full View
-                        </Button>
-                        <Button
-                            variant={view === 'list' ? 'default' : 'ghost'}
-                            size="sm"
-                            onClick={() => setView('list')}
-                            className={`rounded-lg flex items-center gap-2 ${view === 'list' ? 'shadow-sm' : ''}`}
-                        >
-                            <ListIcon className="w-4 h-4" /> List View
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant={view === 'calendar' ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => setView('calendar')}
+                                    className={`rounded-lg flex items-center gap-2 ${view === 'calendar' ? 'shadow-sm' : ''}`}
+                                >
+                                    <CalendarIcon className="w-4 h-4" /> Full View
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                <p className="text-xs">Switch to annual calendar grid view</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant={view === 'list' ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => setView('list')}
+                                    className={`rounded-lg flex items-center gap-2 ${view === 'list' ? 'shadow-sm' : ''}`}
+                                >
+                                    <ListIcon className="w-4 h-4" /> List View
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                <p className="text-xs">Switch to chronological list view</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
                 </div>
             </div>
@@ -369,23 +408,39 @@ const AdminCompanyCalendar = () => {
             {/* Year Selector (only for calendar view) */}
             {view === 'calendar' && (
                 <div className="flex justify-center items-center gap-6">
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setSelectedYear(subYears(selectedYear, 1))}
-                        className="rounded-full w-10 h-10 hover:bg-primary/5 hover:text-primary transition-all border-gray-200"
-                    >
-                        <ChevronLeft className="w-5 h-5" />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setSelectedYear(subYears(selectedYear, 1))}
+                                className="rounded-full w-10 h-10 hover:bg-primary/5 hover:text-primary transition-all border-gray-200"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Previous Year</p>
+                        </TooltipContent>
+                    </Tooltip>
+
                     <h2 className="text-4xl font-black text-gray-900 tracking-tight">{format(selectedYear, 'yyyy')}</h2>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setSelectedYear(addYears(selectedYear, 1))}
-                        className="rounded-full w-10 h-10 hover:bg-primary/5 hover:text-primary transition-all border-gray-200"
-                    >
-                        <ChevronRight className="w-5 h-5" />
-                    </Button>
+
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setSelectedYear(addYears(selectedYear, 1))}
+                                className="rounded-full w-10 h-10 hover:bg-primary/5 hover:text-primary transition-all border-gray-200"
+                            >
+                                <ChevronRight className="w-5 h-5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Next Year</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
             )}
 

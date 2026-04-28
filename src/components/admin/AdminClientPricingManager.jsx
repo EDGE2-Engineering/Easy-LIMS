@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Save, Trash2, ShieldAlert } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Rupee from '../Rupee';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -228,15 +229,21 @@ const AdminClientPricingManager = () => {
                                                                 </Button>
                                                             )}
                                                             {clientPrice && (
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={() => handleRemovePrice(service.id, 'service')}
-                                                                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                                                                    title="Remove custom price"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </Button>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => handleRemovePrice(service.id, 'service')}
+                                                                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                                        <p className="text-xs">Remove custom price and revert to default</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
                                                             )}
                                                         </div>
                                                     </td>
@@ -293,15 +300,21 @@ const AdminClientPricingManager = () => {
                                                                 </Button>
                                                             )}
                                                             {clientPrice && (
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={() => handleRemovePrice(test.id, 'test')}
-                                                                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                                                                    title="Remove custom price"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </Button>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => handleRemovePrice(test.id, 'test')}
+                                                                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                                        <p className="text-xs">Remove custom price and revert to default</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
                                                             )}
                                                         </div>
                                                     </td>

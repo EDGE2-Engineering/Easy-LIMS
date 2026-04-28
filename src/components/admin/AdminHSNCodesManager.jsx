@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Save, Search, AlertCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useHSNCodes } from '@/contexts/HSNCodesContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -152,12 +153,19 @@ const AdminHSNCodesManager = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <Button
-                    onClick={handleAddNew}
-                    className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
-                >
-                    <Plus className="w-4 h-4 mr-2" /> Add HSN/SAC Code
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            onClick={handleAddNew}
+                            className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                        >
+                            <Plus className="w-4 h-4 mr-2" /> Add HSN/SAC Code
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                        <p className="text-xs">Add a new tax classification code</p>
+                    </TooltipContent>
+                </Tooltip>
             </div>
 
             <div className="bg-white rounded-lg shadow border border-gray-100 overflow-hidden">
@@ -180,12 +188,27 @@ const AdminHSNCodesManager = () => {
                                 </td>
                                 <td className="py-2 px-4 text-right">
                                     <div className="flex justify-end gap-1">
-                                        <Button variant="ghost" size="icon" onClick={() => handleEdit(hsn)}>
-                                            <Edit className="w-4 h-4 text-gray-600" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(hsn)}>
-                                            <Trash2 className="w-4 h-4 text-red-500" />
-                                        </Button>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => handleEdit(hsn)}>
+                                                    <Edit className="w-4 h-4 text-gray-600" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                <p className="text-xs">Edit code details</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(hsn)}>
+                                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                <p className="text-xs">Permanently delete this code</p>
+                                            </TooltipContent>
+                                        </Tooltip>
                                     </div>
                                 </td>
                             </tr>

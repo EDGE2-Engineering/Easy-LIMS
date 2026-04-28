@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { Save } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const AdminSettingsManager = () => {
     const { settings, updateSetting, loading } = useSettings();
@@ -71,14 +72,22 @@ const AdminSettingsManager = () => {
                     <h2 className="text-xl font-bold hidden">Tax and Bank Details</h2>
                     <p className="text-gray-500 text-sm mt-1 hidden">Configure tax rates and bank details for invoices.</p>
                 </div>
-                <Button
-                    onClick={handleSave}
-                    className="bg-primary hover:bg-primary-dark flex items-center text-white"
-                    disabled={isSaving}
-                >
-                    <Save className="w-4 h-4 mr-2" />
-                    {isSaving ? 'Saving...' : 'Save Settings'}
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            onClick={handleSave}
+                            className="bg-primary hover:bg-primary-dark flex items-center text-white"
+                            disabled={isSaving}
+                        >
+                            <Plus className="w-4 h-4 mr-2 hidden" />
+                            <Save className="w-4 h-4 mr-2" />
+                            {isSaving ? 'Saving...' : 'Save Settings'}
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                        <p className="text-xs">Update global system configurations</p>
+                    </TooltipContent>
+                </Tooltip>
             </div>
 
             {/* Tax Configuration Section */}

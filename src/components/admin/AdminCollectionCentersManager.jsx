@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Save, Search, AlertCircle, Loader2, MapPin } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -224,12 +225,19 @@ const AdminCollectionCentersManager = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <Button
-                    onClick={handleAddNew}
-                    className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
-                >
-                    <Plus className="w-4 h-4 mr-2" /> Add Collection Center
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            onClick={handleAddNew}
+                            className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                        >
+                            <Plus className="w-4 h-4 mr-2" /> Add Collection Center
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                        <p className="text-xs">Register a new sample collection location</p>
+                    </TooltipContent>
+                </Tooltip>
             </div>
 
             <div className="bg-white rounded-lg shadow border border-gray-100 overflow-hidden">
@@ -255,12 +263,27 @@ const AdminCollectionCentersManager = () => {
                                 </td>
                                 <td className="py-2 px-4 text-right">
                                     <div className="flex justify-end gap-1">
-                                        <Button variant="ghost" size="icon" onClick={() => handleEdit(center)}>
-                                            <Edit className="w-4 h-4 text-gray-600" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(center)}>
-                                            <Trash2 className="w-4 h-4 text-red-500" />
-                                        </Button>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => handleEdit(center)}>
+                                                    <Edit className="w-4 h-4 text-gray-600" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                <p className="text-xs">Edit location details</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(center)}>
+                                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                <p className="text-xs">Permanently remove this center</p>
+                                            </TooltipContent>
+                                        </Tooltip>
                                     </div>
                                 </td>
                             </tr>

@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Edit, Trash2, Save, Search, Download, Upload, AlertCircle, SortAsc, SortDesc } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Rupee from '../Rupee';
 import { useServices } from '@/contexts/ServicesContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -445,12 +446,19 @@ const AdminServicesManager = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Button
-                        onClick={handleAddNew}
-                        className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
-                    >
-                        <Plus className="w-4 h-4 mr-2" /> Add Field Test
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                onClick={handleAddNew}
+                                className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                            >
+                                <Plus className="w-4 h-4 mr-2" /> Add Field Test
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Add a new field testing service to the catalog</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
 
                 {/* Filters and Actions Row */}
@@ -482,15 +490,21 @@ const AdminServicesManager = () => {
                                     <SelectItem value="hsn">HSN</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-10 w-10 border-gray-200 bg-gray-50/50 rounded-lg"
-                                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                                title={`Order: ${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
-                            >
-                                {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-10 w-10 border-gray-200 bg-gray-50/50 rounded-lg"
+                                        onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                    >
+                                        {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Toggle {sortOrder === 'asc' ? 'Descending' : 'Ascending'} Sort</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
 
                         <Button
@@ -582,12 +596,27 @@ const AdminServicesManager = () => {
 
                                 <td className="py-1 px-1 text-right">
                                     <div className="flex justify-end space-x-2">
-                                        <Button variant="ghost" size="icon" onClick={() => handleEdit(service)}>
-                                            <Edit className="w-4 h-4 text-gray-600" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(service)}>
-                                            <Trash2 className="w-4 h-4 text-red-500" />
-                                        </Button>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => handleEdit(service)}>
+                                                    <Edit className="w-4 h-4 text-gray-600" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                <p className="text-xs">Edit service details</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(service)}>
+                                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                <p className="text-xs">Permanently delete this service</p>
+                                            </TooltipContent>
+                                        </Tooltip>
                                     </div>
                                 </td>
                             </tr>

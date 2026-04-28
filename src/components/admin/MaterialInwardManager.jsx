@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, Trash2, Edit, ExternalLink, FileText, Loader2, AlertCircle, ArrowUpDown, SortAsc, SortDesc, Calendar, Package, Plus, X, Save, ArrowLeft } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -771,14 +772,21 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                                         <SelectItem value="status">Status</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-9 w-9 border-gray-200 rounded-lg"
-                                    onClick={() => setSortOrder(prev => (prev === "asc" ? "desc" : "asc"))}
-                                >
-                                    {sortOrder === "asc" ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-9 w-9 border-gray-200 rounded-lg"
+                                            onClick={() => setSortOrder(prev => (prev === "asc" ? "desc" : "asc"))}
+                                        >
+                                            {sortOrder === "asc" ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                        <p className="text-xs">Toggle {sortOrder === 'asc' ? 'Descending' : 'Ascending'} Sort</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         </div>
                     </div>
@@ -792,12 +800,19 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                         >
                             Reset
                         </Button>
-                        <Button
-                            onClick={handleAddNew}
-                            className="bg-primary hover:bg-primary-dark text-white h-10 px-4 rounded-xl shadow-sm text-xs font-semibold"
-                        >
-                            <Plus className="w-4 h-4 mr-2" /> New Material Inward Entry
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    onClick={handleAddNew}
+                                    className="bg-primary hover:bg-primary-dark text-white h-10 px-4 rounded-xl shadow-sm text-xs font-semibold"
+                                >
+                                    <Plus className="w-4 h-4 mr-2" /> New Material Inward Entry
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                <p className="text-xs">Register new samples arriving at the lab</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
                 </div>
             </div>
@@ -872,22 +887,37 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                                         </td>
                                         <td className="py-3 px-4 text-right">
                                             <div className="flex justify-end space-x-4">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm px-2"
-                                                    onClick={() => handleEdit(record)}
-                                                    className="text-blue-600"
-                                                >
-                                                    <Edit className="w-4 h-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm px-2"
-                                                    onClick={() => handleDeleteClick(record)}
-                                                    className="text-red-500"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm px-2"
+                                                            onClick={() => handleEdit(record)}
+                                                            className="text-blue-600"
+                                                        >
+                                                            <Edit className="w-4 h-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                        <p className="text-xs">Edit inward details and samples</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm px-2"
+                                                            onClick={() => handleDeleteClick(record)}
+                                                            className="text-red-500"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                        <p className="text-xs">Delete this inward record</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
                                             </div>
                                         </td>
                                     </tr>

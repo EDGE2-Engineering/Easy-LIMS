@@ -7,6 +7,7 @@ import { getSiteContent, VIEWS, ROLES, APP_CONFIG } from '@/data/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { usePermissions } from '@/hooks/usePermissions';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -97,41 +98,65 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
           </Link>
 
           <div className="hidden md:flex items-center space-x-2">
-            {navItems.map((item) => {
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  state={item.path === '/doc/new' ? { forceReset: Date.now() } : undefined}
-                  className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all text-sm font-semibold ${isActive(item.path)
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-gray-600 hover:text-primary hover:bg-gray-300'
-                    }`}
-                >
-                  <item.icon className={`w-4 h-4 ${isActive(item.path) ? 'text-white' : ''}`} />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
+            <TooltipProvider>
+              {navItems.map((item) => {
+                const descriptions = {
+                  '/settings/jobs': 'Manage laboratory testing jobs',
+                  '/settings/expenses': 'Track company expenses and payments',
+                  '/settings/work_log': 'Monitor daily laboratory work logs',
+                  '/settings/clients': 'Configure system masters and users'
+                };
+
+                return (
+                  <Tooltip key={item.path}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to={item.path}
+                        state={item.path === '/doc/new' ? { forceReset: Date.now() } : undefined}
+                        className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all text-sm font-semibold ${isActive(item.path)
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'text-gray-600 hover:text-primary hover:bg-gray-300'
+                          }`}
+                      >
+                        <item.icon className={`w-4 h-4 ${isActive(item.path) ? 'text-white' : ''}`} />
+                        <span>{item.label}</span>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                      <p className="text-xs">{descriptions[item.path] || item.label}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </TooltipProvider>
             {user && (
               <div className="relative">
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className={`flex flex-col items-center justify-center px-4 py-2 rounded-xl transition-all duration-300 border ${
-                    dropdownOpen 
-                      ? 'bg-primary/5 border-primary/20 shadow-inner' 
-                      : 'bg-white border-gray-100 hover:border-primary/20 hover:bg-gray-50'
-                  }`}
-                >
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Logged in as</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="w-3.5 h-3.5 text-primary" />
-                    </div>
-                    <span className="text-sm font-bold text-gray-800">{user?.fullName || user?.username || 'Admin'}</span>
-                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
-                  </div>
-                </button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setDropdownOpen(!dropdownOpen)}
+                        className={`flex flex-col items-center justify-center px-4 py-2 rounded-xl transition-all duration-300 border ${
+                          dropdownOpen 
+                            ? 'bg-primary/5 border-primary/20 shadow-inner' 
+                            : 'bg-white border-gray-100 hover:border-primary/20 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Logged in as</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                            <User className="w-3.5 h-3.5 text-primary" />
+                          </div>
+                          <span className="text-sm font-bold text-gray-800">{user?.fullName || user?.username || 'Admin'}</span>
+                          <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                        </div>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                      <p className="text-xs">User settings and session management</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
 
                 <AnimatePresence>
                   {dropdownOpen && (
@@ -147,18 +172,27 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Username</p>
                           <p className="text-sm font-bold text-gray-800 truncate">{user?.username}</p>
                         </div>
-                        <button
-                          onClick={() => {
-                            setDropdownOpen(false);
-                            handleLogout();
-                          }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
-                        >
-                          <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
-                            <LogOut className="w-4 h-4" />
-                          </div>
-                          Logout
-                        </button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => {
+                                    setDropdownOpen(false);
+                                    handleLogout();
+                                  }}
+                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
+                                >
+                                  <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                                    <LogOut className="w-4 h-4" />
+                                  </div>
+                                  Logout
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="left" className="bg-gray-900 text-white border-gray-800">
+                                <p className="text-xs">End your current session</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                       </motion.div>
                     </>
                   )}

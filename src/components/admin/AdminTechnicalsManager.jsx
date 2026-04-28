@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Save, Search, AlertCircle, FileText, Axe } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTechnicals } from '@/contexts/TechnicalsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -151,12 +152,19 @@ const AdminTechnicalsManager = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <Button
-                    onClick={handleAddNew}
-                    className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
-                >
-                    <Plus className="w-4 h-4 mr-2" /> Add Technical
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            onClick={handleAddNew}
+                            className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                        >
+                            <Plus className="w-4 h-4 mr-2" /> Add Technical
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                        <p className="text-xs">Define a new technical specification or procedure</p>
+                    </TooltipContent>
+                </Tooltip>
             </div>
 
             <div className="grid gap-4">
@@ -177,12 +185,27 @@ const AdminTechnicalsManager = () => {
                                 </div>
                             </div>
                             <div className="flex gap-1 shrink-0">
-                                <Button variant="ghost" size="icon" onClick={() => handleEdit(tech)}>
-                                    <Edit className="w-4 h-4 text-gray-600" />
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(tech)}>
-                                    <Trash2 className="w-4 h-4 text-red-500" />
-                                </Button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" onClick={() => handleEdit(tech)}>
+                                            <Edit className="w-4 h-4 text-gray-600" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                        <p className="text-xs">Edit this technical entry</p>
+                                    </TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(tech)}>
+                                            <Trash2 className="w-4 h-4 text-red-500" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                        <p className="text-xs">Permanently delete this entry</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
                         </CardContent>
                     </Card>

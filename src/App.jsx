@@ -15,6 +15,7 @@ import { MaterialsProvider } from '@/contexts/MaterialsContext';
 import { SamplingProvider } from '@/contexts/SamplingContext';
 import { ExpensesProvider } from '@/contexts/ExpensesContext';
 import { getSiteContent } from '@/data/config';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 
 import ServiceDetailPage from '@/pages/ServiceDetailPage.jsx';
@@ -111,13 +112,15 @@ function App() {
                                   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
                                 </Helmet>
                                 <div className="min-h-screen bg-[#F5F1ED]">
-                                  <RouterProvider
-                                    router={router}
-                                    future={{
-                                      v7_startTransition: true,
-                                      v7_relativeSplatPath: true,
-                                    }}
-                                  />
+                                  <TooltipProvider>
+                                    <RouterProvider
+                                      router={router}
+                                      future={{
+                                        v7_startTransition: true,
+                                        v7_relativeSplatPath: true,
+                                      }}
+                                    />
+                                  </TooltipProvider>
                                   <Toaster />
                                 </div>
                               </ExpensesProvider>

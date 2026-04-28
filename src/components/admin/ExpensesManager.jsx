@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plus, Edit, Trash2, Save, Search, AlertCircle, IndianRupee, Calendar, User, SortAsc, SortDesc, Filter, X, Download, FileSpreadsheet } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useExpenses } from '@/contexts/ExpensesContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -338,38 +339,58 @@ const ExpensesManager = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Button
-                        onClick={handleAddNew}
-                        className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
-                    >
-                        <Plus className="w-4 h-4 mr-2" /> Add Expense
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                onClick={handleAddNew}
+                                className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                            >
+                                <Plus className="w-4 h-4 mr-2" /> Add Expense
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Log a new business expense</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex flex-wrap items-center gap-4">
-                        <Button
-                            variant={showFilters ? "secondary" : "outline"}
-                            onClick={() => setShowFilters(!showFilters)}
-                            className={`h-10 px-4 rounded-xl transition-all border-gray-200 ${showFilters ? 'bg-primary/10 text-primary border-primary/20' : 'bg-gray-50/50'}`}
-                        >
-                            <Filter className="w-4 h-4 mr-2" />
-                            <span className="text-sm font-bold uppercase tracking-widest leading-none">Filters</span>
-                            {(filterByCreator !== 'all' || filterDateStart || filterDateEnd) && (
-                                <Badge className="ml-2 bg-primary text-white scale-75">!</Badge>
-                            )}
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant={showFilters ? "secondary" : "outline"}
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className={`h-10 px-4 rounded-xl transition-all border-gray-200 ${showFilters ? 'bg-primary/10 text-primary border-primary/20' : 'bg-gray-50/50'}`}
+                                >
+                                    <Filter className="w-4 h-4 mr-2" />
+                                    <span className="text-sm font-bold uppercase tracking-widest leading-none">Filters</span>
+                                    {(filterByCreator !== 'all' || filterDateStart || filterDateEnd) && (
+                                        <Badge className="ml-2 bg-primary text-white scale-75">!</Badge>
+                                    )}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                <p className="text-xs">Show advanced filtering options</p>
+                            </TooltipContent>
+                        </Tooltip>
 
-                        <Button
-                            variant="outline"
-                            onClick={downloadCSV}
-                            disabled={filteredExpenses.length === 0}
-                            className="h-10 px-4 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all text-sm font-bold uppercase tracking-widest leading-none"
-                            title="Download CSV Report"
-                        >
-                            <Download className="w-4 h-4 mr-2" />
-                            <span>Export CSV</span>
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    onClick={downloadCSV}
+                                    disabled={filteredExpenses.length === 0}
+                                    className="h-10 px-4 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all text-sm font-bold uppercase tracking-widest leading-none"
+                                >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    <span>Export CSV</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                <p className="text-xs">Download filtered expenses as CSV</p>
+                            </TooltipContent>
+                        </Tooltip>
 
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Sort</span>
@@ -383,14 +404,21 @@ const ExpensesManager = () => {
                                     <SelectItem value="description">Description</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-10 w-10 border-gray-200 bg-gray-50/50 rounded-lg"
-                                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                            >
-                                {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-10 w-10 border-gray-200 bg-gray-50/50 rounded-lg"
+                                        onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                    >
+                                        {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Toggle {sortOrder === 'asc' ? 'Descending' : 'Ascending'} Sort</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
                     </div>
 

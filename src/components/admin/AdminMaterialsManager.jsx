@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Save, Search, AlertCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useMaterials } from '@/contexts/MaterialsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -137,12 +138,19 @@ const AdminMaterialsManager = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <Button
-                    onClick={handleAddNew}
-                    className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
-                >
-                    <Plus className="w-4 h-4 mr-2" /> Add Material
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            onClick={handleAddNew}
+                            className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                        >
+                            <Plus className="w-4 h-4 mr-2" /> Add Material
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                        <p className="text-xs">Add a new material type to the database</p>
+                    </TooltipContent>
+                </Tooltip>
             </div>
 
             <div className="bg-white rounded-lg shadow border border-gray-100 overflow-hidden">
@@ -161,12 +169,27 @@ const AdminMaterialsManager = () => {
                                 </td>
                                 <td className="py-2 px-4 text-right">
                                     <div className="flex justify-end gap-1">
-                                        <Button variant="ghost" size="icon" onClick={() => handleEdit(material)}>
-                                            <Edit className="w-4 h-4 text-gray-600" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(material)}>
-                                            <Trash2 className="w-4 h-4 text-red-500" />
-                                        </Button>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => handleEdit(material)}>
+                                                    <Edit className="w-4 h-4 text-gray-600" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                <p className="text-xs">Edit material name</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(material)}>
+                                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                <p className="text-xs">Permanently remove this material</p>
+                                            </TooltipContent>
+                                        </Tooltip>
                                     </div>
                                 </td>
                             </tr>

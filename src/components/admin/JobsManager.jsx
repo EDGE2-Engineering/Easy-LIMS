@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Search, Plus, ArrowLeft, Save, Loader2, Package, ArrowRight, FileText, ExternalLink, CheckCircle2, Edit, UserPlus, Trash2, AlertCircle, SortAsc, SortDesc } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -494,12 +495,19 @@ const JobsManager = ({ id }) => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Button
-                        onClick={() => { setEditingRecord({ status: WORKFLOW_STATES.JOB_CREATED, project_name: '', client_id: '' }); setIsAddingNew(true); }}
-                        className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
-                    >
-                        <Plus className="w-4 h-4 mr-2" /> New Job
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                onClick={() => { setEditingRecord({ status: WORKFLOW_STATES.JOB_CREATED, project_name: '', client_id: '' }); setIsAddingNew(true); }}
+                                className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                            >
+                                <Plus className="w-4 h-4 mr-2" /> New Job
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Create a new testing job for a client</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
 
                 {/* Filters and Actions Row */}
@@ -532,15 +540,21 @@ const JobsManager = ({ id }) => {
                                     <SelectItem value="client_name">Client Name</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-10 w-10 border-gray-200 bg-gray-50/50 rounded-lg"
-                                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                                title={`Order: ${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
-                            >
-                                {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-10 w-10 border-gray-200 bg-gray-50/50 rounded-lg"
+                                        onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                    >
+                                        {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Toggle {sortOrder === 'asc' ? 'Descending' : 'Ascending'} Sort</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
 
                         <Button
@@ -582,14 +596,29 @@ const JobsManager = ({ id }) => {
                                      </Badge>
                                 </td>
                                 <td className="py-5 px-6 text-center">
-                                    <div className="flex justify-center gap-2">
-                                        <Button variant="ghost" size="sm" onClick={() => navigate(`/settings/jobs/${r.id}`)} className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all">
-                                            <ArrowRight className="w-4 h-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(r)} className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all">
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </div>
+                                     <div className="flex justify-center gap-2">
+                                         <Tooltip>
+                                             <TooltipTrigger asChild>
+                                                 <Button variant="ghost" size="sm" onClick={() => navigate(`/settings/jobs/${r.id}`)} className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all">
+                                                     <ArrowRight className="w-4 h-4" />
+                                                 </Button>
+                                             </TooltipTrigger>
+                                             <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                 <p className="text-xs">View/Edit Job Details</p>
+                                             </TooltipContent>
+                                         </Tooltip>
+
+                                         <Tooltip>
+                                             <TooltipTrigger asChild>
+                                                 <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(r)} className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all">
+                                                     <Trash2 className="w-4 h-4" />
+                                                 </Button>
+                                             </TooltipTrigger>
+                                             <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                 <p className="text-xs">Delete this job</p>
+                                             </TooltipContent>
+                                         </Tooltip>
+                                     </div>
                                 </td>
                             </tr>
                         ))}

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const WorkLogManager = () => {
     const { toast } = useToast();
@@ -262,9 +263,16 @@ const WorkLogManager = () => {
                             <p className="text-gray-500 text-sm font-medium capitalize">{selectedEmployee.role} • {selectedEmployee.department || 'No Department'}</p>
                         </div>
                     </div>
-                    <Button onClick={handleAddEntry} className="bg-primary hover:bg-primary-dark text-white rounded-xl h-11 px-6 font-semibold shadow-lg shadow-primary/20">
-                        <Plus className="w-4 h-4 mr-2" /> Add Work Log
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button onClick={handleAddEntry} className="bg-primary hover:bg-primary-dark text-white rounded-xl h-11 px-6 font-semibold shadow-lg shadow-primary/20">
+                                <Plus className="w-4 h-4 mr-2" /> Add Work Log
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Record monthly attendance for this employee</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
 
                 {/* Filters Section */}
@@ -438,10 +446,17 @@ const WorkLogManager = () => {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Button onClick={handleSave} disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white rounded-xl h-11 px-6 font-semibold shadow-lg shadow-primary/20">
-                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                            Save Work Log
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={handleSave} disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white rounded-xl h-11 px-6 font-semibold shadow-lg shadow-primary/20">
+                                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                                    Save Work Log
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                <p className="text-xs">Commit this work log to the database</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
                 </div>
 

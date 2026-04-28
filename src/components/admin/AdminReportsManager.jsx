@@ -5,6 +5,7 @@ import {
     Search, Trash2, ExternalLink, FileText, Loader2, Plus, Save, ChevronLeft,
     MapPin, ClipboardList, TestTube, FileCheck, Mountain, HardHat, MessageSquare, Info
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,9 +137,16 @@ const AdminReportsManager = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <Button onClick={handleCreateNew} className="bg-primary hover:bg-primary-dark text-white">
-                    <Plus className="w-4 h-4 mr-2" /> Create Report
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button onClick={handleCreateNew} className="bg-primary hover:bg-primary-dark text-white">
+                            <Plus className="w-4 h-4 mr-2" /> Create Report
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                        <p className="text-xs">Start a new final test report</p>
+                    </TooltipContent>
+                </Tooltip>
             </div>
 
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -178,12 +186,27 @@ const AdminReportsManager = () => {
                                         {format(new Date(report.created_at), 'dd MMM yyyy')}
                                     </td>
                                     <td className="py-3 px-2 text-right space-x-0">
-                                        <Button variant="ghost" className="px-2" size="icon" title="Edit Report" onClick={() => handleEdit(report)}>
-                                            <FileText className="w-4 h-4 text-blue-600" />
-                                        </Button>
-                                        <Button variant="ghost" className="px-2" size="icon" title="Delete" onClick={() => handleDeleteClick(report)}>
-                                            <Trash2 className="w-4 h-4 text-red-500" />
-                                        </Button>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" className="px-2" size="icon" onClick={() => handleEdit(report)}>
+                                                    <FileText className="w-4 h-4 text-blue-600" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                <p className="text-xs">Edit this report</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" className="px-2" size="icon" onClick={() => handleDeleteClick(report)}>
+                                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                <p className="text-xs">Permanently delete this report</p>
+                                            </TooltipContent>
+                                        </Tooltip>
                                     </td>
                                 </tr>
                             ))
