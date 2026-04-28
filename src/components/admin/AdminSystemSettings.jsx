@@ -35,145 +35,165 @@ const AdminSystemSettings = ({ id }) => {
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <div className="flex justify-center mb-6">
                     <TabsList className="bg-white p-1 border border-gray-200 rounded-xl shadow-sm h-auto inline-flex flex-wrap justify-center">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <TabsTrigger
-                                    value="unit_types"
-                                    className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                                >
-                                    <Ruler className="w-4 h-4" /> Units
-                                </TabsTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">Manage measurement units (e.g., mm, kg, N/mm²)</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <TabsTrigger
+                            value="unit_types"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <Ruler className="w-4 h-4" /> Units
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Manage measurement units (e.g., mm, kg, N/mm²)</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
 
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <TabsTrigger
-                                    value="hsn_codes"
-                                    className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                                >
-                                    <Hash className="w-4 h-4" /> Codes
-                                </TabsTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">Manage HSN and SAC codes for GST billing</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <TabsTrigger
+                            value="hsn_codes"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <Hash className="w-4 h-4" /> Codes
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Manage HSN and SAC codes for GST billing</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
 
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <TabsTrigger
-                                    value="terms"
-                                    className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                                >
-                                    <FileText className="w-4 h-4" /> T&C
-                                </TabsTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">Standard terms and conditions for documents</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <TabsTrigger
+                            value="terms"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <FileText className="w-4 h-4" /> T&C
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Standard terms and conditions for documents</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
 
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <TabsTrigger
-                                    value="technicals"
-                                    className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                                >
-                                    <Axe className="w-4 h-4" /> Technicals
-                                </TabsTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">Manage technical specifications and standards</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <TabsTrigger
+                            value="technicals"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <Axe className="w-4 h-4" /> Technicals
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Manage technical specifications and standards</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
 
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <TabsTrigger
-                                    value="payment_settings"
-                                    className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                                >
-                                    <IndianRupee className="w-4 h-4" /> Payment
-                                </TabsTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">Bank details and payment settings</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <TabsTrigger
+                            value="payment_settings"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <IndianRupee className="w-4 h-4" /> Payment
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Bank details and payment settings</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
 
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <TabsTrigger
-                                    value="collection_centers"
-                                    className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                                >
-                                    <MapPin className="w-4 h-4" /> Collection Centers
-                                </TabsTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">Manage sample collection points and locations</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <TabsTrigger
+                            value="collection_centers"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <MapPin className="w-4 h-4" /> Collection Centers
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Manage sample collection points and locations</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
 
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <TabsTrigger
-                                    value="departments"
-                                    className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                                >
-                                    <Fullscreen className="w-4 h-4" /> Departments
-                                </TabsTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">Organizational departments and sections</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <TabsTrigger
+                            value="departments"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <Fullscreen className="w-4 h-4" /> Departments
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Organizational departments and sections</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
 
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <TabsTrigger
-                                    value="materials"
-                                    className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                                >
-                                    <Package className="w-4 h-4" /> Materials
-                                </TabsTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">Material types and categories masters</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <TabsTrigger
+                            value="materials"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <Package className="w-4 h-4" /> Materials
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Material types and categories masters</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
 
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <TabsTrigger
-                                    value="company_calendar"
-                                    className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                                >
-                                    <Calendar className="w-4 h-4" /> Calendar
-                                </TabsTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">Company holidays and event schedule</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <TabsTrigger
+                            value="company_calendar"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="w-4 h-4" /> Calendar
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Company holidays and event schedule</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
 
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <TabsTrigger
-                                    value="users"
-                                    className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                                >
-                                    <UsersRound className="w-4 h-4" /> Users
-                                </TabsTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">System users, roles and permissions</p>
-                            </TooltipContent>
-                        </Tooltip>
+                        <TabsTrigger
+                            value="users"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <UsersRound className="w-4 h-4" /> Users
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">System users, roles and permissions</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
                         
                     </TabsList>
                 </div>

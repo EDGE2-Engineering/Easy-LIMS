@@ -103,19 +103,22 @@ const AdminPage = () => {
                             <div className="hidden md:flex justify-center flex-1">
                                 <TabsList className="bg-white p-1 border border-gray-200 rounded-2xl shadow-sm h-auto inline-flex flex-wrap">
                                     {allowedTabs.map(t => (
-                                        <Tooltip key={t.id}>
-                                            <TooltipTrigger asChild>
-                                                <TabsTrigger
-                                                    value={t.id}
-                                                    className="px-6 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2 font-medium"
-                                                >
-                                                    <t.icon className="w-4 h-4" /> {t.label}
-                                                </TabsTrigger>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">
-                                                <p className="text-xs">{t.description}</p>
-                                            </TooltipContent>
-                                        </Tooltip>
+                                        <TabsTrigger
+                                            key={t.id}
+                                            value={t.id}
+                                            className="px-6 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2 font-medium"
+                                        >
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="flex items-center gap-2">
+                                                        <t.icon className="w-4 h-4" /> {t.label}
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">
+                                                    <p className="text-xs">{t.description}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TabsTrigger>
                                     ))}
                                 </TabsList>
                             </div>
