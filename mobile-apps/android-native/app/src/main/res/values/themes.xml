@@ -1,3 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.EasyLIMS" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.EasyLIMS" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#FFFFFF</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground_scaled</item>
+        <item name="postSplashScreenTheme">@style/Theme.EasyLIMS</item>
+    </style>
 </resources>

@@ -19,6 +19,9 @@ import com.easylims.lib.Supabase
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.easylims.R
 
 @Serializable
 data class User(
@@ -27,6 +30,7 @@ data class User(
     val full_name: String? = null,
     val role: String? = null
 )
+
 
 @Composable
 fun LoginScreen(navController: NavController) {
@@ -44,6 +48,14 @@ fun LoginScreen(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Image(
+            painter = painterResource(id = R.drawable.logo),
+            contentDescription = "App Logo",
+            modifier = Modifier
+                .size(120.dp)
+                .padding(bottom = 16.dp)
+        )
+        
         Text(
             text = "Easy LIMS",
             fontSize = 28.sp,
