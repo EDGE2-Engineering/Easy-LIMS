@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck, ChevronDown } from 'lucide-react';
+import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness } from 'lucide-react';
 import { getSiteContent, VIEWS, ROLES, APP_CONFIG } from '@/data/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [settingsDropdownOpen, setSettingsDropdownOpen] = useState(false);
   const location = useLocation();
 
   const handleLogout = () => {
@@ -48,7 +49,14 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     { view: VIEWS.JOBS, path: '/settings/jobs', label: 'Jobs', icon: Briefcase },
     { view: VIEWS.EXPENSES, path: '/settings/expenses', label: 'Expenses', icon: IndianRupee },
     { id: 'work_log', view: VIEWS.WORK_LOG, path: '/settings/work_log', label: 'Work Log', icon: ClipboardCheck },
-    { view: VIEWS.SETTINGS, path: '/settings/clients', label: 'Settings', icon: Settings }
+  ];
+
+  const SETTINGS_SUB_ITEMS = [
+    { id: 'clients', label: 'Clients', icon: BriefcaseBusiness, path: '/settings/clients', description: 'Manage your client database' },
+    { id: 'field_tests', label: 'Field Tests', icon: Drill, path: '/settings/field_tests', description: 'Configure on-site testing services' },
+    { id: 'lab_tests', label: 'Lab Tests', icon: TestTube, path: '/settings/lab_tests', description: 'Manage laboratory testing parameters' },
+    { id: 'sampling', label: 'Sampling', icon: SwatchBook, path: '/settings/sampling', description: 'Configure material sampling methods' },
+    { id: 'system', label: 'System', icon: Cpu, path: '/settings/system', description: 'General system settings and users' }
   ];
 
   const navItems = ALL_NAV_ITEMS.filter(item => canView(item.view));
@@ -104,7 +112,6 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                   '/settings/jobs': 'Manage laboratory testing jobs',
                   '/settings/expenses': 'Track company expenses and payments',
                   '/settings/work_log': 'Monitor daily laboratory work logs',
-                  '/settings/clients': 'Configure system masters and users'
                 };
 
                 return (
@@ -128,6 +135,66 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                   </Tooltip>
                 );
               })}
+
+              {/* Settings Dropdown */}
+              {canView(VIEWS.SETTINGS) && (
+                <div className="relative">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => setSettingsDropdownOpen(!settingsDropdownOpen)}
+                          className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all text-sm font-semibold ${isActive('/settings/clients')
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-gray-600 hover:text-primary hover:bg-gray-300'
+                            }`}
+                        >
+                          <Settings className={`w-4 h-4 ${isActive('/settings/clients') ? 'text-white' : ''}`} />
+                          <span>Settings</span>
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${settingsDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                        <p className="text-xs">System configuration and master data</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <AnimatePresence>
+                    {settingsDropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setSettingsDropdownOpen(false)} />
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          className="absolute left-0 mt-2 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden py-2"
+                        >
+                          {SETTINGS_SUB_ITEMS.map((subItem) => (
+                            <Link
+                              key={subItem.path}
+                              to={subItem.path}
+                              onClick={() => setSettingsDropdownOpen(false)}
+                              className={`flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors ${location.pathname === subItem.path
+                                ? 'bg-primary/10 text-primary'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-primary'
+                                }`}
+                            >
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${location.pathname === subItem.path ? 'bg-primary/20' : 'bg-gray-100'}`}>
+                                <subItem.icon className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <p className="font-bold">{subItem.label}</p>
+                                <p className="text-[10px] text-gray-400 font-medium leading-tight">{subItem.description}</p>
+                              </div>
+                            </Link>
+                          ))}
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
             </TooltipProvider>
             {user && (
               <div className="relative">
@@ -240,6 +307,29 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                   </Link>
                 );
               })}
+
+              {canView(VIEWS.SETTINGS) && (
+                <div className="space-y-1 pt-2 border-t border-gray-100">
+                  <div className="flex items-center space-x-3 py-2 px-4 text-gray-400">
+                    <Settings className="w-4 h-4" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Settings</span>
+                  </div>
+                  {SETTINGS_SUB_ITEMS.map((subItem) => (
+                    <Link
+                      key={subItem.path}
+                      to={subItem.path}
+                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center space-x-3 py-3 px-8 rounded-lg transition-colors ${location.pathname === subItem.path
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-gray-600 hover:bg-gray-100'
+                        }`}
+                    >
+                      <subItem.icon className="w-4 h-4" />
+                      <span className="font-medium">{subItem.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
               {user && (
                 <>
                   <div className="flex items-center space-x-3 py-3 px-4 rounded-lg bg-blue-50 text-blue-700 mb-2">

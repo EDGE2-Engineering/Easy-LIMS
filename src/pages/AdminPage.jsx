@@ -44,15 +44,9 @@ const AdminPage = () => {
         system: VIEWS.SETTINGS
     };
 
-    const TABS_CONFIG = [
-        { id: 'clients', label: 'Clients', icon: BriefcaseBusiness, view: VIEWS.SETTINGS, description: 'Manage your client database and contact information' },
-        { id: 'field_tests', label: 'Field Tests', icon: Drill, view: VIEWS.SETTINGS, description: 'Configure on-site testing services and pricing' },
-        { id: 'lab_tests', label: 'Lab Tests', icon: TestTube, view: VIEWS.SETTINGS, description: 'Manage laboratory testing parameters and standards' },
-        { id: 'sampling', label: 'Sampling', icon: SwatchBook, view: VIEWS.SETTINGS, description: 'Configure material sampling methods and types' },
-        { id: 'system', label: 'System', icon: Cpu, view: VIEWS.SETTINGS, description: 'General system settings, users, and masters' }
-    ];
 
-    const allowedTabs = TABS_CONFIG.filter(t => canView(t.view));
+
+
 
     useEffect(() => {
         if (tab) setMainTab(tab);
@@ -74,59 +68,14 @@ const AdminPage = () => {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <Helmet>
-                <title>{allowedTabs.find(t => t.id === mainTab)?.label || 'Settings'} | {siteName}</title>
+                <title>{mainTab.charAt(0).toUpperCase() + mainTab.slice(1).replace('_', ' ')} | {siteName}</title>
             </Helmet>
 
             <Navbar />
 
             <main className="flex-grow container mx-auto px-4 py-6 relative">
                 <Tabs value={mainTab} onValueChange={handleTabChange} className="w-full space-y-6">
-                    {/* Responsive Tab Navigation - Only show for settings tabs, not for Jobs/Expenses/Accounts/Work Log */}
-                    {mainTab !== 'jobs' && mainTab !== 'expenses' && mainTab !== 'accounts' && mainTab !== 'work_log' && (
-                        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
-                            <div className="block md:hidden w-full relative">
-                                <select
-                                    id="admin-tabs"
-                                    value={mainTab}
-                                    onChange={(e) => handleTabChange(e.target.value)}
-                                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-medium shadow-sm outline-none appearance-none"
-                                >
-                                    {allowedTabs.map(t => (
-                                        <option key={t.id} value={t.id}>{t.label}</option>
-                                    ))}
-                                </select>
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                                    <ChevronDown className="h-5 w-5 text-gray-400" />
-                                </div>
-                            </div>
-
-                            <div className="hidden md:flex justify-center flex-1">
-                                <TabsList className="bg-white p-1 border border-gray-200 rounded-2xl shadow-sm h-auto inline-flex flex-wrap">
-                                    {allowedTabs.map(t => (
-                                        <TabsTrigger
-                                            key={t.id}
-                                            value={t.id}
-                                            className="px-6 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2 font-medium"
-                                        >
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <div className="flex items-center gap-2">
-                                                        <t.icon className="w-4 h-4" /> {t.label}
-                                                    </div>
-                                                </TooltipTrigger>
-                                                <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">
-                                                    <p className="text-xs">{t.description}</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TabsTrigger>
-                                    ))}
-                                </TabsList>
-                            </div>
-                        </div>
-                    )}
-
-
-                    <div className="mt-8">
+                    <div className="mt-4">
                         <ConfigDrivenPage viewName={URL_TO_VIEW[mainTab]} subView={mainTab} id={id} />
                     </div>
                 </Tabs>
