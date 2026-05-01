@@ -67,7 +67,7 @@ const TechnicianAssignment = ({ jobId, jobCategories, onComplete }) => {
             const updates = Object.entries(assignments).map(([category, techId]) => ({
                 job_id: jobId,
                 category,
-                assigned_technician_id: techId,
+                assigned_technician_id: typeof techId === 'string' ? parseInt(techId) : techId,
                 status: 'PENDING',
                 updated_at: new Date().toISOString()
             }));
@@ -89,7 +89,7 @@ const TechnicianAssignment = ({ jobId, jobCategories, onComplete }) => {
                 job_id: jobId,
                 to_state: 'TECHNICIANS_ASSIGNED',
                 action_id: 'ASSIGN_TECHNICIANS',
-                performed_by: (await supabase.auth.getUser()).data.user?.id,
+                performed_by: user?.id,
                 remarks: `Technicians assigned: ${Object.keys(assignments).join(', ')}`
             });
             
@@ -126,7 +126,7 @@ const TechnicianAssignment = ({ jobId, jobCategories, onComplete }) => {
                         >
                             <option value="">-- Unassigned --</option>
                             {technicians.map(tech => (
-                                <option key={tech.id} value={tech.id}>{tech.full_name || tech.username}</option>
+                                <option key={tech.id} value={tech.id.toString()}>{tech.full_name || tech.username}</option>
                             ))}
                         </select>
                     </div>

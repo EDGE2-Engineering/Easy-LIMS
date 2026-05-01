@@ -124,7 +124,7 @@ const JobsManager = ({ id }) => {
             reloadEditingRecord();
         } catch (err) {
             console.error(err);
-            toast({ title: "Error", description: "Column 'work_order_id' might be missing in your database. Please update your schema.", variant: "destructive" });
+            toast({ title: "Error", description: err.message, variant: "destructive" });
         } finally {
             setIsSaving(false);
         }
@@ -239,12 +239,14 @@ const JobsManager = ({ id }) => {
         setIsSaving(true);
         try {
             const payload = {
-                client_id: editingRecord.client_id,
+                client_id: typeof editingRecord.client_id === 'string' ? parseInt(editingRecord.client_id) : editingRecord.client_id,
                 project_name: editingRecord.project_name,
-                work_order_id: editingRecord.work_order_id,
+                work_order_id: editingRecord.work_order_id || null,
                 status: editingRecord.status,
                 updated_at: new Date().toISOString()
             };
+
+            if (!payload.client_id) throw new Error("Client is required.");
 
             if (isAddingNew) {
                 const { error } = await supabase.from('jobs').insert({ ...payload, created_by: user.id });
@@ -339,7 +341,7 @@ const JobsManager = ({ id }) => {
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900">{isAddingNew ? 'Create New Job' : `Job: ${editingRecord.job_id}`}</h2>
+                            <h2 className="text-2xl font-bold text-gray-900">{isAddingNew ? 'Create New Job' : `Job: ${editingRecord.job_code}`}</h2>
                             <p className="text-sm text-gray-500">Manage job details and track its progress in the laboratory workflow.</p>
                         </div>
                     </div>
@@ -416,9 +418,9 @@ const JobsManager = ({ id }) => {
                         <div className="space-y-6">
                             <div className="space-y-2">
                                 <Label className="text-gray-700 font-semibold">Client</Label>
-                                <Select value={editingRecord.client_id} onValueChange={v => setEditingRecord({...editingRecord, client_id: v})}>
+                                <Select value={editingRecord.client_id?.toString()} onValueChange={v => setEditingRecord({...editingRecord, client_id: parseInt(v)})}>
                                     <SelectTrigger className="h-12 border-gray-200 rounded-xl"><SelectValue placeholder="Select Client" /></SelectTrigger>
-                                    <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.client_name}</SelectItem>)}</SelectContent>
+                                    <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id.toString()}>{c.client_name}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
@@ -574,9 +576,9 @@ const JobsManager = ({ id }) => {
                 <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b">
                         <tr>
-                            <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Job ID</th>
-                             <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Client / Project</th>
-                             <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Current Status</th>
+                            <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Job Code</th>
+                             <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Client and Project Name</th>
+                             <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Status</th>
                              <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Actions</th>
                         </tr>
                     </thead>
@@ -584,7 +586,7 @@ const JobsManager = ({ id }) => {
                         {filteredRecords.map(r => (
                             <tr key={r.id} className="border-b hover:bg-gray-50/50 transition-colors group">
                                 <td className="py-5 px-6">
-                                    <span className="font-mono font-bold text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10">{r.job_id}</span>
+                                    <span className="font-mono font-bold text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10">{r.job_code}</span>
                                 </td>
                                 <td className="py-5 px-6">
                                     <div className="font-bold text-gray-900">{r.clients?.client_name}</div>

@@ -36,19 +36,23 @@ const TestsProvider = ({ children }) => {
         };
     }, []);
 
-    const mapToDb = useCallback((t) => ({
-        id: t.id,
-        test_type: t.testType,
-        materials: Array.isArray(t.materials) ? t.materials : (t.materials ? [t.materials] : []),
-        group: t.group,
-
-        test_method_specification: t.testMethodSpecification,
-        num_days: t.numDays,
-        price: t.price,
-        hsn_code: t.hsnCode || t.hsn_code || '',
-        tc_list: t.tcList || t.tc_list || [],
-        tech_list: t.techList || t.tech_list || []
-    }), []);
+    const mapToDb = useCallback((t) => {
+        const payload = {
+            test_type: t.testType,
+            materials: Array.isArray(t.materials) ? t.materials : (t.materials ? [t.materials] : []),
+            group: t.group,
+            test_method_specification: t.testMethodSpecification,
+            num_days: t.numDays,
+            price: t.price,
+            hsn_code: t.hsnCode || t.hsn_code || '',
+            tc_list: t.tcList || t.tc_list || [],
+            tech_list: t.techList || t.tech_list || []
+        };
+        if (t.id && typeof t.id === 'number') {
+            payload.id = t.id;
+        }
+        return payload;
+    }, []);
 
     const fetchTests = useCallback(async () => {
         try {
@@ -153,18 +157,17 @@ const TestsProvider = ({ children }) => {
     }, [mapToDb]);
 
     const addTest = useCallback(async (newTest) => {
-
-        const tempId = newTest.id || `tst_${Date.now()}`;
-        const testWithId = { ...newTest, id: tempId, created_at: new Date().toISOString() };
-        setTests(prev => [...prev, testWithId]);
         try {
-            const { error } = await supabase.from('tests').insert(mapToDb(testWithId));
-            if (error) console.warn("Supabase Add Failed (tests):", error.message);
+            const { data, error } = await supabase.from('tests').insert(mapToDb(newTest)).select();
+            if (error) throw error;
+            if (data && data.length > 0) {
+                setTests(prev => [...prev, mapFromDb(data[0])]);
+            }
         } catch (err) {
-            console.warn("Add Test Exception:", err);
+            console.error("Add Test Exception:", err);
             throw err;
         }
-    }, [mapToDb]);
+    }, [mapToDb, mapFromDb]);
 
     const deleteTest = useCallback(async (id) => {
         setTests(prev => prev.filter(t => t.id !== id));

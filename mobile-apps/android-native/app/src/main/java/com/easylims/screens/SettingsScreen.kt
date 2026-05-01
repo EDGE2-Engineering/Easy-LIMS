@@ -98,7 +98,7 @@ fun SettingsScreen(navController: NavController) {
             item {
                 SettingsItem(
                     icon = Icons.Default.People,
-                    title = "Users & Permissions",
+                    title = "Users",
                     subtitle = "Manage staff access and roles",
                     onClick = { navController.navigate("users") }
                 )

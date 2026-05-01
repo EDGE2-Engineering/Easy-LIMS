@@ -58,12 +58,18 @@ const ClientsProvider = ({ children }) => {
         };
     }, []);
 
-    const mapToDb = useCallback((c) => ({
-        id: c.id,
-        client_name: c.clientName,
-        client_address: c.clientAddress,
-        contacts: Array.isArray(c.contacts) ? c.contacts : []
-    }), []);
+    const mapToDb = useCallback((c) => {
+        const payload = {
+            client_name: c.clientName,
+            client_address: c.clientAddress,
+            contacts: Array.isArray(c.contacts) ? c.contacts : []
+        };
+        // Only include ID if it's not a temporary/new record ID (which would be a string like cli_...)
+        if (c.id && typeof c.id === 'number') {
+            payload.id = c.id;
+        }
+        return payload;
+    }, []);
 
     const fetchClients = useCallback(async () => {
         try {
@@ -186,14 +192,11 @@ const ClientsProvider = ({ children }) => {
             }
         }
 
-        const tempId = newClient.id || `cli_${Date.now()}`;
-        const clientWithId = { ...newClient, id: tempId, created_at: new Date().toISOString() };
-
         const previousClients = [...clients];
-        setClients(prev => [...prev, clientWithId]);
-
+        // We'll add the client to the state after a successful DB insert to get the real ID
+        
         try {
-            const dbPayload = mapToDb(clientWithId);
+            const dbPayload = mapToDb(newClient);
             dbPayload.created_at = new Date().toISOString();
             dbPayload.updated_at = new Date().toISOString();
 
@@ -210,7 +213,7 @@ const ClientsProvider = ({ children }) => {
 
             if (data && data.length > 0) {
                 const added = mapFromDb(data[0]);
-                setClients(prev => prev.map(c => c.id === tempId ? added : c));
+                setClients(prev => [...prev, added]);
             }
         } catch (err) {
             console.error("Add Client Exception:", err);

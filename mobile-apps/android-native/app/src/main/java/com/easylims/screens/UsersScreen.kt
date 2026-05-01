@@ -40,7 +40,7 @@ fun UsersScreen(navController: NavController, viewModel: UsersViewModel = viewMo
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Users & Permissions", fontWeight = FontWeight.Bold) },
+                title = { Text("Users", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

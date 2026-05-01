@@ -15,7 +15,8 @@ const ExpensesProvider = ({ children }) => {
         amount: Number(e.amount) || 0,
         date: e.date || new Date().toISOString().split('T')[0],
         remarks: e.remarks || '',
-        createdBy: e.created_by || e.createdBy || 'Unknown',
+        createdBy: e.users?.full_name || e.created_by_name || 'Unknown',
+        createdById: e.created_by,
         createdAt: e.created_at || new Date().toISOString()
     }), []);
 
@@ -25,14 +26,14 @@ const ExpensesProvider = ({ children }) => {
         amount: Number(e.amount),
         date: e.date,
         remarks: e.remarks,
-        created_by: e.createdBy
+        created_by: e.createdById
     }), []);
 
     const fetchExpenses = useCallback(async () => {
         try {
             const { data, error } = await supabase
                 .from('expenses')
-                .select('*')
+                .select('*, users(full_name)')
                 .order('date', { ascending: false });
 
             if (error) {

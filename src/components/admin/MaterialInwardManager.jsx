@@ -296,7 +296,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                     .insert({
                         job_order_no: editingRecord.job_order_no || `JO-${Date.now()}`,
                         po_wo_number: editingRecord.po_wo_number,
-                        client_id: editingRecord.client_id,
+                        client_id: typeof editingRecord.client_id === 'string' ? parseInt(editingRecord.client_id) : editingRecord.client_id,
                         job_id: editingRecord.job_id || null,
                         created_by: user.id,
                         status: 'RECEIVED'
@@ -313,7 +313,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                     .update({
                         job_order_no: editingRecord.job_order_no,
                         po_wo_number: editingRecord.po_wo_number,
-                        client_id: editingRecord.client_id,
+                        client_id: typeof editingRecord.client_id === 'string' ? parseInt(editingRecord.client_id) : editingRecord.client_id,
                         status: editingRecord.status,
                         updated_by: user.id,
                         updated_at: new Date().toISOString()
@@ -339,8 +339,8 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                 quantity: parseFloat(sample.quantity) || 0,
                 received_date: sample.received_date,
                 received_time: sample.received_time,
-                received_by: sample.received_by,
-                collection_center_id: sample.collection_center_id || null,
+                received_by: typeof sample.received_by === 'string' ? parseInt(sample.received_by) : sample.received_by,
+                collection_center_id: sample.collection_center_id ? (typeof sample.collection_center_id === 'string' ? parseInt(sample.collection_center_id) : sample.collection_center_id) : null,
                 expected_test_days: parseInt(sample.expected_test_days) || 7
             }));
 
@@ -547,7 +547,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                     <div className="space-y-2">
                         <Label htmlFor="client">Client</Label>
                         <Select
-                            value={editingRecord.client_id}
+                            value={editingRecord.client_id?.toString()}
                             onValueChange={(value) => setEditingRecord(prev => ({ ...prev, client_id: value }))}
                             disabled={!!initialJobId || !!editingRecord.job_id}
                         >
@@ -556,7 +556,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                             </SelectTrigger>
                             <SelectContent>
                                 {clients.map(client => (
-                                    <SelectItem key={client.id} value={client.id}>{client.client_name}</SelectItem>
+                                    <SelectItem key={client.id} value={client.id.toString()}>{client.client_name}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -660,7 +660,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                                     <div className="space-y-1">
                                         <Label className="text-xs">Received By</Label>
                                         <Select
-                                            value={sample.received_by}
+                                            value={sample.received_by?.toString()}
                                             onValueChange={(value) => handleSampleChange(index, 'received_by', value)}
                                         >
                                             <SelectTrigger className="h-9 text-sm">
@@ -668,7 +668,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {appUsers.map(u => (
-                                                    <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>
+                                                    <SelectItem key={u.id} value={u.id.toString()}>{u.full_name}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>

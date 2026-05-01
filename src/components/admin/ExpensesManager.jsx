@@ -163,7 +163,8 @@ const ExpensesManager = () => {
             amount: '',
             date: new Date().toISOString().split('T')[0],
             remarks: '',
-            createdBy: user?.fullName || user?.username || 'Admin'
+            createdBy: user?.fullName || 'Admin',
+            createdById: user?.id
         });
         setIsAddingNew(true);
     };

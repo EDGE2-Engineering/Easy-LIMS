@@ -12,11 +12,22 @@ const AuthContext = createContext();
 const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [profile, setProfile] = useState(null);
+    const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const notifyLogin = useCallback(async (username, fullName) => {
         const message = `🔔 *Login Alert*\n\nUser: \`${fullName}\` (@${username})`;
         await sendTelegramNotification(message);
+    }, []);
+
+    const fetchRoles = useCallback(async () => {
+        try {
+            const { data, error } = await supabase.from('app_roles').select('*').order('name');
+            if (error) throw error;
+            setRoles(data || []);
+        } catch (error) {
+            console.error("Failed to fetch roles", error);
+        }
     }, []);
 
     useEffect(() => {
@@ -30,14 +41,19 @@ const AuthProvider = ({ children }) => {
                 localStorage.removeItem(STORAGE_KEYS.SESSION);
             }
         }
+        fetchRoles();
         setLoading(false);
-    }, []);
+    }, [fetchRoles]);
 
     const login = useCallback(async (username, password) => {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('*')
+                .select(`
+                    *,
+                    app_roles!role(role_slug, name),
+                    departments!department(name)
+                `)
                 .eq('username', username)
                 .eq('password', password)
                 .eq('is_active', true)
@@ -51,8 +67,8 @@ const AuthProvider = ({ children }) => {
                 id: data.id,
                 username: data.username,
                 fullName: data.full_name,
-                department: data.department,
-                role: data.role
+                department: data.departments?.name || '', 
+                role: data.app_roles?.role_slug || '' 
             };
 
             setUser(sessionUser);
@@ -79,13 +95,15 @@ const AuthProvider = ({ children }) => {
 
     const contextValue = useMemo(() => ({
         user,
+        roles,
         loading,
         login,
         logout,
         isSuperAdmin,
         isAdmin,
-        isStandard
-    }), [user, loading, login, logout, isSuperAdmin, isAdmin, isStandard]);
+        isStandard,
+        refreshRoles: fetchRoles
+    }), [user, roles, loading, login, logout, isSuperAdmin, isAdmin, isStandard, fetchRoles]);
 
     return (
         <AuthContext.Provider value={contextValue}>

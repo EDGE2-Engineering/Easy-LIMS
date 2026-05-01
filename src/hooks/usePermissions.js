@@ -1,13 +1,17 @@
-
+import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { APP_CONFIG } from '@/data/config';
 
 export const usePermissions = () => {
-    const { user } = useAuth();
+    const { user, roles } = useAuth();
 
     const canView = (viewName) => {
         if (!user || !user.role) return false;
-        const allowedViews = APP_CONFIG.viewPermissions[user.role] || [];
+        
+        // Find role definition in database roles (user.role is a string slug)
+        const roleDef = roles.find(r => r.role_slug === user.role);
+        const allowedViews = roleDef?.view_permissions || [];
+        
         return allowedViews.includes(viewName);
     };
 

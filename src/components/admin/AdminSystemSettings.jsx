@@ -4,7 +4,7 @@ import { MermaidDiagram } from '@lightenna/react-mermaid-diagram';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { Ruler, Hash, CreditCard, FileText, Axe, Building2, Info, CheckCircle2, ChevronRight, ZoomIn, ZoomOut, RotateCcw, HandHeart, SwatchBook, TestTube, MapPin, BriefcaseBusiness, Package, UsersRound, Fullscreen, IndianRupee, Calendar } from 'lucide-react';
+import { Ruler, Hash, CreditCard, FileText, Axe, Building2, Info, CheckCircle2, ChevronRight, ZoomIn, ZoomOut, RotateCcw, HandHeart, SwatchBook, TestTube, MapPin, BriefcaseBusiness, Package, UsersRound, Fullscreen, IndianRupee, Calendar, ShieldCheck } from 'lucide-react';
 
 
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
@@ -17,6 +17,7 @@ import AdminDepartmentsManager from './AdminDepartmentsManager';
 import AdminCollectionCentersManager from './AdminCollectionCentersManager';
 import AdminMaterialsManager from './AdminMaterialsManager';
 import AdminUsersManager from './AdminUsersManager';
+import RoleManager from './RoleManager';
 import AdminCompanyCalendar from './AdminCompanyCalendar';
 
 import { enableInfoDiagramZoom, getSiteContent } from '../../data/config';
@@ -131,21 +132,7 @@ const AdminSystemSettings = ({ id }) => {
                             </Tooltip>
                         </TabsTrigger>
 
-                        <TabsTrigger
-                            value="departments"
-                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                        >
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div className="flex items-center gap-2">
-                                        <Fullscreen className="w-4 h-4" /> Departments
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                    <p className="text-xs">Organizational departments and sections</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TabsTrigger>
+                        
 
                         <TabsTrigger
                             value="materials"
@@ -180,6 +167,39 @@ const AdminSystemSettings = ({ id }) => {
                         </TabsTrigger>
 
                         <TabsTrigger
+                            value="departments"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <Fullscreen className="w-4 h-4" /> Departments
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Organizational departments and sections</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
+
+                        
+                        <TabsTrigger
+                            value="roles"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <ShieldCheck className="w-4 h-4" /> Roles
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">System roles and permissions master</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
+                        
+                        <TabsTrigger
                             value="users"
                             className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
                         >
@@ -190,10 +210,11 @@ const AdminSystemSettings = ({ id }) => {
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                    <p className="text-xs">System users, roles and permissions</p>
+                                    <p className="text-xs">System users Master</p>
                                 </TooltipContent>
                             </Tooltip>
                         </TabsTrigger>
+
                         
                     </TabsList>
                 </div>
@@ -237,6 +258,10 @@ const AdminSystemSettings = ({ id }) => {
 
                 <TabsContent value="users" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <AdminUsersManager />
+                </TabsContent>
+
+                <TabsContent value="roles" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <RoleManager />
                 </TabsContent>
 
                 <TabsContent value="company_calendar" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">

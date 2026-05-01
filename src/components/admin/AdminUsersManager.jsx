@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const AdminUsersManager = () => {
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, roles } = useAuth();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -29,7 +29,7 @@ const AdminUsersManager = () => {
         password: '',
         full_name: '',
         department: '',
-        role: ROLES.TECHNICIAN,
+        role: roles.length > 0 ? roles[0].id : '',
         capabilities: []
     });
     const { toast } = useToast();
@@ -41,7 +41,7 @@ const AdminUsersManager = () => {
 
     const fetchDepartments = async () => {
         try {
-            const { data, error } = await supabase.from('departments').select('name').order('name');
+            const { data, error } = await supabase.from('departments').select('id, name').order('name');
             if (error) throw error;
             setDepartments(data || []);
         } catch (error) { console.error(error); }
@@ -50,7 +50,15 @@ const AdminUsersManager = () => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase.from('users').select('*, technician_capabilities(category)').order('username');
+            const { data, error } = await supabase
+                .from('users')
+                .select(`
+                    *,
+                    departments!department(name),
+                    app_roles!role(name),
+                    technician_capabilities(category)
+                `)
+                .order('username');
             if (error) throw error;
             setUsers(data || []);
         } catch (error) {
@@ -61,12 +69,13 @@ const AdminUsersManager = () => {
     const filteredUsers = users.filter(u =>
         u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (u.full_name && u.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (u.department && u.department.toLowerCase().includes(searchTerm.toLowerCase()))
+        (u.departments?.name && u.departments.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (u.app_roles?.name && u.app_roles.name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const handleNewUser = () => {
         setEditingUser(null);
-        setFormData({ username: '', password: '', full_name: '', department: '', role: ROLES.TECHNICIAN, capabilities: [] });
+        setFormData({ username: '', password: '', full_name: '', department: '', role: roles.length > 0 ? roles[0].id : '', capabilities: [] });
         setIsDialogOpen(true);
     };
 
@@ -76,8 +85,8 @@ const AdminUsersManager = () => {
             username: user.username,
             password: user.password,
             full_name: user.full_name || '',
-            department: user.department || '',
-            role: user.role,
+            department: user.department || '', // ID
+            role: user.role, // ID
             capabilities: (user.technician_capabilities || []).map(c => c.category)
         });
         setIsDialogOpen(true);
@@ -90,8 +99,8 @@ const AdminUsersManager = () => {
                 username: formData.username,
                 password: formData.password,
                 full_name: formData.full_name,
-                department: formData.department,
-                role: formData.role,
+                department: formData.department, // String name
+                role: formData.role, // String slug
                 updated_at: new Date().toISOString()
             };
 
@@ -107,11 +116,15 @@ const AdminUsersManager = () => {
             }
 
             // Sync Capabilities
-            if (formData.role === ROLES.TECHNICIAN) {
+            // Note: In the new schema, technician_capabilities.user_id is an integer (bigint)
+            // We need the role slug to check if user is a technician
+            const userRole = roles.find(r => r.id === parseInt(formData.role));
+            if (userRole?.role_slug === 'technician') {
                 await supabase.from('technician_capabilities').delete().eq('user_id', userId);
                 if (formData.capabilities.length > 0) {
                     const caps = formData.capabilities.map(cat => ({ user_id: userId, category: cat }));
-                    await supabase.from('technician_capabilities').insert(caps);
+                    const { error: capError } = await supabase.from('technician_capabilities').insert(caps);
+                    if (capError) throw capError;
                 }
             }
 
@@ -192,11 +205,11 @@ const AdminUsersManager = () => {
                                 </td>
 
                                 <td className="p-4">
-                                    {u.department}
+                                    {u.departments?.name || 'N/A'}
                                 </td>
                                 <td className="p-4">
-                                    <Badge variant="secondary" className="capitalize">{u.role}</Badge>
-                                    {u.role === ROLES.TECHNICIAN && (
+                                    <Badge variant="secondary" className="capitalize">{u.app_roles?.name || 'N/A'}</Badge>
+                                    {u.app_roles?.role_slug === 'technician' && (
                                         <div className="flex flex-wrap gap-1 mt-1">
                                             {(u.technician_capabilities || []).map(c => (
                                                 <Badge key={c.category} variant="outline" className="text-[9px] px-1 py-0">{c.category}</Badge>
@@ -255,40 +268,53 @@ const AdminUsersManager = () => {
                             <Input value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} />
                         </div>
                         <div className="grid gap-2">
+                            <Label>Department</Label>
+                            <Select value={formData.department?.toString() || 'none'} onValueChange={v => setFormData({...formData, department: v === 'none' ? null : parseInt(v)})}>
+                                <SelectTrigger><SelectValue placeholder="Select Department" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    {departments.map(d => <SelectItem key={d.id} value={d.id.toString()}>{d.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
                             <Label>Role</Label>
-                            <Select value={formData.role} onValueChange={v => setFormData({...formData, role: v})}>
+                            <Select value={formData.role?.toString()} onValueChange={v => setFormData({...formData, role: parseInt(v)})}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    {APP_CONFIG.roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+                                    {roles.map(r => <SelectItem key={r.id} value={r.id.toString()}>{r.name}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
                         
-                        {formData.role === ROLES.TECHNICIAN && (
-                            <div className="space-y-3 border-t pt-4">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-primary font-bold">Technician Departments</Label>
-                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Select one or more</span>
+                        {(() => {
+                            const userRole = roles.find(r => r.id === parseInt(formData.role));
+                            return userRole?.role_slug === 'technician' && (
+                                <div className="space-y-3 border-t pt-4">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-primary font-bold">Technician Departments</Label>
+                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Select one or more</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                        {departments.length > 0 ? (
+                                            departments.map(dept => (
+                                                <div key={dept.name} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                                                    <Checkbox 
+                                                        id={`cap-${dept.name}`} 
+                                                        checked={formData.capabilities.includes(dept.name)}
+                                                        onCheckedChange={() => handleCapabilityToggle(dept.name)}
+                                                        className="rounded-md"
+                                                    />
+                                                    <Label htmlFor={`cap-${dept.name}`} className="text-xs font-medium cursor-pointer flex-grow">{dept.name}</Label>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-xs text-gray-400 italic">No departments found in database.</p>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                                    {departments.length > 0 ? (
-                                        departments.map(dept => (
-                                            <div key={dept.name} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                                                <Checkbox 
-                                                    id={`cap-${dept.name}`} 
-                                                    checked={formData.capabilities.includes(dept.name)}
-                                                    onCheckedChange={() => handleCapabilityToggle(dept.name)}
-                                                    className="rounded-md"
-                                                />
-                                                <Label htmlFor={`cap-${dept.name}`} className="text-xs font-medium cursor-pointer flex-grow">{dept.name}</Label>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p className="text-xs text-gray-400 italic">No departments found in database.</p>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                            );
+                        })()}
 
                         <DialogFooter><Button type="submit">Save User</Button></DialogFooter>
                     </form>

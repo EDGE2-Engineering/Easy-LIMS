@@ -30,19 +30,24 @@ const ServicesProvider = ({ children }) => {
         };
     }, []);
 
-    const mapToDb = useCallback((s) => ({
-        id: s.id,
-        service_type: s.serviceType,
-        price: s.price,
-        unit: s.unit,
-        qty: s.qty,
-        method_of_sampling: s.methodOfSampling || s.method_of_sampling || 'NA',
-        num_bhs: typeof s.numBHs === 'number' ? s.numBHs : Number(s.num_bhs ?? 0),
-        measure: s.measure || 'NA',
-        hsn_code: s.hsnCode || s.hsn_code || '',
-        tc_list: s.tcList || s.tc_list || [],
-        tech_list: s.techList || s.tech_list || []
-    }), []);
+    const mapToDb = useCallback((s) => {
+        const payload = {
+            service_type: s.serviceType,
+            price: s.price,
+            unit: s.unit,
+            qty: s.qty,
+            method_of_sampling: s.methodOfSampling || s.method_of_sampling || 'NA',
+            num_bhs: typeof s.numBHs === 'number' ? s.numBHs : Number(s.num_bhs ?? 0),
+            measure: s.measure || 'NA',
+            hsn_code: s.hsnCode || s.hsn_code || '',
+            tc_list: s.tcList || s.tc_list || [],
+            tech_list: s.techList || s.tech_list || []
+        };
+        if (s.id && typeof s.id === 'number') {
+            payload.id = s.id;
+        }
+        return payload;
+    }, []);
 
     const fetchServices = useCallback(async () => {
         try {
@@ -167,14 +172,10 @@ const ServicesProvider = ({ children }) => {
 
     const addService = useCallback(async (newService) => {
 
-        const tempId = newService.id || `srv_${Date.now()}`;
-        const serviceWithId = { ...newService, id: tempId, created_at: new Date().toISOString() };
-
         const previousServices = [...services];
-        setServices(prev => [...prev, serviceWithId]);
-
+        
         try {
-            const dbPayload = mapToDb(serviceWithId);
+            const dbPayload = mapToDb(newService);
             dbPayload.created_at = new Date().toISOString();
             dbPayload.updated_at = new Date().toISOString();
 
@@ -191,7 +192,7 @@ const ServicesProvider = ({ children }) => {
 
             if (data && data.length > 0) {
                 const added = mapFromDb(data[0]);
-                setServices(prev => prev.map(s => s.id === tempId ? added : s));
+                setServices(prev => [...prev, added]);
             }
         } catch (err) {
             console.error("Add Service Exception:", err);

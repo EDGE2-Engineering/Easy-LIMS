@@ -45,22 +45,6 @@ export const VIEWS = {
 };
 
 export const APP_CONFIG = {
-    roles: [
-        { id: ROLES.ADMIN, name: 'Admin', department: null },
-        { id: ROLES.ACCOUNTS, name: 'Accounts Representative', department: DEPARTMENTS.ACCOUNTS },
-        { id: ROLES.MRO, name: 'Material Receiving Officer', department: DEPARTMENTS.MATERIAL_RECEIVING },
-        { id: ROLES.TECHNICIAN, name: 'Lab Technician', department: DEPARTMENTS.TESTING },
-        { id: ROLES.SENIOR_ANALYST, name: 'Senior Analyst', department: DEPARTMENTS.TESTING }
-    ],
-    
-    viewPermissions: {
-        [ROLES.ADMIN]: [VIEWS.DASHBOARD, VIEWS.JOBS, VIEWS.MATERIAL_INWARD, VIEWS.TESTING, VIEWS.ACCOUNTS, VIEWS.EXPENSES, VIEWS.WORK_LOG, VIEWS.SETTINGS],
-        [ROLES.MRO]: [VIEWS.DASHBOARD, VIEWS.JOBS, VIEWS.MATERIAL_INWARD],
-        [ROLES.TECHNICIAN]: [VIEWS.DASHBOARD, VIEWS.TESTING],
-        [ROLES.SENIOR_ANALYST]: [VIEWS.DASHBOARD, VIEWS.TESTING, VIEWS.JOBS],
-        [ROLES.ACCOUNTS]: [VIEWS.DASHBOARD, VIEWS.JOBS, VIEWS.ACCOUNTS, VIEWS.EXPENSES, VIEWS.WORK_LOG]
-    },
-
     workflow: {
         states: {
             [WORKFLOW_STATES.JOB_CREATED]: {
