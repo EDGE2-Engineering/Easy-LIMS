@@ -94,7 +94,7 @@ fun AttendanceScreen(navController: NavController, viewModel: AttendanceViewMode
                         items(employees) { employee ->
                             UserItem(user = employee, onClick = {
                                 selectedUser = employee
-                                viewModel.fetchAttendanceHistory(employee.id)
+                                viewModel.fetchAttendanceHistory(employee.id ?: "")
                             })
                         }
                     }
@@ -258,7 +258,7 @@ fun AttendanceDialog(
                         onSave(
                             EmployeeAttendance(
                                 id = existingRecord?.id,
-                                userId = user.id,
+                                userId = user.id ?: "",
                                 year = y,
                                 month = m,
                                 totalWorkingDays = twd,

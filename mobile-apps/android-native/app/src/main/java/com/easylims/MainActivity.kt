@@ -16,10 +16,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.easylims.lib.SessionManager
-import com.easylims.screens.HomeScreen
-import com.easylims.screens.LoginScreen
-import com.easylims.screens.ExpensesScreen
-import com.easylims.screens.AttendanceScreen
+import com.easylims.screens.*
 import com.easylims.ui.theme.EasyLIMSTheme
 
 class MainActivity : ComponentActivity() {
@@ -50,6 +47,20 @@ fun AppNavigation() {
             composable("home") { HomeScreen(navController) }
             composable("expenses") { ExpensesScreen(navController) }
             composable("attendance") { AttendanceScreen(navController) }
+            composable("jobs") { JobsScreen(navController) }
+            composable("settings") { SettingsScreen(navController) }
+            composable("clients") { ClientsScreen(navController) }
+            composable("field_tests") { FieldTestsScreen(navController) }
+            composable("lab_tests") { LabTestsScreen(navController) }
+            composable("sampling") { SamplingScreen(navController) }
+            composable("users") { UsersScreen(navController) }
+            composable("system_config") { SystemConfigScreen(navController) }
+            composable("unit_types") { UnitTypesScreen(navController) }
+            composable("hsn_codes") { HSNCodesScreen(navController) }
+            composable("departments") { DepartmentsScreen(navController) }
+            composable("materials") { MaterialsScreen(navController) }
+            composable("terms") { TermsScreen(navController) }
+            composable("technicals") { TechnicalsScreen(navController) }
         }
     } else {
         NavHost(navController = navController, startDestination = "login") {

@@ -81,6 +81,7 @@ fun HomeScreen(navController: NavController) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(bottom = 16.dp)
                 .clickable { navController.navigate("attendance") },
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -88,6 +89,33 @@ fun HomeScreen(navController: NavController) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text("Attendance", fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 Text("Track employee work logs and wages", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+                .clickable { navController.navigate("jobs") },
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text("Jobs", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text("View and update active service jobs", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { navController.navigate("settings") },
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text("Settings", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text("App configuration and profile", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
