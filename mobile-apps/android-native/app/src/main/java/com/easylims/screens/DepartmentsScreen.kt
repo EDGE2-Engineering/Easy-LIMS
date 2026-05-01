@@ -31,7 +31,7 @@ fun DepartmentsScreen(navController: NavController, viewModel: DepartmentsViewMo
     var selectedDept by remember { mutableStateOf<Department?>(null) }
 
     val filteredDepts = departments.filter {
-        it.name.contains(searchQuery, ignoreCase = true)
+        (it.name ?: "").contains(searchQuery, ignoreCase = true)
     }
 
     Scaffold(
@@ -74,6 +74,16 @@ fun DepartmentsScreen(navController: NavController, viewModel: DepartmentsViewMo
                 shape = RoundedCornerShape(12.dp)
             )
 
+            val errorMessage by viewModel.errorMessage.collectAsState()
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    fontSize = 12.sp
+                )
+            }
+
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -91,7 +101,7 @@ fun DepartmentsScreen(navController: NavController, viewModel: DepartmentsViewMo
                                 selectedDept = dept
                                 showDialog = true
                             },
-                            onDelete = { viewModel.deleteDepartment(dept.id!!) }
+                            onDelete = { viewModel.deleteDepartment(dept.getIdString()) }
                         )
                     }
                 }
@@ -106,7 +116,7 @@ fun DepartmentsScreen(navController: NavController, viewModel: DepartmentsViewMo
                     if (selectedDept == null) {
                         viewModel.addDepartment(name)
                     } else {
-                        viewModel.updateDepartment(selectedDept!!.id!!, name)
+                        viewModel.updateDepartment(selectedDept!!.getIdString(), name)
                     }
                     showDialog = false
                 }
@@ -130,7 +140,7 @@ fun DepartmentItem(dept: Department, onClick: () -> Unit, onDelete: () -> Unit) 
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = dept.name,
+                text = dept.name ?: "Unknown",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )

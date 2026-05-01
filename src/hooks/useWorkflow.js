@@ -30,12 +30,24 @@ export const useWorkflow = (jobId, currentState) => {
 
         setLoading(true);
         try {
+            // Robustly determine the integer user ID for bigint columns
+            let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+            if (isNaN(userId) && user.username) {
+                const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
+                if (userData) userId = userData.id;
+            }
+
+            if (isNaN(userId)) {
+                throw new Error("Unable to determine a valid numeric User ID. Please try logging out and back in.");
+            }
+
             // 1. Update job state in DB
             const { error: updateError } = await supabase
                 .from('jobs')
                 .update({ 
                     status: action.targetState,
-                    updated_at: new Date().toISOString()
+                    updated_at: new Date().toISOString(),
+                    updated_by: userId
                 })
                 .eq('id', jobId);
             
@@ -49,7 +61,7 @@ export const useWorkflow = (jobId, currentState) => {
                     from_state: currentState,
                     to_state: action.targetState,
                     action_id: actionId,
-                    performed_by: user?.id,
+                    performed_by: userId,
                     remarks
                 });
             if (logError) throw logError;
@@ -77,11 +89,23 @@ export const useWorkflow = (jobId, currentState) => {
         const previousState = stateKeys[currentIndex - 1];
         setLoading(true);
         try {
+            // Robustly determine the integer user ID for bigint columns
+            let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+            if (isNaN(userId) && user.username) {
+                const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
+                if (userData) userId = userData.id;
+            }
+
+            if (isNaN(userId)) {
+                throw new Error("Unable to determine a valid numeric User ID. Please try logging out and back in.");
+            }
+
             const { error: updateError } = await supabase
                 .from('jobs')
                 .update({ 
                     status: previousState,
-                    updated_at: new Date().toISOString()
+                    updated_at: new Date().toISOString(),
+                    updated_by: userId
                 })
                 .eq('id', jobId);
             
@@ -94,7 +118,7 @@ export const useWorkflow = (jobId, currentState) => {
                     from_state: currentState,
                     to_state: previousState,
                     action_id: 'REVERT_STATE',
-                    performed_by: user?.id,
+                    performed_by: userId,
                     remarks
                 });
             if (logError) throw logError;

@@ -1745,11 +1745,24 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
 
             setIsSaving(true);
 
+            // Robustly determine the integer user ID for bigint columns
+            let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+            
+            // If the ID is a UUID string (not numeric), try to resolve it from the users table
+            if (isNaN(userId) && user.username) {
+                const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
+                if (userData) userId = userData.id;
+            }
+
+            if (isNaN(userId)) {
+                throw new Error("Unable to determine a valid numeric User ID. Please try logging out and back in.");
+            }
+
             const payload = {
                 report_number: formData.reportId,
                 client_id: formData.clientId || null,
                 content: formData,
-                created_by: user.id,
+                created_by: userId,
                 updated_at: new Date().toISOString()
             };
 

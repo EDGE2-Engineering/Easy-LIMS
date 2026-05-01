@@ -103,25 +103,6 @@ fun SettingsScreen(navController: NavController) {
                     onClick = { navController.navigate("users") }
                 )
             }
-
-            item {
-                Divider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.surfaceVariant)
-                SectionHeader("App Settings")
-            }
-            item {
-                SettingsItem(
-                    icon = Icons.Default.Notifications,
-                    title = "Notifications",
-                    subtitle = "Configure app alerts"
-                )
-            }
-            item {
-                SettingsItem(
-                    icon = Icons.Default.Info,
-                    title = "About",
-                    subtitle = "App version and info"
-                )
-            }
             
             item {
                 Spacer(modifier = Modifier.height(32.dp))

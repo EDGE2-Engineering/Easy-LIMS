@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, UserPlus, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 
 const TechnicianAssignment = ({ jobId, jobCategories, onComplete }) => {
+    const { user } = useAuth();
     let parsedCategories = jobCategories || [];
     if (typeof parsedCategories === 'string') {
         try { parsedCategories = JSON.parse(parsedCategories); } catch (e) { parsedCategories = []; }
@@ -15,6 +17,7 @@ const TechnicianAssignment = ({ jobId, jobCategories, onComplete }) => {
     const categoriesList = Array.isArray(parsedCategories) ? parsedCategories : [];
     const [technicians, setTechnicians] = useState([]);
     const [assignments, setAssignments] = useState({});
+    const [existingRecords, setExistingRecords] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const { toast } = useToast();
@@ -41,7 +44,7 @@ const TechnicianAssignment = ({ jobId, jobCategories, onComplete }) => {
                 .select('*')
                 .eq('job_id', jobId);
                 
-            if (existingError) throw existingError;
+            setExistingRecords(existing || []);
             
             const initialAssignments = {};
             (existing || []).forEach(t => {
@@ -64,24 +67,47 @@ const TechnicianAssignment = ({ jobId, jobCategories, onComplete }) => {
         setSaving(true);
         try {
             // For each category, create/update a record in job_tests
-            const updates = Object.entries(assignments).map(([category, techId]) => ({
-                job_id: jobId,
-                category,
-                assigned_technician_id: typeof techId === 'string' ? parseInt(techId) : techId,
-                status: 'PENDING',
-                updated_at: new Date().toISOString()
-            }));
+            const updates = Object.entries(assignments).map(([category, techId]) => {
+                const existing = existingRecords.find(r => r.category === category);
+                const updateObj = {
+                    job_id: jobId,
+                    category,
+                    assigned_technician_id: typeof techId === 'string' ? parseInt(techId) : techId,
+                    status: existing?.status || 'PENDING',
+                    updated_at: new Date().toISOString()
+                };
+                
+                // If record exists, include the ID to allow upsert via Primary Key
+                if (existing?.id) {
+                    updateObj.id = existing.id;
+                }
+                
+                return updateObj;
+            });
             
             const { error } = await supabase
                 .from('job_tests')
-                .upsert(updates, { onConflict: 'job_id,category' });
+                .upsert(updates);
             
             if (error) throw error;
 
             // Move job to next stage & Log it
+            let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+            if (isNaN(userId) && user.username) {
+                const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
+                if (userData) userId = userData.id;
+            }
+
+            if (isNaN(userId)) {
+                throw new Error("Unable to determine a valid numeric User ID. Please try logging out and back in.");
+            }
+
             const { error: jobError } = await supabase
                 .from('jobs')
-                .update({ status: 'TECHNICIANS_ASSIGNED' })
+                .update({ 
+                    status: 'TECHNICIANS_ASSIGNED',
+                    updated_by: userId
+                })
                 .eq('id', jobId);
             if (jobError) throw jobError;
 
@@ -89,7 +115,7 @@ const TechnicianAssignment = ({ jobId, jobCategories, onComplete }) => {
                 job_id: jobId,
                 to_state: 'TECHNICIANS_ASSIGNED',
                 action_id: 'ASSIGN_TECHNICIANS',
-                performed_by: user?.id,
+                performed_by: userId,
                 remarks: `Technicians assigned: ${Object.keys(assignments).join(', ')}`
             });
             
@@ -133,14 +159,16 @@ const TechnicianAssignment = ({ jobId, jobCategories, onComplete }) => {
                 ))}
             </div>
 
+            <div className="flex justify-center">
             <Button 
                 onClick={handleSave} 
                 disabled={saving || Object.keys(assignments).length < categoriesList.length}
-                className="w-full mt-4"
+                className="mt-4"
             >
                 {saving ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
                 Confirm Assignments & Move to Testing
             </Button>
+            </div>
         </div>
     );
 };

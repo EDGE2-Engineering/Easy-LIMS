@@ -16,6 +16,9 @@ class DepartmentsViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
     init {
         fetchDepartments()
     }
@@ -23,11 +26,13 @@ class DepartmentsViewModel : ViewModel() {
     fun fetchDepartments() {
         viewModelScope.launch {
             _isLoading.value = true
+            _errorMessage.value = null
             try {
                 val results = Supabase.client.from("departments").select().decodeList<Department>()
-                _departments.value = results.sortedBy { it.name }
+                _departments.value = results.sortedBy { it.name ?: "" }
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = "Failed to load departments: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
@@ -41,6 +46,7 @@ class DepartmentsViewModel : ViewModel() {
                 fetchDepartments()
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = "Failed to add department: ${e.localizedMessage}"
             }
         }
     }
@@ -56,6 +62,7 @@ class DepartmentsViewModel : ViewModel() {
                 fetchDepartments()
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = "Failed to update department: ${e.localizedMessage}"
             }
         }
     }
@@ -71,6 +78,7 @@ class DepartmentsViewModel : ViewModel() {
                 fetchDepartments()
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = "Failed to delete department: ${e.localizedMessage}"
             }
         }
     }

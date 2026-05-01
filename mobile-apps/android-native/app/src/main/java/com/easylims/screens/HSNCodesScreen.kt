@@ -75,6 +75,16 @@ fun HSNCodesScreen(navController: NavController, viewModel: HSNCodesViewModel = 
                 shape = RoundedCornerShape(12.dp)
             )
 
+            val errorMessage by viewModel.errorMessage.collectAsState()
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    fontSize = 12.sp
+                )
+            }
+
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()

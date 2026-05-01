@@ -504,6 +504,19 @@ const NewQuotationPage = () => {
             const selectedClient = clients.find(c => c.clientName === quoteDetails.clientName);
             const clientId = selectedClient?.id || null;
 
+            // Robustly determine the integer user ID for bigint columns
+            let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+            
+            // If the ID is a UUID string (not numeric), try to resolve it from the users table
+            if (isNaN(userId) && user.username) {
+                const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
+                if (userData) userId = userData.id;
+            }
+
+            if (isNaN(userId)) {
+                throw new Error("Unable to determine a valid numeric User ID. Please try logging out and back in.");
+            }
+
             const recordData = {
                 quote_number: docNumber,
                 document_type: documentType,
@@ -517,7 +530,7 @@ const NewQuotationPage = () => {
                     discount
                 },
                 job_id: searchParams.get('jobId') || null,
-                created_by: user.id,
+                created_by: userId,
                 updated_at: new Date().toISOString()
             };
 

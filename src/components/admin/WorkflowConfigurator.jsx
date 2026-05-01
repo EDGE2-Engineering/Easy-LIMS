@@ -213,7 +213,7 @@ const WorkflowConfigurator = () => {
 
                 {/* Preview Side */}
                 <div className="space-y-4">
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest px-1">Visual DAG Preview</h3>
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest px-1">Job Workflow Preview</h3>
                     <Card className="border-gray-100 shadow-sm h-[calc(100vh-350px)] overflow-hidden bg-white flex items-center justify-center">
                         <div className="w-full h-full p-4 overflow-auto">
                             <MermaidDiagram>

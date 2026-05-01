@@ -200,21 +200,7 @@ const AdminSystemSettings = ({ id }) => {
                             </Tooltip>
                         </TabsTrigger>
                         
-                        <TabsTrigger
-                            value="workflow"
-                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                        >
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div className="flex items-center gap-2">
-                                        <GitBranch className="w-4 h-4" /> Workflow
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                    <p className="text-xs">Configure job states and transitions</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TabsTrigger>
+                        
                         
                         <TabsTrigger
                             value="users"
@@ -228,6 +214,22 @@ const AdminSystemSettings = ({ id }) => {
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-gray-900 text-white border-gray-800">
                                     <p className="text-xs">System users Master</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
+
+                        <TabsTrigger
+                            value="workflow"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <GitBranch className="w-4 h-4" /> Workflow
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Configure job states and transitions</p>
                                 </TooltipContent>
                             </Tooltip>
                         </TabsTrigger>

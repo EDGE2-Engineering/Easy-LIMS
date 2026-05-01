@@ -28,6 +28,7 @@ import WorkflowPanel from '@/components/common/WorkflowPanel';
 import TechnicianAssignment from './TechnicianAssignment';
 import TestingManager from './TestingManager';
 import MaterialInwardManager from './MaterialInwardManager';
+import ReactSelect from 'react-select';
 
 const JobsManager = ({ id }) => {
     const [records, setRecords] = useState([]);
@@ -95,13 +96,25 @@ const JobsManager = ({ id }) => {
     const handleReceiveWorkOrder = async () => {
         setIsSaving(true);
         try {
+            // Robustly determine the integer user ID for bigint columns
+            let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+            if (isNaN(userId) && user.username) {
+                const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
+                if (userData) userId = userData.id;
+            }
+
+            if (isNaN(userId)) {
+                throw new Error("Unable to determine a valid numeric User ID. Please try logging out and back in.");
+            }
+
             // 1. Update job Record
             const { error: updateError } = await supabase
                 .from('jobs')
                 .update({ 
                     work_order_id: woId,
                     status: WORKFLOW_STATES.WORK_ORDER_RECEIVED,
-                    updated_at: new Date().toISOString()
+                    updated_at: new Date().toISOString(),
+                    updated_by: userId
                 })
                 .eq('id', editingRecord.id);
 
@@ -115,7 +128,7 @@ const JobsManager = ({ id }) => {
                     from_state: editingRecord.status,
                     to_state: WORKFLOW_STATES.WORK_ORDER_RECEIVED,
                     action_id: 'RECEIVE_WORK_ORDER',
-                    performed_by: user?.id,
+                    performed_by: userId,
                     remarks: `Work Order Received: ${woId}`
                 });
             if (logError) throw logError;
@@ -178,13 +191,15 @@ const JobsManager = ({ id }) => {
 
     const fetchJobSamples = async (jobId) => {
         try {
-            const { data: inward } = await supabase
+            const { data: inwardRecords } = await supabase
                 .from('material_inward_register')
                 .select('id')
                 .eq('job_id', jobId)
-                .maybeSingle();
+                .order('created_at', { ascending: false })
+                .limit(1);
 
-            if (inward) {
+            if (inwardRecords && inwardRecords.length > 0) {
+                const inward = inwardRecords[0];
                 const { data: samples, error } = await supabase
                     .from('material_samples')
                     .select('*')
@@ -232,35 +247,74 @@ const JobsManager = ({ id }) => {
     useEffect(() => {
         if (editingRecord?.id) {
             fetchJobDocs(editingRecord.id);
+            fetchJobSamples(editingRecord.id);
+            fetchJobAssignments(editingRecord.id);
         } else {
             setLinkedDocs([]);
+            setJobSamples([]);
+            setTechAssignments([]);
         }
     }, [editingRecord?.id]);
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            // Ensure client_id is an integer
+            const clientId = typeof editingRecord.client_id === 'string' ? parseInt(editingRecord.client_id) : editingRecord.client_id;
+            
+            if (!clientId || isNaN(clientId)) {
+                throw new Error("Please select a valid client.");
+            }
+
             const payload = {
-                client_id: typeof editingRecord.client_id === 'string' ? parseInt(editingRecord.client_id) : editingRecord.client_id,
-                project_name: editingRecord.project_name,
+                client_id: clientId,
+                project_name: editingRecord.project_name || '',
                 work_order_id: editingRecord.work_order_id || null,
                 status: editingRecord.status,
                 updated_at: new Date().toISOString()
             };
 
-            if (!payload.client_id) throw new Error("Client is required.");
-
             if (isAddingNew) {
-                const { error } = await supabase.from('jobs').insert({ ...payload, created_by: user.id });
+                // Robustly determine the integer user ID for bigint columns
+                let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+                
+                // If the ID is a UUID string (not numeric), try to resolve it from the users table
+                if (isNaN(userId) && user.username) {
+                    const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
+                    if (userData) userId = userData.id;
+                }
+
+                if (isNaN(userId)) {
+                    throw new Error("Unable to determine a valid numeric User ID. Please try logging out and back in.");
+                }
+
+                // Ensure we don't send any 'id' field for new records to let DB auto-generate it
+                const insertData = { 
+                    ...payload, 
+                    created_by: userId,
+                    updated_by: userId
+                };
+                
+                const { error } = await supabase.from('jobs').insert(insertData);
                 if (error) throw error;
             } else {
-                const { error } = await supabase.from('jobs').update(payload).eq('id', editingRecord.id);
+                let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+                if (isNaN(userId) && user.username) {
+                    const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
+                    if (userData) userId = userData.id;
+                }
+
+                const { error } = await supabase.from('jobs').update({ 
+                    ...payload, 
+                    updated_by: userId || 1 // Fallback to 1 if still not found for updates
+                }).eq('id', editingRecord.id);
                 if (error) throw error;
             }
             toast({ title: "Success", description: "Job saved successfully" });
             setEditingRecord(null);
             fetchRecords();
         } catch (err) {
+            console.error("Save Error:", err);
             toast({ title: "Error", description: err.message, variant: "destructive" });
         } finally {
             setIsSaving(false);
@@ -271,7 +325,7 @@ const JobsManager = ({ id }) => {
         setDeleteConfirmation({
             isOpen: true,
             jobId: job.id,
-            jobCode: job.job_id
+            jobCode: job.job_code || job.job_id
         });
     };
 
@@ -299,8 +353,9 @@ const JobsManager = ({ id }) => {
 
     const filteredRecords = useMemo(() => {
         let result = records.filter(r => 
-            (r.job_id?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-             r.clients?.client_name?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+            ((r.job_code || r.job_id)?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+             r.clients?.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+             r.project_name?.toLowerCase().includes(searchTerm.toLowerCase())) &&
             (filterStatus === 'all' || r.status === filterStatus)
         );
 
@@ -420,14 +475,51 @@ const JobsManager = ({ id }) => {
                         <div className="space-y-6">
                             <div className="space-y-2">
                                 <Label className="text-gray-700 font-semibold">Client</Label>
-                                <Select value={editingRecord.client_id?.toString()} onValueChange={v => setEditingRecord({...editingRecord, client_id: parseInt(v)})}>
-                                    <SelectTrigger className="h-12 border-gray-200 rounded-xl"><SelectValue placeholder="Select Client" /></SelectTrigger>
-                                    <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id.toString()}>{c.client_name}</SelectItem>)}</SelectContent>
-                                </Select>
+                                <ReactSelect
+                                    className="mt-1"
+                                    classNamePrefix="react-select"
+                                    options={clients.map(c => ({ value: c.id, label: c.client_name }))}
+                                    value={editingRecord.client_id ? {
+                                        value: editingRecord.client_id,
+                                        label: clients.find(c => String(c.id) === String(editingRecord.client_id))?.client_name
+                                    } : null}
+                                    onChange={(option) => setEditingRecord({ ...editingRecord, client_id: option ? option.value : '' })}
+                                    placeholder="Search Clients..."
+                                    isSearchable
+                                    isClearable
+                                    styles={{
+                                        control: (base) => ({
+                                            ...base,
+                                            height: '48px',
+                                            borderColor: '#e2e8f0',
+                                            borderRadius: '0.75rem',
+                                            paddingLeft: '4px',
+                                            boxShadow: 'none',
+                                            '&:hover': {
+                                                borderColor: '#94a3b8'
+                                            }
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected ? '#0f172a' : state.isFocused ? '#f1f5f9' : 'white',
+                                            color: state.isSelected ? 'white' : '#1e293b',
+                                            fontSize: '0.875rem'
+                                        })
+                                    }}
+                                />
                             </div>
                             <div className="space-y-2">
                                  <Label className="text-gray-700 font-semibold">Project Name</Label>
                                  <Input className="h-12 border-gray-200 rounded-xl" value={editingRecord.project_name || ''} onChange={e => setEditingRecord({...editingRecord, project_name: e.target.value})} />
+                            </div>
+                            <div className="space-y-2">
+                                 <Label className="text-gray-700 font-semibold">Work Order ID</Label>
+                                 <Input 
+                                    className="h-12 border-gray-200 rounded-xl bg-gray-50/50" 
+                                    value={editingRecord.work_order_id || ''} 
+                                    onChange={e => setEditingRecord({...editingRecord, work_order_id: e.target.value})} 
+                                    placeholder="e.g. WO/2026/088"
+                                 />
                             </div>
                         </div>
                     </div>

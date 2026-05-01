@@ -147,11 +147,14 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                 setLoading(true);
                 try {
                     // 1. Check if inward record already exists for this job_id
-                    const { data: existing, error: fetchError } = await supabase
+                    const { data: existingRecords, error: fetchError } = await supabase
                         .from('material_inward_register')
                         .select('*')
                         .eq('job_id', jobId)
-                        .maybeSingle();
+                        .order('created_at', { ascending: false })
+                        .limit(1);
+
+                    const existing = (existingRecords && existingRecords.length > 0) ? existingRecords[0] : null;
 
                     if (!fetchError && existing) {
                         // Enter EDIT mode for existing record
@@ -289,6 +292,19 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
         try {
             let inwardId = editingRecord.id;
 
+            // Robustly determine the integer user ID for bigint columns
+            let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+            
+            // If the ID is a UUID string (not numeric), try to resolve it from the users table
+            if (isNaN(userId) && user.username) {
+                const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
+                if (userData) userId = userData.id;
+            }
+
+            if (isNaN(userId)) {
+                throw new Error("Unable to determine a valid numeric User ID. Please try logging out and back in.");
+            }
+
             if (isAddingNew) {
                 // Create Register Entry
                 const { data: inwardData, error: inwardError } = await supabase
@@ -298,7 +314,8 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                         po_wo_number: editingRecord.po_wo_number,
                         client_id: typeof editingRecord.client_id === 'string' ? parseInt(editingRecord.client_id) : editingRecord.client_id,
                         job_id: editingRecord.job_id || null,
-                        created_by: user.id,
+                        created_by: userId,
+                        updated_by: userId,
                         status: 'RECEIVED'
                     })
                     .select()
@@ -315,7 +332,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                         po_wo_number: editingRecord.po_wo_number,
                         client_id: typeof editingRecord.client_id === 'string' ? parseInt(editingRecord.client_id) : editingRecord.client_id,
                         status: editingRecord.status,
-                        updated_by: user.id,
+                        updated_by: userId,
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', editingRecord.id);
@@ -332,17 +349,29 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
             }
 
             // Create/Recreate Samples
-            const samplesToInsert = editingRecord.samples.map(sample => ({
-                inward_id: inwardId,
-                sample_code: sample.sample_code,
-                sample_description: sample.sample_description,
-                quantity: parseFloat(sample.quantity) || 0,
-                received_date: sample.received_date,
-                received_time: sample.received_time,
-                received_by: typeof sample.received_by === 'string' ? parseInt(sample.received_by) : sample.received_by,
-                collection_center_id: sample.collection_center_id ? (typeof sample.collection_center_id === 'string' ? parseInt(sample.collection_center_id) : sample.collection_center_id) : null,
-                expected_test_days: parseInt(sample.expected_test_days) || 7
-            }));
+            const samplesToInsert = editingRecord.samples.map((sample, index) => {
+                const receivedBy = sample.received_by ? (typeof sample.received_by === 'string' ? parseInt(sample.received_by) : sample.received_by) : null;
+                const collectionCenterId = sample.collection_center_id ? (typeof sample.collection_center_id === 'string' ? parseInt(sample.collection_center_id) : sample.collection_center_id) : null;
+
+                if (!collectionCenterId) {
+                    throw new Error(`Sample #${index + 1}${sample.sample_code ? ' (' + sample.sample_code + ')' : ''}: Please select a Collection Center.`);
+                }
+                if (!receivedBy) {
+                    throw new Error(`Sample #${index + 1}${sample.sample_code ? ' (' + sample.sample_code + ')' : ''}: Please select who received the sample.`);
+                }
+
+                return {
+                    inward_id: inwardId,
+                    sample_code: sample.sample_code,
+                    sample_description: sample.sample_description,
+                    quantity: parseFloat(sample.quantity) || 0,
+                    received_date: sample.received_date,
+                    received_time: sample.received_time,
+                    received_by: receivedBy,
+                    collection_center_id: collectionCenterId,
+                    expected_test_days: parseInt(sample.expected_test_days) || 7
+                };
+            });
 
             const { error: samplesError } = await supabase
                 .from('material_samples')
@@ -362,10 +391,24 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
             const message = `${emoji} *Material Inward ${action}*\n\nJob OrderNo: \`${editingRecord.job_order_no || inwardId}\`\nClient: \`${clientName}\`\nSamples: \`${editingRecord.samples.length}\`\nBy: \`${user?.fullName || 'Unknown'}\``;
             sendTelegramNotification(message);
             if (editingRecord.job_id && isAddingNew) {
+                // Robustly determine the integer user ID for bigint columns
+                let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+                if (isNaN(userId) && user.username) {
+                    const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
+                    if (userData) userId = userData.id;
+                }
+
+                if (isNaN(userId)) {
+                    throw new Error("Unable to determine a valid numeric User ID. Please try logging out and back in.");
+                }
+
                 // Update job status
                 await supabase
                     .from('jobs')
-                    .update({ status: WORKFLOW_STATES.MATERIAL_RECEIVED })
+                    .update({ 
+                        status: WORKFLOW_STATES.MATERIAL_RECEIVED,
+                        updated_by: userId
+                    })
                     .eq('id', editingRecord.job_id);
 
                 // Add transition log
@@ -373,10 +416,13 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                     job_id: editingRecord.job_id,
                     to_state: WORKFLOW_STATES.MATERIAL_RECEIVED,
                     action_id: 'RECEIVE_MATERIAL',
-                    performed_by: user.id,
+                    performed_by: userId,
                     remarks: `Material Received: ${editingRecord.job_order_no || inwardId}`
                 });
             }
+
+            // Refresh the list immediately
+            await fetchRecords();
 
             if (onSuccess) {
                 onSuccess();
@@ -385,7 +431,6 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
             } else {
                 setEditingRecord(null);
                 setIsAddingNew(false);
-                fetchRecords();
             }
         } catch (error) {
             console.error('Error saving inward record:', error);
@@ -582,16 +627,15 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                     <div className="grid grid-cols-1 gap-4">
                         {editingRecord.samples.map((sample, index) => (
                             <div key={index} className="p-4 bg-gray-50/50 rounded-xl border border-gray-100 space-y-4 relative group">
-                                {editingRecord.samples.length > 1 && (
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="absolute top-2 right-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        onClick={() => handleRemoveSample(index)}
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </Button>
-                                )}
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all rounded-full"
+                                    onClick={() => handleRemoveSample(index)}
+                                    title="Remove Sample"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="space-y-1">
                                         <Label className="text-xs">Sample Code *</Label>
