@@ -15,7 +15,6 @@ import { VIEWS } from '@/data/config';
 const RoleManager = () => {
     const { refreshRoles } = useAuth();
     const [roles, setRoles] = useState([]);
-    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingRole, setEditingRole] = useState(null);
@@ -24,7 +23,6 @@ const RoleManager = () => {
         id: '',
         name: '',
         role_slug: '',
-        department: '',
         view_permissions: []
     });
     const { toast } = useToast();
@@ -33,16 +31,8 @@ const RoleManager = () => {
 
     useEffect(() => {
         fetchRoles();
-        fetchDepartments();
     }, []);
 
-    const fetchDepartments = async () => {
-        try {
-            const { data, error } = await supabase.from('departments').select('name').order('name');
-            if (error) throw error;
-            setDepartments(data || []);
-        } catch (error) { console.error(error); }
-    };
 
     const fetchRoles = async () => {
         setLoading(true);
@@ -57,7 +47,7 @@ const RoleManager = () => {
 
     const handleNewRole = () => {
         setEditingRole(null);
-        setFormData({ id: '', name: '', role_slug: '', department: '', view_permissions: [] });
+        setFormData({ id: '', name: '', role_slug: '', view_permissions: [] });
         setIsDialogOpen(true);
     };
 
@@ -67,7 +57,6 @@ const RoleManager = () => {
             id: role.id,
             name: role.name,
             role_slug: role.role_slug || '',
-            department: role.department || '',
             view_permissions: role.view_permissions || []
         });
         setIsDialogOpen(true);
@@ -92,7 +81,6 @@ const RoleManager = () => {
             const roleData = {
                 name: formData.name,
                 role_slug: formData.role_slug.toLowerCase().replace(/\s+/g, '_') || formData.name.toLowerCase().replace(/\s+/g, '_'),
-                department: formData.department || null,
                 view_permissions: formData.view_permissions,
                 updated_at: new Date().toISOString()
             };
@@ -153,7 +141,6 @@ const RoleManager = () => {
                     <thead className="bg-gray-50 border-b font-semibold">
                         <tr>
                             <th className="text-left p-4">Role Name</th>
-                            <th className="text-left p-4">Department</th>
                             <th className="text-left p-4">Permissions</th>
                             <th className="text-right p-4">Actions</th>
                         </tr>
@@ -162,7 +149,6 @@ const RoleManager = () => {
                         {filteredRoles.map(r => (
                             <tr key={r.id} className="border-b hover:bg-gray-50 transition-colors">
                                 <td className="p-4 font-medium text-gray-900">{r.name}</td>
-                                <td className="p-4">{r.department || <span className="text-gray-300 italic">None</span>}</td>
                                 <td className="p-4">
                                     <div className="flex flex-wrap gap-1">
                                         {(r.view_permissions || []).map(v => (
@@ -213,23 +199,6 @@ const RoleManager = () => {
                                 value={formData.role_slug}
                                 onChange={e => setFormData({ ...formData, role_slug: e.target.value })}
                             />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="role-dept">Department Mapping (Optional)</Label>
-                            <Select 
-                                value={formData.department || 'none'} 
-                                onValueChange={v => setFormData({ ...formData, department: v === 'none' ? null : v })}
-                            >
-                                <SelectTrigger id="role-dept">
-                                    <SelectValue placeholder="Select Department" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">None</SelectItem>
-                                    {departments.map(d => (
-                                        <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
                         </div>
 
                         <div className="space-y-3 border-t pt-4">

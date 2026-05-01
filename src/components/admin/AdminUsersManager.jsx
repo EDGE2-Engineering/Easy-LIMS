@@ -69,7 +69,6 @@ const AdminUsersManager = () => {
     const filteredUsers = users.filter(u =>
         u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (u.full_name && u.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (u.departments?.name && u.departments.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (u.app_roles?.name && u.app_roles.name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
@@ -115,11 +114,14 @@ const AdminUsersManager = () => {
                 userId = data.id;
             }
 
-            // Sync Capabilities
-            // Note: In the new schema, technician_capabilities.user_id is an integer (bigint)
-            // We need the role slug to check if user is a technician
+            // Sync Lab Test Departments (Capabilities)
             const userRole = roles.find(r => r.id === parseInt(formData.role));
-            if (userRole?.role_slug === 'technician') {
+            const isTechnician = userRole?.role_slug === 'technician' || userRole?.role_slug === 'lab_technician';
+            
+            if (isTechnician) {
+                // Clear the single department column if it's a technician
+                await supabase.from('users').update({ department: null }).eq('id', userId);
+                
                 await supabase.from('technician_capabilities').delete().eq('user_id', userId);
                 if (formData.capabilities.length > 0) {
                     const caps = formData.capabilities.map(cat => ({ user_id: userId, category: cat }));
@@ -189,7 +191,6 @@ const AdminUsersManager = () => {
                         <tr>
                             <th className="text-left p-4">Name</th>
                             <th className="text-left p-4">Username</th>
-                            <th className="text-left p-4">Department</th>
                             <th className="text-left p-4">Role</th>
                             <th className="text-left p-4">Status</th>
                             <th className="text-right p-4">Actions</th>
@@ -198,27 +199,40 @@ const AdminUsersManager = () => {
                     <tbody>
                         {filteredUsers.map(u => (
                             <tr key={u.id} className="border-b hover:bg-gray-50">
-                                <td className="p-4 font-medium">{u.full_name}</td>
+                                <td className="p-4">
+                                    <div className="flex flex-col">
+                                        <span className="font-medium text-gray-900">{u.full_name}</span>
+                                        {/* <span className="text-[10px] text-gray-400 font-medium">
+                                            {u.technician_capabilities?.length > 0 
+                                                ? u.technician_capabilities.map(c => c.category).join(', ') 
+                                                : (u.departments?.name || 'No Dept')}
+                                        </span> */}
+                                    </div>
+                                </td>
                                 <td className="p-4">
                                     <div className="text-xs text-gray-500">{u.username}</div>
-                                    {/* <div className="text-[10px] text-gray-400 font-mono">{u.department}</div> */}
                                 </td>
 
                                 <td className="p-4">
-                                    {u.departments?.name || 'N/A'}
-                                </td>
-                                <td className="p-4">
                                     <Badge variant="secondary" className="capitalize">{u.app_roles?.name || 'N/A'}</Badge>
+                                    {u.app_roles?.role_slug !== 'technician' && u.departments?.name && (
+                                        <div className="mt-1">
+                                            <Badge variant="secondary" className="capitalize" style={{ backgroundColor: '#e1bdffff' }}>
+                                                {u.departments?.name} Department
+                                            </Badge>
+                                        </div>
+                                    )}
                                     {u.app_roles?.role_slug === 'technician' && (
                                         <div className="flex flex-wrap gap-1 mt-1">
                                             {(u.technician_capabilities || []).map(c => (
                                                 <Badge key={c.category} variant="outline" className="text-[9px] px-1 py-0">{c.category}</Badge>
+                                                
                                             ))}
                                         </div>
                                     )}
                                 </td>
                                 <td className="p-4">
-                                    <Badge className={u.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                                    <Badge className={u.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}>
                                         {u.is_active ? 'Active' : 'Deactivated'}
                                     </Badge>
                                 </td>
@@ -268,16 +282,6 @@ const AdminUsersManager = () => {
                             <Input value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} />
                         </div>
                         <div className="grid gap-2">
-                            <Label>Department</Label>
-                            <Select value={formData.department?.toString() || 'none'} onValueChange={v => setFormData({...formData, department: v === 'none' ? null : parseInt(v)})}>
-                                <SelectTrigger><SelectValue placeholder="Select Department" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">None</SelectItem>
-                                    {departments.map(d => <SelectItem key={d.id} value={d.id.toString()}>{d.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-2">
                             <Label>Role</Label>
                             <Select value={formData.role?.toString()} onValueChange={v => setFormData({...formData, role: parseInt(v)})}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -289,10 +293,12 @@ const AdminUsersManager = () => {
                         
                         {(() => {
                             const userRole = roles.find(r => r.id === parseInt(formData.role));
-                            return userRole?.role_slug === 'technician' && (
+                            const isTechnician = userRole?.role_slug === 'technician' || userRole?.role_slug === 'lab_technician';
+                            
+                            return isTechnician && (
                                 <div className="space-y-3 border-t pt-4">
                                     <div className="flex items-center justify-between">
-                                        <Label className="text-primary font-bold">Technician Departments</Label>
+                                        <Label className="text-primary font-bold">Lab Test Departments</Label>
                                         <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Select one or more</span>
                                     </div>
                                     <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">

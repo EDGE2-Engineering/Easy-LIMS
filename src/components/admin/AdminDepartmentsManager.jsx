@@ -154,7 +154,7 @@ const AdminDepartmentsManager = () => {
         return (
             <div className="bg-white p-6 rounded-lg shadow-sm animate-in slide-in-from-right-4 duration-300">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">{isAddingNew ? 'Add New Department' : 'Edit Department'}</h2>
+                    <h2 className="text-xl font-bold">{isAddingNew ? 'Add New Lab Test Department' : 'Edit Lab Test Department'}</h2>
                     <div className="flex gap-2">
                         <Button variant="outline" onClick={() => setEditingDept(null)} disabled={isSaving}>
                             Cancel
@@ -172,7 +172,7 @@ const AdminDepartmentsManager = () => {
 
                 <div className="space-y-4 max-w-md">
                     <div className="space-y-2">
-                        <Label htmlFor="dept-name">Department Name</Label>
+                        <Label htmlFor="dept-name">Lab Test Department Name</Label>
                         <Input
                             id="dept-name"
                             value={editingDept.name}
@@ -192,7 +192,7 @@ const AdminDepartmentsManager = () => {
                 <div className="relative flex-grow">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
-                        placeholder="Search departments..."
+                        placeholder="Search lab test departments..."
                         className="pl-10 w-full h-10 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -204,11 +204,11 @@ const AdminDepartmentsManager = () => {
                             onClick={handleAddNew}
                             className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
                         >
-                            <Plus className="w-4 h-4 mr-2" /> Add Department
+                            <Plus className="w-4 h-4 mr-2" /> Add Lab Test Department
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                        <p className="text-xs">Create a new organizational department</p>
+                        <p className="text-xs">Create a new organizational lab test department</p>
                     </TooltipContent>
                 </Tooltip>
             </div>
@@ -217,7 +217,7 @@ const AdminDepartmentsManager = () => {
                 <table className="w-full">
                     <thead className="bg-gray-50 border-b">
                         <tr>
-                            <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Department Name</th>
+                            <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Lab Test Department Name</th>
                             <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600 w-24">Actions</th>
                         </tr>
                     </thead>
@@ -236,7 +236,7 @@ const AdminDepartmentsManager = () => {
                                                 </Button>
                                             </TooltipTrigger>
                                             <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                                <p className="text-xs">Edit department name</p>
+                                                <p className="text-xs">Edit lab test department name</p>
                                             </TooltipContent>
                                         </Tooltip>
 
@@ -247,7 +247,7 @@ const AdminDepartmentsManager = () => {
                                                 </Button>
                                             </TooltipTrigger>
                                             <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                                <p className="text-xs">Permanently remove this department</p>
+                                                <p className="text-xs">Permanently remove this lab test department</p>
                                             </TooltipContent>
                                         </Tooltip>
                                     </div>
@@ -257,7 +257,7 @@ const AdminDepartmentsManager = () => {
                         {filteredDepartments.length === 0 && (
                             <tr>
                                 <td colSpan="2" className="py-8 text-center text-gray-400 italic">
-                                    No departments found.
+                                    No lab test departments found.
                                 </td>
                             </tr>
                         )}
@@ -270,11 +270,11 @@ const AdminDepartmentsManager = () => {
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center text-red-600">
                             <AlertCircle className="w-5 h-5 mr-2" />
-                            Delete Department?
+                            Delete Lab Test Department?
                         </AlertDialogTitle>
                         <AlertDialogDescription>
                             Are you sure you want to delete <span className="font-semibold text-gray-900">{deleteConfirmation.name}</span>?
-                            This action cannot be undone and might fail if users are assigned to this department.
+                            This action cannot be undone and might fail if users are assigned to this lab test department.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
