@@ -74,7 +74,11 @@ const WorkLogManager = () => {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('*')
+                .select(`
+                    *,
+                    departments!department(name),
+                    app_roles!role(name, role_slug)
+                `)
                 .order('full_name');
             if (error) throw error;
             setEmployees(data || []);
@@ -260,7 +264,7 @@ const WorkLogManager = () => {
                         </div>
                         <div>
                             <h1 className="text-xl font-bold text-gray-900 tracking-tight">{selectedEmployee.full_name || selectedEmployee.username}</h1>
-                            <p className="text-gray-500 text-sm font-medium capitalize">{selectedEmployee.role} • {selectedEmployee.department || 'No Department'}</p>
+                            <p className="text-gray-500 text-sm font-medium capitalize">{selectedEmployee.app_roles?.name || 'No Role'} • {selectedEmployee.departments?.name || 'No Department'}</p>
                         </div>
                     </div>
                     <Tooltip>
@@ -555,8 +559,8 @@ const WorkLogManager = () => {
                                 <div className="flex-grow min-w-0">
                                     <h3 className="font-bold text-gray-900 truncate">{emp.full_name || emp.username}</h3>
                                     <div className="flex items-center gap-2 mt-0.5">
-                                        <Badge variant="outline" className="text-[10px] uppercase font-bold py-0 h-4">{emp.role}</Badge>
-                                        <span className="text-[11px] text-gray-400 font-medium truncate">{emp.department || 'Unassigned'}</span>
+                                        <Badge variant="outline" className="text-[10px] uppercase font-bold py-0 h-4">{emp.app_roles?.name || 'No Role'}</Badge>
+                                        <span className="text-[11px] text-gray-400 font-medium truncate">{emp.departments?.name || 'Unassigned'}</span>
                                     </div>
                                 </div>
                                 <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-primary transition-colors" />

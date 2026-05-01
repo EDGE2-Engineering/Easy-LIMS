@@ -29,8 +29,8 @@ const TechnicianAssignment = ({ jobId, jobCategories, onComplete }) => {
             // Fetch users with role 'technician'
             const { data: users, error: userError } = await supabase
                 .from('users')
-                .select('*')
-                .eq('role', 'technician');
+                .select('*, app_roles!inner!role(role_slug)')
+                .eq('app_roles.role_slug', 'technician');
             
             if (userError) throw userError;
             setTechnicians(users || []);
