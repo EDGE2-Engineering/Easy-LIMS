@@ -333,17 +333,44 @@ const JobsManager = ({ id }) => {
         if (!deleteConfirmation.jobId) return;
         
         try {
+            const jobId = deleteConfirmation.jobId;
+
+            // 1. Get inward register ID to delete samples
+            const { data: inwardRecords } = await supabase
+                .from('material_inward_register')
+                .select('id')
+                .eq('job_id', jobId);
+            
+            if (inwardRecords && inwardRecords.length > 0) {
+                const inwardIds = inwardRecords.map(r => r.id);
+                // 2. Delete material samples
+                await supabase.from('material_samples').delete().in('inward_id', inwardIds);
+                // 3. Delete material inward register
+                await supabase.from('material_inward_register').delete().in('id', inwardIds);
+            }
+
+            // 4. Delete job tests
+            await supabase.from('job_tests').delete().eq('job_id', jobId);
+
+            // 5. Delete job workflow logs
+            await supabase.from('job_workflow_logs').delete().eq('job_id', jobId);
+
+            // 6. Delete linked documents
+            await supabase.from('documents').delete().eq('job_id', jobId);
+
+            // 7. Finally delete the job itself
             const { error } = await supabase
                 .from('jobs')
                 .delete()
-                .eq('id', deleteConfirmation.jobId);
+                .eq('id', jobId);
 
             if (error) throw error;
 
-            toast({ title: "Success", description: "Job deleted successfully" });
+            toast({ title: "Success", description: "Job and all related data deleted successfully" });
             fetchRecords();
         } catch (err) {
-            toast({ title: "Error", description: err.message, variant: "destructive" });
+            console.error("Delete Error:", err);
+            toast({ title: "Error", description: "Failed to delete job: " + err.message, variant: "destructive" });
         } finally {
             setDeleteConfirmation({ isOpen: false, jobId: null, jobCode: '' });
         }
