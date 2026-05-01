@@ -37,7 +37,7 @@ fun DepartmentsScreen(navController: NavController, viewModel: DepartmentsViewMo
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Departments masters", fontWeight = FontWeight.Bold) },
+                title = { Text("Departments", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

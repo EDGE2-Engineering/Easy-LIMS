@@ -134,7 +134,7 @@ fun ClientItem(client: Client, onClick: () -> Unit, onDelete: () -> Unit) {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = client.clientName,
+                        text = client.clientName ?: "Unnamed Client",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary

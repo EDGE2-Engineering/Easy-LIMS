@@ -16,6 +16,9 @@ class LabTestsViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
     init {
         fetchLabTests()
     }
@@ -23,11 +26,13 @@ class LabTestsViewModel : ViewModel() {
     fun fetchLabTests() {
         viewModelScope.launch {
             _isLoading.value = true
+            _errorMessage.value = null
             try {
                 val results = Supabase.client.from("tests").select().decodeList<LabTest>()
-                _labTests.value = results.sortedBy { it.testType }
+                _labTests.value = results.sortedBy { it.testType ?: "" }
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = "Failed to load tests: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
@@ -41,6 +46,7 @@ class LabTestsViewModel : ViewModel() {
                 fetchLabTests()
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = "Failed to add test: ${e.localizedMessage}"
             }
         }
     }
@@ -58,6 +64,7 @@ class LabTestsViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = "Failed to update test: ${e.localizedMessage}"
             }
         }
     }
@@ -73,6 +80,7 @@ class LabTestsViewModel : ViewModel() {
                 fetchLabTests()
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = "Failed to delete test: ${e.localizedMessage}"
             }
         }
     }

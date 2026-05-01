@@ -31,7 +31,7 @@ fun SamplingScreen(navController: NavController, viewModel: SamplingViewModel = 
     var selectedItem by remember { mutableStateOf<SamplingItem?>(null) }
 
     val filteredItems = samplingItems.filter {
-        it.serviceType.contains(searchQuery, ignoreCase = true)
+        (it.serviceType ?: "").contains(searchQuery, ignoreCase = true)
     }
 
     Scaffold(
@@ -132,14 +132,14 @@ fun SamplingItemView(item: SamplingItem, onClick: () -> Unit, onDelete: () -> Un
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = item.serviceType,
+                        text = item.serviceType ?: "Unknown Sampling",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Price: ₹${item.price}",
+                        text = "Price: ₹${item.price ?: 0.0}",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.secondary

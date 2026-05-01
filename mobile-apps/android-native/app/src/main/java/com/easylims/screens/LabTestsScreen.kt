@@ -20,6 +20,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.easylims.models.LabTest
 import com.easylims.viewmodels.LabTestsViewModel
+import kotlinx.serialization.json.JsonPrimitive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +32,7 @@ fun LabTestsScreen(navController: NavController, viewModel: LabTestsViewModel = 
     var selectedTest by remember { mutableStateOf<LabTest?>(null) }
 
     val filteredTests = labTests.filter {
-        it.testType.contains(searchQuery, ignoreCase = true)
+        (it.testType ?: "").contains(searchQuery, ignoreCase = true)
     }
 
     Scaffold(
@@ -73,6 +74,17 @@ fun LabTestsScreen(navController: NavController, viewModel: LabTestsViewModel = 
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 shape = RoundedCornerShape(12.dp)
             )
+
+            val errorMessage by viewModel.errorMessage.collectAsState()
+            
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(16.dp),
+                    fontSize = 12.sp
+                )
+            }
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -132,14 +144,14 @@ fun LabTestItem(test: LabTest, onClick: () -> Unit, onDelete: () -> Unit) {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = test.testType,
+                        text = test.testType ?: "Unknown Test",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Price: ₹${test.price}",
+                        text = "Price: ₹${test.getPriceDouble()}",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.secondary
@@ -154,7 +166,7 @@ fun LabTestItem(test: LabTest, onClick: () -> Unit, onDelete: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Science, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = "Method: ${test.testMethodSpecification ?: "NA"} | Days: ${test.numDays}", fontSize = 12.sp, color = Color.Gray)
+                Text(text = "Method: ${test.testMethodSpecification ?: "NA"} | Days: ${test.getNumDaysInt()}", fontSize = 12.sp, color = Color.Gray)
             }
         }
     }
@@ -164,9 +176,9 @@ fun LabTestItem(test: LabTest, onClick: () -> Unit, onDelete: () -> Unit) {
 @Composable
 fun LabTestDialog(test: LabTest?, onDismiss: () -> Unit, onSave: (LabTest) -> Unit) {
     var testType by remember { mutableStateOf(test?.testType ?: "") }
-    var price by remember { mutableStateOf(test?.price?.toString() ?: "0") }
+    var price by remember { mutableStateOf(test?.getPriceDouble()?.toString() ?: "0") }
     var method by remember { mutableStateOf(test?.testMethodSpecification ?: "") }
-    var days by remember { mutableStateOf(test?.numDays?.toString() ?: "0") }
+    var days by remember { mutableStateOf(test?.getNumDaysInt()?.toString() ?: "0") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -205,9 +217,9 @@ fun LabTestDialog(test: LabTest?, onDismiss: () -> Unit, onSave: (LabTest) -> Un
                     LabTest(
                         id = test?.id,
                         testType = testType,
-                        price = price.toDoubleOrNull() ?: 0.0,
+                        price = JsonPrimitive(price.toDoubleOrNull() ?: 0.0),
                         testMethodSpecification = method,
-                        numDays = days.toIntOrNull() ?: 0,
+                        numDays = JsonPrimitive(days.toIntOrNull() ?: 0),
                         materials = test?.materials,
                         group = test?.group,
                         hsnCode = test?.hsnCode,

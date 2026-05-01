@@ -81,7 +81,7 @@ fun SystemConfigScreen(navController: NavController) {
                 ConfigItem(
                     icon = Icons.Default.Category,
                     title = "Materials",
-                    subtitle = "Material types and masters",
+                    subtitle = "Material types",
                     onClick = { navController.navigate("materials") }
                 )
             }

@@ -16,6 +16,9 @@ class MaterialsViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
     init {
         fetchMaterials()
     }
@@ -23,11 +26,13 @@ class MaterialsViewModel : ViewModel() {
     fun fetchMaterials() {
         viewModelScope.launch {
             _isLoading.value = true
+            _errorMessage.value = null
             try {
                 val results = Supabase.client.from("materials").select().decodeList<MaterialMaster>()
-                _materials.value = results.sortedBy { it.name }
+                _materials.value = results.sortedBy { it.name ?: "" }
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = "Failed to load materials: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }
@@ -41,6 +46,7 @@ class MaterialsViewModel : ViewModel() {
                 fetchMaterials()
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = "Failed to add material: ${e.localizedMessage}"
             }
         }
     }
@@ -56,6 +62,7 @@ class MaterialsViewModel : ViewModel() {
                 fetchMaterials()
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = "Failed to update material: ${e.localizedMessage}"
             }
         }
     }
@@ -71,6 +78,7 @@ class MaterialsViewModel : ViewModel() {
                 fetchMaterials()
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = "Failed to delete material: ${e.localizedMessage}"
             }
         }
     }

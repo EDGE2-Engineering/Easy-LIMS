@@ -31,7 +31,7 @@ fun FieldTestsScreen(navController: NavController, viewModel: FieldTestsViewMode
     var selectedTest by remember { mutableStateOf<FieldTest?>(null) }
 
     val filteredTests = fieldTests.filter {
-        it.serviceType.contains(searchQuery, ignoreCase = true)
+        (it.serviceType ?: "").contains(searchQuery, ignoreCase = true)
     }
 
     Scaffold(
@@ -132,14 +132,14 @@ fun FieldTestItem(test: FieldTest, onClick: () -> Unit, onDelete: () -> Unit) {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = test.serviceType,
+                        text = test.serviceType ?: "Unknown Service",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Price: ₹${test.price}",
+                        text = "Price: ₹${test.price ?: 0.0}",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.secondary
@@ -154,7 +154,7 @@ fun FieldTestItem(test: FieldTest, onClick: () -> Unit, onDelete: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = "Unit: ${test.unit ?: "NA"} | Qty: ${test.qty}", fontSize = 12.sp, color = Color.Gray)
+                Text(text = "Unit: ${test.unit ?: "NA"} | Qty: ${test.qty ?: 1}", fontSize = 12.sp, color = Color.Gray)
             }
         }
     }
@@ -209,7 +209,7 @@ fun FieldTestDialog(test: FieldTest?, onDismiss: () -> Unit, onSave: (FieldTest)
                         unit = unit,
                         qty = qty.toIntOrNull() ?: 1,
                         methodOfSampling = test?.methodOfSampling,
-                        numBHs = test?.numBHs ?: 0,
+                        numBHs = test?.numBHs,
                         measure = test?.measure,
                         hsnCode = test?.hsnCode,
                         tcList = test?.tcList,

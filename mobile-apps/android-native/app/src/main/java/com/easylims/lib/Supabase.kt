@@ -3,6 +3,7 @@ package com.easylims.lib
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.gotrue.Auth
 import io.github.jan.supabase.postgrest.Postgrest
+import kotlinx.serialization.json.Json
 
 object Supabase {
     private const val SUPABASE_URL = "https://ymhkdcizaurcnybkyxdm.supabase.co"

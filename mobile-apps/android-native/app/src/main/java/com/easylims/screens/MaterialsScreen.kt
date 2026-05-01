@@ -31,13 +31,13 @@ fun MaterialsScreen(navController: NavController, viewModel: MaterialsViewModel 
     var selectedMaterial by remember { mutableStateOf<MaterialMaster?>(null) }
 
     val filteredMaterials = materials.filter {
-        it.name.contains(searchQuery, ignoreCase = true)
+        (it.name ?: "").contains(searchQuery, ignoreCase = true)
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Materials Masters", fontWeight = FontWeight.Bold) },
+                title = { Text("Materials", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -130,7 +130,7 @@ fun MaterialItem(material: MaterialMaster, onClick: () -> Unit, onDelete: () -> 
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = material.name,
+                text = material.name ?: "Unknown",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
