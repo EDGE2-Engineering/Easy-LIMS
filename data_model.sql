@@ -4,7 +4,6 @@
 CREATE TABLE public.app_roles (
   role_slug text NOT NULL,
   name text NOT NULL,
-  department text,
   view_permissions ARRAY DEFAULT '{}'::text[],
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
@@ -358,7 +357,7 @@ CREATE TABLE public.users (
   base_salary numeric DEFAULT 0,
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   role bigint NOT NULL,
-  department bigint NOT NULL,
+  department bigint,
   CONSTRAINT users_pkey PRIMARY KEY (id),
   CONSTRAINT fk_users_role FOREIGN KEY (role) REFERENCES public.app_roles(id),
   CONSTRAINT fk_users_department FOREIGN KEY (department) REFERENCES public.departments(id)
