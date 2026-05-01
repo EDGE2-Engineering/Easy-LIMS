@@ -74,6 +74,16 @@ fun MaterialsScreen(navController: NavController, viewModel: MaterialsViewModel 
                 shape = RoundedCornerShape(12.dp)
             )
 
+            val errorMessage by viewModel.errorMessage.collectAsState()
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    fontSize = 12.sp
+                )
+            }
+
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -91,7 +101,7 @@ fun MaterialsScreen(navController: NavController, viewModel: MaterialsViewModel 
                                 selectedMaterial = material
                                 showDialog = true
                             },
-                            onDelete = { viewModel.deleteMaterial(material.id!!) }
+                            onDelete = { viewModel.deleteMaterial(material.getIdString()) }
                         )
                     }
                 }
@@ -106,7 +116,7 @@ fun MaterialsScreen(navController: NavController, viewModel: MaterialsViewModel 
                     if (selectedMaterial == null) {
                         viewModel.addMaterial(name)
                     } else {
-                        viewModel.updateMaterial(selectedMaterial!!.id!!, name)
+                        viewModel.updateMaterial(selectedMaterial!!.getIdString(), name)
                     }
                     showDialog = false
                 }

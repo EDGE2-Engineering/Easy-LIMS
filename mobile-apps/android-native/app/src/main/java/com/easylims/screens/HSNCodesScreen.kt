@@ -31,7 +31,7 @@ fun HSNCodesScreen(navController: NavController, viewModel: HSNCodesViewModel = 
     var selectedCode by remember { mutableStateOf<HSNCode?>(null) }
 
     val filteredCodes = hsnCodes.filter {
-        it.code.contains(searchQuery, ignoreCase = true) ||
+        (it.code?.contains(searchQuery, ignoreCase = true) ?: false) ||
                 (it.description?.contains(searchQuery, ignoreCase = true) ?: false)
     }
 
@@ -92,7 +92,7 @@ fun HSNCodesScreen(navController: NavController, viewModel: HSNCodesViewModel = 
                                 selectedCode = hsn
                                 showDialog = true
                             },
-                            onDelete = { viewModel.deleteHSNCode(hsn.id!!) }
+                            onDelete = { viewModel.deleteHSNCode(hsn.getIdString()) }
                         )
                     }
                 }
@@ -107,7 +107,7 @@ fun HSNCodesScreen(navController: NavController, viewModel: HSNCodesViewModel = 
                     if (selectedCode == null) {
                         viewModel.addHSNCode(code, desc)
                     } else {
-                        viewModel.updateHSNCode(selectedCode!!.id!!, code, desc)
+                        viewModel.updateHSNCode(selectedCode!!.getIdString(), code, desc)
                     }
                     showDialog = false
                 }
@@ -132,7 +132,7 @@ fun HSNItem(hsn: HSNCode, onClick: () -> Unit, onDelete: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = hsn.code,
+                    text = hsn.code ?: "",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

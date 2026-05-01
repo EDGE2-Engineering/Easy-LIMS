@@ -25,7 +25,7 @@ class UnitTypesViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 val results = Supabase.client.from("unit_types").select().decodeList<UnitType>()
-                _unitTypes.value = results.sortedBy { it.unitType }
+                _unitTypes.value = results.sortedBy { it.unitType ?: "" }
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {

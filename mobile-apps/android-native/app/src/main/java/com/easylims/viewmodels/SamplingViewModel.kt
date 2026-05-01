@@ -16,6 +16,9 @@ class SamplingViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
     init {
         fetchSamplingItems()
     }
@@ -23,11 +26,13 @@ class SamplingViewModel : ViewModel() {
     fun fetchSamplingItems() {
         viewModelScope.launch {
             _isLoading.value = true
+            _errorMessage.value = null
             try {
                 val results = Supabase.client.from("sampling").select().decodeList<SamplingItem>()
-                _samplingItems.value = results.sortedBy { it.serviceType }
+                _samplingItems.value = results.sortedBy { it.serviceType ?: "" }
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = "Failed to load sampling: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }

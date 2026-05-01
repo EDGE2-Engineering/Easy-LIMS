@@ -74,6 +74,16 @@ fun FieldTestsScreen(navController: NavController, viewModel: FieldTestsViewMode
                 shape = RoundedCornerShape(12.dp)
             )
 
+            val errorMessage by viewModel.errorMessage.collectAsState()
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(16.dp),
+                    fontSize = 12.sp
+                )
+            }
+
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()

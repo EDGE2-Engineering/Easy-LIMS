@@ -31,7 +31,7 @@ fun UnitTypesScreen(navController: NavController, viewModel: UnitTypesViewModel 
     var selectedUnit by remember { mutableStateOf<UnitType?>(null) }
 
     val filteredUnits = unitTypes.filter {
-        it.unitType.contains(searchQuery, ignoreCase = true)
+        it.unitType?.contains(searchQuery, ignoreCase = true) == true
     }
 
     Scaffold(
@@ -91,7 +91,7 @@ fun UnitTypesScreen(navController: NavController, viewModel: UnitTypesViewModel 
                                 selectedUnit = unit
                                 showDialog = true
                             },
-                            onDelete = { viewModel.deleteUnitType(unit.id!!) }
+                            onDelete = { viewModel.deleteUnitType(unit.getIdString()) }
                         )
                     }
                 }
@@ -106,7 +106,7 @@ fun UnitTypesScreen(navController: NavController, viewModel: UnitTypesViewModel 
                     if (selectedUnit == null) {
                         viewModel.addUnitType(name)
                     } else {
-                        viewModel.updateUnitType(selectedUnit!!.id!!, name)
+                        viewModel.updateUnitType(selectedUnit!!.getIdString(), name)
                     }
                     showDialog = false
                 }
@@ -130,7 +130,7 @@ fun UnitItem(unit: UnitType, onClick: () -> Unit, onDelete: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = unit.unitType,
+                text = unit.unitType ?: "",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )

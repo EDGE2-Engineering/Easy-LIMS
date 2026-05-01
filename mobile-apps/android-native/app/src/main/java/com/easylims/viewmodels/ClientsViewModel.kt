@@ -16,6 +16,9 @@ class ClientsViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+
     init {
         fetchClients()
     }
@@ -23,11 +26,13 @@ class ClientsViewModel : ViewModel() {
     fun fetchClients() {
         viewModelScope.launch {
             _isLoading.value = true
+            _errorMessage.value = null
             try {
                 val results = Supabase.client.from("clients").select().decodeList<Client>()
-                _clients.value = results.sortedBy { it.clientName }
+                _clients.value = results.sortedBy { it.clientName ?: "" }
             } catch (e: Exception) {
                 e.printStackTrace()
+                _errorMessage.value = "Failed to load clients: ${e.localizedMessage}"
             } finally {
                 _isLoading.value = false
             }

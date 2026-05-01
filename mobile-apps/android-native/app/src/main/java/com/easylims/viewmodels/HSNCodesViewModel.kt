@@ -25,7 +25,7 @@ class HSNCodesViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 val results = Supabase.client.from("hsn_codes").select().decodeList<HSNCode>()
-                _hsnCodes.value = results.sortedBy { it.code }
+                _hsnCodes.value = results.sortedBy { it.code ?: "" }
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
