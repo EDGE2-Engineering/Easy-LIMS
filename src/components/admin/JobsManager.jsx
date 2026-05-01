@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { APP_CONFIG, WORKFLOW_STATES, JOB_CATEGORIES } from '@/data/config';
+import { useWorkflowConfig } from '@/contexts/WorkflowContext';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -47,6 +48,7 @@ const JobsManager = ({ id }) => {
     const { toast } = useToast();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { workflow } = useWorkflowConfig();
 
     const [editingRecord, setEditingRecord] = useState(null);
     const [isAddingNew, setIsAddingNew] = useState(false);
@@ -293,7 +295,7 @@ const JobsManager = ({ id }) => {
         }
     };
 
-    const getStatusLabel = (status) => APP_CONFIG.workflow.states[status]?.label || status;
+    const getStatusLabel = (status) => workflow.states[status]?.label || status;
 
     const filteredRecords = useMemo(() => {
         let result = records.filter(r => 
@@ -523,7 +525,7 @@ const JobsManager = ({ id }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All States</SelectItem>
-                                    {Object.entries(APP_CONFIG.workflow.states).map(([id, s]) => (
+                                    {Object.entries(workflow.states).map(([id, s]) => (
                                         <SelectItem key={id} value={id}>{s.label}</SelectItem>
                                     ))}
                                 </SelectContent>

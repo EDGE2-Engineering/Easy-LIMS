@@ -3,16 +3,18 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { APP_CONFIG, WORKFLOW_STATES } from '@/data/config';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWorkflowConfig } from '@/contexts/WorkflowContext';
 import { toast } from '@/components/ui/use-toast';
 
 export const useWorkflow = (jobId, currentState) => {
     const { user } = useAuth();
+    const { workflow } = useWorkflowConfig();
     const [loading, setLoading] = useState(false);
 
     const getAvailableActions = useCallback(() => {
-        if (!currentState || !APP_CONFIG.workflow.states[currentState]) return [];
+        if (!currentState || !workflow.states[currentState]) return [];
         
-        const stateConfig = APP_CONFIG.workflow.states[currentState];
+        const stateConfig = workflow.states[currentState];
         return (stateConfig.actions || []).filter(action => {
             // Check if user role matches one of the allowed roles for this action
             return action.roles.includes(user?.role);
@@ -52,7 +54,7 @@ export const useWorkflow = (jobId, currentState) => {
                 });
             if (logError) throw logError;
 
-            toast({ title: "Success", description: `Job transitioned to ${APP_CONFIG.workflow.states[action.targetState]?.label || action.targetState}` });
+            toast({ title: "Success", description: `Job transitioned to ${workflow.states[action.targetState]?.label || action.targetState}` });
             return true;
         } catch (err) {
             console.error("Workflow error:", err);
@@ -64,7 +66,7 @@ export const useWorkflow = (jobId, currentState) => {
     };
 
     const revertState = async (remarks = 'Reverted to previous step') => {
-        const stateKeys = Object.keys(APP_CONFIG.workflow.states);
+        const stateKeys = Object.keys(workflow.states);
         const currentIndex = stateKeys.indexOf(currentState);
         
         if (currentIndex <= 0) {
@@ -97,7 +99,7 @@ export const useWorkflow = (jobId, currentState) => {
                 });
             if (logError) throw logError;
 
-            toast({ title: "Reverted", description: `Job moved back to ${APP_CONFIG.workflow.states[previousState]?.label}` });
+            toast({ title: "Reverted", description: `Job moved back to ${workflow.states[previousState]?.label}` });
             return true;
         } catch (err) {
             console.error("Workflow revert error:", err);

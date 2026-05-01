@@ -4,18 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { APP_CONFIG } from '@/data/config';
+import { useWorkflowConfig } from '@/contexts/WorkflowContext';
 import { CheckCircle2, Circle, ArrowRight, ArrowLeft } from 'lucide-react';
 
 const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) => {
     const navigate = useNavigate();
+    const { workflow } = useWorkflowConfig();
     const { getAvailableActions, performAction, revertState, loading } = useWorkflow(jobId, currentStatus);
     const availableActions = getAvailableActions();
-    const currentStateConfig = APP_CONFIG.workflow.states[currentStatus];
+    const currentStateConfig = workflow.states[currentStatus];
     
-    const stateKeys = Object.keys(APP_CONFIG.workflow.states);
+    const stateKeys = Object.keys(workflow.states);
     const currentIndex = stateKeys.indexOf(currentStatus);
     const canGoBack = currentIndex > 0;
-    const previousStateLabel = canGoBack ? APP_CONFIG.workflow.states[stateKeys[currentIndex - 1]]?.label : '';
+    const previousStateLabel = canGoBack ? workflow.states[stateKeys[currentIndex - 1]]?.label : '';
 
     const handleRevert = async () => {
         const success = await revertState();
@@ -78,10 +80,10 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
             </CardHeader>
             <CardContent>
                 <div className="flex items-center space-x-2 mt-4 overflow-x-auto pb-2 no-scrollbar h-20">
-                    {Object.keys(APP_CONFIG.workflow.states).map((stateKey, idx) => {
-                        const isPast = Object.keys(APP_CONFIG.workflow.states).indexOf(currentStatus) > idx;
+                    {Object.keys(workflow.states).map((stateKey, idx) => {
+                        const isPast = Object.keys(workflow.states).indexOf(currentStatus) > idx;
                         const isCurrent = currentStatus === stateKey;
-                        const state = APP_CONFIG.workflow.states[stateKey];
+                        const state = workflow.states[stateKey];
                         
                         return (
                             <div key={stateKey} className="flex items-center flex-shrink-0">
@@ -91,7 +93,7 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
                                     </div>
                                     <span className={`text-[10px] mt-1 font-semibold ${isCurrent ? 'text-primary' : ''}`}>{state.label}</span>
                                 </div>
-                                {idx < Object.keys(APP_CONFIG.workflow.states).length - 1 && (
+                                {idx < Object.keys(workflow.states).length - 1 && (
                                     <div className={`h-[2px] w-6 mx-1 ${isPast ? 'bg-green-300' : 'bg-muted'}`}></div>
                                 )}
                             </div>

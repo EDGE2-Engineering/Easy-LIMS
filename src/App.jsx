@@ -14,6 +14,7 @@ import { TechnicalsProvider } from '@/contexts/TechnicalsContext';
 import { MaterialsProvider } from '@/contexts/MaterialsContext';
 import { SamplingProvider } from '@/contexts/SamplingContext';
 import { ExpensesProvider } from '@/contexts/ExpensesContext';
+import { WorkflowProvider } from '@/contexts/WorkflowContext';
 import { getSiteContent } from '@/data/config';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
@@ -94,7 +95,8 @@ function App() {
       <DeviceRestriction>
         <AuthProvider>
           <ServicesProvider>
-            <SamplingProvider>
+            <WorkflowProvider>
+              <SamplingProvider>
               <TestsProvider>
                 <ClientsProvider>
                   <SettingsProvider>
@@ -133,7 +135,8 @@ function App() {
                 </ClientsProvider>
               </TestsProvider>
             </SamplingProvider>
-          </ServicesProvider>
+          </WorkflowProvider>
+        </ServicesProvider>
         </AuthProvider>
       </DeviceRestriction>
     </HelmetProvider >

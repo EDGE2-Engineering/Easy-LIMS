@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWorkflowConfig } from '@/contexts/WorkflowContext';
 import { APP_CONFIG } from '@/data/config';
 
 export const usePermissions = () => {
     const { user, roles } = useAuth();
+    const { workflow } = useWorkflowConfig();
 
     const canView = (viewName) => {
         if (!user || !user.role) return false;
@@ -17,7 +18,7 @@ export const usePermissions = () => {
 
     const canPerformAction = (state, actionId) => {
         if (!user || !user.role) return false;
-        const stateConfig = APP_CONFIG.workflow.states[state];
+        const stateConfig = workflow.states[state];
         if (!stateConfig) return false;
         
         const action = stateConfig.actions.find(a => a.id === actionId);
