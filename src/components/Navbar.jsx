@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness } from 'lucide-react';
-import { getSiteContent, VIEWS, ROLES, APP_CONFIG } from '@/data/config';
+import { getSiteContent, VIEWS } from '@/data/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { usePermissions } from '@/hooks/usePermissions';

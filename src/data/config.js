@@ -1,16 +1,11 @@
-
-export const DEPARTMENTS = {
-    ACCOUNTS: 'Accounts',
-    MATERIAL_RECEIVING: 'Material Receiving',
-    TESTING: 'Testing'
-};
-
 export const ROLES = {
     ADMIN: 'admin',
+    SUPER_ADMIN: 'superadmin',
     ACCOUNTS: 'accounts',
     MRO: 'mro',
     TECHNICIAN: 'technician',
-    SENIOR_ANALYST: 'senior_analyst'
+    ANALYST: 'analyst',
+    STANDARD: 'standard'
 };
 
 export const WORKFLOW_STATES = {
@@ -44,104 +39,125 @@ export const VIEWS = {
     SETTINGS: 'Settings'
 };
 
+export const ACTIONS = {
+   SEND_QUOTATION: { name: 'SEND_QUOTATION', label: 'Send Quotation' },
+   RECEIVE_WORK_ORDER: { name: 'RECEIVE_WORK_ORDER', label: 'Receive Work Order' },
+   RECEIVE_MATERIAL: { name: 'RECEIVE_MATERIAL', label: 'Receive Material' },
+   ASSIGN_TECHNICIANS: { name: 'ASSIGN_TECHNICIANS', label: 'Assign Technicians' },
+   START_TESTING: { name: 'START_TESTING', label: 'Start Testing' },
+   COMPLETE_TESTING: { name: 'COMPLETE_TESTING', label: 'Complete Testing' },
+   SUBMIT_FOR_REVIEW: { name: 'SUBMIT_FOR_REVIEW', label: 'Submit for Review' },
+   VERIFY_DATA: { name: 'VERIFY_DATA', label: 'Verify Data' },
+   REJECT_DATA: { name: 'REJECT_DATA', label: 'Reject' },
+   GENERATE_REPORT: { name: 'GENERATE_REPORT', label: 'Generate Report' },
+   SUBMIT_REPORT_REVIEW: { name: 'SUBMIT_REPORT_REVIEW', label: 'Submit for Review' },
+   SIGN_REPORT: { name: 'SIGN_REPORT', label: 'Sign Report' },
+   GENERATE_INVOICE: { name: 'GENERATE_INVOICE', label: 'Generate Invoice' },
+   SEND_TO_CLIENT: { name: 'SEND_TO_CLIENT', label: 'Send to Client' },
+   CONFIRM_PAYMENT: { name: 'CONFIRM_PAYMENT', label: 'Confirm Payment' },
+   RELEASE_REPORT: { name: 'RELEASE_REPORT', label: 'Release Report' },
+   ARCHIVE_JOB: { name: 'ARCHIVE_JOB', label: 'Archive Job' }
+}; 
+
+
 export const APP_CONFIG = {
     workflow: {
         states: {
             [WORKFLOW_STATES.JOB_CREATED]: {
                 label: 'Job Created',
                 actions: [
-                    { id: 'SEND_QUOTATION', label: 'Send Quotation', targetState: WORKFLOW_STATES.QUOTATION_SENT, roles: [ROLES.ADMIN, ROLES.MRO], navigate: '/doc/new?jobId={jobId}&type=Quotation' }
+                    { id: ACTIONS.SEND_QUOTATION.name, label: ACTIONS.SEND_QUOTATION.label, targetState: WORKFLOW_STATES.QUOTATION_SENT, roles: [ROLES.ADMIN, ROLES.MRO], navigate: '/doc/new?jobId={jobId}&type=Quotation' }
                 ]
             },
             [WORKFLOW_STATES.QUOTATION_SENT]: {
                 label: 'Quotation Sent',
                 actions: [
-                    { id: 'RECEIVE_WORK_ORDER', label: 'Receive Work Order', targetState: WORKFLOW_STATES.WORK_ORDER_RECEIVED, roles: [ROLES.ADMIN, ROLES.MRO] }
+                    { id: ACTIONS.RECEIVE_WORK_ORDER.name, label: ACTIONS.RECEIVE_WORK_ORDER.label, targetState: WORKFLOW_STATES.WORK_ORDER_RECEIVED, roles: [ROLES.ADMIN, ROLES.MRO] }
                 ]
             },
             [WORKFLOW_STATES.WORK_ORDER_RECEIVED]: {
                 label: 'Work Order Received',
                 actions: [
-                    { id: 'RECEIVE_MATERIAL', label: 'Receive Material', targetState: WORKFLOW_STATES.MATERIAL_RECEIVED, roles: [ROLES.ADMIN, ROLES.MRO] }
+                    { id: ACTIONS.RECEIVE_MATERIAL.name, label: ACTIONS.RECEIVE_MATERIAL.label, targetState: WORKFLOW_STATES.MATERIAL_RECEIVED, roles: [ROLES.ADMIN, ROLES.MRO] }
                 ]
             },
             [WORKFLOW_STATES.MATERIAL_RECEIVED]: {
                 label: 'Material Received',
                 actions: [
-                    { id: 'ASSIGN_TECHNICIANS', label: 'Assign Technicians', targetState: WORKFLOW_STATES.TECHNICIANS_ASSIGNED, roles: [ROLES.ADMIN] }
+                    { id: ACTIONS.ASSIGN_TECHNICIANS.name, label: ACTIONS.ASSIGN_TECHNICIANS.label, targetState: WORKFLOW_STATES.TECHNICIANS_ASSIGNED, roles: [ROLES.ADMIN] }
                 ]
             },
             [WORKFLOW_STATES.TECHNICIANS_ASSIGNED]: {
                 label: 'Technicians Assigned',
                 actions: [
-                    { id: 'START_TESTING', label: 'Start Testing', targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.TECHNICIAN, ROLES.ADMIN] }
+                    { id: ACTIONS.START_TESTING.name, label: ACTIONS.START_TESTING.label, targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.TECHNICIAN, ROLES.ADMIN] }
                 ]
             },
             [WORKFLOW_STATES.UNDER_TESTING]: {
                 label: 'Under Testing',
                 actions: [
-                    { id: 'COMPLETE_TESTING', label: 'Complete Testing', targetState: WORKFLOW_STATES.TESTING_COMPLETE, roles: [ROLES.TECHNICIAN, ROLES.ADMIN] }
+                    { id: ACTIONS.COMPLETE_TESTING.name, label: ACTIONS.COMPLETE_TESTING.label, targetState: WORKFLOW_STATES.TESTING_COMPLETE, roles: [ROLES.TECHNICIAN, ROLES.ADMIN] }
                 ]
             },
             [WORKFLOW_STATES.TESTING_COMPLETE]: {
                 label: 'Testing Complete',
                 actions: [
-                    { id: 'SUBMIT_FOR_REVIEW', label: 'Submit for Review', targetState: WORKFLOW_STATES.UNDER_REVIEW, roles: [ROLES.TECHNICIAN, ROLES.ADMIN] }
+                    { id: ACTIONS.SUBMIT_FOR_REVIEW.name, label: ACTIONS.SUBMIT_FOR_REVIEW.label, targetState: WORKFLOW_STATES.UNDER_REVIEW, roles: [ROLES.TECHNICIAN, ROLES.ADMIN] }
                 ]
             },
             [WORKFLOW_STATES.UNDER_REVIEW]: {
                 label: 'Under Review',
                 actions: [
-                    { id: 'VERIFY_DATA', label: 'Verify Data', targetState: WORKFLOW_STATES.DATA_VERIFIED, roles: [ROLES.SENIOR_ANALYST] },
-                    { id: 'REJECT_DATA', label: 'Reject (Back to Testing)', targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.SENIOR_ANALYST] }
+                    { id: ACTIONS.VERIFY_DATA.name, label: ACTIONS.VERIFY_DATA.label, targetState: WORKFLOW_STATES.DATA_VERIFIED, roles: [ROLES.ANALYST] },
+                    { id: ACTIONS.REJECT_DATA.name, label: ACTIONS.REJECT_DATA.label, targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.ANALYST] }
                 ]
             },
             [WORKFLOW_STATES.DATA_VERIFIED]: {
                 label: 'Data Verified',
                 actions: [
-                    { id: 'GENERATE_REPORT', label: 'Generate Report', targetState: WORKFLOW_STATES.REPORT_GENERATED, roles: [ROLES.ADMIN, ROLES.MRO] }
+                    { id: ACTIONS.GENERATE_REPORT.name, label: ACTIONS.GENERATE_REPORT.label, targetState: WORKFLOW_STATES.REPORT_GENERATED, roles: [ROLES.ADMIN, ROLES.MRO] }
                 ]
             },
             [WORKFLOW_STATES.REPORT_GENERATED]: {
                 label: 'Report Generated',
                 actions: [
-                    { id: 'SUBMIT_REPORT_REVIEW', label: 'Submit for Signature', targetState: WORKFLOW_STATES.REPORT_UNDER_REVIEW, roles: [ROLES.ADMIN, ROLES.MRO] }
+                    { id: ACTIONS.SUBMIT_REPORT_REVIEW.name, label: ACTIONS.SUBMIT_REPORT_REVIEW.label, targetState: WORKFLOW_STATES.REPORT_UNDER_REVIEW, roles: [ROLES.ADMIN, ROLES.MRO] }
                 ]
             },
             [WORKFLOW_STATES.REPORT_UNDER_REVIEW]: {
                 label: 'Report Under Review',
                 actions: [
-                    { id: 'SIGN_REPORT', label: 'Sign & Verify Report', targetState: WORKFLOW_STATES.REPORT_SIGNED, roles: [ROLES.SENIOR_ANALYST] }
+                    { id: ACTIONS.SIGN_REPORT.name, label: ACTIONS.SIGN_REPORT.label, targetState: WORKFLOW_STATES.REPORT_SIGNED, roles: [ROLES.ANALYST] }
                 ]
             },
             [WORKFLOW_STATES.REPORT_SIGNED]: {
                 label: 'Report Signed',
                 actions: [
-                    { id: 'GENERATE_INVOICE', label: 'Generate Invoice', targetState: WORKFLOW_STATES.INVOICE_GENERATED, roles: [ROLES.ACCOUNTS], navigate: '/doc/new?jobId={jobId}&type=Tax Invoice' }
+                    { id: ACTIONS.GENERATE_INVOICE.name, label: ACTIONS.GENERATE_INVOICE.label, targetState: WORKFLOW_STATES.INVOICE_GENERATED, roles: [ROLES.ACCOUNTS], navigate: '/doc/new?jobId={jobId}&type=Tax Invoice' }
                 ]
             },
             [WORKFLOW_STATES.INVOICE_GENERATED]: {
                 label: 'Invoice Generated',
                 actions: [
-                    { id: 'SEND_TO_CLIENT', label: 'Awaiting Payment', targetState: WORKFLOW_STATES.AWAITING_PAYMENT, roles: [ROLES.ACCOUNTS] }
+                    { id: ACTIONS.SEND_TO_CLIENT.name, label: ACTIONS.SEND_TO_CLIENT.label, targetState: WORKFLOW_STATES.AWAITING_PAYMENT, roles: [ROLES.ACCOUNTS] }
                 ]
             },
             [WORKFLOW_STATES.AWAITING_PAYMENT]: {
                 label: 'Awaiting Payment',
                 actions: [
-                    { id: 'CONFIRM_PAYMENT', label: 'Release Documents', targetState: WORKFLOW_STATES.PAYMENT_RECEIVED, roles: [ROLES.ACCOUNTS] }
+                    { id: ACTIONS.CONFIRM_PAYMENT.name, label: ACTIONS.CONFIRM_PAYMENT.label, targetState: WORKFLOW_STATES.PAYMENT_RECEIVED, roles: [ROLES.ACCOUNTS] }
                 ]
             },
             [WORKFLOW_STATES.PAYMENT_RECEIVED]: {
                 label: 'Payment Received',
                 actions: [
-                    { id: 'RELEASE_REPORT', label: 'Final Release', targetState: WORKFLOW_STATES.REPORT_RELEASED, roles: [ROLES.ACCOUNTS] }
+                    { id: ACTIONS.RELEASE_REPORT.name, label: ACTIONS.RELEASE_REPORT.label, targetState: WORKFLOW_STATES.REPORT_RELEASED, roles: [ROLES.ACCOUNTS] }
                 ]
             },
             [WORKFLOW_STATES.REPORT_RELEASED]: {
                 label: 'Report Released',
                 actions: [
-                    { id: 'ARCHIVE_JOB', label: 'Complete Job', targetState: WORKFLOW_STATES.JOB_COMPLETE, roles: [ROLES.ADMIN] }
+                    { id: ACTIONS.ARCHIVE_JOB.name, label: ACTIONS.ARCHIVE_JOB.label, targetState: WORKFLOW_STATES.JOB_COMPLETE, roles: [ROLES.ADMIN] }
                 ]
             },
             [WORKFLOW_STATES.JOB_COMPLETE]: {
@@ -150,34 +166,6 @@ export const APP_CONFIG = {
             }
         }
     }
-};
-
-export const JOB_CATEGORIES = {
-    CHEMICAL_TESTING: "Chemical Testing",
-    GEOTECHNICAL_TESTING: "Geotechnical/Soil Testing",
-    MECHANICAL_TESTING: "Mechanical Testing",
-    NON_DESTRUCTIVE_TESTING: "Non Destructive Testing",
-    BUILDING_MATERIAL_TESTING: "Building Material Testing",
-    HIGHWAY_MATERIAL_TESTING: "Highway Material Testing",
-
-    // Soil: "Soil",
-    // GroundWater: "Ground Water",
-    // CoarseAggregate: "Coarse Aggregate",
-    // FineAggregate: "Fine Aggregate",
-    // Cement: "Cement (PPC, OPC, SRPC, RHPC & PSC)",
-    // GGBS: "GGBS",
-    // HighStrengthDeformedSteelBars: "High Strength Deformed Steel Bars",
-    // SolidAndHollowBricks: "Solid and Hollow Bricks",
-    // Bricks: "Bricks",
-    // HardenedConcreteCore: "Hardened Concrete (Core)",
-    // HardenedConcreteCube: "Hardened Concrete (Cube)",
-    // PaverBlocks: "Paver Blocks",
-    // GranularSubBaseGSB: "Granular Sub Base (GSB)",
-    // WetMixMacadamWMM: "Wet Mix Macadam (WMM)",
-    // AdmixtureForConstructionPurpose: "Admixture for Construction Purpose",
-    // WaterForConstructionPurpose: "Water for Construction Purpose",
-    // PotableWater: "Potable Water",
-    // HardenedConcrete: "Hardened Concrete"
 };
 
 export const TG_NOTIFIER_CONFIG = {

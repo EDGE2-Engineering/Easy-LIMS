@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { ROLES, APP_CONFIG, JOB_CATEGORIES } from '@/data/config';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/customSupabaseClient';

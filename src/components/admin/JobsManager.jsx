@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { APP_CONFIG, WORKFLOW_STATES, JOB_CATEGORIES } from '@/data/config';
+import { WORKFLOW_STATES } from '@/data/config';
 import { useWorkflowConfig } from '@/contexts/WorkflowContext';
 import {
     AlertDialog,
@@ -539,15 +539,17 @@ const JobsManager = ({ id }) => {
                                  <Label className="text-gray-700 font-semibold">Project Name</Label>
                                  <Input className="h-12 border-gray-200 rounded-xl" value={editingRecord.project_name || ''} onChange={e => setEditingRecord({...editingRecord, project_name: e.target.value})} />
                             </div>
-                            <div className="space-y-2">
-                                 <Label className="text-gray-700 font-semibold">Work Order ID</Label>
-                                 <Input 
-                                    className="h-12 border-gray-200 rounded-xl bg-gray-50/50" 
-                                    value={editingRecord.work_order_id || ''} 
-                                    onChange={e => setEditingRecord({...editingRecord, work_order_id: e.target.value})} 
-                                    placeholder="e.g. WO/2026/088"
-                                 />
-                            </div>
+                            {!isAddingNew && editingRecord.work_order_id && (
+                                <div className="space-y-2">
+                                     <Label className="text-gray-700 font-semibold">Work Order ID</Label>
+                                     <Input 
+                                        className="h-12 border-gray-200 rounded-xl bg-gray-50/50" 
+                                        value={editingRecord.work_order_id || ''} 
+                                        onChange={e => setEditingRecord({...editingRecord, work_order_id: e.target.value})} 
+                                        placeholder="e.g. WO/2026/088"
+                                     />
+                                </div>
+                            )}
                         </div>
                     </div>
 

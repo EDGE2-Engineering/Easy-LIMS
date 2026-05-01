@@ -89,9 +89,9 @@ const AuthProvider = ({ children }) => {
         localStorage.removeItem(STORAGE_KEYS.SESSION);
     }, []);
 
-    const isSuperAdmin = useCallback(() => user?.role === 'super_admin', [user?.role]);
-    const isAdmin = useCallback(() => user?.role === ROLES.ADMIN || user?.role === 'super_admin', [user?.role]);
-    const isStandard = useCallback(() => user?.role === 'standard', [user?.role]);
+    const isSuperAdmin = useCallback(() => user?.role === ROLES.SUPER_ADMIN, [user?.role]);
+    const isAdmin = useCallback(() => user?.role === ROLES.ADMIN || user?.role === ROLES.SUPER_ADMIN, [user?.role]);
+    const isStandard = useCallback(() => user?.role === ROLES.STANDARD, [user?.role]);
 
     const contextValue = useMemo(() => ({
         user,
