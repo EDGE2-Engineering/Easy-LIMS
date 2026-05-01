@@ -32,6 +32,7 @@ fun AttendanceScreen(navController: NavController, viewModel: AttendanceViewMode
     val error by viewModel.error.collectAsState()
 
     var selectedUser by remember { mutableStateOf<User?>(null) }
+    var editingRecord by remember { mutableStateOf<EmployeeAttendance?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -110,7 +111,10 @@ fun AttendanceScreen(navController: NavController, viewModel: AttendanceViewMode
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(attendanceHistory) { record ->
-                            AttendanceItem(record = record)
+                            AttendanceItem(record = record, onClick = {
+                                editingRecord = record
+                                showAddDialog = true
+                            })
                         }
                     }
                 }
@@ -121,10 +125,15 @@ fun AttendanceScreen(navController: NavController, viewModel: AttendanceViewMode
     if (showAddDialog && selectedUser != null) {
         AttendanceDialog(
             user = selectedUser!!,
-            onDismiss = { showAddDialog = false },
+            existingRecord = editingRecord,
+            onDismiss = { 
+                showAddDialog = false
+                editingRecord = null
+            },
             onSave = { record ->
                 viewModel.upsertAttendance(record)
                 showAddDialog = false
+                editingRecord = null
             }
         )
     }
@@ -156,14 +165,16 @@ fun UserItem(user: User, onClick: () -> Unit) {
 }
 
 @Composable
-fun AttendanceItem(record: EmployeeAttendance) {
+fun AttendanceItem(record: EmployeeAttendance, onClick: () -> Unit) {
     val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
     val monthName = if (record.month in 0..11) months[record.month] else "${record.month}"
     
     val percentage = if (record.totalWorkingDays > 0) (record.daysWorked / record.totalWorkingDays) * 100 else 0.0
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -190,29 +201,36 @@ fun AttendanceItem(record: EmployeeAttendance) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AttendanceDialog(user: User, onDismiss: () -> Unit, onSave: (EmployeeAttendance) -> Unit) {
+fun AttendanceDialog(
+    user: User,
+    existingRecord: EmployeeAttendance? = null,
+    onDismiss: () -> Unit,
+    onSave: (EmployeeAttendance) -> Unit
+) {
     val calendar = Calendar.getInstance()
-    var year by remember { mutableStateOf(calendar.get(Calendar.YEAR).toString()) }
-    var month by remember { mutableStateOf(calendar.get(Calendar.MONTH).toString()) }
-    var totalWorkingDays by remember { mutableStateOf("") }
-    var daysWorked by remember { mutableStateOf("") }
+    var year by remember { mutableStateOf(existingRecord?.year?.toString() ?: calendar.get(Calendar.YEAR).toString()) }
+    var month by remember { mutableStateOf(existingRecord?.month?.toString() ?: calendar.get(Calendar.MONTH).toString()) }
+    var totalWorkingDays by remember { mutableStateOf(existingRecord?.totalWorkingDays?.toString() ?: "") }
+    var daysWorked by remember { mutableStateOf(existingRecord?.daysWorked?.toString() ?: "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Log Work for ${user.fullName ?: user.username}") },
+        title = { Text(if (existingRecord == null) "Log Work for ${user.fullName ?: user.username}" else "Edit Work Log") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = year,
                     onValueChange = { year = it },
                     label = { Text("Year") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = existingRecord == null // Usually we don't change the period of an existing record
                 )
                 OutlinedTextField(
                     value = month,
                     onValueChange = { month = it },
                     label = { Text("Month (0-11)") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = existingRecord == null
                 )
                 OutlinedTextField(
                     value = totalWorkingDays,
@@ -239,6 +257,7 @@ fun AttendanceDialog(user: User, onDismiss: () -> Unit, onSave: (EmployeeAttenda
                     if (twd > 0) {
                         onSave(
                             EmployeeAttendance(
+                                id = existingRecord?.id,
                                 userId = user.id,
                                 year = y,
                                 month = m,
