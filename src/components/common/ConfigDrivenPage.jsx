@@ -18,6 +18,7 @@ const LeavesManager = lazy(() => import('@/components/admin/WagesManager.jsx'));
 const UtilitiesManager = lazy(() => import('@/components/admin/UtilitiesManager.jsx'));
 const Dashboard = lazy(() => import('@/components/admin/Dashboard.jsx'));
 const ApprovalsManager = lazy(() => import('@/components/admin/ApprovalsManager.jsx'));
+const AdminClientPricingManager = lazy(() => import('@/components/admin/AdminClientPricingManager.jsx'));
 
 const COMPONENT_MAP = {
   [VIEWS.DASHBOARD]: Dashboard,
@@ -29,6 +30,7 @@ const COMPONENT_MAP = {
   [VIEWS.WORK_LOG]: LeavesManager,
   [VIEWS.UTILITIES]: UtilitiesManager,
   [VIEWS.SETTINGS]: AdminSystemSettings,
+  [VIEWS.CLIENT_PRICING]: AdminClientPricingManager,
   [VIEWS.TESTING]: lazy(() => import('@/components/admin/TestingDashboard.jsx'))
 };
 

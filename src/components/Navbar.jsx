@@ -115,11 +115,12 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
 
   const SETTINGS_SUB_ITEMS = [
     { id: 'clients', label: 'Clients', icon: BriefcaseBusiness, path: '/settings/clients', description: 'Manage your client database' },
+    { id: 'client_pricing', label: 'Client Pricing', icon: IndianRupee, path: '/settings/client_pricing', description: 'Configure custom prices per client' },
     { id: 'field_tests', label: 'Field Tests', icon: Drill, path: '/settings/field_tests', description: 'Configure on-site testing services' },
     { id: 'lab_tests', label: 'Lab Tests', icon: TestTube, path: '/settings/lab_tests', description: 'Manage laboratory testing parameters' },
     { id: 'sampling', label: 'Sampling', icon: SwatchBook, path: '/settings/sampling', description: 'Configure material sampling methods' },
+    { id: 'utilities', label: 'Utilities', icon: Calculator, path: '/settings/utilities', description: 'Access the handy tools' },
     { id: 'system', label: 'System', icon: Cpu, path: '/settings/system', description: 'General system settings and users' },
-    { id: 'utilities', label: 'Utilities', icon: Calculator, path: '/settings/utilities', description: 'Access helpful calculation utilities' }
   ];
 
   const navItems = ALL_NAV_ITEMS.filter(item => canView(item.view));

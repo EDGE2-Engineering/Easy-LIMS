@@ -73,7 +73,8 @@ export const VIEWS = {
     WORK_LOG: 'Leaves',
     UTILITIES: 'Utilities',
     SETTINGS: 'Settings',
-    APPROVALS: 'Approvals'
+    APPROVALS: 'Approvals',
+    CLIENT_PRICING: 'Client Pricing'
 };
 
 export const ACTIONS = {
