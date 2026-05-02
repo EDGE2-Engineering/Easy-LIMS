@@ -40,7 +40,9 @@ const AuthProvider = ({ children }) => {
                 .from('users')
                 .select(`
                     *,
-                    departments!department(name)
+                    users_to_departments(
+                        departments(name)
+                    )
                 `)
                 .eq('username', username)
                 .eq('password', password)
@@ -55,9 +57,10 @@ const AuthProvider = ({ children }) => {
                 id: data.id,
                 username: data.username,
                 fullName: data.full_name,
-                department: data.departments?.name || '', 
-                role: data.role || '' 
+                departments: (data.users_to_departments || []).map(ud => ud.departments?.name).filter(Boolean),
+                role: data.role || ''
             };
+
 
             setUser(sessionUser);
             localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sessionUser));
@@ -79,7 +82,7 @@ const AuthProvider = ({ children }) => {
 
     const isSuperAdmin = useCallback(() => user?.role === ROLES.SUPER_ADMIN, [user?.role]);
     const isAdmin = useCallback(() => user?.role === ROLES.ADMIN || user?.role === ROLES.SUPER_ADMIN, [user?.role]);
-    const isStandard = useCallback(() => user?.role === ROLES.STANDARD, [user?.role]);
+    const isStandard = useCallback(() => user?.role === ROLES.TECHNICIAN, [user?.role]);
 
     const contextValue = useMemo(() => ({
         user,

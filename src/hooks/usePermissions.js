@@ -29,6 +29,7 @@ export const usePermissions = () => {
         canView,
         canPerformAction,
         role: user?.role,
-        department: user?.department
+        departments: user?.departments || []
     };
+
 };

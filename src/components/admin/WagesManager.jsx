@@ -76,7 +76,9 @@ const WorkLogManager = () => {
                 .from('users')
                 .select(`
                     *,
-                    departments!department(name)
+                    users_to_departments(
+                        departments(name)
+                    )
                 `)
                 .order('full_name');
             if (error) throw error;
@@ -263,7 +265,14 @@ const WorkLogManager = () => {
                         </div>
                         <div>
                             <h1 className="text-xl font-bold text-gray-900 tracking-tight">{selectedEmployee.full_name || selectedEmployee.username}</h1>
-                            <p className="text-gray-500 text-sm font-medium capitalize">{String(selectedEmployee.role || 'No Role').replace('_', ' ')} • {selectedEmployee.departments?.name || 'No Department'}</p>
+                            <p className="text-gray-500 text-sm font-medium capitalize">
+                                {String(selectedEmployee.role || 'No Role').replace('_', ' ')} • {
+                                    (selectedEmployee.users_to_departments || [])
+                                        .map(ud => ud.departments?.name)
+                                        .filter(Boolean)
+                                        .join(', ') || 'No Department'
+                                }
+                            </p>
                         </div>
                     </div>
                     <Tooltip>
@@ -559,7 +568,12 @@ const WorkLogManager = () => {
                                     <h3 className="font-bold text-gray-900 truncate">{emp.full_name || emp.username}</h3>
                                     <div className="flex items-center gap-2 mt-0.5">
                                         <Badge variant="outline" className="text-[10px] uppercase font-bold py-0 h-4">{String(emp.role || 'No Role').replace('_', ' ')}</Badge>
-                                        <span className="text-[11px] text-gray-400 font-medium truncate">{emp.departments?.name && emp.departments.name + ' Department' || ''}</span>
+                                        <span className="text-[11px] text-gray-400 font-medium truncate">
+                                            {(emp.users_to_departments || [])
+                                                .map(ud => ud.departments?.name)
+                                                .filter(Boolean)
+                                                .join(', ')}
+                                        </span>
                                     </div>
                                 </div>
                                 <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-primary transition-colors" />

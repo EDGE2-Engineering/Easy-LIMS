@@ -4,8 +4,7 @@ export const ROLES = {
     ACCOUNTS: 'accounts',
     MRO: 'mro',
     TECHNICIAN: 'technician',
-    ANALYST: 'analyst',
-    STANDARD: 'standard'
+    ANALYST: 'analyst'
 };
 
 export const WORKFLOW_STATES = {
@@ -173,7 +172,7 @@ export const APP_CONFIG = {
         [ROLES.TECHNICIAN]: [VIEWS.DASHBOARD, VIEWS.TESTING],
         [ROLES.MRO]: [VIEWS.DASHBOARD, VIEWS.MATERIAL_INWARD, VIEWS.JOBS],
         [ROLES.ACCOUNTS]: [VIEWS.DASHBOARD, VIEWS.ACCOUNTS, VIEWS.EXPENSES, VIEWS.WORK_LOG],
-        [ROLES.STANDARD]: [VIEWS.DASHBOARD]
+        [ROLES.TECHNICIAN]: [VIEWS.DASHBOARD]
     }
 };
 

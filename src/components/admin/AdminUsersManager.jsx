@@ -28,9 +28,8 @@ const AdminUsersManager = () => {
         username: '',
         password: '',
         full_name: '',
-        department: '',
-        role: ROLES.STANDARD,
-        capabilities: []
+        departments: [],
+        role: ROLES.TECHNICIAN
     });
     const { toast } = useToast();
 
@@ -54,8 +53,10 @@ const AdminUsersManager = () => {
                 .from('users')
                 .select(`
                     *,
-                    departments!department(name),
-                    technician_capabilities(category)
+                    users_to_departments(
+                        department_id,
+                        departments(name)
+                    )
                 `)
                 .order('username');
             if (error) throw error;
@@ -73,7 +74,7 @@ const AdminUsersManager = () => {
 
     const handleNewUser = () => {
         setEditingUser(null);
-        setFormData({ username: '', password: '', full_name: '', department: '', role: ROLES.STANDARD, capabilities: [] });
+        setFormData({ username: '', password: '', full_name: '', departments: [], role: ROLES.TECHNICIAN });
         setIsDialogOpen(true);
     };
 
@@ -83,9 +84,8 @@ const AdminUsersManager = () => {
             username: user.username,
             password: user.password,
             full_name: user.full_name || '',
-            department: user.department || '', // ID
-            role: user.role, // ID
-            capabilities: (user.technician_capabilities || []).map(c => c.category)
+            departments: (user.users_to_departments || []).map(ud => ud.department_id),
+            role: user.role // ID
         });
         setIsDialogOpen(true);
     };
@@ -97,8 +97,7 @@ const AdminUsersManager = () => {
                 username: formData.username,
                 password: formData.password,
                 full_name: formData.full_name,
-                department: formData.department, // String name
-                role: formData.role, // String slug
+                role: formData.role,
                 updated_at: new Date().toISOString()
             };
 
@@ -113,35 +112,32 @@ const AdminUsersManager = () => {
                 userId = data.id;
             }
 
-            // Sync Lab Test Departments (Capabilities)
-            const isTechnician = formData.role === ROLES.TECHNICIAN;
-            
-            if (isTechnician) {
-                // Clear the single department column if it's a technician
-                await supabase.from('users').update({ department: null }).eq('id', userId);
-                
-                await supabase.from('technician_capabilities').delete().eq('user_id', userId);
-                if (formData.capabilities.length > 0) {
-                    const caps = formData.capabilities.map(cat => ({ user_id: userId, category: cat }));
-                    const { error: capError } = await supabase.from('technician_capabilities').insert(caps);
-                    if (capError) throw capError;
-                }
+            // Sync Departments
+            await supabase.from('users_to_departments').delete().eq('user_id', userId);
+            if (formData.departments.length > 0) {
+                const deptMappings = formData.departments.map(deptId => ({
+                    user_id: userId,
+                    department_id: deptId
+                }));
+                const { error: deptError } = await supabase.from('users_to_departments').insert(deptMappings);
+                if (deptError) throw deptError;
             }
 
             toast({ title: 'Success', description: 'User saved successfully.' });
             setIsDialogOpen(false);
             fetchUsers();
+
         } catch (error) {
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
         }
     };
 
-    const handleCapabilityToggle = (cat) => {
+    const handleDepartmentToggle = (deptId) => {
         setFormData(prev => ({
             ...prev,
-            capabilities: prev.capabilities.includes(cat) 
-                ? prev.capabilities.filter(c => c !== cat) 
-                : [...prev.capabilities, cat]
+            departments: prev.departments.includes(deptId)
+                ? prev.departments.filter(id => id !== deptId)
+                : [...prev.departments, deptId]
         }));
     };
 
@@ -213,22 +209,17 @@ const AdminUsersManager = () => {
 
                                 <td className="p-4">
                                     <Badge variant="secondary" className="capitalize">{String(u.role || 'N/A').replace('_', ' ')}</Badge>
-                                    {u.role !== ROLES.TECHNICIAN && u.departments?.name && (
-                                        <div className="mt-1">
-                                            <Badge variant="secondary" className="capitalize" style={{ backgroundColor: '#e1bdffff' }}>
-                                                {u.departments?.name} Department
-                                            </Badge>
-                                        </div>
-                                    )}
-                                    {u.role === ROLES.TECHNICIAN && (
+                                    {(u.users_to_departments || []).length > 0 && (
                                         <div className="flex flex-wrap gap-1 mt-1">
-                                            {(u.technician_capabilities || []).map(c => (
-                                                <Badge key={c.category} variant="outline" className="text-[9px] px-1 py-0">{c.category}</Badge>
-                                                
+                                            {u.users_to_departments.map(ud => (
+                                                <Badge key={ud.department_id} variant="secondary" className="capitalize text-[10px]" style={{ backgroundColor: '#e1bdffff' }}>
+                                                    {ud.departments?.name}
+                                                </Badge>
                                             ))}
                                         </div>
                                     )}
                                 </td>
+
                                 <td className="p-4">
                                     <Badge className={u.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}>
                                         {u.is_active ? 'Active' : 'Deactivated'}
@@ -269,19 +260,19 @@ const AdminUsersManager = () => {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid gap-2">
                             <Label>Username</Label>
-                            <Input value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} required />
+                            <Input value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} required />
                         </div>
                         <div className="grid gap-2">
                             <Label>Password</Label>
-                            <Input value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} required />
+                            <Input value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} required />
                         </div>
                         <div className="grid gap-2">
                             <Label>Full Name</Label>
-                            <Input value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} />
+                            <Input value={formData.full_name} onChange={e => setFormData({ ...formData, full_name: e.target.value })} />
                         </div>
                         <div className="grid gap-2">
                             <Label>Role</Label>
-                            <Select value={formData.role} onValueChange={v => setFormData({...formData, role: v})}>
+                            <Select value={formData.role} onValueChange={v => setFormData({ ...formData, role: v })}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     {Object.entries(ROLES).map(([key, value]) => (
@@ -292,36 +283,33 @@ const AdminUsersManager = () => {
                                 </SelectContent>
                             </Select>
                         </div>
-                        
-                        {(() => {
-                            const isTechnician = formData.role === ROLES.TECHNICIAN;
-                            
-                            return isTechnician && (
-                                <div className="space-y-3 border-t pt-4">
-                                    <div className="flex items-center justify-between">
-                                        <Label className="text-primary font-bold">Lab Test Departments</Label>
-                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Select one or more</span>
-                                    </div>
-                                    <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                                        {departments.length > 0 ? (
-                                            departments.map(dept => (
-                                                <div key={dept.name} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                                                    <Checkbox 
-                                                        id={`cap-${dept.name}`} 
-                                                        checked={formData.capabilities.includes(dept.name)}
-                                                        onCheckedChange={() => handleCapabilityToggle(dept.name)}
-                                                        className="rounded-md"
-                                                    />
-                                                    <Label htmlFor={`cap-${dept.name}`} className="text-xs font-medium cursor-pointer flex-grow">{dept.name}</Label>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <p className="text-xs text-gray-400 italic">No departments found in database.</p>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })()}
+
+                        <div className="space-y-3 border-t pt-4">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-primary font-bold">Departments</Label>
+                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Select one or more</span>
+                            </div>
+                            <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                                {departments.length > 0 ? (
+                                    departments.map(dept => (
+                                        <div key={dept.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                                            <Checkbox
+                                                id={`dept-${dept.id}`}
+                                                checked={formData.departments.includes(dept.id)}
+                                                onCheckedChange={() => handleDepartmentToggle(dept.id)}
+                                                className="rounded-md"
+                                            />
+                                            <Label htmlFor={`dept-${dept.id}`} className="text-xs font-medium cursor-pointer flex-grow">{dept.name}</Label>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-xs text-gray-400 italic">No departments found.</p>
+                                )}
+                            </div>
+                        </div>
+
+
+
 
                         <DialogFooter><Button type="submit">Save User</Button></DialogFooter>
                     </form>

@@ -348,7 +348,24 @@ CREATE TABLE public.users (
   base_salary numeric DEFAULT 0,
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   role text NOT NULL,
-  department bigint,
-  CONSTRAINT users_pkey PRIMARY KEY (id),
-  CONSTRAINT fk_users_department FOREIGN KEY (department) REFERENCES public.departments(id)
+  CONSTRAINT users_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.users_to_departments (
+  user_id bigint NOT NULL,
+  department_id bigint NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT users_to_departments_pkey PRIMARY KEY (user_id, department_id),
+  CONSTRAINT users_to_departments_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT users_to_departments_department_id_fkey FOREIGN KEY (department_id) REFERENCES public.departments(id)
+);
+
+-- Enable RLS
+ALTER TABLE public.users_to_departments ENABLE ROW LEVEL SECURITY;
+
+-- Create policies
+CREATE POLICY "Allow all access for authenticated users" 
+ON public.users_to_departments 
+FOR ALL 
+TO authenticated 
+USING (true) 
+WITH CHECK (true);
