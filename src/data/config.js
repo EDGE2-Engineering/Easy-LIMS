@@ -16,7 +16,7 @@ export const ROLES = {
     },
     TECHNICIAN: {
         slug: 'technician',
-        label: 'Technician',
+        label: 'Lab Technician',
         description: 'Field and laboratory personnel responsible for executing tests and inputting raw data.'
     },
     MRO: {
