@@ -76,8 +76,7 @@ const WorkLogManager = () => {
                 .from('users')
                 .select(`
                     *,
-                    departments!department(name),
-                    app_roles!role(name, role_slug)
+                    departments!department(name)
                 `)
                 .order('full_name');
             if (error) throw error;
@@ -264,7 +263,7 @@ const WorkLogManager = () => {
                         </div>
                         <div>
                             <h1 className="text-xl font-bold text-gray-900 tracking-tight">{selectedEmployee.full_name || selectedEmployee.username}</h1>
-                            <p className="text-gray-500 text-sm font-medium capitalize">{selectedEmployee.app_roles?.name || 'No Role'} • {selectedEmployee.departments?.name || 'No Department'}</p>
+                            <p className="text-gray-500 text-sm font-medium capitalize">{String(selectedEmployee.role || 'No Role').replace('_', ' ')} • {selectedEmployee.departments?.name || 'No Department'}</p>
                         </div>
                     </div>
                     <Tooltip>
@@ -559,7 +558,7 @@ const WorkLogManager = () => {
                                 <div className="flex-grow min-w-0">
                                     <h3 className="font-bold text-gray-900 truncate">{emp.full_name || emp.username}</h3>
                                     <div className="flex items-center gap-2 mt-0.5">
-                                        <Badge variant="outline" className="text-[10px] uppercase font-bold py-0 h-4">{emp.app_roles?.name || 'No Role'}</Badge>
+                                        <Badge variant="outline" className="text-[10px] uppercase font-bold py-0 h-4">{String(emp.role || 'No Role').replace('_', ' ')}</Badge>
                                         <span className="text-[11px] text-gray-400 font-medium truncate">{emp.departments?.name && emp.departments.name + ' Department' || ''}</span>
                                     </div>
                                 </div>

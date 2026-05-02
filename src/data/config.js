@@ -165,6 +165,15 @@ export const APP_CONFIG = {
                 actions: []
             }
         }
+    },
+    viewPermissions: {
+        [ROLES.SUPER_ADMIN]: Object.values(VIEWS),
+        [ROLES.ADMIN]: Object.values(VIEWS),
+        [ROLES.ANALYST]: [VIEWS.DASHBOARD, VIEWS.JOBS, VIEWS.TESTING],
+        [ROLES.TECHNICIAN]: [VIEWS.DASHBOARD, VIEWS.TESTING],
+        [ROLES.MRO]: [VIEWS.DASHBOARD, VIEWS.MATERIAL_INWARD, VIEWS.JOBS],
+        [ROLES.ACCOUNTS]: [VIEWS.DASHBOARD, VIEWS.ACCOUNTS, VIEWS.EXPENSES, VIEWS.WORK_LOG],
+        [ROLES.STANDARD]: [VIEWS.DASHBOARD]
     }
 };
 

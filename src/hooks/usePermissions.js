@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkflowConfig } from '@/contexts/WorkflowContext';
-import { APP_CONFIG } from '@/data/config';
+import { APP_CONFIG, ROLES } from '@/data/config';
 
 export const usePermissions = () => {
     const { user, roles } = useAuth();
@@ -9,10 +9,10 @@ export const usePermissions = () => {
     const canView = (viewName) => {
         if (!user || !user.role) return false;
         
-        // Find role definition in database roles (user.role is a string slug)
-        const roleDef = roles.find(r => r.role_slug === user.role);
-        const allowedViews = roleDef?.view_permissions || [];
-        
+        // Super Admin can see everything
+        if (user.role === ROLES.SUPER_ADMIN) return true;
+
+        const allowedViews = APP_CONFIG.viewPermissions[user.role] || [];
         return allowedViews.includes(viewName);
     };
 

@@ -1,15 +1,6 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
-CREATE TABLE public.app_roles (
-  role_slug text NOT NULL,
-  name text NOT NULL,
-  view_permissions ARRAY DEFAULT '{}'::text[],
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  CONSTRAINT app_roles_pkey PRIMARY KEY (id)
-);
 CREATE TABLE public.app_settings (
   setting_key text NOT NULL UNIQUE,
   setting_value text NOT NULL,
@@ -356,9 +347,8 @@ CREATE TABLE public.users (
   updated_at timestamp with time zone DEFAULT now(),
   base_salary numeric DEFAULT 0,
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  role bigint NOT NULL,
+  role text NOT NULL,
   department bigint,
   CONSTRAINT users_pkey PRIMARY KEY (id),
-  CONSTRAINT fk_users_role FOREIGN KEY (role) REFERENCES public.app_roles(id),
   CONSTRAINT fk_users_department FOREIGN KEY (department) REFERENCES public.departments(id)
 );

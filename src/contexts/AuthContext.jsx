@@ -12,7 +12,6 @@ const AuthContext = createContext();
 const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [profile, setProfile] = useState(null);
-    const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const notifyLogin = useCallback(async (username, fullName) => {
@@ -20,15 +19,6 @@ const AuthProvider = ({ children }) => {
         await sendTelegramNotification(message);
     }, []);
 
-    const fetchRoles = useCallback(async () => {
-        try {
-            const { data, error } = await supabase.from('app_roles').select('*').order('name');
-            if (error) throw error;
-            setRoles(data || []);
-        } catch (error) {
-            console.error("Failed to fetch roles", error);
-        }
-    }, []);
 
     useEffect(() => {
         // Check for existing session in localStorage
@@ -41,9 +31,8 @@ const AuthProvider = ({ children }) => {
                 localStorage.removeItem(STORAGE_KEYS.SESSION);
             }
         }
-        fetchRoles();
         setLoading(false);
-    }, [fetchRoles]);
+    }, []);
 
     const login = useCallback(async (username, password) => {
         try {
@@ -51,7 +40,6 @@ const AuthProvider = ({ children }) => {
                 .from('users')
                 .select(`
                     *,
-                    app_roles!role(role_slug, name),
                     departments!department(name)
                 `)
                 .eq('username', username)
@@ -68,7 +56,7 @@ const AuthProvider = ({ children }) => {
                 username: data.username,
                 fullName: data.full_name,
                 department: data.departments?.name || '', 
-                role: data.app_roles?.role_slug || '' 
+                role: data.role || '' 
             };
 
             setUser(sessionUser);
@@ -95,15 +83,14 @@ const AuthProvider = ({ children }) => {
 
     const contextValue = useMemo(() => ({
         user,
-        roles,
+        roles: ROLES,
         loading,
         login,
         logout,
         isSuperAdmin,
         isAdmin,
-        isStandard,
-        refreshRoles: fetchRoles
-    }), [user, roles, loading, login, logout, isSuperAdmin, isAdmin, isStandard, fetchRoles]);
+        isStandard
+    }), [user, loading, login, logout, isSuperAdmin, isAdmin, isStandard]);
 
     return (
         <AuthContext.Provider value={contextValue}>

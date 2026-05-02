@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ROLES } from '@/data/config';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -28,7 +29,7 @@ const AdminUsersManager = () => {
         password: '',
         full_name: '',
         department: '',
-        role: roles.length > 0 ? roles[0].id : '',
+        role: ROLES.STANDARD,
         capabilities: []
     });
     const { toast } = useToast();
@@ -54,7 +55,6 @@ const AdminUsersManager = () => {
                 .select(`
                     *,
                     departments!department(name),
-                    app_roles!role(name),
                     technician_capabilities(category)
                 `)
                 .order('username');
@@ -68,12 +68,12 @@ const AdminUsersManager = () => {
     const filteredUsers = users.filter(u =>
         u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (u.full_name && u.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (u.app_roles?.name && u.app_roles.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        (u.role && u.role.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const handleNewUser = () => {
         setEditingUser(null);
-        setFormData({ username: '', password: '', full_name: '', department: '', role: roles.length > 0 ? roles[0].id : '', capabilities: [] });
+        setFormData({ username: '', password: '', full_name: '', department: '', role: ROLES.STANDARD, capabilities: [] });
         setIsDialogOpen(true);
     };
 
@@ -114,8 +114,7 @@ const AdminUsersManager = () => {
             }
 
             // Sync Lab Test Departments (Capabilities)
-            const userRole = roles.find(r => r.id === parseInt(formData.role));
-            const isTechnician = userRole?.role_slug === 'technician' || userRole?.role_slug === 'lab_technician';
+            const isTechnician = formData.role === ROLES.TECHNICIAN;
             
             if (isTechnician) {
                 // Clear the single department column if it's a technician
@@ -213,15 +212,15 @@ const AdminUsersManager = () => {
                                 </td>
 
                                 <td className="p-4">
-                                    <Badge variant="secondary" className="capitalize">{u.app_roles?.name || 'N/A'}</Badge>
-                                    {u.app_roles?.role_slug !== 'technician' && u.departments?.name && (
+                                    <Badge variant="secondary" className="capitalize">{String(u.role || 'N/A').replace('_', ' ')}</Badge>
+                                    {u.role !== ROLES.TECHNICIAN && u.departments?.name && (
                                         <div className="mt-1">
                                             <Badge variant="secondary" className="capitalize" style={{ backgroundColor: '#e1bdffff' }}>
                                                 {u.departments?.name} Department
                                             </Badge>
                                         </div>
                                     )}
-                                    {u.app_roles?.role_slug === 'technician' && (
+                                    {u.role === ROLES.TECHNICIAN && (
                                         <div className="flex flex-wrap gap-1 mt-1">
                                             {(u.technician_capabilities || []).map(c => (
                                                 <Badge key={c.category} variant="outline" className="text-[9px] px-1 py-0">{c.category}</Badge>
@@ -282,17 +281,20 @@ const AdminUsersManager = () => {
                         </div>
                         <div className="grid gap-2">
                             <Label>Role</Label>
-                            <Select value={formData.role?.toString()} onValueChange={v => setFormData({...formData, role: parseInt(v)})}>
+                            <Select value={formData.role} onValueChange={v => setFormData({...formData, role: v})}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    {roles.map(r => <SelectItem key={r.id} value={r.id.toString()}>{r.name}</SelectItem>)}
+                                    {Object.entries(ROLES).map(([key, value]) => (
+                                        <SelectItem key={value} value={value}>
+                                            {value.replace('_', ' ').toUpperCase()}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
                         
                         {(() => {
-                            const userRole = roles.find(r => r.id === parseInt(formData.role));
-                            const isTechnician = userRole?.role_slug === 'technician' || userRole?.role_slug === 'lab_technician';
+                            const isTechnician = formData.role === ROLES.TECHNICIAN;
                             
                             return isTechnician && (
                                 <div className="space-y-3 border-t pt-4">

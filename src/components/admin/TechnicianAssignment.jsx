@@ -29,11 +29,10 @@ const TechnicianAssignment = ({ jobId, jobCategories, onComplete }) => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch users with role 'technician'
             const { data: users, error: userError } = await supabase
                 .from('users')
-                .select('*, app_roles!inner!role(role_slug)')
-                .eq('app_roles.role_slug', 'technician');
+                .select('*')
+                .eq('role', 'technician');
             
             if (userError) throw userError;
             setTechnicians(users || []);
