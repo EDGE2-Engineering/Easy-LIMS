@@ -10,7 +10,7 @@ export const usePermissions = () => {
         if (!user || !user.role) return false;
         
         // Super Admin can see everything
-        if (user.role === ROLES.SUPER_ADMIN) return true;
+        if (user.role === ROLES.SUPER_ADMIN.slug) return true;
 
         const allowedViews = APP_CONFIG.viewPermissions[user.role] || [];
         return allowedViews.includes(viewName);

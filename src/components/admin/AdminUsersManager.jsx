@@ -29,7 +29,7 @@ const AdminUsersManager = () => {
         password: '',
         full_name: '',
         departments: [],
-        role: ROLES.TECHNICIAN
+        role: ROLES.TECHNICIAN.slug
     });
     const { toast } = useToast();
 
@@ -74,7 +74,7 @@ const AdminUsersManager = () => {
 
     const handleNewUser = () => {
         setEditingUser(null);
-        setFormData({ username: '', password: '', full_name: '', departments: [], role: ROLES.TECHNICIAN });
+        setFormData({ username: '', password: '', full_name: '', departments: [], role: ROLES.TECHNICIAN.slug });
         setIsDialogOpen(true);
     };
 
@@ -208,7 +208,9 @@ const AdminUsersManager = () => {
                                 </td>
 
                                 <td className="p-4">
-                                    <Badge variant="secondary" className="capitalize">{String(u.role || 'N/A').replace('_', ' ')}</Badge>
+                                    <Badge className="bg-primary-dark text-white uppercase text-[10px] font-bold px-2 py-0.5 shadow-sm">
+                                        {Object.values(ROLES).find(r => r.slug === u.role)?.label || u.role || 'N/A'}
+                                    </Badge>
                                     {(u.users_to_departments || []).length > 0 && (
                                         <div className="flex flex-wrap gap-1 mt-1">
                                             {u.users_to_departments.map(ud => (
@@ -273,11 +275,16 @@ const AdminUsersManager = () => {
                         <div className="grid gap-2">
                             <Label>Role</Label>
                             <Select value={formData.role} onValueChange={v => setFormData({ ...formData, role: v })}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectTrigger className="h-auto py-2"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    {Object.entries(ROLES).map(([key, value]) => (
-                                        <SelectItem key={value} value={value}>
-                                            {value.replace('_', ' ').toUpperCase()}
+                                    {Object.entries(ROLES).map(([key, role]) => (
+                                        <SelectItem key={role.slug} value={role.slug} className="py-2">
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="font-bold text-xs">{role.label}</span>
+                                                <span className="text-[10px] text-gray-500 leading-tight whitespace-normal max-w-[280px]">
+                                                    {role.description}
+                                                </span>
+                                            </div>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
