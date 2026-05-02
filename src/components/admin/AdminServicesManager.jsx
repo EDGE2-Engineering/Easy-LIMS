@@ -248,7 +248,7 @@ const AdminServicesManager = () => {
                             disabled={isSaving}
                         >
                             <Save className="w-4 h-4 mr-2" />
-                            {isSaving ? 'Saving...' : 'Save Changes'}
+                            {isSaving ? 'Saving...' : 'Save'}
                         </Button>
                     </div>
                 </div>

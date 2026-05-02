@@ -15,7 +15,9 @@ const SamplingProvider = ({ children }) => {
             id: s.id,
             serviceType: s.service_type || '',
             materials: (() => {
-                if (s.sampling_to_materials) return s.sampling_to_materials.map(m => m.materials?.name).filter(Boolean);
+                // Priority: junction table rows → array column → string fallbacks
+                if (s.sampling_to_materials && s.sampling_to_materials.length > 0)
+                    return s.sampling_to_materials.map(m => m.materials?.name).filter(Boolean);
                 if (Array.isArray(s.materials)) return s.materials;
                 if (typeof s.materials === 'string' && s.materials.trim().startsWith('[') && s.materials.trim().endsWith(']')) {
                     try { return JSON.parse(s.materials); } catch (e) { return [s.materials]; }
@@ -29,7 +31,9 @@ const SamplingProvider = ({ children }) => {
             price: Number(s.price) || 0,
             hsnCode: s.hsn_code || '',
             tcList: (() => {
-                if (s.sampling_to_terms_conditions) return s.sampling_to_terms_conditions.map(t => t.terms_and_conditions?.type).filter(Boolean);
+                // Priority: junction table rows (if populated) → tc_list column
+                if (s.sampling_to_terms_conditions && s.sampling_to_terms_conditions.length > 0)
+                    return s.sampling_to_terms_conditions.map(t => t.terms_and_conditions?.type).filter(Boolean);
                 if (Array.isArray(s.tc_list)) return s.tc_list;
                 if (typeof s.tc_list === 'string' && s.tc_list.trim().startsWith('[') && s.tc_list.trim().endsWith(']')) {
                     try { return JSON.parse(s.tc_list); } catch (e) { return [s.tc_list]; }
@@ -37,7 +41,9 @@ const SamplingProvider = ({ children }) => {
                 return s.tc_list ? [s.tc_list] : [];
             })(),
             techList: (() => {
-                if (s.sampling_to_technicals) return s.sampling_to_technicals.map(t => t.technicals?.type).filter(Boolean);
+                // Priority: junction table rows (if populated) → tech_list column
+                if (s.sampling_to_technicals && s.sampling_to_technicals.length > 0)
+                    return s.sampling_to_technicals.map(t => t.technicals?.type).filter(Boolean);
                 if (Array.isArray(s.tech_list)) return s.tech_list;
                 if (typeof s.tech_list === 'string' && s.tech_list.trim().startsWith('[') && s.tech_list.trim().endsWith(']')) {
                     try { return JSON.parse(s.tech_list); } catch (e) { return [s.tech_list]; }
@@ -48,6 +54,8 @@ const SamplingProvider = ({ children }) => {
         };
     }, []);
 
+    // NOTE: tc_list and tech_list are text[] columns on the sampling table.
+    // Run migration_sampling_tc_tech.sql in Supabase if they don't exist yet.
     const mapToDb = useCallback((s) => ({
         id: s.id,
         service_type: s.serviceType,
@@ -134,7 +142,12 @@ const SamplingProvider = ({ children }) => {
                 .from('sampling')
                 .update(updates)
                 .eq('id', id)
-                .select();
+                .select(`
+                    *,
+                    sampling_to_materials ( materials ( name ) ),
+                    sampling_to_technicals ( technicals ( type ) ),
+                    sampling_to_terms_conditions ( terms_and_conditions ( type ) )
+                `);
 
             if (error) {
                 console.error("Supabase Update Failed (sampling):", error);
@@ -154,21 +167,23 @@ const SamplingProvider = ({ children }) => {
     }, [samplingData, mapToDb, mapFromDb]);
 
     const addSampling = useCallback(async (newItem) => {
-        const tempId = newItem.id || `samp_${Date.now()}`;
-        const itemWithId = { ...newItem, id: tempId, created_at: new Date().toISOString() };
-
         const previousData = [...samplingData];
-        setSamplingData(prev => [...prev, itemWithId]);
 
         try {
-            const dbPayload = mapToDb(itemWithId);
+            const dbPayload = mapToDb(newItem);
+            delete dbPayload.id;
             dbPayload.created_at = new Date().toISOString();
             dbPayload.updated_at = new Date().toISOString();
 
             const { error, data } = await supabase
                 .from('sampling')
                 .insert(dbPayload)
-                .select();
+                .select(`
+                    *,
+                    sampling_to_materials ( materials ( name ) ),
+                    sampling_to_technicals ( technicals ( type ) ),
+                    sampling_to_terms_conditions ( terms_and_conditions ( type ) )
+                `);
 
             if (error) {
                 console.error("Supabase Add Failed (sampling):", error);
@@ -178,7 +193,7 @@ const SamplingProvider = ({ children }) => {
 
             if (data && data.length > 0) {
                 const added = mapFromDb(data[0]);
-                setSamplingData(prev => prev.map(s => s.id === tempId ? added : s));
+                setSamplingData(prev => [...prev, added]);
             }
         } catch (err) {
             console.error("Add Sampling Exception:", err);

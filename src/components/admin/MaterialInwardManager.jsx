@@ -294,7 +294,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
 
             // Robustly determine the integer user ID for bigint columns
             let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
-            
+
             // If the ID is a UUID string (not numeric), try to resolve it from the users table
             if (isNaN(userId) && user.username) {
                 const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
@@ -405,7 +405,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                 // Update job status
                 await supabase
                     .from('jobs')
-                    .update({ 
+                    .update({
                         status: WORKFLOW_STATES.MATERIAL_RECEIVED,
                         updated_by: userId
                     })
@@ -583,7 +583,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                             disabled={isSaving}
                         >
                             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                            {isSaving ? 'Saving...' : (isAddingNew ? 'Create Inward Entry' : 'Save Changes')}
+                            {isSaving ? 'Saving...' : (isAddingNew ? 'Create Inward Entry' : 'Save')}
                         </Button>
                     </div>
                 </div>

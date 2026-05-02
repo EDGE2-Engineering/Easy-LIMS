@@ -92,17 +92,17 @@ const AdminCollectionCentersManager = () => {
             if (isAddingNew) {
                 const { error } = await supabase
                     .from('collection_centers')
-                    .insert([{ 
-                        name: editingCenter.name, 
-                        address: editingCenter.address 
+                    .insert([{
+                        name: editingCenter.name,
+                        address: editingCenter.address
                     }]);
                 if (error) throw error;
                 toast({ title: "Collection Center Added", description: "New collection center has been successfully added." });
             } else {
                 const { error } = await supabase
                     .from('collection_centers')
-                    .update({ 
-                        name: editingCenter.name, 
+                    .update({
+                        name: editingCenter.name,
                         address: editingCenter.address,
                         updated_at: new Date().toISOString()
                     })
@@ -182,7 +182,7 @@ const AdminCollectionCentersManager = () => {
                             disabled={isSaving}
                         >
                             <Save className="w-4 h-4 mr-2" />
-                            {isSaving ? 'Saving...' : 'Save Changes'}
+                            {isSaving ? 'Saving...' : 'Save'}
                         </Button>
                     </div>
                 </div>

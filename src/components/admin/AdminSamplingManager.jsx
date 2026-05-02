@@ -43,13 +43,13 @@ const AdminSamplingManager = () => {
     const { materials } = useMaterials();
     const { user } = useAuth();
     const { toast } = useToast();
-    
+
     const [searchTerm, setSearchTerm] = useState('');
     const [editingItem, setEditingItem] = useState(null);
     const [isAddingNew, setIsAddingNew] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, itemId: null, serviceType: '' });
-    
+
     const [sortField, setSortField] = useState('serviceType');
     const [sortOrder, setSortOrder] = useState('asc');
     const [filterMaterial, setFilterMaterial] = useState('all');
@@ -74,7 +74,7 @@ const AdminSamplingManager = () => {
     const sortedData = [...filteredData].sort((a, b) => {
         let valA = (a[sortField] || '').toString().toLowerCase();
         let valB = (b[sortField] || '').toString().toLowerCase();
-        
+
         if (sortField === 'price' || sortField === 'qty') {
             valA = Number(a[sortField]) || 0;
             valB = Number(b[sortField]) || 0;
@@ -190,7 +190,7 @@ const AdminSamplingManager = () => {
                             disabled={isSaving}
                         >
                             <Save className="w-4 h-4 mr-2" />
-                            {isSaving ? 'Saving...' : 'Save Changes'}
+                            {isSaving ? 'Saving...' : 'Save'}
                         </Button>
                     </div>
                 </div>

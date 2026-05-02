@@ -88,7 +88,7 @@ const WorkflowConfigurator = () => {
                         <RotateCcw className="w-4 h-4 mr-2" /> Reset
                     </Button>
                     <Button onClick={handleSave} disabled={isSaving} className="rounded-xl shadow-lg shadow-primary/20">
-                        {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />} Save Changes
+                        {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />} Save
                     </Button>
                 </div>
             </div>
@@ -101,7 +101,7 @@ const WorkflowConfigurator = () => {
                         <div className="space-y-4">
                             {Object.entries(editingConfig.states).map(([id, config]) => (
                                 <Card key={id} className="border-gray-100 shadow-sm overflow-hidden group hover:border-primary/20 transition-all">
-                                    <div 
+                                    <div
                                         className="p-4 flex items-center justify-between cursor-pointer bg-gray-50/50 group-hover:bg-primary/5 transition-colors"
                                         onClick={() => toggleExpand(id)}
                                     >
@@ -116,22 +116,22 @@ const WorkflowConfigurator = () => {
                                             {config.actions?.length || 0} Actions
                                         </Badge>
                                     </div>
-                                    
+
                                     {expandedStates[id] && (
                                         <CardContent className="p-4 space-y-4 border-t border-gray-100 bg-white">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="space-y-2">
                                                     <Label className="text-xs text-gray-500 uppercase">State Title (Label)</Label>
-                                                    <Input 
-                                                        value={config.label} 
+                                                    <Input
+                                                        value={config.label}
                                                         onChange={(e) => handleStateLabelChange(id, e.target.value)}
                                                         className="rounded-xl"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-xs text-gray-500 uppercase">Description</Label>
-                                                    <Input 
-                                                        value={config.description || ''} 
+                                                    <Input
+                                                        value={config.description || ''}
                                                         onChange={(e) => {
                                                             const newDesc = e.target.value;
                                                             setEditingConfig(prev => ({
@@ -159,16 +159,16 @@ const WorkflowConfigurator = () => {
                                                                 <div className="grid grid-cols-2 gap-3">
                                                                     <div className="space-y-1">
                                                                         <Label className="text-[10px] text-gray-400">Action Label</Label>
-                                                                        <Input 
-                                                                            value={action.label} 
+                                                                        <Input
+                                                                            value={action.label}
                                                                             onChange={(e) => handleActionLabelChange(id, idx, e.target.value)}
                                                                             className="h-8 text-sm rounded-lg"
                                                                         />
                                                                     </div>
                                                                     <div className="space-y-1">
                                                                         <Label className="text-[10px] text-gray-400">Description</Label>
-                                                                        <Input 
-                                                                            value={action.description || ''} 
+                                                                        <Input
+                                                                            value={action.description || ''}
                                                                             onChange={(e) => {
                                                                                 const newDesc = e.target.value;
                                                                                 setEditingConfig(prev => {
