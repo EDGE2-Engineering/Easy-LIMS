@@ -47,14 +47,7 @@ const WorkLogManager = () => {
     const [editingLeave, setEditingLeave] = useState(null);
     const [isEditLeaveDialogOpen, setIsEditLeaveDialogOpen] = useState(false);
 
-    // History & Pagination State
-    const [attendanceHistory, setAttendanceHistory] = useState([]);
-    const [historyLoading, setHistoryLoading] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalCount, setTotalCount] = useState(0);
-    const pageSize = 10;
-
-    // Filter State for History
+    // Filter State for Leaves
     const [historyFilters, setHistoryFilters] = useState({
         month: 'all',
         year: 'all'
@@ -109,39 +102,6 @@ const WorkLogManager = () => {
         }
     };
 
-    const fetchAttendanceHistory = async (userId, page = 1, filters = historyFilters) => {
-        setHistoryLoading(true);
-        try {
-            const from = (page - 1) * pageSize;
-            const to = from + pageSize - 1;
-
-            let query = supabase
-                .from('employee_attendance')
-                .select('*', { count: 'exact' })
-                .eq('user_id', userId);
-
-            if (filters.month !== 'all') {
-                query = query.eq('month', parseInt(filters.month));
-            }
-            if (filters.year !== 'all') {
-                query = query.eq('year', parseInt(filters.year));
-            }
-
-            const { data, error, count } = await query
-                .order('year', { ascending: false })
-                .order('month', { ascending: false })
-                .range(from, to);
-
-            if (error) throw error;
-            setAttendanceHistory(data || []);
-            setTotalCount(count || 0);
-        } catch (error) {
-            toast({ title: "Error", description: "Failed to fetch attendance records.", variant: "destructive" });
-        } finally {
-            setHistoryLoading(false);
-        }
-    };
-
     const fetchLeaves = useCallback(async (userId, year) => {
         setLoadingLeaves(true);
         const from = `${year}-01-01`;
@@ -165,39 +125,9 @@ const WorkLogManager = () => {
 
     const handleEmployeeSelect = (employee) => {
         setSelectedEmployee(employee);
-        setCurrentPage(1);
         setHistoryFilters({ month: 'all', year: 'all' });
-        fetchAttendanceHistory(employee.id, 1, { month: 'all', year: 'all' });
         fetchLeaves(employee.id, selectedYear);
         setView('employee_history');
-    };
-
-    const handleAddEntry = () => {
-        setFormData({
-            employeeName: selectedEmployee.full_name || selectedEmployee.username,
-            salary: selectedEmployee.base_salary || '',
-            month: new Date().getMonth().toString(),
-            year: new Date().getFullYear().toString(),
-            totalWorkingDays: '',
-            daysWorked: ''
-        });
-        setCalculatedWage(null);
-        setShowCalculation(false);
-        setView('calculator');
-    };
-
-    const handleEditEntry = (entry) => {
-        setFormData({
-            employeeName: selectedEmployee.full_name || selectedEmployee.username,
-            salary: selectedEmployee.base_salary || '',
-            month: entry.month.toString(),
-            year: entry.year.toString(),
-            totalWorkingDays: entry.total_working_days.toString(),
-            daysWorked: entry.days_worked.toString()
-        });
-        setCalculatedWage(null);
-        setShowCalculation(false);
-        setView('calculator');
     };
 
     const calculateWorkingDaysInMonth = (month, year) => {
@@ -228,57 +158,6 @@ const WorkLogManager = () => {
             }
         }
     }, [formData.month, formData.year, view]);
-
-    const handleCalculate = () => {
-        const { salary, totalWorkingDays, daysWorked } = formData;
-        if (!salary || !totalWorkingDays || !daysWorked) {
-            toast({ title: "Incomplete Details", description: "Please enter salary and attendance details.", variant: "destructive" });
-            return;
-        }
-        const totalDays = parseFloat(totalWorkingDays);
-        const workedDays = parseFloat(daysWorked);
-        if (totalDays === 0) return;
-        const dailyWage = parseFloat(salary) / totalDays; 
-        const totalWage = dailyWage * workedDays;
-        setCalculatedWage(totalWage);
-        setShowCalculation(true);
-    };
-
-    const handleResetCalculator = () => {
-        setShowCalculation(false);
-        setCalculatedWage(null);
-    };
-
-    const handleSave = async () => {
-        setIsSaving(true);
-        try {
-            const totalDays = parseFloat(formData.totalWorkingDays);
-            const workedDays = parseFloat(formData.daysWorked);
-            
-            const attendanceData = {
-                user_id: selectedEmployee.id,
-                month: parseInt(formData.month),
-                year: parseInt(formData.year),
-                total_working_days: totalDays,
-                days_worked: workedDays,
-                updated_at: new Date().toISOString()
-            };
-
-            const { error } = await supabase
-                .from('employee_attendance')
-                .upsert(attendanceData, { onConflict: 'user_id,month,year' });
-
-            if (error) throw error;
-
-            toast({ title: "Success", description: "Work log entry saved successfully." });
-            fetchAttendanceHistory(selectedEmployee.id, currentPage);
-            setView('employee_history');
-        } catch (error) {
-            toast({ title: "Error", description: error.message, variant: "destructive" });
-        } finally {
-            setIsSaving(false);
-        }
-    };
 
     const handleSaveLeave = async () => {
         if (!rangeStart) return;
@@ -365,8 +244,6 @@ const WorkLogManager = () => {
     const handleFilterChange = (key, value) => {
         const newFilters = { ...historyFilters, [key]: value };
         setHistoryFilters(newFilters);
-        setCurrentPage(1);
-        fetchAttendanceHistory(selectedEmployee.id, 1, newFilters);
     };
 
     const filteredEmployees = employees.filter(emp => 
@@ -701,16 +578,6 @@ const WorkLogManager = () => {
                             </p>
                         </div>
                     </div>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button onClick={handleAddEntry} className="bg-primary hover:bg-primary-dark text-white rounded-xl h-11 px-6 font-semibold shadow-lg shadow-primary/20">
-                                <Plus className="w-4 h-4 mr-2" /> Add Work Log
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                            <p className="text-xs">Record monthly attendance for this employee</p>
-                        </TooltipContent>
-                    </Tooltip>
                 </div>
 
 
@@ -784,108 +651,6 @@ const WorkLogManager = () => {
         );
     }
 
-    if (view === 'calculator') {
-        return (
-            <div className="max-w-4xl mx-auto space-y-6 animate-in slide-in-from-right-4 duration-300">
-                <Button variant="ghost" onClick={() => setView('employee_history')} className="flex items-center gap-2 text-gray-500 hover:text-primary transition-colors">
-                    <ArrowLeft className="w-4 h-4" /> Back to History
-                </Button>
-
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
-                            <Calendar className="w-6 h-6 text-primary" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-gray-900 tracking-tight">Entry for {months[parseInt(formData.month)]} {formData.year}</h1>
-                            <p className="text-gray-500 text-sm font-medium uppercase">{selectedEmployee.full_name || selectedEmployee.username}</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button onClick={handleSave} disabled={isSaving} className="bg-primary hover:bg-primary-dark text-white rounded-xl h-11 px-6 font-semibold shadow-lg shadow-primary/20">
-                                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                                    Save Work Log
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">Commit this work log to the database</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-gray-700">Year</Label>
-                                <Select value={formData.year} onValueChange={(val) => setFormData(p => ({ ...p, year: val, totalWorkingDays: '', daysWorked: '' }))}>
-                                    <SelectTrigger className="h-11 rounded-xl bg-gray-50/50 border-gray-100"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-xl">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-gray-700">Month</Label>
-                                <Select value={formData.month} onValueChange={(val) => setFormData(p => ({ ...p, month: val, totalWorkingDays: '', daysWorked: '' }))}>
-                                    <SelectTrigger className="h-11 rounded-xl bg-gray-50/50 border-gray-100"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="rounded-xl">{months.map((m, i) => <SelectItem key={m} value={i.toString()}>{m}</SelectItem>)}</SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-gray-700">Working Days</Label>
-                                <Input type="number" value={formData.totalWorkingDays} onChange={e => setFormData(p => ({ ...p, totalWorkingDays: e.target.value }))} className="h-11 rounded-xl bg-gray-50/50 border-gray-100 font-medium" />
-                                <p className="text-xs text-gray-500">Number of working days for EDGE2 in the month. Sundays are excluded.</p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-gray-700">Days Worked</Label>
-                                <Input type="number" value={formData.daysWorked} onChange={e => setFormData(p => ({ ...p, daysWorked: e.target.value }))} className="h-11 rounded-xl bg-gray-50/50 border-gray-100 font-medium" />
-                                <p className="text-xs text-gray-500">Number of days worked by the employee in the month.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="relative">
-                        {showCalculation ? (
-                            <div className="bg-gradient-to-br from-primary to-green-500 p-8 rounded-3xl shadow-xl shadow-primary/20 text-white h-full flex flex-col justify-center relative overflow-hidden animate-in zoom-in-95 duration-300">
-                                <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp className="w-32 h-32" /></div>
-                                <div className="relative z-10 space-y-2 text-center mb-8">
-                                    <h2 className="text-lg font-medium opacity-80 uppercase tracking-widest">Calculated Wage</h2>
-                                    <div className="text-5xl font-black tracking-tighter">₹{calculatedWage !== null ? calculatedWage.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</div>
-                                </div>
-                                <div className="relative z-10 space-y-3 pt-6 border-t border-white/10">
-                                    <div className="flex justify-between text-sm"><span className="opacity-70">Attendance</span><span className="font-bold">{formData.daysWorked} / {formData.totalWorkingDays} Days</span></div>
-                                    <div className="flex justify-between text-sm"><span className="opacity-70">Daily Rate</span><span className="font-bold">₹{(parseFloat(formData.salary) / parseFloat(formData.totalWorkingDays)).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span></div>
-                                </div>
-                                <div className="mt-8 flex items-center gap-3 relative z-10">
-                                    <button onClick={handleCalculate} className="flex-grow rounded-xl bg-white text-primary font-bold px-6 py-3 shadow-sm hover:shadow-md transition-all">Recalculate</button>
-                                    <button onClick={handleResetCalculator} title="Reset Calculation" className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all backdrop-blur-sm">
-                                        <RotateCcw className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="h-full min-h-[300px] flex flex-col items-center justify-center p-8 bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl text-center space-y-4">
-                                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm"><Info className="w-8 h-8 text-gray-300" /></div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900">Wage Calculation</h3>
-                                    <div className="space-y-2 mt-6 mb-6 w-64">
-                                        <Input type="number" value={formData.salary} placeholder='Enter Monthly Salary' onChange={e => setFormData(p => ({ ...p, salary: e.target.value }))} className="h-11 rounded-xl bg-white border-gray-200 font-medium text-center" />
-                                    </div>
-                                    <p className="text-sm text-gray-500 max-w-[200px] mx-auto mt-1">Entered salary is for calculation only and will not be saved.</p>
-                                </div>
-                                <Button variant="outline" size="sm" onClick={handleCalculate} className="rounded-xl border-primary/20 text-primary hover:bg-primary/5"><Calculator className="w-4 h-4 mr-2" /> Calculate Wage</Button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="space-y-6">

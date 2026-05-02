@@ -15,6 +15,7 @@ const AdminSystemSettings = lazy(() => import('@/components/admin/AdminSystemSet
 const AdminSamplingManager = lazy(() => import('@/components/admin/AdminSamplingManager.jsx'));
 const ExpensesManager = lazy(() => import('@/components/admin/ExpensesManager.jsx'));
 const WagesManager = lazy(() => import('@/components/admin/WagesManager.jsx'));
+const UtilitiesManager = lazy(() => import('@/components/admin/UtilitiesManager.jsx'));
 
 const COMPONENT_MAP = {
   [VIEWS.JOBS]: JobsManager,
@@ -22,6 +23,7 @@ const COMPONENT_MAP = {
   [VIEWS.ACCOUNTS]: AccountsManager,
   [VIEWS.EXPENSES]: ExpensesManager,
   [VIEWS.WORK_LOG]: WagesManager,
+  [VIEWS.UTILITIES]: UtilitiesManager,
   [VIEWS.SETTINGS]: AdminSystemSettings,
   [VIEWS.TESTING]: lazy(() => import('@/components/admin/TestingDashboard.jsx'))
 };

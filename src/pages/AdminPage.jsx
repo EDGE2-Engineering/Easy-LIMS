@@ -33,6 +33,7 @@ const AdminPage = () => {
         jobs: VIEWS.JOBS,
         expenses: VIEWS.EXPENSES,
         work_log: VIEWS.WORK_LOG,
+        utilities: VIEWS.UTILITIES,
         inward_register: VIEWS.MATERIAL_INWARD,
         testing: VIEWS.TESTING,
         accounts: VIEWS.ACCOUNTS,

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness, CalendarOff } from 'lucide-react';
+import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck, Calculator, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness, CalendarOff } from 'lucide-react';
 import { getSiteContent, VIEWS } from '@/data/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -49,6 +49,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     { view: VIEWS.JOBS, path: '/settings/jobs', label: 'Jobs', icon: Briefcase },
     { view: VIEWS.EXPENSES, path: '/settings/expenses', label: 'Expenses', icon: IndianRupee },
     { id: 'work_log', view: VIEWS.WORK_LOG, path: '/settings/work_log', label: 'Work Log', icon: ClipboardCheck },
+    { id: 'utilities', view: VIEWS.UTILITIES, path: '/settings/utilities', label: 'Utilities', icon: Calculator },
   ];
 
   const SETTINGS_SUB_ITEMS = [
@@ -70,7 +71,8 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
         location.pathname.includes('/inward_register') ||
         location.pathname.includes('/reports') ||
         location.pathname.includes('/accounts') ||
-        location.pathname.includes('/work_log');
+        location.pathname.includes('/work_log') ||
+        location.pathname.includes('/utilities');
 
       return (location.pathname.startsWith('/settings') && !isManagementTab) ||
         location.pathname.startsWith('/service/') ||
@@ -81,6 +83,9 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
         return location.pathname === path || location.pathname.startsWith('/settings/work_log');
     }
 
+    if (id === 'utilities') {
+        return location.pathname === path || location.pathname.startsWith('/settings/utilities');
+    }
     // For other management tabs (Inward, Reports, Accounts), use precise matching
     return location.pathname === path;
   };
@@ -112,6 +117,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                   '/settings/jobs': 'Manage laboratory testing jobs',
                   '/settings/expenses': 'Track company expenses and payments',
                   '/settings/work_log': 'Monitor daily laboratory work logs',
+                  '/settings/utilities': 'Access helpful calculation utilities',
                 };
 
                 return (
