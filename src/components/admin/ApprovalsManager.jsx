@@ -103,18 +103,21 @@ const ApprovalsManager = () => {
                         <div className="w-full md:w-64 bg-gray-50/50 p-6 border-r border-gray-100 flex flex-col justify-between">
                             <div className="space-y-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black">
+                                    {/* <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black">
                                         {request.requester?.full_name?.[0] || 'U'}
-                                    </div>
+                                    </div> */}
                                     <div>
+                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Requested By</p>
                                         <p className="text-sm font-black text-gray-900">{request.requester?.full_name || 'Unknown'}</p>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{request.requester?.role}</p>
+                                        {/* <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{request.requester?.role}</p> */}
                                     </div>
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-1 ">
+                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Request Type</p>
                                     <Badge className={`${isLeave ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-600'} border-none font-black text-[10px] uppercase tracking-tighter`}>
-                                        {request.request_type}
+                                      {request.request_type}
                                     </Badge>
+                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest pt-4">Requested On</p>
                                     <p className="text-[10px] font-bold text-gray-400 flex items-center gap-1">
                                         <Clock className="w-3 h-3" /> {new Date(request.created_at).toLocaleDateString()}
                                     </p>
