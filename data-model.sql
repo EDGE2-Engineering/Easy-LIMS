@@ -76,18 +76,6 @@ CREATE TABLE public.documents (
   CONSTRAINT accounts_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.clients(id),
   CONSTRAINT accounts_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
-CREATE TABLE public.employee_leaves (
-  leave_date date NOT NULL,
-  leave_type text, -- Sick, Casual, Comp Off, LOP
-  comments text,
-  created_at timestamp with time zone DEFAULT now(),
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  user_id bigint NOT NULL,
-  created_by bigint NOT NULL,
-  CONSTRAINT employee_leaves_pkey PRIMARY KEY (id),
-  CONSTRAINT employee_leaves_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT employee_leaves_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id)
-);
 CREATE TABLE public.expenses (
   description text NOT NULL,
   amount numeric NOT NULL DEFAULT 0,

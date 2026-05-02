@@ -104,24 +104,50 @@ const LeavesManager = () => {
 
     const fetchLeaves = useCallback(async (userId, year) => {
         setLoadingLeaves(true);
-        const from = `${year}-01-01`;
-        const to = `${year}-12-31`;
         try {
             const { data, error } = await supabase
-                .from('employee_leaves')
+                .from('request_approvals')
                 .select('*')
-                .eq('user_id', userId)
-                .gte('leave_date', from)
-                .lte('leave_date', to)
-                .order('leave_date');
+                .eq('requester_id', userId)
+                .eq('request_type', 'LEAVE')
+                .eq('status', 'APPROVED');
+            
             if (error) throw error;
-            setLeaves(data || []);
+
+            // Filter for the selected year and expand into daily records
+            const yearStr = year.toString();
+            const dailyRecords = (data || []).flatMap(req => {
+                const { startDate, endDate, leaveType, reason } = req.request_data;
+                const dates = getDatesBetween(new Date(startDate), new Date(endDate));
+                return dates
+                    .filter(d => d.getFullYear().toString() === yearStr)
+                    .map(d => ({
+                        id: `${req.id}-${d.getTime()}`,
+                        request_id: req.id,
+                        leave_date: d.toISOString().split('T')[0],
+                        leave_type: leaveType,
+                        comments: reason,
+                        created_by: req.reviewed_by
+                    }));
+            });
+
+            setLeaves(dailyRecords);
         } catch (error) {
             toast({ title: "Error", description: "Failed to fetch leave records.", variant: "destructive" });
         } finally {
             setLoadingLeaves(false);
         }
     }, [toast]);
+
+    const getDatesBetween = (startDate, endDate) => {
+        const dates = [];
+        let currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+            dates.push(new Date(currentDate));
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        return dates;
+    };
 
     const handleEmployeeSelect = (employee) => {
         setSelectedEmployee(employee);
@@ -164,29 +190,27 @@ const LeavesManager = () => {
         const end = rangeEnd || rangeStart;
         const [a, b] = rangeStart <= end ? [rangeStart, end] : [end, rangeStart];
         
-        const dates = [];
-        const cur = new Date(a);
-        while (cur <= b) {
-            dates.push(new Date(cur).toISOString().split('T')[0]);
-            cur.setDate(cur.getDate() + 1);
-        }
-
         setIsSaving(true);
         try {
-            const rows = dates.map(d => ({
-                user_id: selectedEmployee.id,
-                leave_date: d,
-                comments: leaveComment.trim() || null,
-                created_by: authUser.id
-            }));
-
             const { error } = await supabase
-                .from('employee_leaves')
-                .upsert(rows, { onConflict: 'user_id,leave_date' });
+                .from('request_approvals')
+                .insert({
+                    requester_id: selectedEmployee.id,
+                    request_type: 'LEAVE',
+                    request_data: {
+                        startDate: a.toISOString().split('T')[0],
+                        endDate: b.toISOString().split('T')[0],
+                        leaveType: 'Casual Leave', // Default
+                        reason: leaveComment.trim() || 'Admin marked leave'
+                    },
+                    status: 'APPROVED',
+                    reviewed_by: authUser.id,
+                    reviewed_at: new Date().toISOString()
+                });
             
             if (error) throw error;
 
-            toast({ title: "Success", description: `Marked ${dates.length} day(s) leave.` });
+            toast({ title: "Success", description: `Marked leave for ${selectedEmployee.full_name}.` });
             setRangeStart(null);
             setRangeEnd(null);
             setLeaveComment('');
@@ -201,12 +225,13 @@ const LeavesManager = () => {
     const handleDeleteLeave = async () => {
         if (!deleteTarget) return;
         try {
+            // Note: This deletes the entire request range associated with this day
             const { error } = await supabase
-                .from('employee_leaves')
+                .from('request_approvals')
                 .delete()
-                .eq('id', deleteTarget.id);
+                .eq('id', deleteTarget.request_id);
             if (error) throw error;
-            toast({ title: "Success", description: "Leave removed." });
+            toast({ title: "Success", description: "Leave request removed." });
             fetchLeaves(selectedEmployee.id, selectedYear);
         } catch (error) {
             toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -219,13 +244,27 @@ const LeavesManager = () => {
         if (!editingLeave) return;
         setIsSaving(true);
         try {
+            // Fetch current request to update its JSONB data
+            const { data: currentReq, error: fetchError } = await supabase
+                .from('request_approvals')
+                .select('request_data')
+                .eq('id', editingLeave.request_id)
+                .single();
+            
+            if (fetchError) throw fetchError;
+
+            const updatedData = {
+                ...currentReq.request_data,
+                reason: leaveComment.trim() || currentReq.request_data.reason
+            };
+
             const { error } = await supabase
-                .from('employee_leaves')
+                .from('request_approvals')
                 .update({ 
-                    comments: leaveComment.trim() || null,
+                    request_data: updatedData,
                     updated_at: new Date().toISOString()
                 })
-                .eq('id', editingLeave.id);
+                .eq('id', editingLeave.request_id);
             
             if (error) throw error;
 

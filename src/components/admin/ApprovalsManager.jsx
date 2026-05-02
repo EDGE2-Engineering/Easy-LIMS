@@ -62,26 +62,6 @@ const ApprovalsManager = () => {
 
             if (error) throw error;
 
-            // If it's a leave request and approved, create records in employee_leaves
-            if (request.request_type === 'LEAVE' && action === 'approve') {
-                const { startDate, endDate } = request.request_data;
-                const dates = getDatesBetween(new Date(startDate), new Date(endDate));
-                
-                const leaveRecords = dates.map(date => ({
-                    user_id: request.requester_id,
-                    leave_date: date.toISOString().split('T')[0],
-                    leave_type: request.request_data.leaveType,
-                    comments: `Approved Request #${request.id}: ${request.request_data.reason || ''}`,
-                    created_by: user.id
-                }));
-
-                const { error: leaveError } = await supabase
-                    .from('employee_leaves')
-                    .insert(leaveRecords);
-                
-                if (leaveError) throw leaveError;
-            }
-
             toast({
                 title: "Success",
                 description: `Request ${status.toLowerCase()} successfully.`,
@@ -218,7 +198,7 @@ const ApprovalsManager = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                    <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
                         <div className="p-2.5 bg-primary/10 rounded-2xl">
                             <CheckCircle2 className="w-8 h-8 text-primary" />
                         </div>

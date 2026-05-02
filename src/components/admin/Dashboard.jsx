@@ -54,24 +54,38 @@ const Dashboard = () => {
             const reportsPending = (counts[WORKFLOW_STATES.REPORT_GENERATED] || 0) + (counts[WORKFLOW_STATES.REPORT_UNDER_REVIEW] || 0);
             const paymentsPending = (counts[WORKFLOW_STATES.AWAITING_PAYMENT] || 0) + (counts[WORKFLOW_STATES.INVOICE_GENERATED] || 0);
 
-            const { data: leaves, error: leavesError } = await supabase
-                .from('employee_leaves')
-                .select('*, users!employee_leaves_user_id_fkey(full_name, username, role)')
-                .eq('leave_date', today);
-            if (leavesError) throw leavesError;
+            // 2. Fetch Leaves (from approved request_approvals)
+            const { data: approvedRequests, error: approvError } = await supabase
+                .from('request_approvals')
+                .select('*, requester:users!request_approvals_requester_id_fkey(full_name, username, role)')
+                .eq('request_type', 'LEAVE')
+                .eq('status', 'APPROVED');
+            
+            if (approvError) throw approvError;
 
-            // 2b. Fetch Upcoming Leaves (next 7 days)
+            // Expand requests into individual day records for easier filtering
+            const expandedLeaves = (approvedRequests || []).flatMap(req => {
+                const { startDate, endDate, leaveType, reason } = req.request_data;
+                const dates = getDatesBetween(new Date(startDate), new Date(endDate));
+                return dates.map(date => ({
+                    id: `${req.id}-${date.getTime()}`,
+                    leave_date: date.toISOString().split('T')[0],
+                    leave_type: leaveType,
+                    comments: reason,
+                    users: req.requester,
+                    user_id: req.requester_id
+                }));
+            });
+
+            const leavesToday = expandedLeaves.filter(l => l.leave_date === today);
+
             const nextWeek = new Date();
             nextWeek.setDate(nextWeek.getDate() + 7);
             const nextWeekStr = nextWeek.toISOString().split('T')[0];
-
-            const { data: upcoming, error: upcomingError } = await supabase
-                .from('employee_leaves')
-                .select('*, users!employee_leaves_user_id_fkey(full_name, username, role)')
-                .gt('leave_date', today)
-                .lte('leave_date', nextWeekStr)
-                .order('leave_date');
-            if (upcomingError) throw upcomingError;
+            
+            const upcomingLeaves = expandedLeaves
+                .filter(l => l.leave_date > today && l.leave_date <= nextWeekStr)
+                .sort((a, b) => a.leave_date.localeCompare(b.leave_date));
 
             // 3. Fetch Total Staff
             const { count: staffCount, error: staffError } = await supabase
@@ -94,8 +108,8 @@ const Dashboard = () => {
                 pendingReports: reportsPending,
                 pendingPayments: paymentsPending,
                 totalStaff: staffCount || 0,
-                leavesToday: leaves || [],
-                upcomingLeaves: upcoming || []
+                leavesToday: leavesToday,
+                upcomingLeaves: upcomingLeaves
             });
             setWorkflowCounts(counts);
             setRecentActivity(activity || []);
@@ -107,6 +121,15 @@ const Dashboard = () => {
         }
     };
 
+    const getDatesBetween = (startDate, endDate) => {
+        const dates = [];
+        let currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+            dates.push(new Date(currentDate));
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        return dates;
+    };
 
     const container = {
         hidden: { opacity: 0 },
