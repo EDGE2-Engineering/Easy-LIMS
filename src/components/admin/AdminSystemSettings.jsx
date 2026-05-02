@@ -13,7 +13,6 @@ import AdminHSNCodesManager from './AdminHSNCodesManager';
 import AdminSettingsManager from './AdminSettingsManager';
 import AdminTermsManager from './AdminTermsManager';
 import AdminTechnicalsManager from './AdminTechnicalsManager';
-import AdminDepartmentsManager from './AdminDepartmentsManager';
 import AdminCollectionCentersManager from './AdminCollectionCentersManager';
 import AdminMaterialsManager from './AdminMaterialsManager';
 import AdminUsersManager from './AdminUsersManager';
@@ -166,21 +165,6 @@ const AdminSystemSettings = ({ id }) => {
                             </Tooltip>
                         </TabsTrigger>
 
-                        <TabsTrigger
-                            value="departments"
-                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                        >
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div className="flex items-center gap-2">
-                                        <Fullscreen className="w-4 h-4" /> Departments
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                    <p className="text-xs">Organizational departments and sections</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TabsTrigger>
 
                         
                         
@@ -243,9 +227,6 @@ const AdminSystemSettings = ({ id }) => {
                 </TabsContent>
 
 
-                <TabsContent value="departments" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <AdminDepartmentsManager />
-                </TabsContent>
 
                 <TabsContent value="collection_centers" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <AdminCollectionCentersManager />

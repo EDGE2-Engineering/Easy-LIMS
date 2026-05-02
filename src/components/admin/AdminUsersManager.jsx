@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ROLES } from '@/data/config';
+import { ROLES, DEPARTMENTS } from '@/data/config';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -22,12 +22,12 @@ const AdminUsersManager = () => {
     const [editingUser, setEditingUser] = useState(null);
     const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
     const [userToToggle, setUserToToggle] = useState(null);
-    const [departments, setDepartments] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [formData, setFormData] = useState({
         username: '',
         password: '',
         full_name: '',
+        employee_id: '',
         departments: [],
         role: ROLES.TECHNICIAN.slug
     });
@@ -35,29 +35,14 @@ const AdminUsersManager = () => {
 
     useEffect(() => {
         fetchUsers();
-        fetchDepartments();
     }, []);
-
-    const fetchDepartments = async () => {
-        try {
-            const { data, error } = await supabase.from('departments').select('id, name').order('name');
-            if (error) throw error;
-            setDepartments(data || []);
-        } catch (error) { console.error(error); }
-    };
 
     const fetchUsers = async () => {
         setLoading(true);
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select(`
-                    *,
-                    users_to_departments(
-                        department_id,
-                        departments(name)
-                    )
-                `)
+                .select('*')
                 .order('username');
             if (error) throw error;
             setUsers(data || []);
@@ -75,7 +60,7 @@ const AdminUsersManager = () => {
 
     const handleNewUser = () => {
         setEditingUser(null);
-        setFormData({ username: '', password: '', full_name: '', departments: [], role: ROLES.TECHNICIAN.slug });
+        setFormData({ username: '', password: '', full_name: '', employee_id: '', departments: [], role: ROLES.TECHNICIAN.slug });
         setIsDialogOpen(true);
     };
 
@@ -85,8 +70,9 @@ const AdminUsersManager = () => {
             username: user.username,
             password: user.password,
             full_name: user.full_name || '',
-            departments: (user.users_to_departments || []).map(ud => ud.department_id),
-            role: user.role // ID
+            employee_id: user.employee_id || '',
+            departments: Array.isArray(user.departments) ? user.departments : [],
+            role: user.role
         });
         setIsDialogOpen(true);
     };
@@ -98,6 +84,7 @@ const AdminUsersManager = () => {
                 username: formData.username,
                 password: formData.password,
                 full_name: formData.full_name,
+                employee_id: formData.employee_id || null,
                 role: formData.role,
                 updated_at: new Date().toISOString()
             };
@@ -113,16 +100,9 @@ const AdminUsersManager = () => {
                 userId = data.id;
             }
 
-            // Sync Departments
-            await supabase.from('users_to_departments').delete().eq('user_id', userId);
-            if (formData.role === ROLES.TECHNICIAN.slug && formData.departments.length > 0) {
-                const deptMappings = formData.departments.map(deptId => ({
-                    user_id: userId,
-                    department_id: deptId
-                }));
-                const { error: deptError } = await supabase.from('users_to_departments').insert(deptMappings);
-                if (deptError) throw deptError;
-            }
+            // Store department IDs directly on the user row
+            const deptIds = formData.role === ROLES.TECHNICIAN.slug ? formData.departments : [];
+            await supabase.from('users').update({ departments: deptIds }).eq('id', userId);
 
             toast({ title: 'Success', description: 'User saved successfully.' });
             setIsDialogOpen(false);
@@ -185,6 +165,7 @@ const AdminUsersManager = () => {
                     <thead className="bg-gray-50 border-b font-semibold">
                         <tr>
                             <th className="text-left p-4">Name</th>
+                            <th className="text-left p-4">Employee ID</th>
                             <th className="text-left p-4">Username</th>
                             <th className="text-left p-4">Role</th>
                             <th className="text-left p-4">Status</th>
@@ -205,6 +186,11 @@ const AdminUsersManager = () => {
                                     </div>
                                 </td>
                                 <td className="p-4">
+                                    <div className="text-xs font-mono font-semibold text-primary">
+                                        {u.employee_id || <span className="text-gray-300 font-normal not-italic">—</span>}
+                                    </div>
+                                </td>
+                                <td className="p-4">
                                     <div className="text-xs text-gray-500">{u.username}</div>
                                 </td>
 
@@ -212,15 +198,19 @@ const AdminUsersManager = () => {
                                     <Badge className="bg-primary-dark text-white uppercase text-[10px] font-bold px-2 py-0.5 shadow-sm">
                                         {Object.values(ROLES).find(r => r.slug === u.role)?.label || u.role || 'N/A'}
                                     </Badge>
-                                    {(u.users_to_departments || []).length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-1">
-                                            {u.users_to_departments.map(ud => (
-                                                <Badge key={ud.department_id} variant="secondary" className="capitalize text-[10px]" style={{ backgroundColor: '#e1bdffff' }}>
-                                                    {ud.departments?.name}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const deptIds = Array.isArray(u.departments) ? u.departments : [];
+                                        const deptNames = deptIds.map(id => DEPARTMENTS.find(d => d.id === id)?.name).filter(Boolean);
+                                        return deptNames.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                {deptNames.map(name => (
+                                                    <Badge key={name} variant="secondary" className="capitalize text-[10px]" style={{ backgroundColor: '#e1bdffff' }}>
+                                                        {name}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        ) : null;
+                                    })()}
                                 </td>
 
                                 <td className="p-4">
@@ -274,6 +264,15 @@ const AdminUsersManager = () => {
                             <Input value={formData.full_name} onChange={e => setFormData({ ...formData, full_name: e.target.value })} />
                         </div>
                         <div className="grid gap-2">
+                            <Label>Employee ID</Label>
+                            <Input
+                                value={formData.employee_id}
+                                onChange={e => setFormData({ ...formData, employee_id: e.target.value })}
+                                placeholder="e.g. EMP-001"
+                                className="font-mono"
+                            />
+                        </div>
+                        <div className="grid gap-2">
                             <Label>Role</Label>
                             <Select value={formData.role} onValueChange={v => setFormData({ ...formData, role: v })}>
                                 <SelectTrigger className="h-auto py-2"><SelectValue /></SelectTrigger>
@@ -301,8 +300,8 @@ const AdminUsersManager = () => {
                                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Select one or more</span>
                                 </div>
                                 <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                                    {departments.length > 0 ? (
-                                        departments.map(dept => (
+                                    {DEPARTMENTS.length > 0 ? (
+                                        DEPARTMENTS.map(dept => (
                                             <div key={dept.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
                                                 <Checkbox
                                                     id={`dept-${dept.id}`}
@@ -314,7 +313,7 @@ const AdminUsersManager = () => {
                                             </div>
                                         ))
                                     ) : (
-                                        <p className="text-xs text-gray-400 italic">No departments found.</p>
+                                        <p className="text-xs text-gray-400 italic">No departments configured.</p>
                                     )}
                                 </div>
                             </div>

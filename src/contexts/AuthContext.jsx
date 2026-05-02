@@ -2,7 +2,7 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { sendTelegramNotification } from '@/lib/notifier';
-import { ROLES } from '@/data/config';
+import { ROLES, DEPARTMENTS } from '@/data/config';
 import { STORAGE_KEYS } from '@/data/storageKeys';
 
 
@@ -38,12 +38,7 @@ const AuthProvider = ({ children }) => {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select(`
-                    *,
-                    users_to_departments(
-                        departments(name)
-                    )
-                `)
+                .select('*')
                 .eq('username', username)
                 .eq('password', password)
                 .eq('is_active', true)
@@ -53,11 +48,17 @@ const AuthProvider = ({ children }) => {
                 throw new Error("Invalid username or password");
             }
 
+            // departments is stored as a JSONB array of dept IDs on the users row
+            const deptIds = Array.isArray(data.departments) ? data.departments : [];
+            const deptNames = deptIds
+                .map(id => DEPARTMENTS.find(d => d.id === id)?.name)
+                .filter(Boolean);
+
             const sessionUser = {
                 id: data.id,
                 username: data.username,
                 fullName: data.full_name,
-                departments: (data.users_to_departments || []).map(ud => ud.departments?.name).filter(Boolean),
+                departments: deptNames,
                 role: data.role || ''
             };
 

@@ -1,3 +1,10 @@
+export const DEPARTMENTS = [
+    { id: 1, name: 'Chemical Analysis' },
+    { id: 2, name: 'Physical Testing' },
+    { id: 3, name: 'Soil Investigation' },
+    { id: 4, name: 'Non-Destructive Testing (NDT)' },
+];
+
 export const ROLES = {
     SUPER_ADMIN: {
         slug: 'superadmin',

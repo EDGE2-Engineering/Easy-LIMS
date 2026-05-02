@@ -424,7 +424,7 @@ const AdminCompanyCalendar = () => {
                         </TooltipContent>
                     </Tooltip>
 
-                    <h2 className="text-4xl font-black text-gray-900 tracking-tight">{format(selectedYear, 'yyyy')}</h2>
+                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">{format(selectedYear, 'yyyy')}</h2>
 
                     <Tooltip>
                         <TooltipTrigger asChild>

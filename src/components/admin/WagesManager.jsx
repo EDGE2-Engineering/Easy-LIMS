@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { DEPARTMENTS, ROLES } from '@/data/config';
 
 const WorkLogManager = () => {
     const { toast } = useToast();
@@ -74,12 +75,8 @@ const WorkLogManager = () => {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select(`
-                    *,
-                    users_to_departments(
-                        departments(name)
-                    )
-                `)
+                .select('*')
+                .neq('role', ROLES.SUPER_ADMIN.slug)
                 .order('full_name');
             if (error) throw error;
             setEmployees(data || []);
@@ -267,10 +264,11 @@ const WorkLogManager = () => {
                             <h1 className="text-xl font-bold text-gray-900 tracking-tight">{selectedEmployee.full_name || selectedEmployee.username}</h1>
                             <p className="text-gray-500 text-sm font-medium capitalize">
                                 {String(selectedEmployee.role || 'No Role').replace('_', ' ')} • {
-                                    (selectedEmployee.users_to_departments || [])
-                                        .map(ud => ud.departments?.name)
-                                        .filter(Boolean)
-                                        .join(', ') || 'No Department'
+                                    (() => {
+                                        const ids = Array.isArray(selectedEmployee.departments) ? selectedEmployee.departments : [];
+                                        const names = ids.map(id => DEPARTMENTS.find(d => d.id === id)?.name).filter(Boolean);
+                                        return names.join(', ') || 'No Department';
+                                    })()
                                 }
                             </p>
                         </div>
@@ -569,10 +567,10 @@ const WorkLogManager = () => {
                                     <div className="flex items-center gap-2 mt-0.5">
                                         <Badge variant="outline" className="text-[10px] uppercase font-bold py-0 h-4">{String(emp.role || 'No Role').replace('_', ' ')}</Badge>
                                         <span className="text-[11px] text-gray-400 font-medium truncate">
-                                            {(emp.users_to_departments || [])
-                                                .map(ud => ud.departments?.name)
-                                                .filter(Boolean)
-                                                .join(', ')}
+                                            {(() => {
+                                                const ids = Array.isArray(emp.departments) ? emp.departments : [];
+                                                return ids.map(id => DEPARTMENTS.find(d => d.id === id)?.name).filter(Boolean).join(', ');
+                                            })()}
                                         </span>
                                     </div>
                                 </div>
