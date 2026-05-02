@@ -66,6 +66,7 @@ export const VIEWS = {
     ACCOUNTS: 'Accounts',
     EXPENSES: 'Expenses',
     WORK_LOG: 'Work Log',
+    LEAVE_MANAGEMENT: 'Leave Management',
     SETTINGS: 'Settings'
 };
 
