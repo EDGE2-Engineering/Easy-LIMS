@@ -375,7 +375,7 @@ const WorkLogManager = () => {
     );
 
     const renderLeaveCalendar = () => {
-        const months = Array.from({ length: 12 }, (_, i) => i);
+        const monthIndices = Array.from({ length: 12 }, (_, i) => i);
         const leavesByDate = leaves.reduce((acc, l) => {
             acc[l.leave_date] = l;
             return acc;
@@ -463,7 +463,7 @@ const WorkLogManager = () => {
 
                 {leaveView === 'calendar' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {months.map(m => {
+                        {monthIndices.map(m => {
                             const firstDay = new Date(selectedYear, m, 1).getDay();
                             const daysInMonth = new Date(selectedYear, m + 1, 0).getDate();
                             const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date(selectedYear, m, 1));
@@ -513,54 +513,131 @@ const WorkLogManager = () => {
                         })}
                     </div>
                 ) : (
-                    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-100">
-                                <tr>
-                                    <th className="text-left p-5 text-[11px] font-black uppercase tracking-widest text-gray-400">Date</th>
-                                    <th className="text-left p-5 text-[11px] font-black uppercase tracking-widest text-gray-400">Comments</th>
-                                    <th className="text-right p-5 text-[11px] font-black uppercase tracking-widest text-gray-400">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                                {loadingLeaves ? (
-                                    <tr><td colSpan="3" className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary/20" /></td></tr>
-                                ) : leaves.length === 0 ? (
-                                    <tr><td colSpan="3" className="p-12 text-center text-gray-400 font-medium">No leave records for this year.</td></tr>
-                                ) : (
-                                    leaves.map(l => (
-                                        <tr key={l.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="p-5 font-black text-gray-900">{l.leave_date}</td>
-                                            <td className="p-5 text-gray-500 font-medium italic">{l.comments || '—'}</td>
-                                            <td className="p-5 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => {
-                                                            setEditingLeave(l);
-                                                            setLeaveComment(l.comments || '');
-                                                            setIsEditLeaveDialogOpen(true);
-                                                        }}
-                                                        className="text-gray-400 hover:text-primary rounded-xl"
-                                                    >
-                                                        <Edit className="w-4 h-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => setDeleteTarget(l)}
-                                                        className="text-gray-400 hover:text-red-500 rounded-xl"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                    <div className="space-y-4">
+                        {/* Original Filter Row moved to List View */}
+                        <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex flex-wrap items-center gap-4 animate-in fade-in duration-500">
+                            <div className="flex items-center gap-2">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Month</Label>
+                                <Select 
+                                    value={historyFilters.month} 
+                                    onValueChange={(val) => handleFilterChange('month', val)}
+                                >
+                                    <SelectTrigger className="w-32 h-9 rounded-xl border-gray-100 text-xs font-bold">
+                                        <SelectValue placeholder="Select Month" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Months</SelectItem>
+                                        {months.map((m, i) => (
+                                            <SelectItem key={i} value={i.toString()}>{m}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Year</Label>
+                                <Select 
+                                    value={historyFilters.year} 
+                                    onValueChange={(val) => {
+                                        handleFilterChange('year', val);
+                                        if (val !== 'all') {
+                                            const newYear = parseInt(val);
+                                            setSelectedYear(newYear);
+                                            fetchLeaves(selectedEmployee.id, newYear);
+                                        }
+                                    }}
+                                >
+                                    <SelectTrigger className="w-24 h-9 rounded-xl border-gray-100 text-xs font-bold">
+                                        <SelectValue placeholder="Select Year" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Years</SelectItem>
+                                        {years.map(y => (
+                                            <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => {
+                                    setHistoryFilters({ month: 'all', year: 'all' });
+                                    setSelectedYear(new Date().getFullYear());
+                                    fetchLeaves(selectedEmployee.id, new Date().getFullYear());
+                                }}
+                                className="text-xs font-bold text-gray-500 hover:text-primary rounded-xl"
+                            >
+                                <RotateCcw className="w-3.5 h-3.5 mr-2" /> Reset
+                            </Button>
+                        </div>
+
+                        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <table className="w-full">
+                                <thead className="bg-gray-50 border-b border-gray-100">
+                                    <tr>
+                                        <th className="text-left p-5 text-[11px] font-black uppercase tracking-widest text-gray-400">Date</th>
+                                        <th className="text-left p-5 text-[11px] font-black uppercase tracking-widest text-gray-400">Comments</th>
+                                        <th className="text-right p-5 text-[11px] font-black uppercase tracking-widest text-gray-400">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {loadingLeaves ? (
+                                        <tr><td colSpan="3" className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary/20" /></td></tr>
+                                    ) : (
+                                        leaves
+                                            .filter(l => {
+                                                const leaveDate = new Date(l.leave_date);
+                                                const matchesMonth = historyFilters.month === 'all' || leaveDate.getMonth() === parseInt(historyFilters.month);
+                                                const matchesYear = historyFilters.year === 'all' || leaveDate.getFullYear() === parseInt(historyFilters.year);
+                                                return matchesMonth && matchesYear;
+                                            })
+                                            .length === 0 ? (
+                                                <tr><td colSpan="3" className="p-12 text-center text-gray-400 font-medium">No leave records found for the selected filters.</td></tr>
+                                            ) : (
+                                                leaves
+                                                    .filter(l => {
+                                                        const leaveDate = new Date(l.leave_date);
+                                                        const matchesMonth = historyFilters.month === 'all' || leaveDate.getMonth() === parseInt(historyFilters.month);
+                                                        const matchesYear = historyFilters.year === 'all' || leaveDate.getFullYear() === parseInt(historyFilters.year);
+                                                        return matchesMonth && matchesYear;
+                                                    })
+                                                    .map(l => (
+                                                        <tr key={l.id} className="hover:bg-gray-50/50 transition-colors">
+                                                            <td className="p-5 font-black text-gray-900">{l.leave_date}</td>
+                                                            <td className="p-5 text-gray-500 font-medium italic">{l.comments || '—'}</td>
+                                                            <td className="p-5 text-right">
+                                                                <div className="flex items-center justify-end gap-2">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() => {
+                                                                            setEditingLeave(l);
+                                                                            setLeaveComment(l.comments || '');
+                                                                            setIsEditLeaveDialogOpen(true);
+                                                                        }}
+                                                                        className="text-gray-400 hover:text-primary rounded-xl"
+                                                                    >
+                                                                        <Edit className="w-4 h-4" />
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() => setDeleteTarget(l)}
+                                                                        className="text-gray-400 hover:text-red-500 rounded-xl"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                            )
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
 
@@ -636,215 +713,16 @@ const WorkLogManager = () => {
                     </Tooltip>
                 </div>
 
-                {/* Filters Section */}
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-wrap items-end gap-4">
-                    <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5" /> Filter Year
-                        </Label>
-                        <Select value={historyFilters.year} onValueChange={(v) => handleFilterChange('year', v)}>
-                            <SelectTrigger className="w-32 h-10 rounded-xl bg-gray-50 border-transparent focus:ring-primary font-medium">
-                                <SelectValue placeholder="All Years" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl">
-                                <SelectItem value="all">All Years</SelectItem>
-                                {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
+
+
+                {/* Simplified view: Only Leave Records */}
+                <div className="space-y-6 animate-in fade-in duration-500">
+                    <div className="flex items-center gap-2">
+                        <CalendarOff className="w-4 h-4 text-primary" />
+                        <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Leave Records</h3>
                     </div>
-                    <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <Filter className="w-3.5 h-3.5" /> Filter Month
-                        </Label>
-                        <Select value={historyFilters.month} onValueChange={(v) => handleFilterChange('month', v)}>
-                            <SelectTrigger className="w-40 h-10 rounded-xl bg-gray-50 border-transparent focus:ring-primary font-medium">
-                                <SelectValue placeholder="All Months" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl">
-                                <SelectItem value="all">All Months</SelectItem>
-                                {months.map((m, i) => <SelectItem key={m} value={i.toString()}>{m}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    {(historyFilters.month !== 'all' || historyFilters.year !== 'all') && (
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => {
-                                const reset = { month: 'all', year: 'all' };
-                                setHistoryFilters(reset);
-                                fetchAttendanceHistory(selectedEmployee.id, 1, reset);
-                            }}
-                            className="h-10 text-gray-400 hover:text-red-500 rounded-xl"
-                        >
-                            <X className="w-4 h-4 mr-2" /> Clear
-                        </Button>
-                    )}
+                    {renderLeaveCalendar()}
                 </div>
-
-                {/* Tabs for Attendance vs Leave */}
-                <Tabs defaultValue="attendance" className="space-y-6">
-                    <TabsList className="bg-gray-100/50 p-1 rounded-2xl border border-gray-100 flex self-start">
-                        <TabsTrigger value="attendance" className="rounded-xl px-6 py-2 font-black text-xs data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">
-                            <ClipboardCheck className="w-3.5 h-3.5 mr-2" /> Attendance Log
-                        </TabsTrigger>
-                        <TabsTrigger value="leaves" className="rounded-xl px-6 py-2 font-black text-xs data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">
-                            <CalendarOff className="w-3.5 h-3.5 mr-2" /> Leave Records
-                        </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="attendance" className="space-y-6 animate-in fade-in duration-500">
-                        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="bg-gray-50 border-b border-gray-100">
-                                            <th className="text-left p-5 text-[11px] font-black uppercase tracking-widest text-gray-400">Month</th>
-                                            <th className="text-left p-5 text-[11px] font-black uppercase tracking-widest text-gray-400">Year</th>
-                                            <th className="text-left p-5 text-[11px] font-black uppercase tracking-widest text-gray-400">Attendance Ratio</th>
-                                            <th className="text-left p-5 text-[11px] font-black uppercase tracking-widest text-gray-400">Performance</th>
-                                            <th className="text-right p-5 text-[11px] font-black uppercase tracking-widest text-gray-400">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-50">
-                                        {historyLoading ? (
-                                            <tr><td colSpan="5" className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary/20" /></td></tr>
-                                        ) : (
-                                            attendanceHistory.map((entry) => {
-                                                const percentage = ((entry.days_worked / entry.total_working_days) * 100);
-                                                return (
-                                                    <tr 
-                                                        key={entry.id} 
-                                                        onClick={() => handleEditEntry(entry)}
-                                                        className="group hover:bg-gray-50/50 transition-colors cursor-pointer"
-                                                    >
-                                                        <td className="p-5">
-                                                            <span className="font-bold text-gray-900">{months[entry.month]}</span>
-                                                        </td>
-                                                        <td className="p-5">
-                                                            <span className="text-gray-500 font-medium">{entry.year}</span>
-                                                        </td>
-                                                        <td className="p-5">
-                                                            <div className="flex flex-col">
-                                                                <span className="text-sm font-bold text-gray-700">{entry.days_worked} / {entry.total_working_days}</span>
-                                                                <span className="text-[10px] text-gray-400 font-bold uppercase">Working Days</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="p-5">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden hidden sm:block">
-                                                                    <div 
-                                                                        className={`h-full rounded-full ${percentage >= 90 ? 'bg-green-500' : percentage >= 75 ? 'bg-blue-500' : 'bg-orange-500'}`} 
-                                                                        style={{ width: `${percentage}%` }}
-                                                                    />
-                                                                </div>
-                                                                <Badge variant="secondary" className={`text-[10px] py-0 border-transparent ${percentage >= 90 ? 'bg-green-50 text-green-700' : percentage >= 75 ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'}`}>
-                                                                    {percentage.toFixed(0)}%
-                                                                </Badge>
-                                                            </div>
-                                                        </td>
-                                                        <td className="p-5 text-right">
-                                                            <div className="flex items-center justify-end gap-2 text-primary opacity-100 transition-all">
-                                                                <Edit className="w-4 h-4" />
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })
-                                        )}
-                                        {!historyLoading && attendanceHistory.length === 0 && (
-                                            <tr><td colSpan="5" className="p-12 text-center text-gray-400 font-medium">No records found matching the criteria.</td></tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Pagination */}
-                            {totalCount > pageSize && (
-                                <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-                                    <span className="text-xs text-gray-500 font-medium">
-                                        Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount}
-                                    </span>
-                                    <div className="flex items-center gap-2">
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm" 
-                                            onClick={() => {
-                                                const newPage = currentPage - 1;
-                                                setCurrentPage(newPage);
-                                                fetchAttendanceHistory(selectedEmployee.id, newPage);
-                                            }}
-                                            disabled={currentPage === 1}
-                                            className="rounded-lg h-8 w-8 p-0"
-                                        >
-                                            <ChevronLeft className="w-4 h-4" />
-                                        </Button>
-                                        <span className="text-xs font-bold text-gray-600 px-2">{currentPage}</span>
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm" 
-                                            onClick={() => {
-                                                const newPage = currentPage + 1;
-                                                setCurrentPage(newPage);
-                                                fetchAttendanceHistory(selectedEmployee.id, newPage);
-                                            }}
-                                            disabled={currentPage * pageSize >= totalCount}
-                                            className="rounded-lg h-8 w-8 p-0"
-                                        >
-                                            <ChevronRight className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* New Leave Details List for the Attendance Log tab */}
-                            <div className="border-t border-gray-100 p-6 bg-gray-50/30">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-2">
-                                        <CalendarOff className="w-4 h-4 text-orange-500" />
-                                        <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Leave Details — {selectedYear}</h3>
-                                    </div>
-                                    <Badge variant="outline" className="text-[10px] font-black bg-white">{leaves.length} Total Leaves</Badge>
-                                </div>
-
-                                {leaves.length === 0 ? (
-                                    <div className="p-8 text-center text-gray-400 italic text-sm bg-white rounded-2xl border border-dashed border-gray-200">
-                                        No leave records found for {selectedYear}.
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {leaves.map(l => {
-                                            const dateObj = new Date(l.leave_date);
-                                            const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(dateObj);
-                                            return (
-                                                <div key={l.id} className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
-                                                    <div className="flex flex-col items-center justify-center bg-orange-50 w-12 h-12 rounded-xl shrink-0">
-                                                        <span className="text-[10px] font-black text-orange-600 uppercase leading-none">{dayName.slice(0, 3)}</span>
-                                                        <span className="text-lg font-black text-orange-700 leading-none mt-1">{dateObj.getDate()}</span>
-                                                    </div>
-                                                    <div className="flex-grow min-w-0">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-xs font-black text-gray-900">
-                                                                {new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(dateObj)}
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-[11px] text-gray-500 font-medium italic truncate mt-0.5">
-                                                            {l.comments || 'No comments provided'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent value="leaves" className="animate-in fade-in duration-500">
-                        {renderLeaveCalendar()}
-                    </TabsContent>
-                </Tabs>
 
                 {/* AlertDialog for Leave Deletion */}
                 <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
