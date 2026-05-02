@@ -67,9 +67,10 @@ const AdminUsersManager = () => {
     };
 
     const filteredUsers = users.filter(u =>
-        u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (u.full_name && u.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (u.role && u.role.toLowerCase().includes(searchTerm.toLowerCase()))
+        (u.role && u.role.toLowerCase().includes(searchTerm.toLowerCase()))) &&
+        u.role !== ROLES.SUPER_ADMIN.slug
     );
 
     const handleNewUser = () => {
@@ -114,7 +115,7 @@ const AdminUsersManager = () => {
 
             // Sync Departments
             await supabase.from('users_to_departments').delete().eq('user_id', userId);
-            if (formData.departments.length > 0) {
+            if (formData.role === ROLES.TECHNICIAN.slug && formData.departments.length > 0) {
                 const deptMappings = formData.departments.map(deptId => ({
                     user_id: userId,
                     department_id: deptId
@@ -277,43 +278,47 @@ const AdminUsersManager = () => {
                             <Select value={formData.role} onValueChange={v => setFormData({ ...formData, role: v })}>
                                 <SelectTrigger className="h-auto py-2"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    {Object.entries(ROLES).map(([key, role]) => (
-                                        <SelectItem key={role.slug} value={role.slug} className="py-2">
-                                            <div className="flex flex-col gap-0.5">
-                                                <span className="font-bold text-xs">{role.label}</span>
-                                                <span className="text-[10px] text-gray-500 leading-tight whitespace-normal max-w-[280px]">
-                                                    {role.description}
-                                                </span>
-                                            </div>
-                                        </SelectItem>
-                                    ))}
+                                    {Object.entries(ROLES)
+                                        .filter(([key]) => key !== 'SUPER_ADMIN')
+                                        .map(([key, role]) => (
+                                            <SelectItem key={role.slug} value={role.slug} className="py-2">
+                                                <div className="flex flex-col gap-0.5 text-left">
+                                                    <span className="font-bold text-xs">{role.label}</span>
+                                                    <span className="text-[10px] text-gray-500 leading-tight whitespace-normal max-w-[280px]">
+                                                        {role.description}
+                                                    </span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        <div className="space-y-3 border-t pt-4">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-primary font-bold">Departments</Label>
-                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Select one or more</span>
+                        {formData.role === ROLES.TECHNICIAN.slug && (
+                            <div className="space-y-3 border-t pt-4">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-primary font-bold">Departments</Label>
+                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Select one or more</span>
+                                </div>
+                                <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                                    {departments.length > 0 ? (
+                                        departments.map(dept => (
+                                            <div key={dept.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                                                <Checkbox
+                                                    id={`dept-${dept.id}`}
+                                                    checked={formData.departments.includes(dept.id)}
+                                                    onCheckedChange={() => handleDepartmentToggle(dept.id)}
+                                                    className="rounded-md"
+                                                />
+                                                <Label htmlFor={`dept-${dept.id}`} className="text-xs font-medium cursor-pointer flex-grow">{dept.name}</Label>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-xs text-gray-400 italic">No departments found.</p>
+                                    )}
+                                </div>
                             </div>
-                            <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                                {departments.length > 0 ? (
-                                    departments.map(dept => (
-                                        <div key={dept.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                                            <Checkbox
-                                                id={`dept-${dept.id}`}
-                                                checked={formData.departments.includes(dept.id)}
-                                                onCheckedChange={() => handleDepartmentToggle(dept.id)}
-                                                className="rounded-md"
-                                            />
-                                            <Label htmlFor={`dept-${dept.id}`} className="text-xs font-medium cursor-pointer flex-grow">{dept.name}</Label>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <p className="text-xs text-gray-400 italic">No departments found.</p>
-                                )}
-                            </div>
-                        </div>
+                        )}
 
 
 
