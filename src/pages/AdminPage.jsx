@@ -26,10 +26,11 @@ const AdminPage = () => {
     const siteName = getSiteContent().global?.siteName;
     const { tab, id } = useParams();
     const navigate = useNavigate();
-    const [mainTab, setMainTab] = useState(tab || 'jobs');
+    const [mainTab, setMainTab] = useState(tab || 'dashboard');
     const { canView } = usePermissions();
 
     const URL_TO_VIEW = {
+        dashboard: VIEWS.DASHBOARD,
         jobs: VIEWS.JOBS,
         expenses: VIEWS.EXPENSES,
         work_log: VIEWS.WORK_LOG,
@@ -37,12 +38,14 @@ const AdminPage = () => {
         inward_register: VIEWS.MATERIAL_INWARD,
         testing: VIEWS.TESTING,
         accounts: VIEWS.ACCOUNTS,
+        approvals: VIEWS.APPROVALS,
+        settings: VIEWS.SETTINGS,
+        users: VIEWS.SETTINGS,
+        system: VIEWS.SETTINGS,
         clients: VIEWS.SETTINGS,
         field_tests: VIEWS.SETTINGS,
         lab_tests: VIEWS.SETTINGS,
-        sampling: VIEWS.SETTINGS,
-        users: VIEWS.SETTINGS,
-        system: VIEWS.SETTINGS
+        sampling: VIEWS.SETTINGS
     };
 
 

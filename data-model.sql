@@ -78,6 +78,7 @@ CREATE TABLE public.documents (
 );
 CREATE TABLE public.employee_leaves (
   leave_date date NOT NULL,
+  leave_type text, -- Sick, Casual, Comp Off, LOP
   comments text,
   created_at timestamp with time zone DEFAULT now(),
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
@@ -345,3 +346,54 @@ CREATE TABLE public.users (
   employee_id text NOT NULL UNIQUE,
   CONSTRAINT users_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.workflow_config (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  config jsonb NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT workflow_config_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.request_approvals (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  request_type text NOT NULL, -- e.g., 'LEAVE', 'EXPENSE_CLAIM', 'GENERAL'
+  requester_id bigint NOT NULL,
+  request_data jsonb NOT NULL, -- Stores type-specific data (dates, amounts, reason, leaveType)
+  status text NOT NULL DEFAULT 'PENDING'::text CHECK (status = ANY (ARRAY['PENDING'::text, 'APPROVED'::text, 'REJECTED'::text])),
+  admin_remarks text,
+  reviewed_by bigint,
+  reviewed_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT request_approvals_pkey PRIMARY KEY (id),
+  CONSTRAINT request_approvals_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public.users(id),
+  CONSTRAINT request_approvals_reviewed_by_fkey FOREIGN KEY (reviewed_by) REFERENCES public.users(id)
+);
+
+-- RLS Policies for request_approvals
+-- Note: Replace with actual Supabase SQL execution if needed
+-- ALTER TABLE public.request_approvals ENABLE ROW LEVEL SECURITY;
+
+-- CREATE POLICY "Users can create their own requests" ON public.request_approvals
+-- FOR INSERT WITH CHECK (auth.uid() = requester_id);
+
+-- CREATE POLICY "Users can view their own requests" ON public.request_approvals
+-- FOR SELECT USING (auth.uid() = requester_id);
+
+-- CREATE POLICY "Admins and HR can view all requests" ON public.request_approvals
+-- FOR SELECT USING (
+--   EXISTS (
+--     SELECT 1 FROM public.users 
+--     WHERE users.id = auth.uid() 
+--     AND (users.role = 'SUPER_ADMIN' OR users.role = 'ADMIN' OR users.role = 'HUMAN_RESOURCE')
+--   )
+-- );
+
+-- CREATE POLICY "Admins and HR can update status" ON public.request_approvals
+-- FOR UPDATE USING (
+--   EXISTS (
+--     SELECT 1 FROM public.users 
+--     WHERE users.id = auth.uid() 
+--     AND (users.role = 'SUPER_ADMIN' OR users.role = 'ADMIN' OR users.role = 'HUMAN_RESOURCE')
+--   )
+-- );

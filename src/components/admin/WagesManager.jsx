@@ -677,12 +677,12 @@ const LeavesManager = () => {
                                     <h3 className="font-bold text-gray-900 truncate">{emp.full_name || emp.username}</h3>
                                     <div className="flex items-center gap-2 mt-0.5">
                                         <Badge variant="outline" className="text-[10px] uppercase font-bold py-0 h-4">{String(emp.role || 'No Role').replace('_', ' ')}</Badge>
-                                        <span className="text-[11px] text-gray-400 font-medium truncate">
+                                        {/* <span className="text-[11px] text-gray-400 font-medium truncate">
                                             {(() => {
                                                 const ids = Array.isArray(emp.departments) ? emp.departments : [];
                                                 return ids.map(id => DEPARTMENTS.find(d => d.id === id)?.name).filter(Boolean).join(', ');
                                             })()}
-                                        </span>
+                                        </span> */}
                                     </div>
                                 </div>
                                 <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-primary transition-colors" />

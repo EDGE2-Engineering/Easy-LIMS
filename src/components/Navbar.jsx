@@ -2,12 +2,26 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck, Calculator, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness, CalendarOff } from 'lucide-react';
+import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck, Calculator, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness, CalendarOff, LayoutDashboard, CheckCircle2, Calendar, Loader2, Send } from 'lucide-react';
 import { getSiteContent, VIEWS } from '@/data/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { supabase } from '@/lib/customSupabaseClient';
+import { 
+    Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,6 +47,14 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [settingsDropdownOpen, setSettingsDropdownOpen] = useState(false);
+  const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
+  const [requestLoading, setRequestLoading] = useState(false);
+  const [leaveRequest, setLeaveRequest] = useState({
+      startDate: '',
+      endDate: '',
+      leaveType: 'Casual Leave',
+      reason: ''
+  });
   const location = useLocation();
 
   const handleLogout = () => {
@@ -45,11 +67,50 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     setLogoutDialogOpen(false);
   };
 
+  const handleLeaveRequest = async (e) => {
+    e.preventDefault();
+    setRequestLoading(true);
+    try {
+        const { error } = await supabase
+            .from('request_approvals')
+            .insert({
+                request_type: 'LEAVE',
+                requester_id: user.id,
+                request_data: {
+                    startDate: leaveRequest.startDate,
+                    endDate: leaveRequest.endDate,
+                    leaveType: leaveRequest.leaveType,
+                    reason: leaveRequest.reason
+                },
+                status: 'PENDING'
+            });
+
+        if (error) throw error;
+
+        toast({
+            title: "Request Submitted",
+            description: "Your leave request has been sent for approval.",
+        });
+        setIsRequestDialogOpen(false);
+        setLeaveRequest({ startDate: '', endDate: '', leaveType: 'Casual Leave', reason: '' });
+    } catch (error) {
+        console.error("Error submitting request:", error);
+        toast({
+            title: "Error",
+            description: "Failed to submit leave request.",
+            variant: "destructive"
+        });
+    } finally {
+        setRequestLoading(false);
+    }
+};
+
   const ALL_NAV_ITEMS = [
+    { view: VIEWS.DASHBOARD, path: '/settings/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { view: VIEWS.JOBS, path: '/settings/jobs', label: 'Jobs', icon: Briefcase },
     { view: VIEWS.EXPENSES, path: '/settings/expenses', label: 'Expenses', icon: IndianRupee },
     { id: 'work_log', view: VIEWS.WORK_LOG, path: '/settings/work_log', label: 'Leaves', icon: ClipboardCheck },
-    { id: 'utilities', view: VIEWS.UTILITIES, path: '/settings/utilities', label: 'Utilities', icon: Calculator },
+    { view: VIEWS.APPROVALS, path: '/settings/approvals', label: 'Approvals', icon: CheckCircle2 },
   ];
 
   const SETTINGS_SUB_ITEMS = [
@@ -57,7 +118,8 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     { id: 'field_tests', label: 'Field Tests', icon: Drill, path: '/settings/field_tests', description: 'Configure on-site testing services' },
     { id: 'lab_tests', label: 'Lab Tests', icon: TestTube, path: '/settings/lab_tests', description: 'Manage laboratory testing parameters' },
     { id: 'sampling', label: 'Sampling', icon: SwatchBook, path: '/settings/sampling', description: 'Configure material sampling methods' },
-    { id: 'system', label: 'System', icon: Cpu, path: '/settings/system', description: 'General system settings and users' }
+    { id: 'system', label: 'System', icon: Cpu, path: '/settings/system', description: 'General system settings and users' },
+    { id: 'utilities', label: 'Utilities', icon: Calculator, path: '/settings/utilities', description: 'Access helpful calculation utilities' }
   ];
 
   const navItems = ALL_NAV_ITEMS.filter(item => canView(item.view));
@@ -72,7 +134,8 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
         location.pathname.includes('/reports') ||
         location.pathname.includes('/accounts') ||
         location.pathname.includes('/work_log') ||
-        location.pathname.includes('/utilities');
+        location.pathname.includes('/dashboard') ||
+        location.pathname.includes('/approvals');
 
       return (location.pathname.startsWith('/settings') && !isManagementTab) ||
         location.pathname.startsWith('/service/') ||
@@ -114,10 +177,12 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
             <TooltipProvider>
               {navItems.map((item) => {
                 const descriptions = {
+                  '/settings/dashboard': 'Overview of laboratory operations and metrics',
                   '/settings/jobs': 'Manage laboratory testing jobs',
                   '/settings/expenses': 'Track company expenses and payments',
                   '/settings/work_log': 'Manage employee leave records and absences',
                   '/settings/utilities': 'Access helpful calculation utilities',
+                  '/settings/approvals': 'Manage employee requests and approvals',
                 };
 
                 return (
@@ -245,6 +310,20 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Username</p>
                           <p className="text-sm font-bold text-gray-800 truncate">{user?.username}</p>
                         </div>
+                        
+                        <button
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            setIsRequestDialogOpen(true);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                            <CalendarOff className="w-4 h-4 text-indigo-600" />
+                          </div>
+                          Apply for Leave
+                        </button>
+
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -381,6 +460,86 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Leave Request Dialog */}
+      <Dialog open={isRequestDialogOpen} onOpenChange={setIsRequestDialogOpen}>
+          <DialogContent className="sm:max-w-[425px] rounded-[32px] border-none shadow-2xl p-8">
+              <DialogHeader>
+                  <DialogTitle className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-xl">
+                          <Calendar className="w-6 h-6 text-primary" />
+                      </div>
+                      Apply for Leave
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-400 font-medium">
+                      Your request will be sent to the administrator for approval.
+                  </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleLeaveRequest} className="space-y-6 mt-6">
+                  <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                          <Label htmlFor="startDate" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Start Date</Label>
+                          <Input 
+                              id="startDate" 
+                              type="date" 
+                              required
+                              value={leaveRequest.startDate}
+                              onChange={(e) => setLeaveRequest({...leaveRequest, startDate: e.target.value})}
+                              className="rounded-xl border-gray-100 bg-gray-50 focus:bg-white transition-all h-12 font-bold text-xs" 
+                          />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="endDate" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">End Date</Label>
+                          <Input 
+                              id="endDate" 
+                              type="date" 
+                              required
+                              value={leaveRequest.endDate}
+                              onChange={(e) => setLeaveRequest({...leaveRequest, endDate: e.target.value})}
+                              className="rounded-xl border-gray-100 bg-gray-50 focus:bg-white transition-all h-12 font-bold text-xs" 
+                          />
+                      </div>
+                  </div>
+                  <div className="space-y-2">
+                      <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Leave Type</Label>
+                      <Select 
+                        value={leaveRequest.leaveType} 
+                        onValueChange={(val) => setLeaveRequest({...leaveRequest, leaveType: val})}
+                      >
+                        <SelectTrigger className="rounded-xl border-gray-100 bg-gray-50 focus:bg-white transition-all h-12 font-bold text-xs">
+                          <SelectValue placeholder="Select Leave Type" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-none shadow-xl">
+                          <SelectItem value="Sick Leave">Sick Leave</SelectItem>
+                          <SelectItem value="Casual Leave">Casual Leave</SelectItem>
+                          <SelectItem value="Compensatory Off">Compensatory Off</SelectItem>
+                          <SelectItem value="Loss of Pay (LOP)">Loss of Pay (LOP)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                  </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="reason" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Reason / Comments</Label>
+                      <Textarea 
+                          id="reason" 
+                          placeholder="Briefly describe the reason for leave..." 
+                          required
+                          value={leaveRequest.reason}
+                          onChange={(e) => setLeaveRequest({...leaveRequest, reason: e.target.value})}
+                          className="rounded-xl border-gray-100 bg-gray-50 focus:bg-white transition-all min-h-[100px] font-medium text-sm"
+                      />
+                  </div>
+                  <DialogFooter className="pt-4">
+                      <Button 
+                          type="submit" 
+                          disabled={requestLoading}
+                          className="w-full rounded-xl h-10 bg-primary hover:bg-primary-dark text-white font-black shadow-lg shadow-primary/20 gap-3"
+                      >
+                          {requestLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                          Submit Request
+                      </Button>
+                  </DialogFooter>
+              </form>
+          </DialogContent>
+      </Dialog>
 
     </nav>
   );
