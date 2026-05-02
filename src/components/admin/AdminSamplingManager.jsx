@@ -469,6 +469,14 @@ const AdminSamplingManager = () => {
                                                 <span className="font-semibold text-blue-900">HSN Code:</span>{' '}
                                                 {item.hsnCode || '-'}
                                             </p>
+                                            <p>
+                                                <span className="font-semibold text-blue-900">Technicals:</span>{' '}
+                                                {Array.isArray(item.techList) && item.techList.length > 0 ? item.techList.join(', ') : '-'}
+                                            </p>
+                                            <p>
+                                                <span className="font-semibold text-blue-900">T&C:</span>{' '}
+                                                {Array.isArray(item.tcList) && item.tcList.length > 0 ? item.tcList.join(', ') : '-'}
+                                            </p>
                                         </div>
                                     </td>
                                     <td className="py-1 px-1 text-right">

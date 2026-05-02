@@ -591,6 +591,14 @@ const AdminServicesManager = () => {
                                             <span className="font-semibold text-blue-900">HSN Code:</span>{' '}
                                             {service.hsnCode || '-'}
                                         </p>
+                                        <p>
+                                            <span className="font-semibold text-blue-900">Technicals:</span>{' '}
+                                            {Array.isArray(service.techList) && service.techList.length > 0 ? service.techList.join(', ') : '-'}
+                                        </p>
+                                        <p>
+                                            <span className="font-semibold text-blue-900">T&C:</span>{' '}
+                                            {Array.isArray(service.tcList) && service.tcList.length > 0 ? service.tcList.join(', ') : '-'}
+                                        </p>
                                     </div>
                                 </td>
 

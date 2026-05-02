@@ -15,6 +15,7 @@ const SamplingProvider = ({ children }) => {
             id: s.id,
             serviceType: s.service_type || '',
             materials: (() => {
+                if (s.sampling_to_materials) return s.sampling_to_materials.map(m => m.materials?.name).filter(Boolean);
                 if (Array.isArray(s.materials)) return s.materials;
                 if (typeof s.materials === 'string' && s.materials.trim().startsWith('[') && s.materials.trim().endsWith(']')) {
                     try { return JSON.parse(s.materials); } catch (e) { return [s.materials]; }
@@ -28,6 +29,7 @@ const SamplingProvider = ({ children }) => {
             price: Number(s.price) || 0,
             hsnCode: s.hsn_code || '',
             tcList: (() => {
+                if (s.sampling_to_terms_conditions) return s.sampling_to_terms_conditions.map(t => t.terms_and_conditions?.type).filter(Boolean);
                 if (Array.isArray(s.tc_list)) return s.tc_list;
                 if (typeof s.tc_list === 'string' && s.tc_list.trim().startsWith('[') && s.tc_list.trim().endsWith(']')) {
                     try { return JSON.parse(s.tc_list); } catch (e) { return [s.tc_list]; }
@@ -35,6 +37,7 @@ const SamplingProvider = ({ children }) => {
                 return s.tc_list ? [s.tc_list] : [];
             })(),
             techList: (() => {
+                if (s.sampling_to_technicals) return s.sampling_to_technicals.map(t => t.technicals?.type).filter(Boolean);
                 if (Array.isArray(s.tech_list)) return s.tech_list;
                 if (typeof s.tech_list === 'string' && s.tech_list.trim().startsWith('[') && s.tech_list.trim().endsWith(']')) {
                     try { return JSON.parse(s.tech_list); } catch (e) { return [s.tech_list]; }
@@ -63,7 +66,12 @@ const SamplingProvider = ({ children }) => {
         try {
             const { data, error } = await supabase
                 .from('sampling')
-                .select('*')
+                .select(`
+                    *,
+                    sampling_to_materials ( materials ( name ) ),
+                    sampling_to_technicals ( technicals ( type ) ),
+                    sampling_to_terms_conditions ( terms_and_conditions ( type ) )
+                `)
                 .order('created_at', { ascending: true });
 
             if (error) {

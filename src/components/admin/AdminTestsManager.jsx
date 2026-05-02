@@ -583,6 +583,14 @@ const AdminTestsManager = () => {
                                             <span className="font-semibold text-blue-900">HSN Code:</span>{' '}
                                             {test.hsnCode || '-'}
                                         </p>
+                                        <p>
+                                            <span className="font-semibold text-blue-900">Technicals:</span>{' '}
+                                            {Array.isArray(test.techList) && test.techList.length > 0 ? test.techList.join(', ') : '-'}
+                                        </p>
+                                        <p>
+                                            <span className="font-semibold text-blue-900">T&C:</span>{' '}
+                                            {Array.isArray(test.tcList) && test.tcList.length > 0 ? test.tcList.join(', ') : '-'}
+                                        </p>
 
                                     </div>
                                 </td>

@@ -30,8 +30,16 @@ const TestsProvider = ({ children }) => {
             numDays: Number(t.num_days || t.numDays) || 0,
             price: Number(t.price) || 0,
             hsnCode: t.hsn_code || t.hsnCode || '',
-            tcList: t.tc_list || t.tcList || [],
-            techList: t.tech_list || t.techList || [],
+            tcList: (() => {
+                if (t.test_to_terms_conditions) return t.test_to_terms_conditions.map(x => x.terms_and_conditions?.type).filter(Boolean);
+                if (Array.isArray(t.tc_list || t.tcList)) return t.tc_list || t.tcList;
+                return t.tc_list || t.tcList || [];
+            })(),
+            techList: (() => {
+                if (t.test_to_technicals) return t.test_to_technicals.map(x => x.technicals?.type).filter(Boolean);
+                if (Array.isArray(t.tech_list || t.techList)) return t.tech_list || t.techList;
+                return t.tech_list || t.techList || [];
+            })(),
             createdAt: t.created_at || new Date().toISOString()
         };
     }, []);
@@ -58,7 +66,11 @@ const TestsProvider = ({ children }) => {
         try {
             const { data, error } = await supabase
                 .from('tests')
-                .select('*')
+                .select(`
+                    *,
+                    test_to_technicals ( technicals ( type ) ),
+                    test_to_terms_conditions ( terms_and_conditions ( type ) )
+                `)
                 .order('created_at', { ascending: true });
 
             if (error) {

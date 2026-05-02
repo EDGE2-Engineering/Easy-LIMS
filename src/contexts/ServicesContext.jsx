@@ -24,8 +24,16 @@ const ServicesProvider = ({ children }) => {
             numBHs: Number(s.num_bhs ?? s.numBHs ?? 0) || 0,
             measure: s.measure || s.measureType || 'NA',
             hsnCode: s.hsn_code || s.hsnCode || '',
-            tcList: s.tc_list || s.tcList || [],
-            techList: s.tech_list || s.techList || [],
+            tcList: (() => {
+                if (s.service_to_terms_conditions) return s.service_to_terms_conditions.map(x => x.terms_and_conditions?.type).filter(Boolean);
+                if (Array.isArray(s.tc_list || s.tcList)) return s.tc_list || s.tcList;
+                return s.tc_list || s.tcList || [];
+            })(),
+            techList: (() => {
+                if (s.service_to_technicals) return s.service_to_technicals.map(x => x.technicals?.type).filter(Boolean);
+                if (Array.isArray(s.tech_list || s.techList)) return s.tech_list || s.techList;
+                return s.tech_list || s.techList || [];
+            })(),
             createdAt: s.created_at || new Date().toISOString()
         };
     }, []);
@@ -53,7 +61,11 @@ const ServicesProvider = ({ children }) => {
         try {
             const { data, error } = await supabase
                 .from('services')
-                .select('*')
+                .select(`
+                    *,
+                    service_to_technicals ( technicals ( type ) ),
+                    service_to_terms_conditions ( terms_and_conditions ( type ) )
+                `)
                 .order('created_at', { ascending: true });
 
             if (error) {
