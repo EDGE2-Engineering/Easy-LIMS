@@ -48,7 +48,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
   const ALL_NAV_ITEMS = [
     { view: VIEWS.JOBS, path: '/settings/jobs', label: 'Jobs', icon: Briefcase },
     { view: VIEWS.EXPENSES, path: '/settings/expenses', label: 'Expenses', icon: IndianRupee },
-    { id: 'work_log', view: VIEWS.WORK_LOG, path: '/settings/work_log', label: 'Work Log', icon: ClipboardCheck },
+    { id: 'work_log', view: VIEWS.WORK_LOG, path: '/settings/work_log', label: 'Leaves', icon: ClipboardCheck },
     { id: 'utilities', view: VIEWS.UTILITIES, path: '/settings/utilities', label: 'Utilities', icon: Calculator },
   ];
 
@@ -116,7 +116,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                 const descriptions = {
                   '/settings/jobs': 'Manage laboratory testing jobs',
                   '/settings/expenses': 'Track company expenses and payments',
-                  '/settings/work_log': 'Monitor daily laboratory work logs',
+                  '/settings/work_log': 'Manage employee leave records and absences',
                   '/settings/utilities': 'Access helpful calculation utilities',
                 };
 

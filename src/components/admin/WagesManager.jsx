@@ -23,7 +23,7 @@ import {
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from '@/components/ui/alert-dialog';
 
-const WorkLogManager = () => {
+const LeavesManager = () => {
     const { toast } = useToast();
     const { user: authUser } = useAuth();
     const [view, setView] = useState('list'); // 'list', 'employee_history', 'calculator'
@@ -521,7 +521,7 @@ const WorkLogManager = () => {
                 {/* Mark Leave Selection Controls */}
                 {rangeStart && (
                     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-primary/20 flex items-center gap-6 z-50 animate-in slide-in-from-bottom-8 duration-500">
-                        <div className="flex flex-col">
+                        <div className="flex flex-col gap-1">
                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected Period</span>
                             <span className="text-sm font-black text-primary">
                                 {selectedDates.length} Day{selectedDates.length > 1 ? 's' : ''}
@@ -695,4 +695,4 @@ const WorkLogManager = () => {
     );
 };
 
-export default WorkLogManager;
+export default LeavesManager;

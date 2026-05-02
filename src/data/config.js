@@ -35,6 +35,11 @@ export const ROLES = {
         slug: 'accounts',
         label: 'Accounts Officer',
         description: 'Manages invoicing, payment tracking, expenses, and financial documentation.'
+    },
+    HUMAN_RESOURCE: {
+        slug: 'human_resource',
+        label: 'Human Resource Officer',
+        description: 'Manages employee leaves, attendance, and payroll.'
     }
 };
 
@@ -65,7 +70,7 @@ export const VIEWS = {
     TESTING: 'Testing',
     ACCOUNTS: 'Accounts',
     EXPENSES: 'Expenses',
-    WORK_LOG: 'Work Log',
+    WORK_LOG: 'Leaves',
     UTILITIES: 'Utilities',
     SETTINGS: 'Settings'
 };
