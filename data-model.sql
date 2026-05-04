@@ -128,7 +128,6 @@ CREATE TABLE public.jobs (
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   test_types jsonb DEFAULT '{}'::jsonb,
-  job_categories text DEFAULT '{}'::text,
   work_order_id text,
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   client_id bigint NOT NULL,
@@ -138,6 +137,14 @@ CREATE TABLE public.jobs (
   CONSTRAINT jobs_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.clients(id),
   CONSTRAINT jobs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id),
   CONSTRAINT jobs_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id)
+);
+CREATE TABLE public.job_to_technicians (
+  job_id bigint NOT NULL,
+  technician_id bigint NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT job_to_technicians_pkey PRIMARY KEY (job_id, technician_id),
+  CONSTRAINT job_to_technicians_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id) ON DELETE CASCADE,
+  CONSTRAINT job_to_technicians_technician_id_fkey FOREIGN KEY (technician_id) REFERENCES public.users(id) ON DELETE CASCADE
 );
 CREATE TABLE public.material_inward_register (
   job_order_no character varying UNIQUE,

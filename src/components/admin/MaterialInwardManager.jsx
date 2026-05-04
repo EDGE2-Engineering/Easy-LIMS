@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { format } from 'date-fns';
-import { WORKFLOW_STATES } from '@/data/config';
+import { WORKFLOW_STATES, SAMPLE_CODES, ROLES } from '@/data/config';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -81,6 +81,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                 .from('users')
                 .select('id, full_name')
                 .eq('is_active', true)
+                .eq('role', ROLES.MRO.slug)
                 .order('full_name');
             if (error) throw error;
             setAppUsers(data || []);
@@ -390,7 +391,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
             const emoji = isAddingNew ? '📥' : '✏️';
             const message = `${emoji} *Material Inward ${action}*\n\nJob OrderNo: \`${editingRecord.job_order_no || inwardId}\`\nClient: \`${clientName}\`\nSamples: \`${editingRecord.samples.length}\`\nBy: \`${user?.fullName || 'Unknown'}\``;
             sendTelegramNotification(message);
-            if (editingRecord.job_id && isAddingNew) {
+            if (editingRecord.job_id) {
                 // Robustly determine the integer user ID for bigint columns
                 let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
                 if (isNaN(userId) && user.username) {
@@ -402,23 +403,29 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                     throw new Error("Unable to determine a valid numeric User ID. Please try logging out and back in.");
                 }
 
-                // Update job status
-                await supabase
-                    .from('jobs')
-                    .update({
-                        status: WORKFLOW_STATES.MATERIAL_RECEIVED,
-                        updated_by: userId
-                    })
-                    .eq('id', editingRecord.job_id);
+                // Check if we need to advance the workflow
+                const { data: jobData } = await supabase.from('jobs').select('status').eq('id', editingRecord.job_id).single();
+                
+                // If this is a new entry OR the job is currently stuck at WORK_ORDER_RECEIVED (e.g. after a revert)
+                if (isAddingNew || (jobData && jobData.status === WORKFLOW_STATES.WORK_ORDER_RECEIVED)) {
+                    // Update job status
+                    await supabase
+                        .from('jobs')
+                        .update({
+                            status: WORKFLOW_STATES.MATERIAL_RECEIVED,
+                            updated_by: userId
+                        })
+                        .eq('id', editingRecord.job_id);
 
-                // Add transition log
-                await supabase.from('job_workflow_logs').insert({
-                    job_id: editingRecord.job_id,
-                    to_state: WORKFLOW_STATES.MATERIAL_RECEIVED,
-                    action_id: 'RECEIVE_MATERIAL',
-                    performed_by: userId,
-                    remarks: `Material Received: ${editingRecord.job_order_no || inwardId}`
-                });
+                    // Add transition log
+                    await supabase.from('job_workflow_logs').insert({
+                        job_id: editingRecord.job_id,
+                        to_state: WORKFLOW_STATES.MATERIAL_RECEIVED,
+                        action_id: 'RECEIVE_MATERIAL',
+                        performed_by: userId,
+                        remarks: `Material Received: ${editingRecord.job_order_no || inwardId}`
+                    });
+                }
             }
 
             // Refresh the list immediately
@@ -639,15 +646,22 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="space-y-1">
                                         <Label className="text-xs">Sample Code *</Label>
-                                        <Input
-                                            placeholder="e.g. CUBE-01"
-                                            className="h-9 text-sm"
+                                        <Select
                                             value={sample.sample_code || ''}
-                                            onChange={(e) => handleSampleChange(index, 'sample_code', e.target.value)}
-                                        />
+                                            onValueChange={(value) => handleSampleChange(index, 'sample_code', value)}
+                                        >
+                                            <SelectTrigger className="h-9 text-sm">
+                                                <SelectValue placeholder="Select code" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {SAMPLE_CODES.map(code => (
+                                                    <SelectItem key={code} value={code}>{code}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                     <div className="space-y-1 md:col-span-2">
-                                        <Label className="text-xs">Description</Label>
+                                        <Label className="text-xs">Remarks</Label>
                                         <Input
                                             placeholder="e.g. M25 Grade Concrete"
                                             className="h-9 text-sm"
@@ -656,7 +670,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                                         />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                     <div className="space-y-1">
                                         <Label className="text-xs">Quantity</Label>
                                         <Input
@@ -685,6 +699,19 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                                             onChange={(e) => handleSampleChange(index, 'received_time', e.target.value)}
                                         />
                                     </div>
+                                    
+                                    
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Test Days</Label>
+                                        <Input
+                                            type="number"
+                                            className="h-9 text-sm"
+                                            value={sample.expected_test_days || ''}
+                                            onChange={(e) => handleSampleChange(index, 'expected_test_days', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <Label className="text-xs">Collection At</Label>
                                         <Select
@@ -717,16 +744,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-xs">Test Days</Label>
-                                        <Input
-                                            type="number"
-                                            className="h-9 text-sm"
-                                            value={sample.expected_test_days || ''}
-                                            onChange={(e) => handleSampleChange(index, 'expected_test_days', e.target.value)}
-                                        />
-                                    </div>
-                                </div>
+                                                </div>
                             </div>
                         ))}
                     </div>

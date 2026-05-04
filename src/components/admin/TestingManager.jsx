@@ -87,13 +87,36 @@ const TestingManager = ({ initialJobId, onClose }) => {
     const handleSaveResults = async (category) => {
         setIsSaving(true);
         try {
-            const { error } = await supabase.from('job_tests').upsert({
+            let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+            if (isNaN(userId) && user.username) {
+                const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
+                if (userData) userId = userData.id;
+            }
+
+            // Check if record exists
+            const { data: existing } = await supabase.from('job_tests')
+                .select('id')
+                .eq('job_id', initialJobId)
+                .eq('category', category)
+                .maybeSingle();
+
+            const recordData = {
                 job_id: initialJobId,
                 category,
                 results: testResults[category] || {},
                 status: 'IN_PROGRESS',
+                assigned_technician_id: userId || null,
                 updated_at: new Date().toISOString()
-            }, { onConflict: 'job_id,category' });
+            };
+
+            let error;
+            if (existing && existing.id) {
+                const { error: updateError } = await supabase.from('job_tests').update(recordData).eq('id', existing.id);
+                error = updateError;
+            } else {
+                const { error: insertError } = await supabase.from('job_tests').insert([recordData]);
+                error = insertError;
+            }
 
             if (error) throw error;
             toast({ title: "Progress Saved", description: `Results for ${category} have been saved.` });
@@ -107,10 +130,9 @@ const TestingManager = ({ initialJobId, onClose }) => {
     if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin" /></div>;
     if (!jobDetails) return null;
 
-    const jobCats = Array.isArray(jobDetails.job_categories) ? jobDetails.job_categories : [];
     const assignedCats = Object.keys(jobDetails.test_types || {});
     const dataCats = Object.keys(testResults);
-    const allCategories = [...new Set([...jobCats, ...assignedCats, ...dataCats])];
+    const allCategories = [...new Set([...assignedCats, ...dataCats])];
     
     // Admin gets to see all assigned categories. Technicians only see their capable ones, PLUS categories that already have data.
     const visibleCategories = isAdmin() ? allCategories : allCategories.filter(c => techCapabilities.includes(c) || dataCats.includes(c));

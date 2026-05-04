@@ -60,11 +60,7 @@ const JobsManager = ({ id }) => {
         if (id) {
             const existing = records.find(r => r.id === id);
             if (existing) {
-                let cats = existing.job_categories || [];
-                if (typeof cats === 'string') {
-                    try { cats = JSON.parse(cats); } catch (e) { cats = []; }
-                }
-                setEditingRecord({ ...existing, job_categories: Array.isArray(cats) ? cats : [] });
+                setEditingRecord({ ...existing });
                 setIsAddingNew(false);
             } else if (!loading) {
                 // If records are loaded but id not found, it might be a new record or invalid
@@ -81,11 +77,7 @@ const JobsManager = ({ id }) => {
             const { data, error } = await supabase.from('jobs').select('*, clients(client_name)').eq('id', jobId).maybeSingle();
             if (error) throw error;
             if (data) {
-                let cats = data.job_categories || [];
-                if (typeof cats === 'string') {
-                    try { cats = JSON.parse(cats); } catch (e) { cats = []; }
-                }
-                setEditingRecord({ ...data, job_categories: Array.isArray(cats) ? cats : [] });
+                setEditingRecord({ ...data });
                 setIsAddingNew(false);
             }
         } catch (err) {
@@ -178,12 +170,15 @@ const JobsManager = ({ id }) => {
     const fetchJobAssignments = async (jobId) => {
         try {
             const { data, error } = await supabase
-                .from('job_tests')
-                .select('*, users!job_tests_assigned_technician_id_fkey(full_name, username)')
+                .from('job_to_technicians')
+                .select('technician_id, users!job_to_technicians_technician_id_fkey(id, full_name, username)')
                 .eq('job_id', jobId);
-            
+                
             if (error) throw error;
-            setTechAssignments(data || []);
+            
+            // Map the foreign key relation back to a simple user object
+            const techs = (data || []).map(r => r.users).filter(Boolean);
+            setTechAssignments(techs);
         } catch (err) {
             console.error('Error fetching assignments:', err);
         }
@@ -228,16 +223,17 @@ const JobsManager = ({ id }) => {
 
     const reloadEditingRecord = async () => {
         if (!editingRecord?.id) return;
+        const jobId = editingRecord.id;
         try {
-            const { data, error } = await supabase.from('jobs').select('*, clients(client_name)').eq('id', editingRecord.id).maybeSingle();
+            const { data, error } = await supabase.from('jobs').select('*, clients(client_name)').eq('id', jobId).maybeSingle();
             if (error) throw error;
             if (data) {
-                let cats = data.job_categories || [];
-                if (typeof cats === 'string') {
-                    try { cats = JSON.parse(cats); } catch (e) { cats = []; }
-                }
-                setEditingRecord({ ...data, job_categories: Array.isArray(cats) ? cats : [] });
+                setEditingRecord({ ...data });
             }
+            // Explicitly refresh child data — the useEffect won't re-fire since the job ID hasn't changed
+            fetchJobSamples(jobId);
+            fetchJobAssignments(jobId);
+            fetchJobDocs(jobId);
             fetchRecords();
         } catch (error) {
             console.error("Failed to reload record:", error);
@@ -473,7 +469,7 @@ const JobsManager = ({ id }) => {
                         <Dialog open={showingTechForm} onOpenChange={setShowingTechForm}>
                             <DialogContent className="max-w-[1000px] max-h-[90vh] overflow-y-auto">
                                 <DialogHeader><DialogTitle>Assign Technicians</DialogTitle></DialogHeader>
-                                <TechnicianAssignment jobId={editingRecord.id} jobCategories={editingRecord.job_categories} onComplete={() => { setShowingTechForm(false); reloadEditingRecord(); }} />
+                                <TechnicianAssignment jobId={editingRecord.id} onComplete={() => { setShowingTechForm(false); reloadEditingRecord(); }} />
                             </DialogContent>
                         </Dialog>
 
@@ -579,8 +575,10 @@ const JobsManager = ({ id }) => {
                                     </div>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-left text-xs">
-                                            <thead className="bg-gray-50 border-b"><tr><th className="p-3">Testing Category</th><th className="p-3">Assigned Technician</th><th className="p-3 text-right">Status</th></tr></thead>
-                                            <tbody className="divide-y">{techAssignments.map((a, i) => (<tr key={i}><td className="p-3 font-bold">{a.category}</td><td className="p-3 text-gray-500">{a.users?.full_name || a.users?.username || 'Unassigned'}</td><td className="p-3 text-right text-gray-400">{a.status}</td></tr>))}</tbody>
+                                            <thead className="bg-gray-50 border-b"><tr><th className="p-3">Assigned Technician</th></tr></thead>
+                                            <tbody className="divide-y">{techAssignments.map((a, i) => (<tr key={i}><td className="p-3 font-bold text-gray-700">{a.full_name || a.username}</td></tr>))}
+                                                {techAssignments.length === 0 && <tr><td className="p-3 text-gray-500 italic">No technicians assigned yet.</td></tr>}
+                                            </tbody>
                                         </table>
                                     </div>
                                 </div>

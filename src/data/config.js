@@ -1,3 +1,22 @@
+export const SAMPLE_CODES = [
+    'CUBE',
+    'CYLINDER',
+    'BEAM',
+    'CORE',
+    'BLOCK',
+    'BRICK',
+    'TILE',
+    'SOIL',
+    'ROCK',
+    'SOIL AND ROCK',
+    'AGGREGATE',
+    'CEMENT',
+    'STEEL',
+    'WATER',
+    'BITUMEN',
+    'CONCRETE'
+];
+
 export const DEPARTMENTS = [
     { id: 1, name: 'Chemical Analysis' },
     { id: 2, name: 'Physical Testing' },
