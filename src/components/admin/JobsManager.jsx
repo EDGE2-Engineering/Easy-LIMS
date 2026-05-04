@@ -41,11 +41,12 @@ const JobsManager = ({ id }) => {
     const [showingWoForm, setShowingWoForm] = useState(false);
     const [showingMaterialForm, setShowingMaterialForm] = useState(false);
     const [showingTechForm, setShowingTechForm] = useState(false);
+    const [showingTestingForm, setShowingTestingForm] = useState(false);
     const [jobSamples, setJobSamples] = useState([]);
     const [techAssignments, setTechAssignments] = useState([]);
     const [sortField, setSortField] = useState('created_at');
     const [sortOrder, setSortOrder] = useState('desc');
-    
+
     const { toast } = useToast();
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -55,7 +56,7 @@ const JobsManager = ({ id }) => {
     const [isAddingNew, setIsAddingNew] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, jobId: null, jobCode: '' });
-    
+
     useEffect(() => {
         if (id) {
             const existing = records.find(r => r.id === id);
@@ -102,7 +103,7 @@ const JobsManager = ({ id }) => {
             // 1. Update job Record
             const { error: updateError } = await supabase
                 .from('jobs')
-                .update({ 
+                .update({
                     work_order_id: woId,
                     status: WORKFLOW_STATES.WORK_ORDER_RECEIVED,
                     updated_at: new Date().toISOString(),
@@ -173,9 +174,9 @@ const JobsManager = ({ id }) => {
                 .from('job_to_technicians')
                 .select('technician_id, users!job_to_technicians_technician_id_fkey(id, full_name, username)')
                 .eq('job_id', jobId);
-                
+
             if (error) throw error;
-            
+
             // Map the foreign key relation back to a simple user object
             const techs = (data || []).map(r => r.users).filter(Boolean);
             setTechAssignments(techs);
@@ -257,7 +258,7 @@ const JobsManager = ({ id }) => {
         try {
             // Ensure client_id is an integer
             const clientId = typeof editingRecord.client_id === 'string' ? parseInt(editingRecord.client_id) : editingRecord.client_id;
-            
+
             if (!clientId || isNaN(clientId)) {
                 throw new Error("Please select a valid client.");
             }
@@ -273,7 +274,7 @@ const JobsManager = ({ id }) => {
             if (isAddingNew) {
                 // Robustly determine the integer user ID for bigint columns
                 let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
-                
+
                 // If the ID is a UUID string (not numeric), try to resolve it from the users table
                 if (isNaN(userId) && user.username) {
                     const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
@@ -285,12 +286,12 @@ const JobsManager = ({ id }) => {
                 }
 
                 // Ensure we don't send any 'id' field for new records to let DB auto-generate it
-                const insertData = { 
-                    ...payload, 
+                const insertData = {
+                    ...payload,
                     created_by: userId,
                     updated_by: userId
                 };
-                
+
                 const { error } = await supabase.from('jobs').insert(insertData);
                 if (error) throw error;
             } else {
@@ -300,8 +301,8 @@ const JobsManager = ({ id }) => {
                     if (userData) userId = userData.id;
                 }
 
-                const { error } = await supabase.from('jobs').update({ 
-                    ...payload, 
+                const { error } = await supabase.from('jobs').update({
+                    ...payload,
                     updated_by: userId || 1 // Fallback to 1 if still not found for updates
                 }).eq('id', editingRecord.id);
                 if (error) throw error;
@@ -327,7 +328,7 @@ const JobsManager = ({ id }) => {
 
     const confirmDelete = async () => {
         if (!deleteConfirmation.jobId) return;
-        
+
         try {
             const jobId = deleteConfirmation.jobId;
 
@@ -336,7 +337,7 @@ const JobsManager = ({ id }) => {
                 .from('material_inward_register')
                 .select('id')
                 .eq('job_id', jobId);
-            
+
             if (inwardRecords && inwardRecords.length > 0) {
                 const inwardIds = inwardRecords.map(r => r.id);
                 // 2. Delete material samples
@@ -375,10 +376,10 @@ const JobsManager = ({ id }) => {
     const getStatusLabel = (status) => workflow.states[status]?.label || status;
 
     const filteredRecords = useMemo(() => {
-        let result = records.filter(r => 
-            ((r.job_code || r.job_id)?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-             r.clients?.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-             r.project_name?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+        let result = records.filter(r =>
+            ((r.job_code || r.job_id)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                r.clients?.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                r.project_name?.toLowerCase().includes(searchTerm.toLowerCase())) &&
             (filterStatus === 'all' || r.status === filterStatus)
         );
 
@@ -430,14 +431,15 @@ const JobsManager = ({ id }) => {
                 {!isAddingNew && (
                     <div className="mb-10 space-y-6">
                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Workflow Actions</h3>
-                        <WorkflowPanel 
-                            jobId={editingRecord.id} 
-                            currentStatus={editingRecord.status} 
-                            onTransition={reloadEditingRecord} 
+                        <WorkflowPanel
+                            jobId={editingRecord.id}
+                            currentStatus={editingRecord.status}
+                            onTransition={reloadEditingRecord}
                             onActionClick={(actionId) => {
                                 if (actionId === 'RECEIVE_WORK_ORDER') { setShowingWoForm(true); return false; }
                                 if (actionId === 'RECEIVE_MATERIAL') { setShowingMaterialForm(true); return false; }
                                 if (actionId === 'ASSIGN_TECHNICIANS') { setShowingTechForm(true); return false; }
+                                if (actionId === 'START_TESTING') { setShowingTestingForm(true); }
                             }}
                         />
 
@@ -470,6 +472,13 @@ const JobsManager = ({ id }) => {
                             <DialogContent className="max-w-[1000px] max-h-[90vh] overflow-y-auto">
                                 <DialogHeader><DialogTitle>Assign Technicians</DialogTitle></DialogHeader>
                                 <TechnicianAssignment jobId={editingRecord.id} onComplete={() => { setShowingTechForm(false); reloadEditingRecord(); }} />
+                            </DialogContent>
+                        </Dialog>
+
+                        <Dialog open={showingTestingForm} onOpenChange={setShowingTestingForm}>
+                            <DialogContent className="max-w-[1200px] max-h-[90vh] overflow-y-auto">
+                                <DialogHeader><DialogTitle>Testing Data Entry</DialogTitle></DialogHeader>
+                                <TestingManager initialJobId={editingRecord.id} onClose={() => { setShowingTestingForm(false); reloadEditingRecord(); }} />
                             </DialogContent>
                         </Dialog>
 
@@ -532,18 +541,18 @@ const JobsManager = ({ id }) => {
                                 />
                             </div>
                             <div className="space-y-2">
-                                 <Label className="text-gray-700 font-semibold">Project Name</Label>
-                                 <Input className="h-12 border-gray-200 rounded-xl" value={editingRecord.project_name || ''} onChange={e => setEditingRecord({...editingRecord, project_name: e.target.value})} />
+                                <Label className="text-gray-700 font-semibold">Project Name</Label>
+                                <Input className="h-12 border-gray-200 rounded-xl" value={editingRecord.project_name || ''} onChange={e => setEditingRecord({ ...editingRecord, project_name: e.target.value })} />
                             </div>
                             {!isAddingNew && editingRecord.work_order_id && (
                                 <div className="space-y-2">
-                                     <Label className="text-gray-700 font-semibold">Work Order ID</Label>
-                                     <Input 
-                                        className="h-12 border-gray-200 rounded-xl bg-gray-50/50" 
-                                        value={editingRecord.work_order_id || ''} 
-                                        onChange={e => setEditingRecord({...editingRecord, work_order_id: e.target.value})} 
+                                    <Label className="text-gray-700 font-semibold">Work Order ID</Label>
+                                    <Input
+                                        className="h-12 border-gray-200 rounded-xl bg-gray-50/50"
+                                        value={editingRecord.work_order_id || ''}
+                                        onChange={e => setEditingRecord({ ...editingRecord, work_order_id: e.target.value })}
                                         placeholder="e.g. WO/2026/088"
-                                     />
+                                    />
                                 </div>
                             )}
                         </div>
@@ -598,7 +607,7 @@ const JobsManager = ({ id }) => {
                 <div className="flex justify-end gap-3 pt-8 border-t">
                     <Button variant="outline" className="h-12 px-8 rounded-xl" onClick={() => navigate('/settings/jobs')}>Cancel</Button>
                     <Button className="h-12 px-8 rounded-xl bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20" onClick={handleSave} disabled={isSaving}>
-                         {isSaving ? <Loader2 className="animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Job Details
+                        {isSaving ? <Loader2 className="animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Job Details
                     </Button>
                 </div>
             </div>
@@ -698,9 +707,9 @@ const JobsManager = ({ id }) => {
                     <thead className="bg-gray-50 border-b">
                         <tr>
                             <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Job Code</th>
-                             <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Client and Project Name</th>
-                             <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Status</th>
-                             <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Actions</th>
+                            <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Client and Project Name</th>
+                            <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Status</th>
+                            <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -714,34 +723,34 @@ const JobsManager = ({ id }) => {
                                     <div className="text-xs text-gray-500 mt-1">{r.project_name}</div>
                                 </td>
                                 <td className="py-5 px-6 text-center">
-                                     <Badge variant="secondary" className="bg-white border-gray-200 text-gray-700 shadow-sm">
-                                         {getStatusLabel(r.status)}
-                                     </Badge>
+                                    <Badge variant="secondary" className="bg-white border-gray-200 text-gray-700 shadow-sm">
+                                        {getStatusLabel(r.status)}
+                                    </Badge>
                                 </td>
                                 <td className="py-5 px-6 text-center">
-                                     <div className="flex justify-center gap-2">
-                                         <Tooltip>
-                                             <TooltipTrigger asChild>
-                                                 <Button variant="ghost" size="sm" onClick={() => navigate(`/settings/jobs/${r.id}`)} className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all">
-                                                     <ArrowRight className="w-4 h-4" />
-                                                 </Button>
-                                             </TooltipTrigger>
-                                             <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                                 <p className="text-xs">View/Edit Job Details</p>
-                                             </TooltipContent>
-                                         </Tooltip>
+                                    <div className="flex justify-center gap-2">
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="sm" onClick={() => navigate(`/settings/jobs/${r.id}`)} className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all">
+                                                    <ArrowRight className="w-4 h-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                <p className="text-xs">View/Edit Job Details</p>
+                                            </TooltipContent>
+                                        </Tooltip>
 
-                                         <Tooltip>
-                                             <TooltipTrigger asChild>
-                                                 <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(r)} className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all">
-                                                     <Trash2 className="w-4 h-4" />
-                                                 </Button>
-                                             </TooltipTrigger>
-                                             <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                                 <p className="text-xs">Delete this job</p>
-                                             </TooltipContent>
-                                         </Tooltip>
-                                     </div>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(r)} className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                <p className="text-xs">Delete this job</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
                                 </td>
                             </tr>
                         ))}

@@ -130,9 +130,9 @@ const TestingManager = ({ initialJobId, onClose }) => {
     if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin" /></div>;
     if (!jobDetails) return null;
 
-    const assignedCats = Object.keys(jobDetails.test_types || {});
+    const sampleCategories = [...new Set(samples.map(s => s.sample_code))].filter(Boolean);
     const dataCats = Object.keys(testResults);
-    const allCategories = [...new Set([...assignedCats, ...dataCats])];
+    const allCategories = [...new Set([...sampleCategories, ...dataCats])];
     
     // Admin gets to see all assigned categories. Technicians only see their capable ones, PLUS categories that already have data.
     const visibleCategories = isAdmin() ? allCategories : allCategories.filter(c => techCapabilities.includes(c) || dataCats.includes(c));
@@ -157,7 +157,7 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                 return (
                                     <TabsContent key={cat} value={cat} className="space-y-6 outline-none">
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {cat === 'Soil Testing' && (
+                                            {['SOIL', 'SOIL AND ROCK', 'ROCK'].includes(cat) && (
                                                 <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full md:col-span-2 lg:col-span-3">
                                                     <div>
                                                         <h4 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
@@ -256,18 +256,18 @@ const TestingManager = ({ initialJobId, onClose }) => {
                     </DialogHeader>
                     {selectedCategory && (
                         <div className="py-4 space-y-8">
-                            {selectedCategory === 'Soil Testing' && (
+                            {['SOIL', 'SOIL AND ROCK', 'ROCK'].includes(selectedCategory) && (
                                 <div className="space-y-4 rounded-xl border border-gray-100 p-6 bg-white shadow-sm mb-6">
                                     <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
                                         <div className="w-2 h-2 rounded-full bg-primary" />
                                         Advanced Geotechnical Inputs
                                     </h3>
                                     <GeotechTestForm 
-                                        value={testResults['Soil Testing']?.['GeotechData'] || {}}
+                                        value={testResults[selectedCategory]?.['GeotechData'] || {}}
                                         onChange={(val) => setTestResults(prev => ({ 
                                             ...prev, 
-                                            'Soil Testing': {
-                                                ...(prev['Soil Testing'] || {}),
+                                            [selectedCategory]: {
+                                                ...(prev[selectedCategory] || {}),
                                                 'GeotechData': val
                                             }
                                         }))}
