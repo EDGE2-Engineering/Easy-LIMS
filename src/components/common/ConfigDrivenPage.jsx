@@ -20,6 +20,7 @@ const Dashboard = lazy(() => import('@/components/admin/Dashboard.jsx'));
 const ApprovalsManager = lazy(() => import('@/components/admin/ApprovalsManager.jsx'));
 const AdminClientPricingManager = lazy(() => import('@/components/admin/AdminClientPricingManager.jsx'));
 const AdminOrganizationSettings = lazy(() => import('@/components/admin/AdminOrganizationSettings.jsx'));
+const InquiriesManager = lazy(() => import('@/components/admin/InquiriesManager.jsx'));
 
 const COMPONENT_MAP = {
   [VIEWS.DASHBOARD]: Dashboard,
@@ -32,6 +33,7 @@ const COMPONENT_MAP = {
   [VIEWS.UTILITIES]: UtilitiesManager,
   [VIEWS.SETTINGS]: AdminSystemSettings,
   [VIEWS.CLIENT_PRICING]: AdminClientPricingManager,
+  [VIEWS.INQUIRIES]: InquiriesManager,
   [VIEWS.TESTING]: lazy(() => import('@/components/admin/TestingDashboard.jsx'))
 };
 

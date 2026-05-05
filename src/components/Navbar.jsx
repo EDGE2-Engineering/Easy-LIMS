@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck, Calculator, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness, CalendarOff, LayoutDashboard, CheckCircle2, Calendar, Loader2, Send, Building2 } from 'lucide-react';
+import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck, Calculator, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness, CalendarOff, LayoutDashboard, CheckCircle2, Calendar, Loader2, Send, Building2, MessageSquare } from 'lucide-react';
 import { getSiteContent, VIEWS } from '@/data/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -108,6 +108,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
   const ALL_NAV_ITEMS = [
     { view: VIEWS.DASHBOARD, path: '/settings/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { view: VIEWS.JOBS, path: '/settings/jobs', label: 'Jobs', icon: Briefcase },
+    { view: VIEWS.INQUIRIES, path: '/settings/inquiries', label: 'Inquiries', icon: MessageSquare },
   ];
 
   const SETTINGS_SUB_ITEMS = [
@@ -130,6 +131,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
         location.pathname.includes('/inward_register') ||
         location.pathname.includes('/reports') ||
         location.pathname.includes('/accounts') ||
+        location.pathname.includes('/inquiries') ||
         location.pathname.includes('/dashboard');
 
       return (location.pathname.startsWith('/settings') && !isManagementTab) ||
@@ -170,6 +172,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                   const descriptions = {
                   '/settings/dashboard': 'Overview of laboratory operations and metrics',
                   '/settings/jobs': 'Manage laboratory testing jobs',
+                  '/settings/inquiries': 'Record and track client inquiries and requirements',
                   '/settings/utilities': 'Access helpful calculation utilities',
                 };
 

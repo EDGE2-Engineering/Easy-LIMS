@@ -90,7 +90,8 @@ export const VIEWS = {
     UTILITIES: 'Utilities',
     SETTINGS: 'Settings',
     APPROVALS: 'Approvals',
-    CLIENT_PRICING: 'Client Pricing'
+    CLIENT_PRICING: 'Client Pricing',
+    INQUIRIES: 'Inquiries'
 };
 
 export const ACTIONS = {
@@ -240,9 +241,9 @@ export const APP_CONFIG = {
     viewPermissions: {
         [ROLES.SUPER_ADMIN.slug]: Object.values(VIEWS),
         [ROLES.ADMIN.slug]: Object.values(VIEWS),
-        [ROLES.ANALYST.slug]: [ VIEWS.JOBS, VIEWS.TESTING],
+        [ROLES.ANALYST.slug]: [ VIEWS.JOBS, VIEWS.TESTING, VIEWS.INQUIRIES],
         [ROLES.TECHNICIAN.slug]: [ VIEWS.TESTING],
-        [ROLES.MRO.slug]: [ VIEWS.MATERIAL_INWARD, VIEWS.JOBS],
+        [ROLES.MRO.slug]: [ VIEWS.MATERIAL_INWARD, VIEWS.JOBS, VIEWS.INQUIRIES],
         [ROLES.ACCOUNTS.slug]: [ VIEWS.ACCOUNTS, VIEWS.EXPENSES, VIEWS.WORK_LOG, VIEWS.UTILITIES],
         [ROLES.HUMAN_RESOURCE.slug]: [ VIEWS.WORK_LOG, VIEWS.APPROVALS]
     }
