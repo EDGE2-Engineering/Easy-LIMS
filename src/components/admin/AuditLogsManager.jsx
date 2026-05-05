@@ -46,8 +46,8 @@ const AuditLogsManager = () => {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                     <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                        <div className="p-2.5 bg-primary/10 rounded-2xl">
-                            <ShieldCheck className="w-8 h-8 text-primary" />
+                        <div className="p-2 bg-primary/10 rounded-2xl">
+                            <ShieldCheck className="w-6 h-6 text-primary" />
                         </div>
                         System Audit Logs
                     </h1>
