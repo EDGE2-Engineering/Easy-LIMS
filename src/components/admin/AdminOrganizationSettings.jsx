@@ -2,12 +2,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { IndianRupee, ClipboardCheck, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { IndianRupee, ClipboardCheck, CheckCircle2, ShieldCheck, Calendar } from 'lucide-react';
 
 import ExpensesManager from './ExpensesManager';
 import WagesManager from './WagesManager';
 import ApprovalsManager from './ApprovalsManager';
 import AuditLogsManager from './AuditLogsManager';
+import AdminCompanyCalendar from './AdminCompanyCalendar';
 
 const AdminOrganizationSettings = ({ id }) => {
     const navigate = useNavigate();
@@ -93,6 +94,24 @@ const AdminOrganizationSettings = ({ id }) => {
                             </Tooltip>
                             </TooltipProvider>
                         </TabsTrigger>
+
+                        <TabsTrigger
+                            value="company_calendar"
+                            className="px-4 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="w-4 h-4" /> Calendar
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Company holidays and event schedule</p>
+                                </TooltipContent>
+                            </Tooltip>
+                            </TooltipProvider>
+                        </TabsTrigger>
                     </TabsList>
                 </div>
 
@@ -110,6 +129,10 @@ const AdminOrganizationSettings = ({ id }) => {
 
                 <TabsContent value="audit_logs" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <AuditLogsManager />
+                </TabsContent>
+
+                <TabsContent value="company_calendar" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <AdminCompanyCalendar />
                 </TabsContent>
             </Tabs>
         </div>

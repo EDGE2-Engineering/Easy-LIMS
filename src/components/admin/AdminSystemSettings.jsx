@@ -16,7 +16,6 @@ import AdminTechnicalsManager from './AdminTechnicalsManager';
 import AdminCollectionCentersManager from './AdminCollectionCentersManager';
 import AdminMaterialsManager from './AdminMaterialsManager';
 import AdminUsersManager from './AdminUsersManager';
-import AdminCompanyCalendar from './AdminCompanyCalendar';
 import WorkflowConfigurator from './WorkflowConfigurator';
 
 import { enableInfoDiagramZoom, getSiteContent } from '../../data/config';
@@ -133,37 +132,7 @@ const AdminSystemSettings = ({ id }) => {
 
                         
 
-                        <TabsTrigger
-                            value="materials"
-                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                        >
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div className="flex items-center gap-2">
-                                        <Package className="w-4 h-4" /> Materials
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                    <p className="text-xs">Material types and categories masters</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TabsTrigger>
 
-                        <TabsTrigger
-                            value="company_calendar"
-                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                        >
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div className="flex items-center gap-2">
-                                        <Calendar className="w-4 h-4" /> Calendar
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                    <p className="text-xs">Company holidays and event schedule</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TabsTrigger>
 
 
                         
@@ -234,9 +203,6 @@ const AdminSystemSettings = ({ id }) => {
 
 
 
-                <TabsContent value="materials" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <AdminMaterialsManager />
-                </TabsContent>
 
                 <TabsContent value="users" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <AdminUsersManager />
@@ -247,9 +213,6 @@ const AdminSystemSettings = ({ id }) => {
                     <WorkflowConfigurator />
                 </TabsContent>
 
-                <TabsContent value="company_calendar" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <AdminCompanyCalendar />
-                </TabsContent>
 
 
 
