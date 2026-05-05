@@ -110,7 +110,7 @@ export const ACTIONS = {
    SEND_TO_CLIENT: { name: 'SEND_TO_CLIENT', label: 'Send to Client' },
    CONFIRM_PAYMENT: { name: 'CONFIRM_PAYMENT', label: 'Confirm Payment' },
    RELEASE_REPORT: { name: 'RELEASE_REPORT', label: 'Release Report' },
-   ARCHIVE_JOB: { name: 'ARCHIVE_JOB', label: 'Archive Job' }
+   MARK_JOB_COMPLETE: { name: 'MARK_JOB_COMPLETE', label: 'Mark as Complete' }
 }; 
 
 
@@ -227,7 +227,7 @@ export const APP_CONFIG = {
                 label: 'Report Released',
                 color: { bg: '#dcfce7', text: '#166534', border: '#4ade80' },
                 actions: [
-                    { id: ACTIONS.ARCHIVE_JOB.name, label: ACTIONS.ARCHIVE_JOB.label, targetState: WORKFLOW_STATES.JOB_COMPLETE, roles: [ROLES.ADMIN.slug] }
+                    { id: ACTIONS.MARK_JOB_COMPLETE.name, label: ACTIONS.MARK_JOB_COMPLETE.label, targetState: WORKFLOW_STATES.JOB_COMPLETE, roles: [ROLES.ADMIN.slug] }
                 ]
             },
             [WORKFLOW_STATES.JOB_COMPLETE]: {

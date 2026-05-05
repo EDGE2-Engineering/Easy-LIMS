@@ -28,7 +28,7 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
 
     const handleAction = async (actionId, action) => {
         if (onActionClick) {
-            const result = onActionClick(actionId, action);
+            const result = await onActionClick(actionId, action, performAction);
             if (result === false) return; // intercept automatic transition
         }
 

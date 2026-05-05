@@ -471,7 +471,7 @@ const JobsManager = ({ id }) => {
                             jobId={editingRecord.id}
                             currentStatus={editingRecord.status}
                             onTransition={reloadEditingRecord}
-                            onActionClick={(actionId) => {
+                            onActionClick={async (actionId, action, performAction) => {
                                 if (actionId === 'RECEIVE_WORK_ORDER') { setShowingWoForm(true); return false; }
                                 if (actionId === 'RECEIVE_MATERIAL') { setShowingMaterialForm(true); return false; }
                                 if (actionId === 'ASSIGN_TECHNICIANS') { setShowingTechForm(true); return false; }
@@ -479,7 +479,9 @@ const JobsManager = ({ id }) => {
                                 if (actionId === 'GENERATE_INVOICE') {
                                     const existingInvoice = linkedDocs.find(d => d.document_type === 'Tax Invoice');
                                     if (existingInvoice) {
-                                        navigate(`/doc/${existingInvoice.id}`);
+                                        // Invoice already exists, so just perform the state transition
+                                        const success = await performAction(actionId);
+                                        if (success) reloadEditingRecord();
                                         return false;
                                     }
                                 }
@@ -604,7 +606,7 @@ const JobsManager = ({ id }) => {
                     {!isAddingNew && (
                         <>
                             {/* Materials Summary */}
-                            {[WORKFLOW_STATES.MATERIAL_RECEIVED, WORKFLOW_STATES.TECHNICIANS_ASSIGNED, WORKFLOW_STATES.UNDER_TESTING, WORKFLOW_STATES.TESTING_COMPLETE, WORKFLOW_STATES.UNDER_REVIEW].includes(editingRecord.status) && (
+                            {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.MATERIAL_RECEIVED) && (
                                 <div className="bg-white rounded-2xl shadow-sm">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><Package className="w-4 h-4" /> Material Inward Details</h3>
@@ -619,7 +621,7 @@ const JobsManager = ({ id }) => {
                                 </div>
                             )}
 
-                            {[WORKFLOW_STATES.TECHNICIANS_ASSIGNED, WORKFLOW_STATES.UNDER_TESTING, WORKFLOW_STATES.TESTING_COMPLETE, WORKFLOW_STATES.UNDER_REVIEW].includes(editingRecord.status) && (
+                            {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.TECHNICIANS_ASSIGNED) && (
                                 <div className="bg-white rounded-2xl shadow-sm">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><UserPlus className="w-4 h-4" /> Technician Assignments</h3>
@@ -637,7 +639,7 @@ const JobsManager = ({ id }) => {
                             )}
 
                             {/* Testing Data */}
-                            {[WORKFLOW_STATES.UNDER_TESTING, WORKFLOW_STATES.TESTING_COMPLETE, WORKFLOW_STATES.UNDER_REVIEW].includes(editingRecord.status) && (
+                            {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.UNDER_TESTING) && (
                                 <div className="bg-white rounded-2xl shadow-sm">
                                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2"><Package className="w-4 h-4" /> Testing Data</h3>
                                     <TestingManager initialJobId={editingRecord.id} />
