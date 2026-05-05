@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
-import { APP_CONFIG, WORKFLOW_STATES } from '@/data/config';
+import { APP_CONFIG, WORKFLOW_STATES, ROLES } from '@/data/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkflowConfig } from '@/contexts/WorkflowContext';
 import { toast } from '@/components/ui/use-toast';
@@ -16,6 +16,8 @@ export const useWorkflow = (jobId, currentState) => {
         
         const stateConfig = workflow.states[currentState];
         return (stateConfig.actions || []).filter(action => {
+            // Admin and Super Admin can perform all workflow actions
+            if (user?.role === ROLES.SUPER_ADMIN.slug || user?.role === ROLES.ADMIN.slug) return true;
             // Check if user role matches one of the allowed roles for this action
             return action.roles.includes(user?.role);
         });
