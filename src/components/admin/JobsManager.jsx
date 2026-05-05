@@ -209,12 +209,45 @@ const JobsManager = ({ id }) => {
         }
     };
 
+    const computeGrandTotal = (doc) => {
+        if (!doc?.content) return null;
+        const { items = [], discount = 0 } = doc.content;
+        const subtotal = items.reduce((sum, item) => sum + (item.total || 0), 0);
+        const discountAmt = (subtotal * Number(discount)) / 100;
+        const afterDiscount = subtotal - discountAmt;
+        const tax = afterDiscount * 0.18; // 18% GST
+        return afterDiscount + tax;
+    };
+
     const fetchRecords = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase.from('jobs').select('*, clients(client_name)').order('created_at', { ascending: false });
+            const { data: jobs, error } = await supabase
+                .from('jobs')
+                .select('*, clients(client_name)')
+                .order('created_at', { ascending: false });
             if (error) throw error;
-            setRecords(data || []);
+
+            // Fetch quotation documents for all jobs in one query
+            const jobIds = (jobs || []).map(j => j.id);
+            let quotationMap = {};
+            if (jobIds.length > 0) {
+                const { data: docs } = await supabase
+                    .from('documents')
+                    .select('job_id, content, document_type')
+                    .in('job_id', jobIds)
+                    .eq('document_type', 'Quotation');
+                (docs || []).forEach(doc => {
+                    // Keep first quotation per job
+                    if (!quotationMap[doc.job_id]) quotationMap[doc.job_id] = doc;
+                });
+            }
+
+            const enriched = (jobs || []).map(j => ({
+                ...j,
+                quotationAmount: computeGrandTotal(quotationMap[j.id])
+            }));
+            setRecords(enriched);
         } catch (error) {
             console.error(error);
         } finally {
@@ -708,6 +741,7 @@ const JobsManager = ({ id }) => {
                         <tr>
                             <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Job Code</th>
                             <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Client and Project Name</th>
+                            <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Quotation Amount</th>
                             <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Status</th>
                             <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Actions</th>
                         </tr>
@@ -722,10 +756,35 @@ const JobsManager = ({ id }) => {
                                     <div className="font-bold text-gray-900">{r.clients?.client_name}</div>
                                     <div className="text-xs text-gray-500 mt-1">{r.project_name}</div>
                                 </td>
+                                <td className="py-5 px-6 text-right">
+                                    {r.quotationAmount != null ? (
+                                        <span className="font-bold text-gray-900 tabular-nums">
+                                            ₹{r.quotationAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                        </span>
+                                    ) : (
+                                        <span className="text-gray-300 font-bold">—</span>
+                                    )}
+                                </td>
                                 <td className="py-5 px-6 text-center">
-                                    <Badge variant="secondary" className="bg-white border-gray-200 text-gray-700 shadow-sm">
-                                        {getStatusLabel(r.status)}
-                                    </Badge>
+                                    {(() => {
+                                        const stateColor = workflow.states[r.status]?.color;
+                                        return stateColor ? (
+                                            <span
+                                                style={{
+                                                    backgroundColor: stateColor.bg,
+                                                    color: stateColor.text,
+                                                    borderColor: stateColor.border,
+                                                }}
+                                                className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap"
+                                            >
+                                                {getStatusLabel(r.status)}
+                                            </span>
+                                        ) : (
+                                            <Badge variant="secondary" className="bg-white border-gray-200 text-gray-700 shadow-sm">
+                                                {getStatusLabel(r.status)}
+                                            </Badge>
+                                        );
+                                    })()}
                                 </td>
                                 <td className="py-5 px-6 text-center">
                                     <div className="flex justify-center gap-2">

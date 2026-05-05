@@ -297,7 +297,7 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                 <div className="space-y-4 rounded-xl border border-gray-100 p-6 bg-white shadow-sm mb-6">
                                     <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
                                         <div className="w-2 h-2 rounded-full bg-primary" />
-                                        Advanced Geotechnical Inputs
+                                         Geotechnical Inputs
                                     </h3>
                                     <GeotechTestForm 
                                         value={testResults[selectedCategory]?.['GeotechData'] || {}}

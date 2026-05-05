@@ -40,7 +40,7 @@ import {
 const Navbar = ({ isDirty = false, isSaving = false }) => {
   const content = getSiteContent();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const { canView } = usePermissions();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -314,18 +314,20 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                           <p className="text-sm font-bold text-gray-800 truncate">{user?.username}</p> */}
                         </div>
                         
-                        <button
-                          onClick={() => {
-                            setDropdownOpen(false);
-                            setIsRequestDialogOpen(true);
-                          }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
-                            <CalendarOff className="w-4 h-4 text-indigo-600" />
-                          </div>
-                          Apply for Leave
-                        </button>
+                        {!isAdmin() && (
+                          <button
+                            onClick={() => {
+                              setDropdownOpen(false);
+                              setIsRequestDialogOpen(true);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                              <CalendarOff className="w-4 h-4 text-indigo-600" />
+                            </div>
+                            Apply for Leave
+                          </button>
+                        )}
 
                           <TooltipProvider>
                             <Tooltip>

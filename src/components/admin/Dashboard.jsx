@@ -169,7 +169,7 @@ const Dashboard = () => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                    <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-xl">
                             <LayoutDashboard className="w-8 h-8 text-primary" />
                         </div>
@@ -177,16 +177,9 @@ const Dashboard = () => {
                     </h1>
                     <p className="text-gray-500 font-medium mt-1">Welcome back, <span className="text-primary font-bold">{user?.fullName || user?.username}</span>. Here's what's happening today.</p>
                 </div>
-                <div className="flex items-center gap-3 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100">
-                    <div className="px-4 py-2 text-right">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Server Time</p>
-                        <p className="text-sm font-black text-gray-900 mt-1">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                    </div>
-                    <div className="w-px h-8 bg-gray-100" />
-                    <Button onClick={fetchDashboardData} size="sm" variant="ghost" className="rounded-xl h-10 px-4 font-bold text-primary hover:bg-primary/10 transition-all">
-                        <Zap className="w-4 h-4 mr-2" /> Refresh
-                    </Button>
-                </div>
+                <Button onClick={fetchDashboardData} size="sm" variant="ghost" className="rounded-xl h-10 px-4 font-bold text-primary hover:bg-primary/10 transition-all border border-gray-100 bg-white shadow-sm">
+                    <Zap className="w-4 h-4 mr-2" /> Refresh
+                </Button>
             </div>
 
 
@@ -230,7 +223,7 @@ const Dashboard = () => {
                             <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
-                                        <Calendar className="w-5 h-5 text-primary" /> Today's Focus
+                                        <Calendar className="w-5 h-5 text-primary" /> Today's Brief
                                     </CardTitle>
                                     <Badge className="bg-primary/10 text-primary border-none font-bold">
                                         {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -370,7 +363,7 @@ const Dashboard = () => {
                             <CardHeader className="p-6 border-b border-gray-50 flex flex-row items-center justify-between">
                                 <div className="space-y-1">
                                     <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
-                                        <Activity className="w-5 h-5 text-primary" /> Active Workflow Pipeline
+                                        <Activity className="w-5 h-5 text-primary" /> Summary of Jobs 
                                     </CardTitle>
                                     <CardDescription className="text-xs font-medium text-gray-400 uppercase tracking-widest">Jobs distributed by current state</CardDescription>
                                 </div>
