@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Save, Search, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, Search, AlertCircle, Ruler } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUnitTypes } from '@/contexts/UnitTypesContext';
 import { Button } from '@/components/ui/button';
@@ -126,8 +126,21 @@ const AdminUnitTypesManager = () => {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-4">
+        <div className="space-y-8 max-w-6xl mx-auto pb-12">
+            {/* Standardized Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                    <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-2xl">
+                            <Ruler className="w-6 h-6 text-primary" />
+                        </div>
+                        Units of Measurement
+                    </h1>
+                    <p className="text-gray-500 font-medium mt-1 uppercase text-[10px] tracking-widest ml-1">Manage measurement unit types for services</p>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-3">
                 <div className="relative flex-grow">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input

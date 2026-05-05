@@ -75,20 +75,33 @@ const WorkflowConfigurator = () => {
     if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin" /></div>;
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="space-y-8 max-w-6xl mx-auto pb-12">
+            {/* Standardized Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <GitBranch className="w-6 h-6 text-primary" /> Configure Workflow
-                    </h2>
-                    <p className="text-sm text-gray-500">Manage job states, transitions, and action labels.</p>
+                    <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-2xl">
+                            <GitBranch className="w-6 h-6 text-primary" />
+                        </div>
+                        Workflow Configurator
+                    </h1>
+                    <p className="text-gray-500 font-medium mt-1 uppercase text-[10px] tracking-widest ml-1">Configure job states and transitions</p>
                 </div>
+
                 <div className="flex gap-3">
-                    <Button variant="outline" onClick={handleReset} className="rounded-xl">
+                    <Button
+                        variant="outline"
+                        onClick={handleReset}
+                        className="rounded-xl border-gray-200 hover:bg-gray-50 h-10 px-4 text-xs font-bold"
+                    >
                         <RotateCcw className="w-4 h-4 mr-2" /> Reset
                     </Button>
-                    <Button onClick={handleSave} disabled={isSaving} className="rounded-xl shadow-lg shadow-primary/20">
-                        {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />} Save
+                    <Button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="rounded-xl bg-primary hover:bg-primary-dark text-white shadow-sm h-10 px-6 text-xs font-bold"
+                    >
+                        {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />} Save Changes
                     </Button>
                 </div>
             </div>

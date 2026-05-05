@@ -6,7 +6,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, UserMinus, UserCheck, Search } from 'lucide-react';
+import { Plus, Pencil, UserMinus, UserCheck, Search, UsersRound } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
@@ -134,8 +134,21 @@ const AdminUsersManager = () => {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-4">
+        <div className="space-y-8 max-w-6xl mx-auto pb-12">
+            {/* Standardized Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                    <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-2xl">
+                            <UsersRound className="w-6 h-6 text-primary" />
+                        </div>
+                        Users Master
+                    </h1>
+                    <p className="text-gray-500 font-medium mt-1 uppercase text-[10px] tracking-widest ml-1">Manage system user accounts and roles</p>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-3">
                 <div className="relative flex-grow">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input

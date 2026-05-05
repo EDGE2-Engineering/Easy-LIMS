@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Plus } from 'lucide-react';
+import { Save, Plus, IndianRupee } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -66,20 +66,26 @@ const AdminSettingsManager = () => {
     if (loading) return <div>Loading settings...</div>;
 
     return (
-        <div className="space-y-6 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-            <div className="flex justify-between items-center mb-6">
+        <div className="space-y-8 max-w-6xl mx-auto pb-12">
+            {/* Standardized Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h2 className="text-xl font-bold hidden">Tax and Bank Details</h2>
-                    <p className="text-gray-500 text-sm mt-1 hidden">Configure tax rates and bank details for invoices.</p>
+                    <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-2xl">
+                            <IndianRupee className="w-6 h-6 text-primary" />
+                        </div>
+                        Payment & Tax Settings
+                    </h1>
+                    <p className="text-gray-500 font-medium mt-1 uppercase text-[10px] tracking-widest ml-1">Configure billing rates and bank details</p>
                 </div>
+
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
                             onClick={handleSave}
-                            className="bg-primary hover:bg-primary-dark flex items-center text-white"
+                            className="bg-primary hover:bg-primary-dark flex items-center text-white rounded-xl h-10 px-6 shadow-sm"
                             disabled={isSaving}
                         >
-                            <Plus className="w-4 h-4 mr-2 hidden" />
                             <Save className="w-4 h-4 mr-2" />
                             {isSaving ? 'Saving...' : 'Save Settings'}
                         </Button>
@@ -89,6 +95,8 @@ const AdminSettingsManager = () => {
                     </TooltipContent>
                 </Tooltip>
             </div>
+
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
 
             {/* Tax Configuration Section */}
             <div className="space-y-4">
@@ -213,6 +221,7 @@ const AdminSettingsManager = () => {
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     );
 };
