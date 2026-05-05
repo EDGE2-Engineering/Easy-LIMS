@@ -207,7 +207,7 @@ const ApprovalsManager = () => {
                         </div>
                         Request Approvals
                     </h1>
-                    <p className="text-gray-500 font-medium mt-1 uppercase text-xs tracking-widest ml-1">Review and manage employee requests</p>
+                    <p className="text-gray-500 font-medium mt-1 uppercase text-[10px] tracking-widest ml-1">Review and manage employee requests</p>
                 </div>
                 
                 <div className="flex items-center gap-2 bg-white p-1 rounded-2xl shadow-sm border border-gray-100">

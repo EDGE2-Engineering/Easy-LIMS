@@ -342,14 +342,17 @@ const AdminCompanyCalendar = () => {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Header / Controls */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="space-y-8 max-w-6xl mx-auto pb-12">
+            {/* Standardized Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h2 className="text-md font-bold text-gray-900 flex items-center gap-3">
-                        <CalendarIcon className="w-6 h-6 text-primary" /> Company Calendar
-                    </h2>
-                    <p className="text-gray-500 text-sm mt-1">Manage company holidays and special events for the entire year.</p>
+                    <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                        <div className="p-2.5 bg-primary/10 rounded-2xl">
+                            <CalendarIcon className="w-8 h-8 text-primary" />
+                        </div>
+                        Company Calendar
+                    </h1>
+                    <p className="text-gray-500 font-medium mt-1 uppercase text-[10px] tracking-widest ml-1">Manage holidays and events</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -361,46 +364,31 @@ const AdminCompanyCalendar = () => {
                                 onClick={handleDownloadCSV}
                                 className="rounded-xl border-gray-200 hover:bg-primary/5 hover:text-primary transition-all flex items-center gap-2 h-9"
                             >
-                                <Download className="w-4 h-4" /> Download
+                                <Download className="w-4 h-4" /> Export
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                            <p className="text-xs">Export calendar events to CSV file</p>
+                            <p className="text-xs">Export to CSV</p>
                         </TooltipContent>
                     </Tooltip>
 
-                    <div className="flex items-center gap-3 bg-gray-50 p-1.5 rounded-xl border border-gray-100">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    variant={view === 'calendar' ? 'default' : 'ghost'}
-                                    size="sm"
-                                    onClick={() => setView('calendar')}
-                                    className={`rounded-lg flex items-center gap-2 ${view === 'calendar' ? 'shadow-sm' : ''}`}
-                                >
-                                    <CalendarIcon className="w-4 h-4" /> Full View
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">Switch to annual calendar grid view</p>
-                            </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    variant={view === 'list' ? 'default' : 'ghost'}
-                                    size="sm"
-                                    onClick={() => setView('list')}
-                                    className={`rounded-lg flex items-center gap-2 ${view === 'list' ? 'shadow-sm' : ''}`}
-                                >
-                                    <ListIcon className="w-4 h-4" /> List View
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">Switch to chronological list view</p>
-                            </TooltipContent>
-                        </Tooltip>
+                    <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-2xl border border-gray-100">
+                        <Button
+                            variant={view === 'calendar' ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setView('calendar')}
+                            className={`rounded-xl h-9 px-4 font-bold text-xs ${view === 'calendar' ? 'bg-primary shadow-md' : 'text-gray-500'}`}
+                        >
+                            <CalendarIcon className="w-3.5 h-3.5 mr-2" /> Full View
+                        </Button>
+                        <Button
+                            variant={view === 'list' ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setView('list')}
+                            className={`rounded-xl h-9 px-4 font-bold text-xs ${view === 'list' ? 'bg-primary shadow-md' : 'text-gray-500'}`}
+                        >
+                            <ListIcon className="w-3.5 h-3.5 mr-2" /> List View
+                        </Button>
                     </div>
                 </div>
             </div>

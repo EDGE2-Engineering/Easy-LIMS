@@ -692,12 +692,21 @@ const LeavesManager = () => {
 
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8 max-w-6xl mx-auto pb-12">
+            {/* Standardized Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                    <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                        <div className="p-2.5 bg-primary/10 rounded-2xl">
+                            <ClipboardCheck className="w-8 h-8 text-primary" />
+                        </div>
+                        Employee Leaves
+                    </h1>
+                    <p className="text-gray-500 font-medium mt-1 uppercase text-[10px] tracking-widest ml-1">Track and manage attendance records</p>
+                </div>
+            </div>
+
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                {/* <div>
-                    <h1 className="text-md font-bold text-gray-900 tracking-tight flex items-center gap-2"><ClipboardCheck className="w-6 h-6 text-primary" /> Employee Work Log</h1>
-                    <p className="text-gray-500 text-sm">Track and manage monthly attendance records for all employees</p>
-                </div> */}
                 <div className="relative w-full md:w-80">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input placeholder="Search employees..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 h-11 rounded-xl bg-white border-gray-200 focus:ring-primary shadow-sm" />
