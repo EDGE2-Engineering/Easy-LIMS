@@ -10,6 +10,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { WORKFLOW_STATES, ROLES, APP_CONFIG } from '@/data/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
@@ -160,12 +161,13 @@ const Dashboard = () => {
     }
 
     return (
-        <motion.div 
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="space-y-8 pb-12"
-        >
+        <TooltipProvider delayDuration={300}>
+            <motion.div 
+                variants={container}
+                initial="hidden"
+                animate="show"
+                className="space-y-8 pb-12"
+            >
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
@@ -184,7 +186,7 @@ const Dashboard = () => {
 
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                     { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', trend: 'In Progress' },
                     { label: 'Pending Reports', value: stats.pendingReports, icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', trend: 'Awaiting Action' },
@@ -192,23 +194,32 @@ const Dashboard = () => {
                     { label: 'Total Staff', value: stats.totalStaff, icon: Users, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100', trend: 'Strength' },
                 ].map((stat, idx) => (
                     <motion.div key={idx} variants={item}>
-                        <Card className={`border-none shadow-sm ${stat.bg}/30 relative overflow-hidden group`}>
-                            <div className={`absolute top-0 right-0 w-24 h-24 ${stat.bg} rounded-bl-[100px] -mr-8 -mt-8 opacity-50 transition-transform group-hover:scale-110 duration-500`} />
-                            <CardContent className="p-6 relative">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className={`p-3 rounded-2xl ${stat.bg} ${stat.color}`}>
-                                        <stat.icon className="w-6 h-6" />
-                                    </div>
-                                    <Badge variant="outline" className={`bg-white/50 border-none text-[10px] font-black uppercase tracking-tighter ${stat.color}`}>
-                                        {stat.trend}
-                                    </Badge>
-                                </div>
-                                <div className="space-y-1">
-                                    <h3 className="text-3xl font-black text-gray-900 tracking-tight">{stat.value}</h3>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Card className={`border-none shadow-sm ${stat.bg}/30 relative overflow-hidden group`}>
+                                    <div className={`absolute top-0 right-0 w-16 h-16 ${stat.bg} rounded-bl-[64px] -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110 duration-500`} />
+                                    <CardContent className="p-4 relative">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color} shrink-0`}>
+                                                <stat.icon className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex-grow min-w-0">
+                                                <div className="flex justify-between items-center mb-0.5">
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{stat.label}</p>
+                                                    <Badge variant="outline" className={`bg-white/50 border-none text-[8px] font-black uppercase tracking-tighter ${stat.color} px-1.5 py-0 h-4`}>
+                                                        {stat.trend}
+                                                    </Badge>
+                                                </div>
+                                                <h3 className="text-2xl font-black text-gray-900 tracking-tight leading-none">{stat.value}</h3>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">
+                                <p className="text-xs">The total count of {stat.label.toLowerCase()}</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </motion.div>
                 ))}
             </div>
@@ -219,8 +230,10 @@ const Dashboard = () => {
                 {/* Left Column: Today View & Staff */}
                 <div className="lg:col-span-1 space-y-8">
                     <motion.div variants={item}>
-                        <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
-                            <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
+                                    <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
                                         <Calendar className="w-5 h-5 text-primary" /> Today's Brief
@@ -320,10 +333,17 @@ const Dashboard = () => {
                                 </div>
                             </CardContent>
                         </Card>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
+                                <p className="text-xs">Summary of staff availability and key priorities that need attention today.</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </motion.div>
 
                     <motion.div variants={item}>
-                        <Card className="border-none shadow-sm bg-gradient-to-br from-primary to-primary-dark rounded-3xl overflow-hidden text-white relative">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Card className="border-none shadow-sm bg-gradient-to-br from-primary to-primary-dark rounded-3xl overflow-hidden text-white relative">
                             <div className="absolute top-0 right-0 p-8 opacity-10">
                                 <Target className="w-24 h-24" />
                             </div>
@@ -351,6 +371,11 @@ const Dashboard = () => {
                                 </div>
                             </CardContent>
                         </Card>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
+                                <p className="text-xs">Real-time tracking of organizational efficiency metrics and targets.</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </motion.div>
                 </div>
 
@@ -359,7 +384,9 @@ const Dashboard = () => {
                     
                     {/* Workflow Funnel / Pipeline */}
                     <motion.div variants={item}>
-                        <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
                             <CardHeader className="p-6 border-b border-gray-50 flex flex-row items-center justify-between">
                                 <div className="space-y-1">
                                     <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
@@ -405,11 +432,18 @@ const Dashboard = () => {
                                 </div>
                             </CardContent>
                         </Card>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
+                                <p className="text-xs">The current pipeline of active jobs distributed across all workflow stages.</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </motion.div>
 
                     {/* Recent Activity Feed */}
                     <motion.div variants={item}>
-                        <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
                             <CardHeader className="p-6 border-b border-gray-50">
                                 <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
                                     <Zap className="w-5 h-5 text-primary" /> System Activity Feed
@@ -463,10 +497,16 @@ const Dashboard = () => {
                                 </div>
                             </CardContent>
                         </Card>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
+                                <p className="text-xs">Live feed of the most recent actions and state transitions within the application.</p>
+                            </TooltipContent>
+                        </Tooltip>
                     </motion.div>
                 </div>
             </div>
-        </motion.div>
+            </motion.div>
+        </TooltipProvider>
     );
 };
 
