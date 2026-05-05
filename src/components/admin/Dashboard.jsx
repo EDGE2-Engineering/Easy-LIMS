@@ -4,7 +4,8 @@ import {
     LayoutDashboard, Briefcase, Users, Calendar, TrendingUp, 
     AlertCircle, CheckCircle2, Clock, IndianRupee, FileText, 
     Package, ArrowUpRight, ArrowDownRight, ChevronRight, UserMinus, 
-    Zap, Activity, Target, ShieldCheck, CalendarRange
+    Zap, Activity, Target, ShieldCheck, CalendarRange,
+    BriefcaseBusiness, MessageSquare
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -26,11 +27,15 @@ const Dashboard = () => {
         pendingReports: 0,
         pendingPayments: 0,
         totalStaff: 0,
+        totalClients: 0,
+        totalInquiries: 0,
+        pendingInquiries: 0,
         leavesToday: [],
         upcomingLeaves: []
     });
     const [recentActivity, setRecentActivity] = useState([]);
     const [workflowCounts, setWorkflowCounts] = useState({});
+    const [recentInquiries, setRecentInquiries] = useState([]);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -95,13 +100,13 @@ const Dashboard = () => {
                 .neq('role', ROLES.SUPER_ADMIN.slug);
             if (staffError) throw staffError;
 
-            // 4. Fetch Recent Activity (from workflow logs)
-            const { data: activity, error: activityError } = await supabase
-                .from('job_workflow_logs')
-                .select('*, jobs(job_code, project_name), users(full_name, username)')
-                .order('created_at', { ascending: false })
-                .limit(5);
             if (activityError) throw activityError;
+            
+            // 5. Fetch Clients & Inquiries Stats
+            const { count: clientsCount, error: clientErr } = await supabase.from('clients').select('*', { count: 'exact', head: true });
+            const { data: inquiries, error: inqErr } = await supabase.from('inquiries').select('status');
+            
+            const pendingInquiries = (inquiries || []).filter(i => i.status === 'PENDING').length;
 
             setStats({
                 totalJobs: jobs.length,
@@ -109,9 +114,13 @@ const Dashboard = () => {
                 pendingReports: reportsPending,
                 pendingPayments: paymentsPending,
                 totalStaff: staffCount || 0,
+                totalClients: clientsCount || 0,
+                totalInquiries: inquiries?.length || 0,
+                pendingInquiries: pendingInquiries,
                 leavesToday: leavesToday,
                 upcomingLeaves: upcomingLeaves
             });
+            setRecentInquiries((inquiries || []).slice(0, 3));
             setWorkflowCounts(counts);
             setRecentActivity(activity || []);
 
@@ -186,12 +195,13 @@ const Dashboard = () => {
 
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 {[
                     { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', trend: 'In Progress' },
                     { label: 'Pending Reports', value: stats.pendingReports, icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', trend: 'Awaiting Action' },
                     { label: 'Awaiting Payment', value: stats.pendingPayments, icon: IndianRupee, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', trend: 'Accounts' },
-                    { label: 'Total Staff', value: stats.totalStaff, icon: Users, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100', trend: 'Strength' },
+                    { label: 'Total Clients', value: stats.totalClients, icon: BriefcaseBusiness, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', trend: 'Network' },
+                    { label: 'New Inquiries', value: stats.totalInquiries, icon: MessageSquare, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100', trend: `${stats.pendingInquiries} Pending` },
                 ].map((stat, idx) => (
                     <motion.div key={idx} variants={item}>
                         <Tooltip>
@@ -206,7 +216,7 @@ const Dashboard = () => {
                                             <div className="flex-grow min-w-0">
                                                 <div className="flex justify-between items-center mb-0.5">
                                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{stat.label}</p>
-                                                    <Badge variant="outline" className={`bg-white/50 border-none text-[8px] font-black uppercase tracking-tighter ${stat.color} px-1.5 py-0 h-4`}>
+                                                    <Badge variant="outline" className={`hidden bg-white/50 border-none text-[8px] font-black uppercase tracking-tighter ${stat.color} px-1.5 py-0 h-4`}>
                                                         {stat.trend}
                                                     </Badge>
                                                 </div>
@@ -330,6 +340,42 @@ const Dashboard = () => {
                                             <span className="text-[9px] font-black text-blue-400 uppercase tracking-tight">Ready to Invoice</span>
                                         </div>
                                     </div>
+                                </div>
+
+                                <div className="pt-4 border-t border-gray-50 space-y-4">
+                                    <div className="flex items-center justify-between px-1">
+                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                            <MessageSquare className="w-3 h-3" /> Recent Inquiries
+                                        </h4>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="h-5 px-2 text-[8px] font-black uppercase text-primary hover:bg-primary/5"
+                                            onClick={() => window.location.hash = '#/settings/inquiries'}
+                                        >
+                                            View All
+                                        </Button>
+                                    </div>
+                                    
+                                    {recentInquiries.length === 0 ? (
+                                        <div className="p-4 bg-gray-50/50 rounded-2xl text-center border border-dashed border-gray-200">
+                                            <p className="text-[10px] font-bold text-gray-400 italic">No new inquiries.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {recentInquiries.map((inq, idx) => (
+                                                <div key={idx} className="p-3 bg-white rounded-2xl border border-gray-50 hover:border-rose-100 transition-all group shadow-sm">
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <p className="text-xs font-bold text-gray-900 truncate flex-grow mr-2">{inq.client_name}</p>
+                                                        <Badge className={`text-[8px] px-1 py-0 h-3.5 border-none font-black uppercase ${inq.status === 'PENDING' ? 'bg-yellow-50 text-yellow-600' : 'bg-blue-50 text-blue-600'}`}>
+                                                            {inq.status}
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="text-[9px] text-gray-400 font-medium line-clamp-1">{inq.description || 'No details provided'}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
