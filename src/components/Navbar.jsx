@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck, Calculator, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness, CalendarOff, LayoutDashboard, CheckCircle2, Calendar, Loader2, Send } from 'lucide-react';
+import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck, Calculator, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness, CalendarOff, LayoutDashboard, CheckCircle2, Calendar, Loader2, Send, Building2 } from 'lucide-react';
 import { getSiteContent, VIEWS } from '@/data/config';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -108,12 +108,10 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
   const ALL_NAV_ITEMS = [
     { view: VIEWS.DASHBOARD, path: '/settings/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { view: VIEWS.JOBS, path: '/settings/jobs', label: 'Jobs', icon: Briefcase },
-    { view: VIEWS.EXPENSES, path: '/settings/expenses', label: 'Expenses', icon: IndianRupee },
-    { id: 'work_log', view: VIEWS.WORK_LOG, path: '/settings/work_log', label: 'Leaves', icon: ClipboardCheck },
-    { view: VIEWS.APPROVALS, path: '/settings/approvals', label: 'Approvals', icon: CheckCircle2 },
   ];
 
   const SETTINGS_SUB_ITEMS = [
+    { id: 'organization', label: 'Organization', icon: Building2, path: '/settings/organization', description: 'Manage expenses, leaves, and approvals' },
     { id: 'clients', label: 'Clients', icon: BriefcaseBusiness, path: '/settings/clients', description: 'Manage your client database' },
     { id: 'client_pricing', label: 'Client Pricing', icon: IndianRupee, path: '/settings/client_pricing', description: 'Configure custom prices per client' },
     { id: 'field_tests', label: 'Field Tests', icon: Drill, path: '/settings/field_tests', description: 'Configure on-site testing services' },
@@ -129,22 +127,14 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     if (path === '/settings/clients') { // Changed from /settings/services to /settings/clients
       // Highlight settings only for explicitly settings tabs, not for Inward/Reports/Accounts
       const isManagementTab = location.pathname.includes('/jobs') ||
-        location.pathname.includes('/expenses') ||
-        location.pathname.includes('/wages') ||
         location.pathname.includes('/inward_register') ||
         location.pathname.includes('/reports') ||
         location.pathname.includes('/accounts') ||
-        location.pathname.includes('/work_log') ||
-        location.pathname.includes('/dashboard') ||
-        location.pathname.includes('/approvals');
+        location.pathname.includes('/dashboard');
 
       return (location.pathname.startsWith('/settings') && !isManagementTab) ||
         location.pathname.startsWith('/service/') ||
         location.pathname.startsWith('/test/');
-    }
-
-    if (id === 'work_log') {
-        return location.pathname === path || location.pathname.startsWith('/settings/work_log');
     }
 
     if (id === 'utilities') {
@@ -177,13 +167,10 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
           <div className="hidden md:flex items-center space-x-2">
             <TooltipProvider>
               {navItems.map((item) => {
-                const descriptions = {
+                  const descriptions = {
                   '/settings/dashboard': 'Overview of laboratory operations and metrics',
                   '/settings/jobs': 'Manage laboratory testing jobs',
-                  '/settings/expenses': 'Track company expenses and payments',
-                  '/settings/work_log': 'Manage employee leave records and absences',
                   '/settings/utilities': 'Access helpful calculation utilities',
-                  '/settings/approvals': 'Manage employee requests and approvals',
                 };
 
                 return (

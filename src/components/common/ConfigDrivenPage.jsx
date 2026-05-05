@@ -19,6 +19,7 @@ const UtilitiesManager = lazy(() => import('@/components/admin/UtilitiesManager.
 const Dashboard = lazy(() => import('@/components/admin/Dashboard.jsx'));
 const ApprovalsManager = lazy(() => import('@/components/admin/ApprovalsManager.jsx'));
 const AdminClientPricingManager = lazy(() => import('@/components/admin/AdminClientPricingManager.jsx'));
+const AdminOrganizationSettings = lazy(() => import('@/components/admin/AdminOrganizationSettings.jsx'));
 
 const COMPONENT_MAP = {
   [VIEWS.DASHBOARD]: Dashboard,
@@ -44,6 +45,7 @@ const ConfigDrivenPage = ({ viewName, subView, id }) => {
       else if (subView === 'field_tests') Component = AdminServicesManager;
       else if (subView === 'lab_tests') Component = AdminTestsManager;
       else if (subView === 'sampling') Component = AdminSamplingManager;
+      else if (subView === 'organization') Component = AdminOrganizationSettings;
   }
 
   if (!canView(viewName)) {

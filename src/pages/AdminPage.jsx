@@ -46,7 +46,8 @@ const AdminPage = () => {
         field_tests: VIEWS.SETTINGS,
         lab_tests: VIEWS.SETTINGS,
         sampling: VIEWS.SETTINGS,
-        client_pricing: VIEWS.CLIENT_PRICING
+        client_pricing: VIEWS.CLIENT_PRICING,
+        organization: VIEWS.SETTINGS
     };
 
 

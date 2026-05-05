@@ -452,7 +452,12 @@ const Dashboard = () => {
                                     )}
                                 </div>
                                 <div className="p-4 bg-gray-50/50 border-t border-gray-50 text-center">
-                                    <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-primary">
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-primary"
+                                        onClick={() => window.location.hash = '#/settings/organization/audit_logs'}
+                                    >
                                         View All Audit Logs <ChevronRight className="w-3 h-3 ml-1" />
                                     </Button>
                                 </div>
