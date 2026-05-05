@@ -423,6 +423,9 @@ const JobsManager = ({ id }) => {
             if (sortField === 'client_name') {
                 valA = a.clients?.client_name || '';
                 valB = b.clients?.client_name || '';
+            } else if (sortField === 'quotationAmount') {
+                valA = a.quotationAmount != null ? a.quotationAmount : -1;
+                valB = b.quotationAmount != null ? b.quotationAmount : -1;
             } else {
                 valA = a[sortField] || '';
                 valB = b[sortField] || '';
@@ -710,6 +713,7 @@ const JobsManager = ({ id }) => {
                                     <SelectItem value="created_at">Date Created</SelectItem>
                                     <SelectItem value="job_id">Job ID</SelectItem>
                                     <SelectItem value="client_name">Client Name</SelectItem>
+                                    <SelectItem value="quotationAmount">Quotation Amount</SelectItem>
                                 </SelectContent>
                             </Select>
                             <Tooltip>
@@ -749,6 +753,7 @@ const JobsManager = ({ id }) => {
                             <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Job Code</th>
                             <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Client and Project Name</th>
                             <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Quotation Amount</th>
+                            <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Created On</th>
                             <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Status</th>
                             <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Actions</th>
                         </tr>
@@ -771,6 +776,14 @@ const JobsManager = ({ id }) => {
                                     ) : (
                                         <span className="text-gray-300 font-bold">—</span>
                                     )}
+                                </td>
+                                <td className="py-5 px-6 text-right">
+                                    <div className="text-xs text-gray-500 mt-1">
+                                        {new Date(r.created_at).toLocaleString("en-IN", {
+                                            timeZone: "Asia/Kolkata",
+                                            dateStyle: "medium",
+                                        })}
+                                    </div>
                                 </td>
                                 <td className="py-5 px-6 text-center">
                                     {(() => {
