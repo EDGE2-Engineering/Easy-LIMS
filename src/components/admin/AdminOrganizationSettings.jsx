@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/comp
 import { IndianRupee, ClipboardCheck, CheckCircle2, ShieldCheck, Calendar } from 'lucide-react';
 
 import ExpensesManager from './ExpensesManager';
-import WagesManager from './WagesManager';
+import LeavesManager from './LeavesManager';
 import ApprovalsManager from './ApprovalsManager';
 import AuditLogsManager from './AuditLogsManager';
 import AdminCompanyCalendar from './AdminCompanyCalendar';
@@ -120,7 +120,7 @@ const AdminOrganizationSettings = ({ id }) => {
                 </TabsContent>
 
                 <TabsContent value="leaves" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <WagesManager />
+                    <LeavesManager />
                 </TabsContent>
 
                 <TabsContent value="approvals" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">

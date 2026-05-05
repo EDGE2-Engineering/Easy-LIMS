@@ -14,7 +14,7 @@ const AdminServicesManager = lazy(() => import('@/components/admin/AdminServices
 const AdminSystemSettings = lazy(() => import('@/components/admin/AdminSystemSettings.jsx'));
 const AdminSamplingManager = lazy(() => import('@/components/admin/AdminSamplingManager.jsx'));
 const ExpensesManager = lazy(() => import('@/components/admin/ExpensesManager.jsx'));
-const LeavesManager = lazy(() => import('@/components/admin/WagesManager.jsx'));
+const LeavesManager = lazy(() => import('@/components/admin/LeavesManager.jsx'));
 const UtilitiesManager = lazy(() => import('@/components/admin/UtilitiesManager.jsx'));
 const Dashboard = lazy(() => import('@/components/admin/Dashboard.jsx'));
 const ApprovalsManager = lazy(() => import('@/components/admin/ApprovalsManager.jsx'));
