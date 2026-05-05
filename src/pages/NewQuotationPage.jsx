@@ -131,6 +131,7 @@ const NewQuotationPage = () => {
     const [loadedDocumentType, setLoadedDocumentType] = useState(null);
     const [isSavingRecord, setIsSavingRecord] = useState(false);
     const [lastSavedData, setLastSavedData] = useState(null);
+    const [linkedJobId, setLinkedJobId] = useState(searchParams.get('jobId') || null);
     const isNavigatingRef = useRef(false);
 
 
@@ -243,7 +244,11 @@ const NewQuotationPage = () => {
     }, [defaultQuoteDetails, setSearchParams, navigate]);
 
     const handleBack = () => {
-        navigate('/');
+        if (linkedJobId) {
+            navigate(`/settings/jobs/${linkedJobId}`);
+        } else {
+            navigate('/');
+        }
     };
 
     // Navigation guard for unsaved changes (Page reload/close)
@@ -380,6 +385,7 @@ const NewQuotationPage = () => {
                     setLoadedDocumentType(loadedDocType);
                     setDiscount(loadedDiscount);
                     setSavedRecordId(data.id);
+                    if (data.job_id) setLinkedJobId(data.job_id);
 
                     const snapshot = {
                         quoteDetails: loadedQuoteDetails,

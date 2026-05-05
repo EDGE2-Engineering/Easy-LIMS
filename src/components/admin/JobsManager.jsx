@@ -473,6 +473,13 @@ const JobsManager = ({ id }) => {
                                 if (actionId === 'RECEIVE_MATERIAL') { setShowingMaterialForm(true); return false; }
                                 if (actionId === 'ASSIGN_TECHNICIANS') { setShowingTechForm(true); return false; }
                                 if (actionId === 'START_TESTING') { setShowingTestingForm(true); }
+                                if (actionId === 'GENERATE_INVOICE') {
+                                    const existingInvoice = linkedDocs.find(d => d.document_type === 'Tax Invoice');
+                                    if (existingInvoice) {
+                                        navigate(`/doc/${existingInvoice.id}`);
+                                        return false;
+                                    }
+                                }
                             }}
                         />
 
