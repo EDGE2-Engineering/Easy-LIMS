@@ -239,8 +239,8 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                                 : 'text-gray-600 hover:bg-gray-50 hover:text-primary'
                                 }`}
                             >
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${location.pathname === subItem.path ? 'bg-primary/20' : 'bg-gray-100'}`}>
-                                <subItem.icon className="w-4 h-4" />
+                              <div className={`w-8 h-8 shrink-0 rounded-lg flex items-center justify-center ${location.pathname === subItem.path ? 'bg-primary/20' : 'bg-gray-100'}`}>
+                                <subItem.icon className="w-4 h-4 shrink-0" />
                               </div>
                               <div>
                                 <p className="font-bold">{subItem.label}</p>
