@@ -5,7 +5,7 @@ import {
     AlertCircle, CheckCircle2, Clock, IndianRupee, FileText, 
     Package, ArrowUpRight, ArrowDownRight, ChevronRight, UserMinus, 
     Zap, Activity, Target, ShieldCheck, CalendarRange,
-    BriefcaseBusiness, MessageSquare
+    BriefcaseBusiness, MessageSquare, Wallet
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -30,6 +30,11 @@ const Dashboard = () => {
         totalClients: 0,
         totalInquiries: 0,
         pendingInquiries: 0,
+        expenditures: {
+            week: 0,
+            month: 0,
+            year: 0
+        },
         leavesToday: [],
         upcomingLeaves: []
     });
@@ -99,14 +104,62 @@ const Dashboard = () => {
                 .select('*', { count: 'exact', head: true })
                 .neq('role', ROLES.SUPER_ADMIN.slug);
             if (staffError) throw staffError;
-
+            // 4. Fetch Recent Activity (from workflow logs)
+            const { data: activity, error: activityError } = await supabase
+                .from('job_workflow_logs')
+                .select('*, jobs(job_code, project_name), users(full_name, username)')
+                .order('created_at', { ascending: false })
+                .limit(5);
             if (activityError) throw activityError;
             
             // 5. Fetch Clients & Inquiries Stats
             const { count: clientsCount, error: clientErr } = await supabase.from('clients').select('*', { count: 'exact', head: true });
-            const { data: inquiries, error: inqErr } = await supabase.from('inquiries').select('status');
+            const { data: inquiries, error: inqErr } = await supabase
+                .from('inquiries')
+                .select('client_name, status, description, received_at')
+                .order('received_at', { ascending: false });
             
+            if (inqErr) throw inqErr;
             const pendingInquiries = (inquiries || []).filter(i => i.status === 'PENDING').length;
+
+            // 6. Fetch Expenses for Year
+            const now = new Date();
+            const formatDate = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            const firstDayOfYearStr = `${now.getFullYear()}-01-01`;
+            const { data: expenses, error: expErr } = await supabase
+                .from('expenses')
+                .select('amount, date');
+            
+            if (expErr) throw expErr;
+
+            const firstDayOfMonthStr = formatDate(new Date(now.getFullYear(), now.getMonth(), 1));
+            
+            // Get first day of current week (assuming Monday)
+            const d = new Date(now);
+            const dayOfWeek = d.getDay();
+            const diff = d.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+            const firstDayOfWeekStr = formatDate(new Date(d.setDate(diff)));
+
+            const currentYear = String(now.getFullYear());
+            const expMetrics = (expenses || []).reduce((acc, e) => {
+                const amount = Number(e.amount) || 0;
+                const dateStr = e.date || ""; // YYYY-MM-DD
+                
+                // Only count expenses from the current year
+                if (dateStr.startsWith(currentYear)) {
+                    acc.year += amount;
+                    if (dateStr >= firstDayOfMonthStr) acc.month += amount;
+                    if (dateStr >= firstDayOfWeekStr) acc.week += amount;
+                }
+                
+                return acc;
+            }, { week: 0, month: 0, year: 0 });
 
             setStats({
                 totalJobs: jobs.length,
@@ -117,6 +170,7 @@ const Dashboard = () => {
                 totalClients: clientsCount || 0,
                 totalInquiries: inquiries?.length || 0,
                 pendingInquiries: pendingInquiries,
+                expenditures: expMetrics,
                 leavesToday: leavesToday,
                 upcomingLeaves: upcomingLeaves
             });
@@ -195,7 +249,7 @@ const Dashboard = () => {
 
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 {[
                     { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', trend: 'In Progress' },
                     { label: 'Pending Reports', value: stats.pendingReports, icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', trend: 'Awaiting Action' },
@@ -248,7 +302,7 @@ const Dashboard = () => {
                                     <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
                                         <Calendar className="w-5 h-5 text-primary" /> Today's Brief
                                     </CardTitle>
-                                    <Badge className="bg-primary/10 text-primary border-none font-bold">
+                                    <Badge className="bg-primary/10 text-primary border-none font-bold hover:bg-primary/20">
                                         {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                     </Badge>
                                 </div>
@@ -389,6 +443,51 @@ const Dashboard = () => {
                     <motion.div variants={item}>
                         <Tooltip>
                             <TooltipTrigger asChild>
+                                <Card className="border-none shadow-sm bg-gradient-to-br from-red-500 to-red-700 rounded-3xl overflow-hidden text-white relative">
+                                    <div className="absolute top-0 right-0 p-8 opacity-10">
+                                        <Wallet className="w-24 h-24" />
+                                    </div>
+                                    <CardContent className="p-8 space-y-6 relative">
+                                        <div className="space-y-1">
+                                            <h3 className="text-2xl font-black tracking-tight">Expenditures</h3>
+                                            <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Financial Outflow</p>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {[
+                                                { label: 'This Week', value: stats.expenditures.week },
+                                                { label: 'This Month', value: stats.expenditures.month },
+                                                { label: 'This Year', value: stats.expenditures.year },
+                                            ].map((exp, idx) => (
+                                                <div key={idx} className="space-y-2">
+                                                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                                        <span>{exp.label}</span>
+                                                        <span className="text-sm">₹{exp.value.toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className="h-full bg-white rounded-full transition-all duration-1000" 
+                                                            style={{ 
+                                                                width: exp.label === 'This Year' ? '100%' : 
+                                                                       exp.label === 'This Month' ? `${Math.min(100, (exp.value / (stats.expenditures.year || 1)) * 100)}%` :
+                                                                       `${Math.min(100, (exp.value / (stats.expenditures.month || 1)) * 100)}%`
+                                                            }} 
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
+                                <p className="text-xs">Summary of organizational expenditures across different time periods.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </motion.div>
+
+                    <motion.div variants={item}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
                                 <Card className="border-none shadow-sm bg-gradient-to-br from-primary to-primary-dark rounded-3xl overflow-hidden text-white relative">
                             <div className="absolute top-0 right-0 p-8 opacity-10">
                                 <Target className="w-24 h-24" />
@@ -423,6 +522,7 @@ const Dashboard = () => {
                             </TooltipContent>
                         </Tooltip>
                     </motion.div>
+
                 </div>
 
                 {/* Right Column: Workflow Pipeline & Recent Activity */}
