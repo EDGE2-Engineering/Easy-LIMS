@@ -12,8 +12,10 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useWorkflow } from '@/hooks/useWorkflow';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TEST_SCHEMA } from '@/data/test_schemas';
+import { MATERIALS } from '@/data/config';
 import DynamicForm from '@/components/common/DynamicForm';
 import GeotechTestForm from './GeotechTestForm';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
@@ -46,8 +48,14 @@ const TestingManager = ({ initialJobId, onClose }) => {
             setJobDetails(job);
 
             // Fetch Samples
-            const { data: inwards, error: inError } = await supabase.from('material_inward_register').select('*, material_samples(*)').eq('job_id', initialJobId);
-            if (!inError) setSamples(inwards.flatMap(i => i.material_samples || []));
+            const { data: inwards, error: inError } = await supabase
+                .from('material_inward_register')
+                .select('*, material_samples(*)')
+                .eq('job_id', initialJobId);
+            const flatSamples = inwards ? inwards.flatMap(i => i.material_samples || []) : [];
+            setSamples(flatSamples);
+            console.log('[TestingManager] samples:', flatSamples);
+            if (inError) console.error('Inward fetch error:', inError);
 
             // Fetch Existing Test Data
             const { data: testData, error: tError } = await supabase.from('job_tests').select('*').eq('job_id', initialJobId);
@@ -130,17 +138,46 @@ const TestingManager = ({ initialJobId, onClose }) => {
     if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin" /></div>;
     if (!jobDetails) return null;
 
-    const sampleCategories = [...new Set(samples.map(s => s.sample_code))].filter(Boolean);
+    // Derive category names by looking up each sample's material_type in the MATERIALS config
+    const sampleCategories = [...new Set(
+        samples
+            .map(s => {
+                if (!s.material_type) return null;
+                const mat = MATERIALS.find(m => m.id === s.material_type);
+                return mat ? mat.name : null;
+            })
+            .filter(Boolean)
+    )];
     const dataCats = Object.keys(testResults);
-    const allCategories = [...new Set([...sampleCategories, ...dataCats])];
-    
-    // Admin gets to see all assigned categories. Technicians only see their capable ones, PLUS categories that already have data.
-    const visibleCategories = isAdmin() ? allCategories : allCategories.filter(c => techCapabilities.includes(c) || dataCats.includes(c));
+
+    // Fallback: if no material names resolved (null material_id on old samples, or materials table inaccessible),
+    // admins see all available TEST_SCHEMA keys so data can always be entered.
+    const hasMaterialsGap = samples.length > 0 && sampleCategories.length === 0;
+    const schemaFallbackCats = hasMaterialsGap && isAdmin() ? Object.keys(TEST_SCHEMA) : [];
+
+    const allCategories = [...new Set([...sampleCategories, ...dataCats, ...schemaFallbackCats])];
+
+    // Admin sees all; Technicians see only authorized or already-recorded categories
+    const visibleCategories = isAdmin()
+        ? allCategories
+        : allCategories.filter(c => techCapabilities.includes(c) || dataCats.includes(c));
+
+    // Names of geotechnical material types (matched against TEST_SCHEMA keys)
+    const GEOTECH_NAMES = ['Soil', 'Rock', 'Soil and Rock'];
 
     return (
         <div className="w-full animate-in fade-in duration-500">
             {visibleCategories.length > 0 ? (
-                        <Tabs defaultValue={visibleCategories[0]} className="w-full">
+        <Tabs defaultValue={visibleCategories[0]} className="w-full">
+                            {hasMaterialsGap && (
+                                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 text-sm">
+                                    <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                                    <p className="text-amber-800">
+                                        <strong>Material types not set on samples.</strong>{' '}
+                                        Update the <em>Material Inward</em> entry to assign a Material Type to each sample — tabs below show all available test categories as a fallback.
+                                    </p>
+                                </div>
+                            )}
                             <TabsList className="bg-white border rounded-xl p-1 mb-6 flex-wrap h-auto">
                                 {visibleCategories.map(cat => (
                                     <TabsTrigger key={cat} value={cat} className="px-6 py-2.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white">
@@ -157,7 +194,7 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                 return (
                                     <TabsContent key={cat} value={cat} className="space-y-6 outline-none">
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {['SOIL', 'SOIL AND ROCK', 'ROCK'].includes(cat) && (
+                                            {GEOTECH_NAMES.includes(cat) && (
                                                 <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full md:col-span-2 lg:col-span-3">
                                                     <div>
                                                         <h4 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
@@ -256,7 +293,7 @@ const TestingManager = ({ initialJobId, onClose }) => {
                     </DialogHeader>
                     {selectedCategory && (
                         <div className="py-4 space-y-8">
-                            {['SOIL', 'SOIL AND ROCK', 'ROCK'].includes(selectedCategory) && (
+                            {GEOTECH_NAMES.includes(selectedCategory) && (
                                 <div className="space-y-4 rounded-xl border border-gray-100 p-6 bg-white shadow-sm mb-6">
                                     <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
                                         <div className="w-2 h-2 rounded-full bg-primary" />

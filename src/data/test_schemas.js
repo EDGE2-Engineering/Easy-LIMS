@@ -1,5 +1,5 @@
 export const TEST_SCHEMA = {
-    "SOIL AND ROCK": {
+    "Soil and Rock": {
         "Sieve Analysis": [
             { id: "sieve_aperture", label: "Sieve Aperture (mm)", type: "number" },
             { id: "mass_retained", label: "Mass of soil retained (g)", type: "number" },
@@ -12,7 +12,7 @@ export const TEST_SCHEMA = {
             { id: "dry_soil_mass", label: "Mass of can + dry soil (g)", type: "number" }
         ]
     },
-    "SOIL": {
+    "Soil": {
         "Sieve Analysis": [
             { id: "sieve_aperture", label: "Sieve Aperture (mm)", type: "number" },
             { id: "mass_retained", label: "Mass of soil retained (g)", type: "number" },
@@ -20,7 +20,7 @@ export const TEST_SCHEMA = {
             { id: "passing_perc", label: "Percentage Passing (%)", type: "number" }
         ]
     },
-    "WATER": {
+    "Water": {
         "pH Test": [
             { id: "ph_reading", label: "pH Reading", type: "number", step: "0.1" },
             { id: "temperature", label: "Temperature (°C)", type: "number" }
@@ -30,7 +30,7 @@ export const TEST_SCHEMA = {
             { id: "normality", label: "Normality", type: "number" }
         ]
     },
-    "CEMENT": {
+    "Cement": {
         "Consistency Test": [
             { id: "water_added", label: "Water Added (%)", type: "number" },
             { id: "penetration", label: "Penetration (mm)", type: "number" }

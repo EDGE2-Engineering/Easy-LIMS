@@ -1,6 +1,7 @@
 
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { MATERIALS } from '@/data/config';
 
 const MaterialsContext = createContext();
 
@@ -19,6 +20,23 @@ const MaterialsProvider = ({ children }) => {
             if (error) {
                 console.error("Error fetching materials:", error.message);
                 return;
+            }
+
+            // Auto-seed the table from config.js if it's empty
+            if (data && data.length === 0 && MATERIALS.length > 0) {
+                console.log("Materials table is empty — seeding from config.js...");
+                const seedPayload = MATERIALS.map(m => ({ name: m.name }));
+                const { data: seeded, error: seedError } = await supabase
+                    .from('materials')
+                    .insert(seedPayload)
+                    .select();
+
+                if (seedError) {
+                    console.error("Error seeding materials:", seedError.message);
+                } else if (seeded) {
+                    setMaterials(seeded.sort((a, b) => a.name.localeCompare(b.name)));
+                    return;
+                }
             }
 
             if (data) {

@@ -107,6 +107,14 @@ CREATE TABLE public.job_tests (
   CONSTRAINT job_tests_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT job_tests_assigned_technician_id_fkey FOREIGN KEY (assigned_technician_id) REFERENCES public.users(id)
 );
+CREATE TABLE public.job_to_technicians (
+  job_id bigint NOT NULL,
+  technician_id bigint NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT job_to_technicians_pkey PRIMARY KEY (job_id, technician_id),
+  CONSTRAINT job_to_technicians_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT job_to_technicians_technician_id_fkey FOREIGN KEY (technician_id) REFERENCES public.users(id)
+);
 CREATE TABLE public.job_workflow_logs (
   from_state text,
   to_state text NOT NULL,
@@ -137,14 +145,6 @@ CREATE TABLE public.jobs (
   CONSTRAINT jobs_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.clients(id),
   CONSTRAINT jobs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id),
   CONSTRAINT jobs_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id)
-);
-CREATE TABLE public.job_to_technicians (
-  job_id bigint NOT NULL,
-  technician_id bigint NOT NULL,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT job_to_technicians_pkey PRIMARY KEY (job_id, technician_id),
-  CONSTRAINT job_to_technicians_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id) ON DELETE CASCADE,
-  CONSTRAINT job_to_technicians_technician_id_fkey FOREIGN KEY (technician_id) REFERENCES public.users(id) ON DELETE CASCADE
 );
 CREATE TABLE public.material_inward_register (
   job_order_no character varying UNIQUE,
@@ -177,17 +177,11 @@ CREATE TABLE public.material_samples (
   inward_id bigint NOT NULL,
   received_by bigint NOT NULL,
   collection_center_id bigint NOT NULL,
+  material_type text,
   CONSTRAINT material_samples_pkey PRIMARY KEY (id),
   CONSTRAINT material_samples_inward_id_fkey FOREIGN KEY (inward_id) REFERENCES public.material_inward_register(id),
   CONSTRAINT material_samples_received_by_fkey FOREIGN KEY (received_by) REFERENCES public.users(id),
   CONSTRAINT material_samples_collection_center_id_fkey FOREIGN KEY (collection_center_id) REFERENCES public.collection_centers(id)
-);
-CREATE TABLE public.materials (
-  name text NOT NULL UNIQUE,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  CONSTRAINT materials_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.reports (
   report_number text NOT NULL UNIQUE,
@@ -235,8 +229,7 @@ CREATE TABLE public.sampling_to_materials (
   material_id bigint NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT sampling_to_materials_pkey PRIMARY KEY (sampling_id, material_id),
-  CONSTRAINT sampling_to_materials_sampling_id_fkey FOREIGN KEY (sampling_id) REFERENCES public.sampling(id),
-  CONSTRAINT sampling_to_materials_material_id_fkey FOREIGN KEY (material_id) REFERENCES public.materials(id)
+  CONSTRAINT sampling_to_materials_sampling_id_fkey FOREIGN KEY (sampling_id) REFERENCES public.sampling(id)
 );
 CREATE TABLE public.sampling_to_technicals (
   sampling_id bigint NOT NULL,

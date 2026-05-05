@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { format } from 'date-fns';
-import { WORKFLOW_STATES, SAMPLE_CODES, ROLES } from '@/data/config';
+import { WORKFLOW_STATES, ROLES, MATERIALS } from '@/data/config';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -50,6 +50,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
     const { toast } = useToast();
     const navigate = useNavigate();
     const { user, isStandard } = useAuth();
+    const materials = MATERIALS;
 
     // Management State (Consistent with AdminServicesManager)
     const [editingRecord, setEditingRecord] = useState(null);
@@ -102,6 +103,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
             console.error('Error fetching collection centers:', error);
         }
     };
+
 
     const fetchRecords = async () => {
         setLoading(true);
@@ -179,6 +181,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                         samples: [
                             {
                                 sample_code: '',
+                                material_type: '',
                                 sample_description: '',
                                 quantity: '',
                                 received_date: format(new Date(), 'yyyy-MM-dd'),
@@ -209,6 +212,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
             samples: [
                 {
                     sample_code: '',
+                    material_type: '',
                     sample_description: '',
                     quantity: '',
                     received_date: format(new Date(), 'yyyy-MM-dd'),
@@ -236,6 +240,8 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                 ...record,
                 samples: samples.map(s => ({
                     ...s,
+                    material_type: s.material_type || '',
+                    sample_description: s.sample_description || '',
                     received_date: format(new Date(s.received_date), 'yyyy-MM-dd'),
                     received_by: s.received_by || user.id
                 })) || []
@@ -256,6 +262,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                 ...prev.samples,
                 {
                     sample_code: '',
+                    material_type: '',
                     sample_description: '',
                     quantity: '',
                     received_date: format(new Date(), 'yyyy-MM-dd'),
@@ -353,6 +360,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
             const samplesToInsert = editingRecord.samples.map((sample, index) => {
                 const receivedBy = sample.received_by ? (typeof sample.received_by === 'string' ? parseInt(sample.received_by) : sample.received_by) : null;
                 const collectionCenterId = sample.collection_center_id ? (typeof sample.collection_center_id === 'string' ? parseInt(sample.collection_center_id) : sample.collection_center_id) : null;
+                const materialType = sample.material_type || '';
 
                 if (!collectionCenterId) {
                     throw new Error(`Sample #${index + 1}${sample.sample_code ? ' (' + sample.sample_code + ')' : ''}: Please select a Collection Center.`);
@@ -360,10 +368,14 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                 if (!receivedBy) {
                     throw new Error(`Sample #${index + 1}${sample.sample_code ? ' (' + sample.sample_code + ')' : ''}: Please select who received the sample.`);
                 }
+                if (!materialType) {
+                    throw new Error(`Sample #${index + 1}${sample.sample_code ? ' (' + sample.sample_code + ')' : ''}: Please select a Material Type.`);
+                }
 
                 return {
                     inward_id: inwardId,
                     sample_code: sample.sample_code,
+                    material_type: materialType,
                     sample_description: sample.sample_description,
                     quantity: parseFloat(sample.quantity) || 0,
                     received_date: sample.received_date,
@@ -643,19 +655,28 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </Button>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                     <div className="space-y-1">
                                         <Label className="text-xs">Sample Code *</Label>
-                                        <Select
+                                        <Input
+                                            placeholder="e.g. S1"
+                                            className="h-9 text-sm"
                                             value={sample.sample_code || ''}
-                                            onValueChange={(value) => handleSampleChange(index, 'sample_code', value)}
+                                            onChange={(e) => handleSampleChange(index, 'sample_code', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Material Type *</Label>
+                                        <Select
+                                            value={sample.material_type || ''}
+                                            onValueChange={(value) => handleSampleChange(index, 'material_type', value)}
                                         >
                                             <SelectTrigger className="h-9 text-sm">
-                                                <SelectValue placeholder="Select code" />
+                                                <SelectValue placeholder="Select type" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {SAMPLE_CODES.map(code => (
-                                                    <SelectItem key={code} value={code}>{code}</SelectItem>
+                                                {materials.map(m => (
+                                                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>

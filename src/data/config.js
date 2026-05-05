@@ -1,20 +1,17 @@
-export const SAMPLE_CODES = [
-    'CUBE',
-    'CYLINDER',
-    'BEAM',
-    'CORE',
-    'BLOCK',
-    'BRICK',
-    'TILE',
-    'SOIL',
-    'ROCK',
-    'SOIL AND ROCK',
-    'AGGREGATE',
-    'CEMENT',
-    'STEEL',
-    'WATER',
-    'BITUMEN',
-    'CONCRETE'
+
+export const MATERIALS = [
+    { id:   'AGGREGATE_COARSE', name: 'Aggregate (Coarse)' },
+    { id:   'AGGREGATE_FINE', name: 'Aggregate (Fine)' },
+    { id:   'CEMENT', name: 'Cement' },
+    { id:   'CONCRETE', name: 'Concrete' },
+    { id:   'SOIL', name: 'Soil' },
+    { id:   'ROCK', name: 'Rock' },
+    { id:   'BITUMEN', name: 'Bitumen' },
+    { id:   'STEEL', name: 'Steel' },
+    { id:   'WATER', name: 'Water' },
+    { id:   'TILES', name: 'Tiles' },
+    { id:   'BRICKS', name: 'Bricks' },
+    { id:   'SOIL_AND_ROCK', name: 'Soil and Rock' },
 ];
 
 export const DEPARTMENTS = [

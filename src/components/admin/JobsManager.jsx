@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { WORKFLOW_STATES } from '@/data/config';
+import { WORKFLOW_STATES, MATERIALS } from '@/data/config';
 import { useWorkflowConfig } from '@/contexts/WorkflowContext';
 import {
     AlertDialog,
@@ -198,7 +198,7 @@ const JobsManager = ({ id }) => {
                 const inward = inwardRecords[0];
                 const { data: samples, error } = await supabase
                     .from('material_samples')
-                    .select('*')
+                    .select('*, users!material_samples_received_by_fkey(full_name), collection_centers!material_samples_collection_center_id_fkey(name)')
                     .eq('inward_id', inward.id);
 
                 if (error) throw error;
@@ -569,8 +569,8 @@ const JobsManager = ({ id }) => {
                                     </div>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-left text-xs">
-                                            <thead className="bg-gray-50 border-b"><tr><th className="p-3">Code</th><th className="p-3">Description</th><th className="p-3">Qty</th><th className="p-3 text-right">Date</th></tr></thead>
-                                            <tbody className="divide-y">{jobSamples.map((s, i) => (<tr key={i}><td className="p-3 font-bold">{s.sample_code}</td><td className="p-3 text-gray-500">{s.sample_description}</td><td className="p-3">{s.quantity}</td><td className="p-3 text-right text-gray-400">{s.received_date}</td></tr>))}</tbody>
+                                            <thead className="bg-gray-50 border-b"><tr><th className="p-3">Code</th><th className="p-3">Material Type</th><th className="p-3">Description</th><th className="p-3">Qty</th><th className="p-3 text-right">Date</th><th className="p-3 text-right">Collected By</th><th className="p-3 text-right">Collected At</th></tr></thead>
+                                            <tbody className="divide-y">{jobSamples.map((s, i) => (<tr key={i}><td className="p-3 font-bold">{s.sample_code}</td><td className="p-3 text-gray-500">{MATERIALS.find(m => m.id === s.material_type)?.name || s.material_type || '-'}</td><td className="p-3 text-gray-500">{s.sample_description}</td><td className="p-3">{s.quantity}</td><td className="p-3 text-right text-gray-400">{s.received_date}</td><td className="p-3 text-right text-gray-400">{s.users?.full_name || '-'}</td><td className="p-3 text-right text-gray-400">{s.collection_centers?.name || '-'}</td></tr>))}</tbody>
                                         </table>
                                     </div>
                                 </div>
