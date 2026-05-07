@@ -1442,14 +1442,34 @@ const NewQuotationPage = () => {
                                         className="mt-1"
                                         classNamePrefix="react-select"
                                         isDisabled={isReadOnly}
-                                        // ... existing options ...
+                                        options={
+                                            newItemType === 'service'
+                                                ? services.map(s => ({ value: s.id, label: s.serviceType }))
+                                                : newItemType === 'sampling'
+                                                    ? samplingData.map(s => ({
+                                                        value: s.id,
+                                                        label: `${s.serviceType} - ${Array.isArray(s.materials) ? s.materials.join(', ') : (s.materials || '')}`
+                                                    }))
+                                                    : tests.map(t => ({
+                                                        value: t.id,
+                                                        label: `${t.testType} - ${Array.isArray(t.materials) ? t.materials.join(', ') : (t.materials || '')}`
+                                                    }))
+                                        }
                                         value={selectedItemId ? {
                                             value: selectedItemId,
-                                            label: newItemType === 'service'
-                                                ? services.find(s => s.id === selectedItemId)?.serviceType
-                                                : newItemType === 'sampling'
-                                                    ? (samplingData.find(s => s.id === selectedItemId)?.serviceType + ' - ' + (Array.isArray(samplingData.find(s => s.id === selectedItemId)?.materials) ? samplingData.find(s => s.id === selectedItemId)?.materials.join(', ') : (samplingData.find(s => s.id === selectedItemId)?.materials || '')))
-                                                    : (tests.find(t => t.id === selectedItemId)?.testType + ' - ' + (Array.isArray(tests.find(t => t.id === selectedItemId)?.materials) ? tests.find(t => t.id === selectedItemId)?.materials.join(', ') : (tests.find(t => t.id === selectedItemId)?.materials || '')))
+                                            label: (() => {
+                                                if (newItemType === 'service') {
+                                                    return services.find(s => s.id === selectedItemId)?.serviceType || '';
+                                                } else if (newItemType === 'sampling') {
+                                                    const item = samplingData.find(s => s.id === selectedItemId);
+                                                    if (!item) return '';
+                                                    return `${item.serviceType} - ${Array.isArray(item.materials) ? item.materials.join(', ') : (item.materials || '')}`;
+                                                } else {
+                                                    const item = tests.find(t => t.id === selectedItemId);
+                                                    if (!item) return '';
+                                                    return `${item.testType} - ${Array.isArray(item.materials) ? item.materials.join(', ') : (item.materials || '')}`;
+                                                }
+                                            })()
                                         } : null}
                                         onChange={(option) => setSelectedItemId(option ? option.value : '')}
                                         placeholder={`Search ${newItemType}s...`}
