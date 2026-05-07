@@ -54,6 +54,7 @@ const ClientsProvider = ({ children }) => {
             // Backward compatibility for UI parts still using single email/phone
             email: primaryContact.contact_email || c.email || '',
             phone: primaryContact.contact_phone || c.phone || '',
+            gstin: c.gstin || '',
             createdAt: c.created_at || new Date().toISOString()
         };
     }, []);
@@ -62,6 +63,7 @@ const ClientsProvider = ({ children }) => {
         const payload = {
             client_name: c.clientName,
             client_address: c.clientAddress,
+            gstin: c.gstin || null,
             contacts: Array.isArray(c.contacts) ? c.contacts : []
         };
         // Only include ID if it's not a temporary/new record ID (which would be a string like cli_...)

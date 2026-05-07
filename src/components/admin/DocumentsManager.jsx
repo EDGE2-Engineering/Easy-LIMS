@@ -75,7 +75,7 @@ const DocumentsManager = () => {
     try {
       let query = supabase
         .from('documents')
-        .select('*, users(full_name), clients(client_name)');
+        .select('*, users(full_name), clients(client_name, gstin)');
 
       if (isStandard()) {
         query = query.eq('created_by', user.id);
@@ -530,7 +530,8 @@ const DocumentsManager = () => {
                     </td>
 
                     <td className="justify-left items-center">
-                      <span className="text-black font-regular text-sm"> {record.clients?.client_name || '-'}</span>
+                      <div className="text-black font-regular text-sm">{record.clients?.client_name || '-'}</div>
+                      {record.clients?.gstin && <div className="text-[10px] text-gray-400 font-medium mt-0.5">GSTIN: {record.clients.gstin}</div>}
                     </td>
 
                     <td className="justify-left items-center">

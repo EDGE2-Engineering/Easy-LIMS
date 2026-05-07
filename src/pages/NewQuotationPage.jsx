@@ -146,6 +146,7 @@ const NewQuotationPage = () => {
     const defaultQuoteDetails = useMemo(() => ({
         clientName: '',
         clientAddress: '',
+        gstin: '',
         contractorName: '',
         contractorAddress: '',
         projectName: '',
@@ -1156,6 +1157,7 @@ const NewQuotationPage = () => {
                                                     ...quoteDetails,
                                                     clientName: value,
                                                     clientAddress: selectedClient?.clientAddress || '',
+                                                    gstin: selectedClient?.gstin || '',
                                                     email: primaryContact.contact_email || selectedClient?.email || '',
                                                     phone: primaryContact.contact_phone || selectedClient?.phone || '',
                                                     name: primaryContact.contact_person || ''
@@ -1188,6 +1190,7 @@ const NewQuotationPage = () => {
                                                     ...quoteDetails,
                                                     clientName: customClientName,
                                                     clientAddress: '',
+                                                    gstin: '',
                                                     email: '',
                                                     phone: ''
                                                 });
@@ -1290,6 +1293,15 @@ const NewQuotationPage = () => {
                                         value={quoteDetails.clientAddress}
                                         onChange={e => setQuoteDetails({ ...quoteDetails, clientAddress: e.target.value })}
                                         placeholder="Enter client address"
+                                        disabled={isReadOnly}
+                                    />
+                                </div>
+                                <div>
+                                    <Label>GSTIN</Label>
+                                    <Input
+                                        value={quoteDetails.gstin || ''}
+                                        onChange={e => setQuoteDetails({ ...quoteDetails, gstin: e.target.value })}
+                                        placeholder="Enter GSTIN"
                                         disabled={isReadOnly}
                                     />
                                 </div>
@@ -1599,9 +1611,12 @@ const NewQuotationPage = () => {
                                                             </h3>
                                                             <p className="font-bold text-gray-900 text-xs">{quoteDetails.clientName || '-'}</p>
                                                             <p className="text-gray-600 whitespace-pre-wrap text-xs">{quoteDetails.clientAddress}</p>
+
                                                             <p className="text-gray-600 mt-1 text-xs">Name: {quoteDetails.name || '-'}</p>
                                                             <p className="text-gray-600 mt-1 text-xs">Email: {quoteDetails.email || '-'}</p>
                                                             <p className="text-gray-600 text-xs">Phone: {quoteDetails.phone || '-'}</p>
+                                                            <p className="text-gray-600 mt-1 text-xs">GSTIN: {quoteDetails.gstin || '-'}</p>
+
                                                         </div>
 
                                                         {/* Column 2: Contractor */}

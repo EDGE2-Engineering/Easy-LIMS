@@ -66,6 +66,7 @@ const AdminClientsManager = () => {
             const searchStr = searchTerm.toLowerCase();
             const inMainFields = (c.clientName?.toLowerCase() || '').includes(searchStr) ||
                 (c.clientAddress?.toLowerCase() || '').includes(searchStr) ||
+                (c.gstin?.toLowerCase() || '').includes(searchStr) ||
                 (c.id?.toString().toLowerCase() || '').includes(searchStr);
 
             const inContacts = (c.contacts || []).some(con =>
@@ -147,6 +148,7 @@ const AdminClientsManager = () => {
         setEditingClient({
             clientName: '',
             clientAddress: '',
+            gstin: '',
             category: 'General',
             status: true,
             contacts: [{ contact_person: '', contact_email: '', contact_phone: '', is_primary: true }]
@@ -355,6 +357,14 @@ const AdminClientsManager = () => {
                                 value={editingClient.clientAddress || ''}
                                 onChange={(e) => handleChange('clientAddress', e.target.value)}
                                 placeholder="Enter client address"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>GSTIN (Optional)</Label>
+                            <Input
+                                value={editingClient.gstin || ''}
+                                onChange={(e) => handleChange('gstin', e.target.value)}
+                                placeholder="Enter GSTIN (e.g. 29AAAAA0000A1Z5)"
                             />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -649,6 +659,13 @@ const AdminClientsManager = () => {
                                                     <span className="font-semibold text-gray-900">Address:</span>{' '}
                                                     {client.clientAddress}
                                                 </p>
+                                                
+                                                <div className="w-full"></div>
+                                                <p className="flex items-center">
+                                                    <span className="font-semibold text-gray-900 mr-1">GSTIN:</span>
+                                                          {client.gstin?.trim() || '-'}
+                                                </p>
+
                                                 <div className="w-full"></div>
 
                                                 {primaryContact.contact_person && (

@@ -86,7 +86,7 @@ const JobsManager = ({ id }) => {
             }
             if (!userId || isNaN(userId)) return;
 
-            const { data, error } = await supabase.from('jobs').select('*, clients(client_name)').eq('id', jobId).maybeSingle();
+            const { data, error } = await supabase.from('jobs').select('*, clients(client_name, gstin)').eq('id', jobId).maybeSingle();
             if (error) throw error;
             
             if (data) {
@@ -255,7 +255,7 @@ const JobsManager = ({ id }) => {
         try {
             let query = supabase
                 .from('jobs')
-                .select('*, clients(client_name), users:created_by(full_name)')
+                .select('*, clients(client_name, gstin), users:created_by(full_name)')
                 .order('created_at', { ascending: false });
 
             if (!isAdmin()) {
@@ -313,7 +313,7 @@ const JobsManager = ({ id }) => {
         if (!editingRecord?.id) return;
         const jobId = editingRecord.id;
         try {
-            const { data, error } = await supabase.from('jobs').select('*, clients(client_name)').eq('id', jobId).maybeSingle();
+            const { data, error } = await supabase.from('jobs').select('*, clients(client_name, gstin)').eq('id', jobId).maybeSingle();
             if (error) throw error;
             if (data) {
                 setEditingRecord({ ...data });
@@ -878,6 +878,7 @@ const JobsManager = ({ id }) => {
                                 </td>
                                 <td className="py-5 px-6">
                                     <div className="font-bold text-gray-900">{r.clients?.client_name}</div>
+                                    <div className="text-[10px] text-gray-400 mt-0.5 font-medium">{r.clients?.gstin ? `GSTIN: ${r.clients.gstin}` : ''}</div>
                                     <div className="text-xs text-gray-500 mt-1">{r.project_name}</div>
                                 </td>
                                 <td className="py-5 px-6 text-right">
