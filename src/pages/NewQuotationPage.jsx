@@ -1052,7 +1052,7 @@ const NewQuotationPage = () => {
                     </div>
                     <div className="flex items-center gap-2">
 
-                        {!(user?.role === ROLES.ACCOUNTS.slug && savedRecordId && documentCreatorId && documentCreatorId !== user?.id) && (
+                        {!(user?.role === ROLES.ACCOUNTS.slug && savedRecordId && (documentCreatorId === null || documentCreatorId !== user?.id)) && (
                             <Button onClick={handleSaveToDatabase} disabled={isSavingRecord} className="bg-green-800 hover:bg-green-900 text-white">
                                 {isSavingRecord ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                                 {savedRecordId ? 'Update' : 'Save'} {documentType}
@@ -1110,7 +1110,7 @@ const NewQuotationPage = () => {
                                     <Label>Date</Label>
                                     <Input
                                         type="date"
-                                        style={{ width: '100%', paddingInline: '17%' }}
+                                        // style={{ width: '100%', paddingInline: '17%' }}
                                         value={quoteDetails.date}
                                         onChange={e => setQuoteDetails({ ...quoteDetails, date: e.target.value })}
                                     />
