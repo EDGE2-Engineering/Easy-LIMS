@@ -191,9 +191,11 @@ const JobsManager = ({ id }) => {
         if (editingRecord?.id) {
             fetchJobSamples(editingRecord.id);
             fetchJobAssignments(editingRecord.id);
+            fetchJobDocs(editingRecord.id);
         } else {
             setJobSamples([]);
             setTechAssignments([]);
+            setLinkedDocs([]);
         }
     }, [editingRecord?.id]);
 
@@ -661,6 +663,48 @@ const JobsManager = ({ id }) => {
 
                     {!isAddingNew && (
                         <>
+                            {/* Quotation Summary */}
+                            {linkedDocs.find(d => d.document_type === 'Quotation') && (
+                                <div className="bg-white rounded-2xl shadow-sm">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><FileText className="w-4 h-4" /> Quotation Summary</h3>
+                                        <Button variant="ghost" size="sm" onClick={() => navigate(`/doc/${linkedDocs.find(d => d.document_type === 'Quotation').id}`)} className="h-8 text-xs text-primary hover:bg-primary/5">
+                                            <ExternalLink className="w-3 h-3 mr-1" /> View Full Document
+                                        </Button>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-xs">
+                                            <thead className="bg-gray-50 border-b">
+                                                <tr>
+                                                    <th className="p-3">Description</th>
+                                                    <th className="p-3 text-center">Qty</th>
+                                                    <th className="p-3 text-center">Unit</th>
+                                                    <th className="p-3 text-right">Unit Price</th>
+                                                    <th className="p-3 text-right">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y">
+                                                {(linkedDocs.find(d => d.document_type === 'Quotation')?.content?.items || []).map((item, idx) => (
+                                                    <tr key={idx}>
+                                                        <td className="p-3 text-gray-700 font-medium">{item.description}</td>
+                                                        <td className="p-3 text-center text-gray-500">{item.qty}</td>
+                                                        <td className="p-3 text-center text-gray-500">{item.unit}</td>
+                                                        <td className="p-3 text-right text-gray-500 tabular-nums">₹{Number(item.price || 0).toLocaleString('en-IN')}</td>
+                                                        <td className="p-3 text-right font-bold text-gray-900 tabular-nums">₹{Number(item.total || 0).toLocaleString('en-IN')}</td>
+                                                    </tr>
+                                                ))}
+                                                <tr className="bg-gray-50/50">
+                                                    <td colSpan="4" className="p-3 text-right font-bold text-gray-400 uppercase tracking-widest">Grand Total (Incl. Tax)</td>
+                                                    <td className="p-3 text-right font-black text-primary text-sm tabular-nums">
+                                                        ₹{Number(computeGrandTotal(linkedDocs.find(d => d.document_type === 'Quotation')) || 0).toLocaleString('en-IN')}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Materials Summary */}
                             {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.MATERIAL_RECEIVED) && (
                                 <div className="bg-white rounded-2xl shadow-sm">
@@ -672,8 +716,8 @@ const JobsManager = ({ id }) => {
                                     </div>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-left text-xs">
-                                            <thead className="bg-gray-50 border-b"><tr><th className="p-3">Code</th><th className="p-3">Material Type</th><th className="p-3">Description</th><th className="p-3">Qty</th><th className="p-3 text-right">Date</th><th className="p-3 text-right">Collected By</th><th className="p-3 text-right">Collected At</th></tr></thead>
-                                            <tbody className="divide-y">{jobSamples.map((s, i) => (<tr key={i}><td className="p-3 font-bold">{s.sample_code}</td><td className="p-3 text-gray-500">{MATERIALS.find(m => m.id === s.material_type)?.name || s.material_type || '-'}</td><td className="p-3 text-gray-500">{s.sample_description}</td><td className="p-3">{s.quantity}</td><td className="p-3 text-right text-gray-400">{s.received_date}</td><td className="p-3 text-right text-gray-400">{s.users?.full_name || '-'}</td><td className="p-3 text-right text-gray-400">{s.collection_centers?.name || '-'}</td></tr>))}</tbody>
+                                            <thead className="bg-gray-50 border-b"><tr><th className="p-3">Code</th><th className="p-3">Material Type</th><th className="p-3">Description</th><th className="p-3 text-center">Qty</th><th className="p-3 text-right">Date</th><th className="p-3 text-right">Collected By</th><th className="p-3 text-right">Collected At</th></tr></thead>
+                                            <tbody className="divide-y">{jobSamples.map((s, i) => (<tr key={i}><td className="p-3 font-bold">{s.sample_code}</td><td className="p-3 text-gray-500">{MATERIALS.find(m => m.id === s.material_type)?.name || s.material_type || '-'}</td><td className="p-3 text-gray-500">{s.sample_description}</td><td className="p-3 text-center">{s.quantity}</td><td className="p-3 text-right text-gray-400">{s.received_date}</td><td className="p-3 text-right text-gray-400">{s.users?.full_name || '-'}</td><td className="p-3 text-right text-gray-400">{s.collection_centers?.name || '-'}</td></tr>))}</tbody>
                                         </table>
                                     </div>
                                 </div>
