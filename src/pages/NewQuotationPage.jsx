@@ -45,7 +45,7 @@ import {
 import ReactSelect from 'react-select';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { format } from 'date-fns';
-import { getSiteContent } from '@/data/config';
+import { getSiteContent, ROLES } from '@/data/config';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { sendTelegramNotification } from '@/lib/notifier';
@@ -132,6 +132,7 @@ const NewQuotationPage = () => {
     const [isSavingRecord, setIsSavingRecord] = useState(false);
     const [lastSavedData, setLastSavedData] = useState(null);
     const [linkedJobId, setLinkedJobId] = useState(searchParams.get('jobId') || null);
+    const [documentCreatorId, setDocumentCreatorId] = useState(null);
     const isNavigatingRef = useRef(false);
 
 
@@ -230,6 +231,7 @@ const NewQuotationPage = () => {
         setCustomClientName('');
         setContactSelectionIdx('');
         setSavedRecordId(null);
+        setDocumentCreatorId(null);
         setLoadedDocumentType(null);
 
         const initialSnapshot = {
@@ -385,6 +387,7 @@ const NewQuotationPage = () => {
                     setLoadedDocumentType(loadedDocType);
                     setDiscount(loadedDiscount);
                     setSavedRecordId(data.id);
+                    setDocumentCreatorId(data.created_by);
                     if (data.job_id) setLinkedJobId(data.job_id);
 
                     const snapshot = {
@@ -489,6 +492,16 @@ const NewQuotationPage = () => {
             toast({
                 title: "Authentication Required",
                 description: "You must be logged in to save to the database.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        // Prevent ACCOUNTS role from updating others' documents
+        if (user.role === ROLES.ACCOUNTS.slug && savedRecordId && documentCreatorId && documentCreatorId !== user.id) {
+            toast({
+                title: "Permission Denied",
+                description: "You cannot update a document created by another user.",
                 variant: "destructive"
             });
             return;
@@ -1039,10 +1052,12 @@ const NewQuotationPage = () => {
                     </div>
                     <div className="flex items-center gap-2">
 
-                        <Button onClick={handleSaveToDatabase} disabled={isSavingRecord} className="bg-green-800 hover:bg-green-900 text-white">
-                            {isSavingRecord ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                            {savedRecordId ? 'Update' : 'Save'} {documentType}
-                        </Button>
+                        {!(user?.role === ROLES.ACCOUNTS.slug && savedRecordId && documentCreatorId && documentCreatorId !== user?.id) && (
+                            <Button onClick={handleSaveToDatabase} disabled={isSavingRecord} className="bg-green-800 hover:bg-green-900 text-white">
+                                {isSavingRecord ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                                {savedRecordId ? 'Update' : 'Save'} {documentType}
+                            </Button>
+                        )}
                         <Button onClick={triggerPrint} className="bg-blue-800 hover:bg-blue-900 text-white">
                             <Printer className="w-4 h-4 mr-2" /> Print / PDF
                         </Button>
