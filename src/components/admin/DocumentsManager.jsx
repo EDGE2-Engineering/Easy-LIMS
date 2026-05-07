@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import Rupee from '../Rupee';
 import { useSettings } from '@/contexts/SettingsContext';
+import { ROLES } from '@/data/config';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -113,6 +114,10 @@ const DocumentsManager = () => {
 
   const confirmDelete = async () => {
     if (!deleteConfirmation.recordId) return;
+    if (user?.role === ROLES.ACCOUNTS.slug) {
+      toast({ title: "Access Denied", description: "You do not have permission to delete documents.", variant: "destructive" });
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -572,21 +577,23 @@ const DocumentsManager = () => {
                           </TooltipContent>
                         </Tooltip>
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50 px-1"
-                              onClick={() => handleDeleteClick(record)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                            <p className="text-xs">Permanently delete this document</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        {user?.role !== ROLES.ACCOUNTS.slug && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 px-1"
+                                onClick={() => handleDeleteClick(record)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                              <p className="text-xs">Permanently delete this document</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
                     </td>
                   </tr>
