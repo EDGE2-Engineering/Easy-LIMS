@@ -47,9 +47,9 @@ export const ROLES = {
         label: 'Material Receiving Officer',
         description: 'Handles sample reception, material inwarding, and initial job documentation.'
     },
-    DOCUMENTS: {
+    ACCOUNTS: {
         slug: 'accounts',
-        label: 'Documents Officer',
+        label: 'Accounts Officer',
         description: 'Manages invoicing, payment tracking, expenses, and financial documentation.'
     },
     HUMAN_RESOURCE: {
@@ -206,28 +206,28 @@ export const APP_CONFIG = {
                 label: 'Report Signed',
                 color: { bg: '#ecfdf5', text: '#065f46', border: '#6ee7b7' },
                 actions: [
-                    { id: ACTIONS.GENERATE_INVOICE.name, label: ACTIONS.GENERATE_INVOICE.label, targetState: WORKFLOW_STATES.INVOICE_GENERATED, roles: [ROLES.DOCUMENTS.slug], navigate: '/doc/new?jobId={jobId}&type=Tax Invoice' }
+                    { id: ACTIONS.GENERATE_INVOICE.name, label: ACTIONS.GENERATE_INVOICE.label, targetState: WORKFLOW_STATES.INVOICE_GENERATED, roles: [ROLES.ACCOUNTS.slug], navigate: '/doc/new?jobId={jobId}&type=Tax Invoice' }
                 ]
             },
             [WORKFLOW_STATES.INVOICE_GENERATED]: {
                 label: 'Invoice Generated',
                 color: { bg: '#f0fdfa', text: '#0f766e', border: '#5eead4' },
                 actions: [
-                    { id: ACTIONS.SEND_TO_CLIENT.name, label: ACTIONS.SEND_TO_CLIENT.label, targetState: WORKFLOW_STATES.AWAITING_PAYMENT, roles: [ROLES.DOCUMENTS.slug] }
+                    { id: ACTIONS.SEND_TO_CLIENT.name, label: ACTIONS.SEND_TO_CLIENT.label, targetState: WORKFLOW_STATES.AWAITING_PAYMENT, roles: [ROLES.ACCOUNTS.slug] }
                 ]
             },
             [WORKFLOW_STATES.AWAITING_PAYMENT]: {
                 label: 'Awaiting Payment',
                 color: { bg: '#fff1f2', text: '#be123c', border: '#fda4af' },
                 actions: [
-                    { id: ACTIONS.CONFIRM_PAYMENT.name, label: ACTIONS.CONFIRM_PAYMENT.label, targetState: WORKFLOW_STATES.PAYMENT_RECEIVED, roles: [ROLES.DOCUMENTS.slug] }
+                    { id: ACTIONS.CONFIRM_PAYMENT.name, label: ACTIONS.CONFIRM_PAYMENT.label, targetState: WORKFLOW_STATES.PAYMENT_RECEIVED, roles: [ROLES.ACCOUNTS.slug] }
                 ]
             },
             [WORKFLOW_STATES.PAYMENT_RECEIVED]: {
                 label: 'Payment Received',
                 color: { bg: '#f0fdf4', text: '#15803d', border: '#86efac' },
                 actions: [
-                    { id: ACTIONS.RELEASE_REPORT.name, label: ACTIONS.RELEASE_REPORT.label, targetState: WORKFLOW_STATES.REPORT_RELEASED, roles: [ROLES.DOCUMENTS.slug] }
+                    { id: ACTIONS.RELEASE_REPORT.name, label: ACTIONS.RELEASE_REPORT.label, targetState: WORKFLOW_STATES.REPORT_RELEASED, roles: [ROLES.ACCOUNTS.slug] }
                 ]
             },
             [WORKFLOW_STATES.REPORT_RELEASED]: {
@@ -251,7 +251,7 @@ export const APP_CONFIG = {
             [ROLES.ANALYST.slug]: [NAVBAR_ACTIONS.APPLY_LEAVE],
             [ROLES.TECHNICIAN.slug]: [NAVBAR_ACTIONS.APPLY_LEAVE],
             [ROLES.MRO.slug]: [NAVBAR_ACTIONS.APPLY_LEAVE],
-            [ROLES.DOCUMENTS.slug]: [NAVBAR_ACTIONS.APPLY_LEAVE],
+            [ROLES.ACCOUNTS.slug]: [NAVBAR_ACTIONS.APPLY_LEAVE],
             [ROLES.HUMAN_RESOURCE.slug]: [NAVBAR_ACTIONS.APPLY_LEAVE]
         }
     },
@@ -261,7 +261,7 @@ export const APP_CONFIG = {
         [ROLES.ANALYST.slug]: [VIEWS.ANALYST_DASHBOARD, VIEWS.JOBS],
         [ROLES.TECHNICIAN.slug]: [VIEWS.TESTING],
         [ROLES.MRO.slug]: [VIEWS.MATERIAL_INWARD],
-        [ROLES.DOCUMENTS.slug]: [VIEWS.DOCUMENTS, VIEWS.EXPENSES],
+        [ROLES.ACCOUNTS.slug]: [VIEWS.DOCUMENTS, VIEWS.EXPENSES],
         [ROLES.HUMAN_RESOURCE.slug]: [VIEWS.WORK_LOG, VIEWS.APPROVALS]
     }
 };
