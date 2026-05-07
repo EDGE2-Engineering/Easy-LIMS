@@ -1,17 +1,17 @@
 
 export const MATERIALS = [
-    { id:   'AGGREGATE_COARSE', name: 'Aggregate (Coarse)' },
-    { id:   'AGGREGATE_FINE', name: 'Aggregate (Fine)' },
-    { id:   'CEMENT', name: 'Cement' },
-    { id:   'CONCRETE', name: 'Concrete' },
-    { id:   'SOIL', name: 'Soil' },
-    { id:   'ROCK', name: 'Rock' },
-    { id:   'BITUMEN', name: 'Bitumen' },
-    { id:   'STEEL', name: 'Steel' },
-    { id:   'WATER', name: 'Water' },
-    { id:   'TILES', name: 'Tiles' },
-    { id:   'BRICKS', name: 'Bricks' },
-    { id:   'SOIL_AND_ROCK', name: 'Soil and Rock' },
+    { id: 'AGGREGATE_COARSE', name: 'Aggregate (Coarse)' },
+    { id: 'AGGREGATE_FINE', name: 'Aggregate (Fine)' },
+    { id: 'CEMENT', name: 'Cement' },
+    { id: 'CONCRETE', name: 'Concrete' },
+    { id: 'SOIL', name: 'Soil' },
+    { id: 'ROCK', name: 'Rock' },
+    { id: 'BITUMEN', name: 'Bitumen' },
+    { id: 'STEEL', name: 'Steel' },
+    { id: 'WATER', name: 'Water' },
+    { id: 'TILES', name: 'Tiles' },
+    { id: 'BRICKS', name: 'Bricks' },
+    { id: 'SOIL_AND_ROCK', name: 'Soil and Rock' },
 ];
 
 export const DEPARTMENTS = [
@@ -97,24 +97,24 @@ export const VIEWS = {
 };
 
 export const ACTIONS = {
-   SEND_QUOTATION: { name: 'SEND_QUOTATION', label: 'Send Quotation' },
-   RECEIVE_WORK_ORDER: { name: 'RECEIVE_WORK_ORDER', label: 'Receive Work Order' },
-   RECEIVE_MATERIAL: { name: 'RECEIVE_MATERIAL', label: 'Receive Material' },
-   ASSIGN_TECHNICIANS: { name: 'ASSIGN_TECHNICIANS', label: 'Assign Technicians' },
-   START_TESTING: { name: 'START_TESTING', label: 'Start Testing' },
-   COMPLETE_TESTING: { name: 'COMPLETE_TESTING', label: 'Complete Testing' },
-   SUBMIT_FOR_REVIEW: { name: 'SUBMIT_FOR_REVIEW', label: 'Submit for Review' },
-   VERIFY_DATA: { name: 'VERIFY_DATA', label: 'Verify Data' },
-   REJECT_DATA: { name: 'REJECT_DATA', label: 'Reject' },
-   GENERATE_REPORT: { name: 'GENERATE_REPORT', label: 'Generate Report' },
-   SUBMIT_REPORT_REVIEW: { name: 'SUBMIT_REPORT_REVIEW', label: 'Submit for Review' },
-   SIGN_REPORT: { name: 'SIGN_REPORT', label: 'Sign Report' },
-   GENERATE_INVOICE: { name: 'GENERATE_INVOICE', label: 'Generate Invoice' },
-   SEND_TO_CLIENT: { name: 'SEND_TO_CLIENT', label: 'Send to Client' },
-   CONFIRM_PAYMENT: { name: 'CONFIRM_PAYMENT', label: 'Confirm Payment' },
-   RELEASE_REPORT: { name: 'RELEASE_REPORT', label: 'Release Report' },
-   MARK_JOB_COMPLETE: { name: 'MARK_JOB_COMPLETE', label: 'Mark as Complete' }
-}; 
+    SEND_QUOTATION: { name: 'SEND_QUOTATION', label: 'Send Quotation' },
+    RECEIVE_WORK_ORDER: { name: 'RECEIVE_WORK_ORDER', label: 'Receive Work Order' },
+    RECEIVE_MATERIAL: { name: 'RECEIVE_MATERIAL', label: 'Receive Material' },
+    ASSIGN_TECHNICIANS: { name: 'ASSIGN_TECHNICIANS', label: 'Assign Technicians' },
+    START_TESTING: { name: 'START_TESTING', label: 'Start Testing' },
+    COMPLETE_TESTING: { name: 'COMPLETE_TESTING', label: 'Complete Testing' },
+    SUBMIT_FOR_REVIEW: { name: 'SUBMIT_FOR_REVIEW', label: 'Submit for Review' },
+    APPROVE_TEST_RESULTS: { name: 'APPROVE_TEST_RESULTS', label: 'Approve Test Results' },
+    REJECT_TEST_RESULTS: { name: 'REJECT_TEST_RESULTS', label: 'Reject Test Results' },
+    GENERATE_REPORT: { name: 'GENERATE_REPORT', label: 'Generate Report' },
+    SUBMIT_REPORT_REVIEW: { name: 'SUBMIT_REPORT_REVIEW', label: 'Submit for Review' },
+    SIGN_REPORT: { name: 'SIGN_REPORT', label: 'Sign Report' },
+    GENERATE_INVOICE: { name: 'GENERATE_INVOICE', label: 'Generate Invoice' },
+    SEND_TO_CLIENT: { name: 'SEND_TO_CLIENT', label: 'Send to Client' },
+    CONFIRM_PAYMENT: { name: 'CONFIRM_PAYMENT', label: 'Confirm Payment' },
+    RELEASE_REPORT: { name: 'RELEASE_REPORT', label: 'Release Report' },
+    MARK_JOB_COMPLETE: { name: 'MARK_JOB_COMPLETE', label: 'Mark as Complete' }
+};
 
 
 export const APP_CONFIG = {
@@ -152,29 +152,29 @@ export const APP_CONFIG = {
                 label: 'Technicians Assigned',
                 color: { bg: '#fef9c3', text: '#713f12', border: '#fde047' },
                 actions: [
-                    { id: ACTIONS.START_TESTING.name, label: ACTIONS.START_TESTING.label, targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.TECHNICIAN.slug, ROLES.ADMIN.slug] }
+                    { id: ACTIONS.START_TESTING.name, label: ACTIONS.START_TESTING.label, targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.TECHNICIAN.slug, ROLES.ADMIN.slug, ROLES.ANALYST.slug] }
                 ]
             },
             [WORKFLOW_STATES.UNDER_TESTING]: {
                 label: 'Under Testing',
                 color: { bg: '#eff6ff', text: '#1d4ed8', border: '#93c5fd' },
                 actions: [
-                    { id: ACTIONS.COMPLETE_TESTING.name, label: ACTIONS.COMPLETE_TESTING.label, targetState: WORKFLOW_STATES.TESTING_COMPLETE, roles: [ROLES.TECHNICIAN.slug, ROLES.ADMIN.slug] }
+                    { id: ACTIONS.COMPLETE_TESTING.name, label: ACTIONS.COMPLETE_TESTING.label, targetState: WORKFLOW_STATES.TESTING_COMPLETE, roles: [ROLES.TECHNICIAN.slug, ROLES.ADMIN.slug, ROLES.ANALYST.slug] }
                 ]
             },
             [WORKFLOW_STATES.TESTING_COMPLETE]: {
                 label: 'Testing Complete',
                 color: { bg: '#dbeafe', text: '#1e40af', border: '#60a5fa' },
                 actions: [
-                    { id: ACTIONS.SUBMIT_FOR_REVIEW.name, label: ACTIONS.SUBMIT_FOR_REVIEW.label, targetState: WORKFLOW_STATES.UNDER_REVIEW, roles: [ROLES.TECHNICIAN.slug, ROLES.ADMIN.slug] }
+                    { id: ACTIONS.SUBMIT_FOR_REVIEW.name, label: ACTIONS.SUBMIT_FOR_REVIEW.label, targetState: WORKFLOW_STATES.UNDER_REVIEW, roles: [ROLES.TECHNICIAN.slug, ROLES.ADMIN.slug, ROLES.ANALYST.slug] }
                 ]
             },
             [WORKFLOW_STATES.UNDER_REVIEW]: {
                 label: 'Under Review',
                 color: { bg: '#f5f3ff', text: '#6d28d9', border: '#c4b5fd' },
                 actions: [
-                    { id: ACTIONS.VERIFY_DATA.name, label: ACTIONS.VERIFY_DATA.label, targetState: WORKFLOW_STATES.DATA_VERIFIED, roles: [ROLES.ANALYST.slug] },
-                    { id: ACTIONS.REJECT_DATA.name, label: ACTIONS.REJECT_DATA.label, targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.ANALYST.slug] }
+                    { id: ACTIONS.APPROVE_TEST_RESULTS.name, label: ACTIONS.APPROVE_TEST_RESULTS.label, targetState: WORKFLOW_STATES.DATA_VERIFIED, roles: [ROLES.ADMIN.slug] },
+                    { id: ACTIONS.REJECT_TEST_RESULTS.name, label: ACTIONS.REJECT_TEST_RESULTS.label, targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.ADMIN.slug] }
                 ]
             },
             [WORKFLOW_STATES.DATA_VERIFIED]: {
@@ -195,7 +195,7 @@ export const APP_CONFIG = {
                 label: 'Report Under Review',
                 color: { bg: '#fce7f3', text: '#9d174d', border: '#f9a8d4' },
                 actions: [
-                    { id: ACTIONS.SIGN_REPORT.name, label: ACTIONS.SIGN_REPORT.label, targetState: WORKFLOW_STATES.REPORT_SIGNED, roles: [ROLES.ANALYST.slug] }
+                    { id: ACTIONS.SIGN_REPORT.name, label: ACTIONS.SIGN_REPORT.label, targetState: WORKFLOW_STATES.REPORT_SIGNED, roles: [ROLES.ADMIN.slug] }
                 ]
             },
             [WORKFLOW_STATES.REPORT_SIGNED]: {
