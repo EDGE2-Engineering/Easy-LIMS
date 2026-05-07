@@ -23,11 +23,11 @@ const TechnicianAssignment = ({ jobId, onComplete }) => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch lab technicians
+            // Fetch lab technicians and analysts
             const { data: users, error: userError } = await supabase
                 .from('users')
-                .select('id, full_name, username')
-                .eq('role', ROLES.TECHNICIAN.slug)
+                .select('id, full_name, username, role')
+                .in('role', [ROLES.TECHNICIAN.slug, ROLES.ANALYST.slug])
                 .order('full_name');
 
             if (userError) throw userError;
@@ -166,6 +166,9 @@ const TechnicianAssignment = ({ jobId, onComplete }) => {
                                     />
                                     <span className={`font-medium ${isSelected ? 'text-primary' : 'text-gray-700'}`}>
                                         {tech.full_name || tech.username}
+                                        <span className="text-xs font-normal text-gray-500 ml-2 bg-gray-100 px-2 py-0.5 rounded">
+                                            {Object.values(ROLES).find(r => r.slug === tech.role)?.label || tech.role}
+                                        </span>
                                     </span>
                                 </div>
                             </label>

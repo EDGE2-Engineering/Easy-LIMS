@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { WORKFLOW_STATES, MATERIALS } from '@/data/config';
+import { WORKFLOW_STATES, MATERIALS, ROLES } from '@/data/config';
 import { useWorkflowConfig } from '@/contexts/WorkflowContext';
 import {
     AlertDialog,
@@ -49,7 +49,7 @@ const JobsManager = ({ id }) => {
 
     const { toast } = useToast();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, isAdmin, loading: authLoading } = useAuth();
     const { workflow } = useWorkflowConfig();
 
     const [editingRecord, setEditingRecord] = useState(null);
@@ -59,11 +59,11 @@ const JobsManager = ({ id }) => {
 
     useEffect(() => {
         if (id) {
-            const existing = records.find(r => r.id === id);
+            const existing = records.find(r => String(r.id) === String(id));
             if (existing) {
                 setEditingRecord({ ...existing });
                 setIsAddingNew(false);
-            } else if (!loading) {
+            } else if (!authLoading) {
                 // If records are loaded but id not found, it might be a new record or invalid
                 // Or we can fetch it directly
                 fetchJobById(id);
@@ -71,13 +71,40 @@ const JobsManager = ({ id }) => {
         } else {
             setEditingRecord(null);
         }
-    }, [id, records, loading]);
+    }, [id, records, authLoading]);
 
     const fetchJobById = async (jobId) => {
+        if (!user || !user.id) return;
         try {
+            let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+            if (isNaN(userId)) {
+                // Last resort: look up by username if ID is somehow invalid
+                const { data: u } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
+                if (u) userId = u.id;
+            }
+            if (!userId || isNaN(userId)) return;
+
             const { data, error } = await supabase.from('jobs').select('*, clients(client_name)').eq('id', jobId).maybeSingle();
             if (error) throw error;
+            
             if (data) {
+                const actualJobId = data.id;
+                // Security check for analysts
+                if (!isAdmin() && user?.role === ROLES.ANALYST.slug) {
+                    const { data: assignments, error: assignError } = await supabase
+                        .from('job_to_technicians')
+                        .select('id')
+                        .eq('job_id', actualJobId)
+                        .eq('technician_id', userId);
+                    
+                    if (assignError || !assignments || assignments.length === 0) {
+                        console.error("Access Denied Check:", { actualJobId, userId, userRole: user?.role, error: assignError });
+                        toast({ title: "Access Denied", description: "You are not assigned to this job.", variant: "destructive" });
+                        setEditingRecord(null);
+                        return;
+                    }
+                }
+                
                 setEditingRecord({ ...data });
                 setIsAddingNew(false);
             }
@@ -222,10 +249,33 @@ const JobsManager = ({ id }) => {
     const fetchRecords = async () => {
         setLoading(true);
         try {
-            const { data: jobs, error } = await supabase
+            let query = supabase
                 .from('jobs')
-                .select('*, clients(client_name)')
+                .select('*, clients(client_name), users:created_by(full_name)')
                 .order('created_at', { ascending: false });
+
+            if (!isAdmin()) {
+                let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+                if (isNaN(userId)) userId = -1;
+
+                if (user?.role === ROLES.ANALYST.slug) {
+                    const { data: assignments } = await supabase
+                        .from('job_to_technicians')
+                        .select('job_id')
+                        .eq('technician_id', userId);
+                    
+                    const assignedJobIds = (assignments || []).map(a => a.job_id);
+                    if (assignedJobIds.length > 0) {
+                        query = query.in('id', assignedJobIds);
+                    } else {
+                        query = query.eq('id', 0); // No jobs assigned
+                    }
+                } else {
+                    query = query.eq('created_by', userId);
+                }
+            }
+
+            const { data: jobs, error } = await query;
             if (error) throw error;
 
             // Fetch quotation documents for all jobs in one query
@@ -552,7 +602,7 @@ const JobsManager = ({ id }) => {
                         <div className="space-y-6">
                             <div className="space-y-2">
                                 <Label className="text-gray-700 font-semibold">Client</Label>
-                                <ReactSelect
+                                {isAdmin() ? <ReactSelect
                                     className="mt-1"
                                     classNamePrefix="react-select"
                                     options={clients.map(c => ({ value: c.id, label: c.client_name }))}
@@ -564,6 +614,7 @@ const JobsManager = ({ id }) => {
                                     placeholder="Search Clients..."
                                     isSearchable
                                     isClearable
+                                    // isDisabled={!isAdmin()}
                                     styles={{
                                         control: (base) => ({
                                             ...base,
@@ -584,20 +635,23 @@ const JobsManager = ({ id }) => {
                                         })
                                     }}
                                 />
+                                : <p className="text-sm h-12 border-gray-200 rounded-xl">{editingRecord.client_name || ''}</p>}
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-gray-700 font-semibold">Project Name</Label>
-                                <Input className="h-12 border-gray-200 rounded-xl" value={editingRecord.project_name || ''} onChange={e => setEditingRecord({ ...editingRecord, project_name: e.target.value })} />
+                                {!isAdmin() && <p className="text-sm h-12 border-gray-200 rounded-xl">{editingRecord.project_name || ''}</p>}
+                                {isAdmin() && <Input className="h-12 border-gray-200 rounded-xl" value={editingRecord.project_name || ''} onChange={e => setEditingRecord({ ...editingRecord, project_name: e.target.value })} />}
                             </div>
                             {!isAddingNew && editingRecord.work_order_id && (
                                 <div className="space-y-2">
                                     <Label className="text-gray-700 font-semibold">Work Order ID</Label>
-                                    <Input
+                                    {!isAdmin() && <p className="text-sm h-12 border-gray-200 rounded-xl">{editingRecord.work_order_id || ''}</p>}
+                                    {isAdmin() && (<Input
                                         className="h-12 border-gray-200 rounded-xl bg-gray-50/50"
                                         value={editingRecord.work_order_id || ''}
                                         onChange={e => setEditingRecord({ ...editingRecord, work_order_id: e.target.value })}
                                         placeholder="e.g. WO/2026/088"
-                                    />
+                                    />)}
                                 </div>
                             )}
                         </div>
@@ -610,7 +664,9 @@ const JobsManager = ({ id }) => {
                                 <div className="bg-white rounded-2xl shadow-sm">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><Package className="w-4 h-4" /> Material Inward Details</h3>
-                                        <Button variant="outline" size="sm" onClick={() => setShowingMaterialForm(true)} className="h-8 text-xs"><Edit className="w-3 h-3 mr-1" /> Edit Entries</Button>
+                                        {isAdmin() && (
+                                            <Button variant="outline" size="sm" onClick={() => setShowingMaterialForm(true)} className="h-8 text-xs"><Edit className="w-3 h-3 mr-1" /> Edit Entries</Button>
+                                        )}
                                     </div>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-left text-xs">
@@ -623,10 +679,12 @@ const JobsManager = ({ id }) => {
 
                             {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.TECHNICIANS_ASSIGNED) && (
                                 <div className="bg-white rounded-2xl shadow-sm">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><UserPlus className="w-4 h-4" /> Technician Assignments</h3>
-                                        <Button variant="outline" size="sm" onClick={() => setShowingTechForm(true)} className="h-8 text-xs"><Edit className="w-3 h-3 mr-1" /> Edit Assignments</Button>
-                                    </div>
+                                    {isAdmin() && (
+                                        <div className="flex justify-between items-center mb-6">
+                                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><UserPlus className="w-4 h-4" /> Technician Assignments</h3>
+                                            <Button variant="outline" size="sm" onClick={() => setShowingTechForm(true)} className="h-8 text-xs"><Edit className="w-3 h-3 mr-1" /> Edit Assignments</Button>
+                                        </div>
+                                    )}
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-left text-xs">
                                             <thead className="bg-gray-50 border-b"><tr><th className="p-3">Assigned Technician</th></tr></thead>
@@ -649,12 +707,14 @@ const JobsManager = ({ id }) => {
                     )}
                 </div>
 
-                <div className="flex justify-end gap-3 pt-8 border-t">
-                    <Button variant="outline" className="h-12 px-8 rounded-xl" onClick={() => navigate('/settings/jobs')}>Cancel</Button>
-                    <Button className="h-12 px-8 rounded-xl bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20" onClick={handleSave} disabled={isSaving}>
-                        {isSaving ? <Loader2 className="animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Job Details
-                    </Button>
-                </div>
+                {isAdmin() && (
+                    <div className="flex justify-end gap-3 pt-8 border-t">
+                        <Button variant="outline" className="h-12 px-8 rounded-xl" onClick={() => navigate('/settings/jobs')}>Cancel</Button>
+                        <Button className="h-12 px-8 rounded-xl bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20" onClick={handleSave} disabled={isSaving}>
+                            {isSaving ? <Loader2 className="animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Job Details
+                        </Button>
+                    </div>
+                )}
             </div>
         );
     }
@@ -674,12 +734,12 @@ const JobsManager = ({ id }) => {
                     </div>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button
+                            {isAdmin() && <Button
                                 onClick={() => { setEditingRecord({ status: WORKFLOW_STATES.JOB_CREATED, project_name: '', client_id: '' }); setIsAddingNew(true); }}
                                 className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
                             >
                                 <Plus className="w-4 h-4 mr-2" /> New Job
-                            </Button>
+                            </Button>}
                         </TooltipTrigger>
                         <TooltipContent className="bg-gray-900 text-white border-gray-800">
                             <p className="text-xs">Create a new testing job for a client</p>
@@ -756,6 +816,7 @@ const JobsManager = ({ id }) => {
                             <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Client and Project Name</th>
                             <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Quotation Amount</th>
                             <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Created On</th>
+                            <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Created By</th>
                             <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Status</th>
                             <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Actions</th>
                         </tr>
@@ -785,6 +846,11 @@ const JobsManager = ({ id }) => {
                                             timeZone: "Asia/Kolkata",
                                             dateStyle: "medium",
                                         })}
+                                    </div>
+                                </td>
+                                <td className="py-5 px-6 text-right">
+                                    <div className="text-xs text-gray-500 mt-1">
+                                        {r.users?.full_name || r.created_by || '-'}
                                     </div>
                                 </td>
                                 <td className="py-5 px-6 text-center">
@@ -817,11 +883,11 @@ const JobsManager = ({ id }) => {
                                                 </Button>
                                             </TooltipTrigger>
                                             <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                                <p className="text-xs">View/Edit Job Details</p>
+                                                <p className="text-xs">Open Job</p>
                                             </TooltipContent>
                                         </Tooltip>
 
-                                        <Tooltip>
+                                        {isAdmin() && <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(r)} className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all">
                                                     <Trash2 className="w-4 h-4" />
@@ -830,8 +896,8 @@ const JobsManager = ({ id }) => {
                                             <TooltipContent className="bg-gray-900 text-white border-gray-800">
                                                 <p className="text-xs">Delete this job</p>
                                             </TooltipContent>
-                                        </Tooltip>
-                                    </div>
+                                        </Tooltip>}
+                                            </div>
                                 </td>
                             </tr>
                         ))}

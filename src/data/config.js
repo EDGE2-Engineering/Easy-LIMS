@@ -34,7 +34,7 @@ export const ROLES = {
     },
     ANALYST: {
         slug: 'analyst',
-        label: 'Quality Analyst',
+        label: 'Test Engineer',
         description: 'Responsible for data verification, report signing, and ensuring quality standards.'
     },
     TECHNICIAN: {
@@ -92,7 +92,8 @@ export const VIEWS = {
     APPROVALS: 'Approvals',
     CLIENT_PRICING: 'Client Pricing',
     INQUIRIES: 'Inquiries',
-    ORGANIZATION: 'Organization'
+    ORGANIZATION: 'Organization',
+    ANALYST_DASHBOARD: 'Analyst Dashboard'
 };
 
 export const ACTIONS = {
@@ -240,9 +241,9 @@ export const APP_CONFIG = {
         }
     },
     viewPermissions: {
-        [ROLES.SUPER_ADMIN.slug]: Object.values(VIEWS),
-        [ROLES.ADMIN.slug]: Object.values(VIEWS),
-        [ROLES.ANALYST.slug]: [VIEWS.JOBS, VIEWS.TESTING],
+        [ROLES.SUPER_ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD),
+        [ROLES.ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD),
+        [ROLES.ANALYST.slug]: [VIEWS.ANALYST_DASHBOARD, VIEWS.JOBS],
         [ROLES.TECHNICIAN.slug]: [VIEWS.TESTING],
         [ROLES.MRO.slug]: [VIEWS.MATERIAL_INWARD],
         [ROLES.ACCOUNTS.slug]: [VIEWS.ACCOUNTS, VIEWS.EXPENSES],

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck, Calculator, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness, CalendarOff, LayoutDashboard, CheckCircle2, Calendar, Loader2, Send, Building2, MessageSquare } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
-import { getSiteContent, VIEWS } from '@/data/config';
+import { getSiteContent, VIEWS, ROLES } from '@/data/config';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useToast } from '@/components/ui/use-toast';
@@ -102,6 +102,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
 
   const ALL_NAV_ITEMS = [
     { view: VIEWS.DASHBOARD, path: '/settings/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { view: VIEWS.ANALYST_DASHBOARD, path: '/settings/analyst_dashboard', label: 'My Dashboard', icon: LayoutDashboard },
     { view: VIEWS.JOBS, path: '/settings/jobs', label: 'Jobs', icon: Briefcase },
     { view: VIEWS.INQUIRIES, path: '/settings/inquiries', label: 'Inquiries', icon: MessageSquare },
     { view: VIEWS.MATERIAL_INWARD, path: '/settings/inward_register', label: 'Inward', icon: Package },
@@ -295,8 +296,10 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                         className="absolute right-0 mt-2 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden py-2"
                       >
                         <div className="px-4 py-2 border-b border-gray-50 mb-1">
-                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">User</p>
-                          <p className="text-sm font-bold text-gray-800 truncate">{user?.fullName}</p>
+                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Employee Info</p>
+                          <p className="text-sm font-bold text-gray-800">{user?.fullName}</p>
+                          <p className="text-sm font-medium text-gray-400">{user?.emp_id}</p>
+                          <p className="text-sm font-medium text-gray-400">{Object.values(ROLES).find(r => r.slug === user?.role)?.label || user?.role}</p>
                         </div>
                         
                         {!isAdmin() && (

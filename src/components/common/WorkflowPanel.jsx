@@ -5,10 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { APP_CONFIG } from '@/data/config';
 import { useWorkflowConfig } from '@/contexts/WorkflowContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { CheckCircle2, Circle, ArrowRight, ArrowLeft } from 'lucide-react';
 
 const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) => {
     const navigate = useNavigate();
+    const { isAdmin } = useAuth();
     const { workflow } = useWorkflowConfig();
     const { getAvailableActions, performAction, revertState, loading } = useWorkflow(jobId, currentStatus);
     const availableActions = getAvailableActions();
@@ -51,7 +53,7 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
                     Current Status: <span className="text-primary font-bold">{currentStateConfig?.label || currentStatus}</span>
                 </CardTitle>
                 <div className="flex gap-2">
-                    {canGoBack && (
+                    {canGoBack && isAdmin() && (
                         <Button 
                             onClick={handleRevert}
                             disabled={loading}
