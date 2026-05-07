@@ -103,6 +103,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
   const ALL_NAV_ITEMS = [
     { view: VIEWS.DASHBOARD, path: '/settings/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { view: VIEWS.ANALYST_DASHBOARD, path: '/settings/analyst_dashboard', label: 'My Dashboard', icon: LayoutDashboard },
+    { view: VIEWS.ACCOUNTS_DASHBOARD, path: '/settings/accounts_dashboard', label: 'My Dashboard', icon: LayoutDashboard },
     { view: VIEWS.JOBS, path: '/settings/jobs', label: 'Jobs', icon: Briefcase },
     { view: VIEWS.INQUIRIES, path: '/settings/inquiries', label: 'Inquiries', icon: MessageSquare },
     { view: VIEWS.MATERIAL_INWARD, path: '/settings/inward_register', label: 'Inward', icon: Package },
@@ -134,12 +135,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
 
   const isActive = (path, id) => {
     if (path === '/settings/clients') {
-      const isManagementTab = location.pathname.includes('/dashboard') ||
-        location.pathname.includes('/jobs') ||
-        location.pathname.includes('/inquiries') ||
-        location.pathname.includes('/inward_register') ||
-        location.pathname.includes('/testing') ||
-        location.pathname.includes('/documents');
+      const isManagementTab = ALL_NAV_ITEMS.some(item => location.pathname.startsWith(item.path));
 
       return (location.pathname.startsWith('/settings') && !isManagementTab) ||
         location.pathname.startsWith('/service/') ||

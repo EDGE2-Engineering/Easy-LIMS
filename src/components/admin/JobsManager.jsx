@@ -582,7 +582,7 @@ const JobsManager = ({ id }) => {
                         </Dialog>
 
                         {/* Linked Documents Summary */}
-                        {linkedDocs.length > 0 && (
+                        {isAdmin() && linkedDocs.length > 0 && (
                             <div className="p-6 bg-blue-50/30 rounded-2xl border border-blue-100/50">
                                 <h4 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-4 flex items-center gap-2"><FileText className="w-3 h-3" /> Job Documents</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -598,12 +598,13 @@ const JobsManager = ({ id }) => {
                     </div>
                 )}
 
-                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Client Details</h3>
 
                 {/* Main Content Sections */}
                 <div className="space-y-10">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-6">
+                        {isAdmin() && (<div className="space-y-6">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Client Details</h3>
+
                             <div className="space-y-2">
                                 <Label className="text-gray-700 font-semibold">Client</Label>
                                 {isAdmin() ? <ReactSelect
@@ -658,7 +659,7 @@ const JobsManager = ({ id }) => {
                                     />)}
                                 </div>
                             )}
-                        </div>
+                        </div>)}
                     </div>
 
                     {!isAddingNew && (
@@ -668,9 +669,11 @@ const JobsManager = ({ id }) => {
                                 <div className="bg-white rounded-2xl shadow-sm">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><FileText className="w-4 h-4" /> Quotation Summary</h3>
-                                        <Button variant="ghost" size="sm" onClick={() => navigate(`/doc/${linkedDocs.find(d => d.document_type === 'Quotation').id}`)} className="h-8 text-xs text-primary hover:bg-primary/5">
+                                        {
+                                        isAdmin() && <Button variant="ghost" size="sm" onClick={() => navigate(`/doc/${linkedDocs.find(d => d.document_type === 'Quotation').id}`)} className="h-8 text-xs text-primary hover:bg-primary/5">
                                             <ExternalLink className="w-3 h-3 mr-1" /> View Full Document
                                         </Button>
+                                        }
                                     </div>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-left text-xs">

@@ -32,6 +32,7 @@ const AdminPage = () => {
     const URL_TO_VIEW = {
         dashboard: VIEWS.DASHBOARD,
         analyst_dashboard: VIEWS.ANALYST_DASHBOARD,
+        accounts_dashboard: VIEWS.ACCOUNTS_DASHBOARD,
         jobs: VIEWS.JOBS,
         expenses: VIEWS.EXPENSES,
         work_log: VIEWS.WORK_LOG,
@@ -60,7 +61,7 @@ const AdminPage = () => {
         if (user && !loading) {
             const currentView = URL_TO_VIEW[currentTab];
             if (currentView && !canView(currentView)) {
-                const orderedTabs = ['dashboard', 'analyst_dashboard', 'jobs', 'inquiries', 'inward_register', 'testing', 'documents', 'organization'];
+                const orderedTabs = ['dashboard', 'analyst_dashboard', 'accounts_dashboard', 'jobs', 'inquiries', 'inward_register', 'testing', 'documents', 'organization'];
                 const firstAllowed = orderedTabs.find(t => canView(URL_TO_VIEW[t]));
                 if (firstAllowed) {
                     navigate(`/settings/${firstAllowed}`, { replace: true });

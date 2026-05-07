@@ -18,6 +18,7 @@ const LeavesManager = lazy(() => import('@/components/admin/LeavesManager.jsx'))
 const UtilitiesManager = lazy(() => import('@/components/admin/UtilitiesManager.jsx'));
 const Dashboard = lazy(() => import('@/components/admin/Dashboard.jsx'));
 const AnalystDashboard = lazy(() => import('@/components/admin/AnalystDashboard.jsx'));
+const AccountsDashboard = lazy(() => import('@/components/admin/AccountsDashboard.jsx'));
 const ApprovalsManager = lazy(() => import('@/components/admin/ApprovalsManager.jsx'));
 const AdminClientPricingManager = lazy(() => import('@/components/admin/AdminClientPricingManager.jsx'));
 const AdminOrganizationSettings = lazy(() => import('@/components/admin/AdminOrganizationSettings.jsx'));
@@ -26,6 +27,7 @@ const InquiriesManager = lazy(() => import('@/components/admin/InquiriesManager.
 const COMPONENT_MAP = {
   [VIEWS.DASHBOARD]: Dashboard,
   [VIEWS.ANALYST_DASHBOARD]: AnalystDashboard,
+  [VIEWS.ACCOUNTS_DASHBOARD]: AccountsDashboard,
   [VIEWS.APPROVALS]: ApprovalsManager,
   [VIEWS.JOBS]: JobsManager,
   [VIEWS.MATERIAL_INWARD]: MaterialInwardManager,

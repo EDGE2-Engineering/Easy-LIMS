@@ -93,7 +93,8 @@ export const VIEWS = {
     CLIENT_PRICING: 'Client Pricing',
     INQUIRIES: 'Inquiries',
     ORGANIZATION: 'Organization',
-    ANALYST_DASHBOARD: 'Analyst Dashboard'
+    ANALYST_DASHBOARD: 'Analyst Dashboard',
+    ACCOUNTS_DASHBOARD: 'Accounts Dashboard'
 };
 
 export const ACTIONS = {
@@ -256,12 +257,12 @@ export const APP_CONFIG = {
         }
     },
     viewPermissions: {
-        [ROLES.SUPER_ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.MATERIAL_INWARD),
-        [ROLES.ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.MATERIAL_INWARD),
+        [ROLES.SUPER_ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.ACCOUNTS_DASHBOARD && v !== VIEWS.MATERIAL_INWARD),
+        [ROLES.ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.ACCOUNTS_DASHBOARD && v !== VIEWS.MATERIAL_INWARD),
         [ROLES.ANALYST.slug]: [VIEWS.ANALYST_DASHBOARD, VIEWS.JOBS],
         [ROLES.TECHNICIAN.slug]: [VIEWS.TESTING],
         [ROLES.MRO.slug]: [VIEWS.MATERIAL_INWARD],
-        [ROLES.ACCOUNTS.slug]: [VIEWS.DOCUMENTS, VIEWS.EXPENSES],
+        [ROLES.ACCOUNTS.slug]: [VIEWS.ACCOUNTS_DASHBOARD, VIEWS.DOCUMENTS, VIEWS.EXPENSES],
         [ROLES.HUMAN_RESOURCE.slug]: [VIEWS.WORK_LOG, VIEWS.APPROVALS]
     }
 };
