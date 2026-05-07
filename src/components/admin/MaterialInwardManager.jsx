@@ -38,8 +38,6 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [fromDate, setFromDate] = useState('');
     const [toDate, setToDate] = useState('');
-    const [filterStatus, setFilterStatus] = useState('all');
-    const [filterClient, setFilterClient] = useState('all');
     const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, recordId: null, jobOrderNo: '' });
     const [sortField, setSortField] = useState('date');
     const [sortOrder, setSortOrder] = useState('desc');
@@ -57,11 +55,6 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
     const [isAddingNew, setIsAddingNew] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    const statusOptions = [
-        'RECEIVED', 'UIN_GENERATED', 'SENT_TO_DEPARTMENT', 'UNDER_TESTING',
-        'TEST_COMPLETED', 'REPORT_GENERATED', 'UNDER_REVIEW', 'SIGNED',
-        'PAYMENT_PENDING', 'PAYMENT_RECEIVED', 'REPORT_RELEASED', 'COMPLETED'
-    ];
 
     const fetchClients = async () => {
         try {
@@ -117,7 +110,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
           material_samples(received_date)
         `);
 
-            if (isStandard()) {
+            if (isStandard() || user?.role === ROLES.MRO.slug) {
                 query = query.eq('created_by', user.id);
             }
 
@@ -493,20 +486,12 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
         }
     };
 
-    const uniqueClientsInList = Array.from(new Set(records
-        .map(r => r.clients?.client_name)
-        .filter(Boolean)))
-        .sort();
-
     const filteredRecords = records.filter(r => {
         const matchesSearch = (r.job_order_no?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
             (r.po_wo_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
             (r.clients?.client_name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
         if (!matchesSearch) return false;
-
-        if (filterStatus !== 'all' && r.status !== filterStatus) return false;
-        if (filterClient !== 'all' && r.clients?.client_name !== filterClient) return false;
 
         if (fromDate || toDate) {
             const recordDate = new Date(r.created_at);
@@ -531,10 +516,6 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
     const sortedRecords = [...filteredRecords].sort((a, b) => {
         let valA, valB;
         switch (sortField) {
-            case 'client':
-                valA = (a.clients?.client_name || '').toLowerCase();
-                valB = (b.clients?.client_name || '').toLowerCase();
-                break;
             case 'status':
                 valA = (a.status || '').toLowerCase();
                 valB = (b.status || '').toLowerCase();
@@ -559,14 +540,12 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, fromDate, toDate, filterStatus, filterClient, sortField, sortOrder]);
+    }, [searchTerm, fromDate, toDate, sortField, sortOrder]);
 
     const resetFilters = () => {
         setSearchTerm('');
         setFromDate('');
         setToDate('');
-        setFilterStatus('all');
-        setFilterClient('all');
         setSortField('date');
         setSortOrder('desc');
         setCurrentPage(1);
@@ -819,26 +798,6 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                                         />
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <Select value={filterStatus} onValueChange={setFilterStatus}>
-                                        <SelectTrigger className="w-40 h-9 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
-                                            <SelectValue placeholder="All Statuses" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Statuses</SelectItem>
-                                            {statusOptions.map(opt => <SelectItem key={opt} value={opt}>{opt.replace(/_/g, ' ')}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    <Select value={filterClient} onValueChange={setFilterClient}>
-                                        <SelectTrigger className="w-60 h-9 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
-                                            <SelectValue placeholder="All Clients" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Clients</SelectItem>
-                                            {uniqueClientsInList.map(client => <SelectItem key={client} value={client}>{client}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
                             </div>
                         </div>
                         <div className="h-8 w-px bg-gray-100 hidden xl:block" />
@@ -851,7 +810,6 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="date">Date Created</SelectItem>
-                                        <SelectItem value="client">Client Name</SelectItem>
                                         <SelectItem value="status">Status</SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -928,11 +886,11 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                         <thead className="bg-gray-50 border-b">
                             <tr>
                                 <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Job Order #</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">PO/WO #</th>
+                                {/* <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">PO/WO #</th> */}
                                 <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Created Date</th>
                                 <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Received Date</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Client</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Status</th>
+                                {/* <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Client</th> */}
+                                {/* <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Status</th> */}
                                 <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Created By</th>
                                 <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600">Actions</th>
                             </tr>
@@ -948,23 +906,23 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                                         <td className="py-3 px-4">
                                             <span className="font-semibold font-mono text-black text-md bg-gray-200 p-1 rounded text-sm">{record.job_order_no}</span>
                                         </td>
-                                        <td className="py-3 px-4 text-sm text-gray-600">
+                                        {/* <td className="py-3 px-4 text-sm text-gray-600">
                                             {record.po_wo_number || '-'}
-                                        </td>
+                                        </td> */}
                                         <td className="py-3 px-4 text-sm text-gray-600">
                                             {format(new Date(record.created_at), 'dd MMM yyyy')}
                                         </td>
                                         <td className="py-3 px-4 text-sm text-gray-600">
                                             {record.material_samples?.[0]?.received_date ? format(new Date(record.material_samples[0].received_date), 'dd MMM yyyy') : '-'}
                                         </td>
-                                        <td className="py-3 px-4 text-sm text-gray-600">
+                                        {/* <td className="py-3 px-4 text-sm text-gray-600">
                                             {record.clients?.client_name || '-'}
-                                        </td>
-                                        <td className="py-3 px-4">
+                                        </td> */}
+                                        {/* <td className="py-3 px-4">
                                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800`}>
                                                 {record.status.replace(/_/g, ' ')}
                                             </span>
-                                        </td>
+                                        </td> */}
                                         <td className="py-3 px-4 text-sm text-gray-600">
                                             {record.users?.full_name || '-'}
                                         </td>

@@ -56,11 +56,11 @@ const AuditLogsManager = () => {
             </div>
 
             <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
-                <CardHeader className="p-6 border-b border-gray-50">
+                {/* <CardHeader className="p-6 border-b border-gray-50">
                     <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
                         <ShieldCheck className="w-5 h-5 text-primary" /> System Audit Logs
                     </CardTitle>
-                </CardHeader>
+                </CardHeader> */}
                 <CardContent className="p-0">
                     <div className="divide-y divide-gray-50">
                         {logs.length === 0 ? (

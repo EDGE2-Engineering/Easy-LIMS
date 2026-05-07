@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkflowConfig } from '@/contexts/WorkflowContext';
-import { APP_CONFIG, ROLES } from '@/data/config';
+import { APP_CONFIG, ROLES, VIEWS } from '@/data/config';
 
 export const usePermissions = () => {
     const { user, roles } = useAuth();
@@ -13,6 +13,14 @@ export const usePermissions = () => {
         if (user.role === ROLES.SUPER_ADMIN.slug || user.role === ROLES.ADMIN.slug) return true;
 
         const allowedViews = APP_CONFIG.viewPermissions[user.role] || [];
+        
+        if (viewName === VIEWS.ORGANIZATION) {
+            return allowedViews.includes(VIEWS.EXPENSES) || 
+                   allowedViews.includes(VIEWS.WORK_LOG) || 
+                   allowedViews.includes(VIEWS.APPROVALS) ||
+                   allowedViews.includes(VIEWS.SETTINGS);
+        }
+
         return allowedViews.includes(viewName);
     };
 

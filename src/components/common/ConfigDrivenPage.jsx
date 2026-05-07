@@ -34,6 +34,7 @@ const COMPONENT_MAP = {
   [VIEWS.SETTINGS]: AdminSystemSettings,
   [VIEWS.CLIENT_PRICING]: AdminClientPricingManager,
   [VIEWS.INQUIRIES]: InquiriesManager,
+  [VIEWS.ORGANIZATION]: AdminOrganizationSettings,
   [VIEWS.TESTING]: lazy(() => import('@/components/admin/TestingDashboard.jsx'))
 };
 
@@ -47,7 +48,6 @@ const ConfigDrivenPage = ({ viewName, subView, id }) => {
       else if (subView === 'field_tests') Component = AdminServicesManager;
       else if (subView === 'lab_tests') Component = AdminTestsManager;
       else if (subView === 'sampling') Component = AdminSamplingManager;
-      else if (subView === 'organization') Component = AdminOrganizationSettings;
   }
 
   if (!canView(viewName)) {

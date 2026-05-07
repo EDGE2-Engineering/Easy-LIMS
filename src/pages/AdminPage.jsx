@@ -26,7 +26,7 @@ const AdminPage = () => {
     const siteName = getSiteContent().global?.siteName;
     const { tab, id } = useParams();
     const navigate = useNavigate();
-    const [mainTab, setMainTab] = useState(tab || 'dashboard');
+    const currentTab = tab || 'dashboard';
     const { canView } = usePermissions();
 
     const URL_TO_VIEW = {
@@ -47,7 +47,7 @@ const AdminPage = () => {
         lab_tests: VIEWS.SETTINGS,
         sampling: VIEWS.SETTINGS,
         client_pricing: VIEWS.CLIENT_PRICING,
-        organization: VIEWS.SETTINGS,
+        organization: VIEWS.ORGANIZATION,
         inquiries: VIEWS.INQUIRIES
     };
 
@@ -56,11 +56,19 @@ const AdminPage = () => {
 
 
     useEffect(() => {
-        if (tab) setMainTab(tab);
-    }, [tab]);
+        if (user && !loading) {
+            const currentView = URL_TO_VIEW[currentTab];
+            if (currentView && !canView(currentView)) {
+                const orderedTabs = ['dashboard', 'jobs', 'inquiries', 'inward_register', 'testing', 'accounts', 'organization'];
+                const firstAllowed = orderedTabs.find(t => canView(URL_TO_VIEW[t]));
+                if (firstAllowed) {
+                    navigate(`/settings/${firstAllowed}`, { replace: true });
+                }
+            }
+        }
+    }, [user, loading, currentTab, canView, navigate]);
 
     const handleTabChange = (value) => {
-        setMainTab(value);
         navigate(`/settings/${value}`);
     };
 
@@ -75,15 +83,15 @@ const AdminPage = () => {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <Helmet>
-                <title>{mainTab.charAt(0).toUpperCase() + mainTab.slice(1).replace('_', ' ')} | {siteName}</title>
+                <title>{currentTab.charAt(0).toUpperCase() + currentTab.slice(1).replace('_', ' ')} | {siteName}</title>
             </Helmet>
 
             <Navbar />
 
             <main className="flex-grow container mx-auto px-4 py-6 relative">
-                <Tabs value={mainTab} onValueChange={handleTabChange} className="w-full space-y-6">
+                <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full space-y-6">
                     <div className="mt-4">
-                        <ConfigDrivenPage viewName={URL_TO_VIEW[mainTab]} subView={mainTab} id={id} />
+                        <ConfigDrivenPage viewName={URL_TO_VIEW[currentTab]} subView={currentTab} id={id} />
                     </div>
                 </Tabs>
             </main>

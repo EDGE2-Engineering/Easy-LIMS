@@ -1,52 +1,36 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Briefcase, IndianRupee, Wallet, ClipboardCheck, Calculator, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness, CalendarOff, LayoutDashboard, CheckCircle2, Calendar, Loader2, Send, Building2, MessageSquare } from 'lucide-react';
-import { getSiteContent, VIEWS } from '@/data/config';
-import { useToast } from '@/components/ui/use-toast';
-import { Button } from '@/components/ui/button';
-import { usePermissions } from '@/hooks/usePermissions';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
-import { 
-    Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
+import { useAuth } from '@/contexts/AuthContext';
+import { getSiteContent, VIEWS } from '@/data/config';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useToast } from '@/components/ui/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-
-import { useAuth } from '@/contexts/AuthContext';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
+import { Button } from "@/components/ui/button";
 
 const Navbar = ({ isDirty = false, isSaving = false }) => {
-  const content = getSiteContent();
-  const navigate = useNavigate();
   const { user, logout, isAdmin } = useAuth();
+  const content = getSiteContent();
   const { canView } = usePermissions();
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
-  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [settingsDropdownOpen, setSettingsDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
   const [requestLoading, setRequestLoading] = useState(false);
   const [leaveRequest, setLeaveRequest] = useState({
@@ -56,34 +40,45 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
       reason: ''
   });
   const location = useLocation();
+  const settingsDropdownRef = useRef(null);
+  const userDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (settingsDropdownOpen && settingsDropdownRef.current && !settingsDropdownRef.current.contains(event.target)) {
+        setSettingsDropdownOpen(false);
+      }
+      if (dropdownOpen && userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [settingsDropdownOpen, dropdownOpen]);
 
   const handleLogout = () => {
     setLogoutDialogOpen(true);
   };
 
-  const confirmLogout = () => {
-    logout();
-    toast({ title: "Logged Out", description: "Logged out successfully." });
+  const confirmLogout = async () => {
+    await logout();
     setLogoutDialogOpen(false);
+    navigate('/');
   };
 
-  const handleLeaveRequest = async (e) => {
+  const handleRequestSubmit = async (e) => {
     e.preventDefault();
     setRequestLoading(true);
     try {
         const { error } = await supabase
             .from('request_approvals')
-            .insert({
-                request_type: 'LEAVE',
+            .insert([{
                 requester_id: user.id,
-                request_data: {
-                    startDate: leaveRequest.startDate,
-                    endDate: leaveRequest.endDate,
-                    leaveType: leaveRequest.leaveType,
-                    reason: leaveRequest.reason
-                },
-                status: 'PENDING'
-            });
+                request_type: 'LEAVE',
+                status: 'PENDING',
+                request_data: leaveRequest
+            }]);
 
         if (error) throw error;
 
@@ -97,7 +92,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
         console.error("Error submitting request:", error);
         toast({
             title: "Error",
-            description: "Failed to submit leave request.",
+            description: "Failed to submit request. Please try again.",
             variant: "destructive"
         });
     } finally {
@@ -109,30 +104,41 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     { view: VIEWS.DASHBOARD, path: '/settings/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { view: VIEWS.JOBS, path: '/settings/jobs', label: 'Jobs', icon: Briefcase },
     { view: VIEWS.INQUIRIES, path: '/settings/inquiries', label: 'Inquiries', icon: MessageSquare },
+    { view: VIEWS.MATERIAL_INWARD, path: '/settings/inward_register', label: 'Inward', icon: Package },
+    { view: VIEWS.TESTING, path: '/settings/testing', label: 'Testing', icon: TestTube },
+    { view: VIEWS.ACCOUNTS, path: '/settings/accounts', label: 'Accounts', icon: IndianRupee },
   ];
 
   const SETTINGS_SUB_ITEMS = [
-    { id: 'organization', label: 'Organization', icon: Building2, path: '/settings/organization', description: 'Manage expenses, leaves, and approvals' },
-    { id: 'clients', label: 'Clients', icon: BriefcaseBusiness, path: '/settings/clients', description: 'Manage your client database' },
-    { id: 'client_pricing', label: 'Client Pricing', icon: IndianRupee, path: '/settings/client_pricing', description: 'Configure custom prices per client' },
-    { id: 'field_tests', label: 'Field Tests', icon: Drill, path: '/settings/field_tests', description: 'Configure on-site testing services' },
-    { id: 'lab_tests', label: 'Lab Tests', icon: TestTube, path: '/settings/lab_tests', description: 'Manage laboratory testing parameters' },
-    { id: 'sampling', label: 'Sampling', icon: SwatchBook, path: '/settings/sampling', description: 'Configure material sampling methods' },
-    { id: 'utilities', label: 'Utilities', icon: Calculator, path: '/settings/utilities', description: 'Access the handy tools' },
-    { id: 'system', label: 'System', icon: Cpu, path: '/settings/system', description: 'General system settings and users' },
+    { id: 'organization', label: 'Organization', icon: Building2, path: '/settings/organization', description: 'Manage expenses, leaves, and approvals', views: [VIEWS.EXPENSES, VIEWS.WORK_LOG, VIEWS.APPROVALS] },
+    { id: 'clients', label: 'Clients', icon: BriefcaseBusiness, path: '/settings/clients', description: 'Manage your client database', view: VIEWS.SETTINGS },
+    { id: 'client_pricing', label: 'Client Pricing', icon: IndianRupee, path: '/settings/client_pricing', description: 'Configure custom prices per client', view: VIEWS.CLIENT_PRICING },
+    { id: 'field_tests', label: 'Field Tests', icon: Drill, path: '/settings/field_tests', description: 'Configure on-site testing services', view: VIEWS.SETTINGS },
+    { id: 'lab_tests', label: 'Lab Tests', icon: TestTube, path: '/settings/lab_tests', description: 'Manage laboratory testing parameters', view: VIEWS.SETTINGS },
+    { id: 'sampling', label: 'Sampling', icon: SwatchBook, path: '/settings/sampling', description: 'Configure material sampling methods', view: VIEWS.SETTINGS },
+    { id: 'utilities', label: 'Utilities', icon: Calculator, path: '/settings/utilities', description: 'Access the handy tools', view: VIEWS.UTILITIES },
+    { id: 'system', label: 'System', icon: Cpu, path: '/settings/system', description: 'General system settings and users', view: VIEWS.SETTINGS },
   ];
 
   const navItems = ALL_NAV_ITEMS.filter(item => canView(item.view));
 
+  const visibleSettingsSubItems = SETTINGS_SUB_ITEMS.filter(item => {
+    if (canView(VIEWS.SETTINGS)) return true;
+    if (item.view && canView(item.view)) return true;
+    if (item.views && item.views.some(v => canView(v))) return true;
+    return false;
+  });
+
+  const canShowSettings = canView(VIEWS.SETTINGS) || visibleSettingsSubItems.length > 0;
+
   const isActive = (path, id) => {
-    if (path === '/settings/clients') { // Changed from /settings/services to /settings/clients
-      // Highlight settings only for explicitly settings tabs, not for Inward/Reports/Accounts
-      const isManagementTab = location.pathname.includes('/jobs') ||
-        location.pathname.includes('/inward_register') ||
-        location.pathname.includes('/reports') ||
-        location.pathname.includes('/accounts') ||
+    if (path === '/settings/clients') { 
+      const isManagementTab = location.pathname.includes('/dashboard') ||
+        location.pathname.includes('/jobs') ||
         location.pathname.includes('/inquiries') ||
-        location.pathname.includes('/dashboard');
+        location.pathname.includes('/inward_register') ||
+        location.pathname.includes('/testing') ||
+        location.pathname.includes('/accounts');
 
       return (location.pathname.startsWith('/settings') && !isManagementTab) ||
         location.pathname.startsWith('/service/') ||
@@ -142,7 +148,6 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     if (id === 'utilities') {
         return location.pathname === path || location.pathname.startsWith('/settings/utilities');
     }
-    // For other management tabs (Inward, Reports, Accounts), use precise matching
     return location.pathname === path;
   };
 
@@ -166,14 +171,17 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center space-x-2">
-            <TooltipProvider>
-              {navItems.map((item) => {
-                  const descriptions = {
+          <div className="hidden md:flex items-center space-x-1">
+            {navItems.map((item) => {
+                const active = isActive(item.path);
+                const descriptions = {
                   '/settings/dashboard': 'Overview of laboratory operations and metrics',
                   '/settings/jobs': 'Manage laboratory testing jobs',
                   '/settings/inquiries': 'Record and track client inquiries and requirements',
                   '/settings/utilities': 'Access helpful calculation utilities',
+                  '/settings/inward_register': 'Register and manage material reception',
+                  '/settings/testing': 'Laboratory testing workflow and data entry',
+                  '/settings/accounts': 'Manage invoicing and financial documentation',
                 };
 
                 return (
@@ -182,16 +190,16 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                       <Link
                         to={item.path}
                         state={item.path === '/doc/new' ? { forceReset: Date.now() } : undefined}
-                        className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all text-sm font-semibold ${isActive(item.path)
+                        className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all text-sm font-semibold ${active
                           ? 'bg-primary text-white shadow-sm'
                           : 'text-gray-600 hover:text-primary hover:bg-gray-300'
                           }`}
                       >
-                        <item.icon className={`w-4 h-4 ${isActive(item.path) ? 'text-white' : ''}`} />
+                        <item.icon className={`w-4 h-4 ${active ? 'text-white' : ''}`} />
                         <span>{item.label}</span>
                       </Link>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                    <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">
                       <p className="text-xs">{descriptions[item.path] || item.label}</p>
                     </TooltipContent>
                   </Tooltip>
@@ -199,9 +207,8 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
               })}
 
               {/* Settings Dropdown */}
-              {canView(VIEWS.SETTINGS) && (
-                <div className="relative">
-                  <TooltipProvider>
+              {canShowSettings && (
+                <div className="relative" ref={settingsDropdownRef}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
@@ -216,326 +223,307 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                           <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${settingsDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                      <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">
                         <p className="text-xs">System configuration and master data</p>
                       </TooltipContent>
                     </Tooltip>
-                  </TooltipProvider>
 
                   <AnimatePresence>
                     {settingsDropdownOpen && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setSettingsDropdownOpen(false)} />
-                        <motion.div
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          className="absolute left-0 mt-2 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden py-2"
-                        >
-                          {SETTINGS_SUB_ITEMS.map((subItem) => (
-                            <Link
-                              key={subItem.path}
-                              to={subItem.path}
-                              onClick={() => setSettingsDropdownOpen(false)}
-                              className={`flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors ${location.pathname === subItem.path
-                                ? 'bg-primary/10 text-primary'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-primary'
-                                }`}
-                            >
-                              <div className={`w-8 h-8 shrink-0 rounded-lg flex items-center justify-center ${location.pathname === subItem.path ? 'bg-primary/20' : 'bg-gray-100'}`}>
-                                <subItem.icon className="w-4 h-4 shrink-0" />
-                              </div>
-                              <div>
-                                <p className="font-bold">{subItem.label}</p>
-                                <p className="text-[10px] text-gray-400 font-medium leading-tight">{subItem.description}</p>
-                              </div>
-                            </Link>
-                          ))}
-                        </motion.div>
-                      </>
-                    )}
-                  </AnimatePresence>
-                </div>
-              )}
-            </TooltipProvider>
-            {user && (
-              <div className="relative">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => setDropdownOpen(!dropdownOpen)}
-                        className={`flex flex-col items-center justify-center px-4 py-2 rounded-xl transition-all duration-300 border ${
-                          dropdownOpen 
-                            ? 'bg-primary/5 border-primary/20 shadow-inner' 
-                            : 'bg-white border-gray-100 hover:border-primary/20 hover:bg-gray-50'
-                        }`}
-                      >
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Logged in as</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                            <User className="w-3.5 h-3.5 text-primary" />
-                          </div>
-                          <span className="text-sm font-bold text-gray-800">{user?.fullName || user?.username || 'Admin'}</span>
-                          <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
-                        </div>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                      <p className="text-xs">User settings and session management</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <AnimatePresence>
-                  {dropdownOpen && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
                       <motion.div
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden py-2"
+                        className="absolute left-0 mt-2 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden py-2"
+                      >
+                        {visibleSettingsSubItems.map((subItem) => (
+                          <Link
+                            key={subItem.path}
+                            to={subItem.path}
+                            onClick={() => setSettingsDropdownOpen(false)}
+                            className={`flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors ${location.pathname === subItem.path
+                              ? 'bg-primary/10 text-primary'
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-primary'
+                              }`}
+                          >
+                            <div className={`w-8 h-8 shrink-0 rounded-lg flex items-center justify-center ${location.pathname === subItem.path ? 'bg-primary/20' : 'bg-gray-100'}`}>
+                              <subItem.icon className="w-4 h-4 shrink-0" />
+                            </div>
+                            <div>
+                              <p className="font-bold">{subItem.label}</p>
+                              <p className="text-[10px] text-gray-400 font-medium leading-tight">{subItem.description}</p>
+                            </div>
+                          </Link>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
+            <div className="h-6 w-px bg-gray-200 mx-2" />
+            
+            {user && (
+                <div className="relative" ref={userDropdownRef}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setDropdownOpen(!dropdownOpen)}
+                        className={`flex items-center space-x-3 p-1.5 rounded-xl transition-all hover:bg-gray-50 border border-transparent ${dropdownOpen ? 'border-gray-100 bg-gray-50' : ''}`}
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+                          <User className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="text-left hidden lg:block">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Logged in as</p>
+                          <p className="text-sm font-bold text-gray-900 leading-none truncate max-w-[120px]">{user?.fullName || user?.username}</p>
+                        </div>
+                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">
+                      <p className="text-xs">Account settings and options</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <AnimatePresence>
+                    {dropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute right-0 mt-2 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden py-2"
                       >
                         <div className="px-4 py-2 border-b border-gray-50 mb-1">
                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">User</p>
                           <p className="text-sm font-bold text-gray-800 truncate">{user?.fullName}</p>
-                          {/* <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Username</p>
-                          <p className="text-sm font-bold text-gray-800 truncate">{user?.username}</p> */}
                         </div>
                         
                         {!isAdmin() && (
-                          <button
-                            onClick={() => {
-                              setDropdownOpen(false);
-                              setIsRequestDialogOpen(true);
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
-                          >
-                            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
-                              <CalendarOff className="w-4 h-4 text-indigo-600" />
-                            </div>
-                            Apply for Leave
-                          </button>
+                            <button
+                                onClick={() => {
+                                    setIsRequestDialogOpen(true);
+                                    setDropdownOpen(false);
+                                }}
+                                className="w-full flex items-center space-x-3 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-colors"
+                            >
+                                <Calendar className="w-4 h-4" />
+                                <span>Apply for Leave</span>
+                            </button>
                         )}
 
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  onClick={() => {
-                                    setDropdownOpen(false);
-                                    handleLogout();
-                                  }}
-                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
-                                >
-                                  <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
-                                    <LogOut className="w-4 h-4" />
-                                  </div>
-                                  Logout
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="left" className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">End your current session</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                        <button
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            handleLogout();
+                          }}
+                          className="w-full flex items-center space-x-3 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Logout</span>
+                        </button>
                       </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
           </div>
 
-          <div className="flex items-center md:hidden gap-4">
-
+          <div className="md:hidden flex items-center">
             <button
-              className="text-gray-700"
-              onClick={() => setIsOpen(!isOpen)}
-              aria-label="Toggle menu"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-xl text-gray-600 hover:bg-gray-100 transition-colors"
             >
-              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
       </div>
 
       <AnimatePresence>
-        {isOpen && (
+        {mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white border-t overflow-hidden"
+            className="md:hidden border-t border-gray-100 bg-white overflow-hidden shadow-inner"
           >
-            <div className="container mx-auto px-4 py-4 space-y-2">
+            <div className="px-4 py-6 space-y-4">
               {navItems.map((item) => {
+                const active = isActive(item.path);
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
-                    state={item.path === '/doc/new' ? { forceReset: Date.now() } : undefined}
-                    onClick={() => setIsOpen(false)}
-                    className={`flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors ${isActive(item.path)
-                      ? 'bg-primary text-white'
-                      : 'text-gray-700 hover:bg-gray-100'
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center space-x-3 p-4 rounded-2xl text-sm font-bold transition-all ${active
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-gray-600 hover:bg-gray-50'
                       }`}
                   >
                     <item.icon className="w-5 h-5" />
-                    <span className="font-medium">{item.label}</span>
+                    <span>{item.label}</span>
                   </Link>
                 );
               })}
 
-              {canView(VIEWS.SETTINGS) && (
+              {canShowSettings && (
                 <div className="space-y-1 pt-2 border-t border-gray-100">
                   <div className="flex items-center space-x-3 py-2 px-4 text-gray-400">
                     <Settings className="w-4 h-4" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Settings</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Settings</span>
                   </div>
-                  {SETTINGS_SUB_ITEMS.map((subItem) => (
+                  {visibleSettingsSubItems.map((subItem) => (
                     <Link
                       key={subItem.path}
                       to={subItem.path}
-                      onClick={() => setIsOpen(false)}
-                      className={`flex items-center space-x-3 py-3 px-8 rounded-lg transition-colors ${location.pathname === subItem.path
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center space-x-3 p-4 rounded-2xl text-sm font-bold transition-all ${location.pathname === subItem.path
                         ? 'bg-primary/10 text-primary'
-                        : 'text-gray-600 hover:bg-gray-100'
+                        : 'text-gray-600 hover:bg-gray-50'
                         }`}
                     >
-                      <subItem.icon className="w-4 h-4" />
-                      <span className="font-medium">{subItem.label}</span>
+                      <subItem.icon className="w-5 h-5" />
+                      <span>{subItem.label}</span>
                     </Link>
                   ))}
                 </div>
               )}
-              {user && (
-                <>
-                  <div className="flex items-center space-x-3 py-3 px-4 rounded-lg bg-blue-50 text-blue-700 mb-2">
-                    <User className="w-5 h-5" />
-                    <span className="font-medium text-sm">
-                      Logged in as {user?.fullName || user?.username || 'Admin'}
-                    </span>
+
+              <div className="pt-4 border-t border-gray-100 space-y-4">
+                <div className="flex items-center space-x-3 px-4 py-2">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
+                    <User className="w-5 h-5 text-primary" />
                   </div>
-                  <button
-                    onClick={() => {
-                      setIsOpen(false);
-                      handleLogout();
-                    }}
-                    className="flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors text-red-600 hover:bg-red-50 w-full text-left"
-                  >
-                    <LogOut className="w-5 h-5" />
-                    <span className="font-medium">Logout</span>
-                  </button>
-                </>
-              )}
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Logged in as</p>
+                    <p className="text-sm font-bold text-gray-900 leading-none">{user?.fullName || user?.username}</p>
+                  </div>
+                </div>
+                
+                {!isAdmin() && (
+                    <button
+                        onClick={() => {
+                            setIsRequestDialogOpen(true);
+                            setMobileMenuOpen(false);
+                        }}
+                        className="w-full flex items-center space-x-3 p-4 rounded-2xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all"
+                    >
+                        <Calendar className="w-5 h-5" />
+                        <span>Apply for Leave</span>
+                    </button>
+                )}
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center space-x-3 p-4 rounded-2xl text-sm font-bold text-red-600 hover:bg-red-50 transition-all"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Logout</span>
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Logout Confirmation Dialog */}
-      <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center text-red-600">
-              Clear Data & Logout?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to logout?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmLogout} className="bg-red-600 hover:bg-red-700 text-white">
+      <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <DialogContent className="max-w-md rounded-3xl p-8">
+          <DialogHeader className="space-y-4">
+            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-2">
+              <LogOut className="w-8 h-8 text-red-500" />
+            </div>
+            <DialogTitle className="text-2xl font-black text-center text-gray-900 tracking-tight">Confirm Logout</DialogTitle>
+            <DialogDescription className="text-center font-medium text-gray-500 text-lg">
+              Are you sure you want to sign out? You will need to log back in to access your dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row gap-3 mt-8">
+            <Button
+              variant="outline"
+              onClick={() => setLogoutDialogOpen(false)}
+              className="flex-1 h-14 rounded-2xl font-bold text-gray-600 hover:bg-gray-50 border-gray-100"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmLogout}
+              className="flex-1 h-14 rounded-2xl font-bold bg-red-500 hover:bg-red-600 shadow-lg shadow-red-200"
+            >
               Logout
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Leave Request Dialog */}
       <Dialog open={isRequestDialogOpen} onOpenChange={setIsRequestDialogOpen}>
-          <DialogContent className="sm:max-w-[425px] rounded-[32px] border-none shadow-2xl p-8">
-              <DialogHeader>
-                  <DialogTitle className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-xl">
-                          <Calendar className="w-6 h-6 text-primary" />
-                      </div>
-                      Apply for Leave
-                  </DialogTitle>
-                  <DialogDescription className="text-gray-400 font-medium">
-                      Your request will be sent to the administrator for approval.
+          <DialogContent className="max-w-md rounded-3xl p-8">
+              <DialogHeader className="space-y-4">
+                  <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                      <Calendar className="w-8 h-8 text-primary" />
+                  </div>
+                  <DialogTitle className="text-2xl font-black text-center text-gray-900 tracking-tight">Apply for Leave</DialogTitle>
+                  <DialogDescription className="text-center font-medium text-gray-500">
+                      Submit your leave request for approval.
                   </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleLeaveRequest} className="space-y-6 mt-6">
+              <form onSubmit={handleRequestSubmit} className="space-y-4 mt-6">
                   <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                          <Label htmlFor="startDate" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Start Date</Label>
-                          <Input 
-                              id="startDate" 
-                              type="date" 
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Start Date</Label>
+                          <input
+                              type="date"
                               required
                               value={leaveRequest.startDate}
-                              onChange={(e) => setLeaveRequest({...leaveRequest, startDate: e.target.value})}
-                              className="rounded-xl border-gray-100 bg-gray-50 focus:bg-white transition-all h-12 font-bold text-xs" 
+                              onChange={(e) => setLeaveRequest({ ...leaveRequest, startDate: e.target.value })}
+                              className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                           />
                       </div>
                       <div className="space-y-2">
-                          <Label htmlFor="endDate" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">End Date</Label>
-                          <Input 
-                              id="endDate" 
-                              type="date" 
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">End Date</Label>
+                          <input
+                              type="date"
                               required
                               value={leaveRequest.endDate}
-                              onChange={(e) => setLeaveRequest({...leaveRequest, endDate: e.target.value})}
-                              className="rounded-xl border-gray-100 bg-gray-50 focus:bg-white transition-all h-12 font-bold text-xs" 
+                              onChange={(e) => setLeaveRequest({ ...leaveRequest, endDate: e.target.value })}
+                              className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                           />
                       </div>
                   </div>
                   <div className="space-y-2">
-                      <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Leave Type</Label>
-                      <Select 
-                        value={leaveRequest.leaveType} 
-                        onValueChange={(val) => setLeaveRequest({...leaveRequest, leaveType: val})}
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Leave Type</Label>
+                      <select
+                          value={leaveRequest.leaveType}
+                          onChange={(e) => setLeaveRequest({ ...leaveRequest, leaveType: e.target.value })}
+                          className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none"
                       >
-                        <SelectTrigger className="rounded-xl border-gray-100 bg-gray-50 focus:bg-white transition-all h-12 font-bold text-xs">
-                          <SelectValue placeholder="Select Leave Type" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-none shadow-xl">
-                          <SelectItem value="Sick Leave">Sick Leave</SelectItem>
-                          <SelectItem value="Casual Leave">Casual Leave</SelectItem>
-                          <SelectItem value="Compensatory Off">Compensatory Off</SelectItem>
-                          <SelectItem value="Loss of Pay (LOP)">Loss of Pay (LOP)</SelectItem>
-                        </SelectContent>
-                      </Select>
+                          <option>Casual Leave</option>
+                          <option>Sick Leave</option>
+                          <option>Earned Leave</option>
+                          <option>Loss of Pay</option>
+                      </select>
                   </div>
                   <div className="space-y-2">
-                      <Label htmlFor="reason" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Reason / Comments</Label>
-                      <Textarea 
-                          id="reason" 
-                          placeholder="Briefly describe the reason for leave..." 
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Reason</Label>
+                      <Textarea
                           required
                           value={leaveRequest.reason}
-                          onChange={(e) => setLeaveRequest({...leaveRequest, reason: e.target.value})}
-                          className="rounded-xl border-gray-100 bg-gray-50 focus:bg-white transition-all min-h-[100px] font-medium text-sm"
+                          onChange={(e) => setLeaveRequest({ ...leaveRequest, reason: e.target.value })}
+                          placeholder="Briefly explain your reason for leave..."
+                          className="min-h-[100px] rounded-xl border-gray-100 bg-gray-50 resize-none"
                       />
                   </div>
-                  <DialogFooter className="pt-4">
-                      <Button 
-                          type="submit" 
-                          disabled={requestLoading}
-                          className="w-full rounded-xl h-10 bg-primary hover:bg-primary-dark text-white font-black shadow-lg shadow-primary/20 gap-3"
-                      >
-                          {requestLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                          Submit Request
-                      </Button>
-                  </DialogFooter>
+                  <Button
+                      type="submit"
+                      disabled={requestLoading}
+                      className="w-full h-14 rounded-2xl font-bold bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20"
+                  >
+                      {requestLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Submit Request'}
+                  </Button>
               </form>
           </DialogContent>
       </Dialog>
-
     </nav>
   );
 };
