@@ -30,9 +30,16 @@ export const usePermissions = () => {
         return action && action.roles.includes(user.role);
     };
 
+    const canShowNavbarAction = (actionId) => {
+        if (!user || !user.role) return false;
+        const allowedActions = APP_CONFIG.navbar.permissions[user.role] || [];
+        return allowedActions.includes(actionId);
+    };
+
     return {
         canView,
         canPerformAction,
+        canShowNavbarAction,
         role: user?.role,
         departments: user?.departments || []
     };

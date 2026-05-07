@@ -367,7 +367,7 @@ const AdminSystemSettings = ({ id }) => {
                                                                     B["Generate Unified Identification Number (UIN) / Job Order Number upon Receipt of PO/WO and Material"] --> D
                                                                     D --> |"Testing Process (4–5 Days)"| F
                                                                 
-                                                                    C["Accounts Team Raises Proforma Invoice upon Receipt of PO/WO and Sends to Client"]
+                                                                    C["Documents Team Raises Proforma Invoice upon Receipt of PO/WO and Sends to Client"]
                                                                 
                                                                     D["Material Receiving Officer (MRO) Labels Material with UIN and Prepares Job Card cum Result Sheet (Internal Hard Copy), then Forwards to Relevant Department (Chemical / Physical / Soil / NDT)"]
                                                                 
@@ -375,9 +375,9 @@ const AdminSystemSettings = ({ id }) => {
                                                                 
                                                                     G["MRO Generates Final Report with ULR Number and Report Number"] --> H
                                                                     H["Authorized Signatory Reviews and Signs the Report"] --> I
-                                                                    I["Seal Report, Scan & Photocopy; Send Scanned Copy to Accounts Team"] --> J
+                                                                    I["Seal Report, Scan & Photocopy; Send Scanned Copy to Documents Team"] --> J
                                                                 
-                                                                    J["Accounts Team Confirms Payment Receipt; Upon Confirmation, Release Final Report to Client"]
+                                                                    J["Documents Team Confirms Payment Receipt; Upon Confirmation, Release Final Report to Client"]
                                                             `}
                                                         </MermaidDiagram>
                                                     </div>

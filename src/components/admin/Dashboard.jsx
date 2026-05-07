@@ -253,7 +253,7 @@ const Dashboard = () => {
                 {[
                     { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', trend: 'In Progress' },
                     { label: 'Pending Reports', value: stats.pendingReports, icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', trend: 'Awaiting Action' },
-                    { label: 'Awaiting Payment', value: stats.pendingPayments, icon: IndianRupee, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', trend: 'Accounts' },
+                    { label: 'Awaiting Payment', value: stats.pendingPayments, icon: IndianRupee, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', trend: 'Documents' },
                     { label: 'Total Clients', value: stats.totalClients, icon: BriefcaseBusiness, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', trend: 'Network' },
                     { label: 'New Inquiries', value: stats.totalInquiries, icon: MessageSquare, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100', trend: `${stats.pendingInquiries} Pending` },
                 ].map((stat, idx) => (

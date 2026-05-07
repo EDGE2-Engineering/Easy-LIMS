@@ -38,7 +38,7 @@ const AdminPage = () => {
         utilities: VIEWS.UTILITIES,
         inward_register: VIEWS.MATERIAL_INWARD,
         testing: VIEWS.TESTING,
-        accounts: VIEWS.ACCOUNTS,
+        documents: VIEWS.DOCUMENTS,
         approvals: VIEWS.APPROVALS,
         settings: VIEWS.SETTINGS,
         users: VIEWS.SETTINGS,
@@ -60,7 +60,7 @@ const AdminPage = () => {
         if (user && !loading) {
             const currentView = URL_TO_VIEW[currentTab];
             if (currentView && !canView(currentView)) {
-                const orderedTabs = ['dashboard', 'analyst_dashboard', 'jobs', 'inquiries', 'inward_register', 'testing', 'accounts', 'organization'];
+                const orderedTabs = ['dashboard', 'analyst_dashboard', 'jobs', 'inquiries', 'inward_register', 'testing', 'documents', 'organization'];
                 const firstAllowed = orderedTabs.find(t => canView(URL_TO_VIEW[t]));
                 if (firstAllowed) {
                     navigate(`/settings/${firstAllowed}`, { replace: true });
@@ -79,7 +79,7 @@ const AdminPage = () => {
         </div>
     );
 
-    if (!user) return <AdminLogin onLoginSuccess={() => {}} />;
+    if (!user) return <AdminLogin onLoginSuccess={() => { }} />;
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">

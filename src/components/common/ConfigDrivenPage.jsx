@@ -6,7 +6,7 @@ import { Loader2, ShieldAlert } from 'lucide-react';
 
 const AdminClientsManager = lazy(() => import('@/components/admin/AdminClientsManager.jsx'));
 const AdminUsersManager = lazy(() => import('@/components/admin/AdminUsersManager.jsx'));
-const AccountsManager = lazy(() => import('@/components/admin/AccountsManager.jsx'));
+const DocumentsManager = lazy(() => import('@/components/admin/DocumentsManager.jsx'));
 const MaterialInwardManager = lazy(() => import('@/components/admin/MaterialInwardManager'));
 const JobsManager = lazy(() => import('@/components/admin/JobsManager.jsx'));
 const AdminTestsManager = lazy(() => import('@/components/admin/AdminTestsManager.jsx'));
@@ -29,7 +29,7 @@ const COMPONENT_MAP = {
   [VIEWS.APPROVALS]: ApprovalsManager,
   [VIEWS.JOBS]: JobsManager,
   [VIEWS.MATERIAL_INWARD]: MaterialInwardManager,
-  [VIEWS.ACCOUNTS]: AccountsManager,
+  [VIEWS.DOCUMENTS]: DocumentsManager,
   [VIEWS.EXPENSES]: ExpensesManager,
   [VIEWS.WORK_LOG]: LeavesManager,
   [VIEWS.UTILITIES]: UtilitiesManager,
@@ -45,11 +45,11 @@ const ConfigDrivenPage = ({ viewName, subView, id }) => {
   let Component = COMPONENT_MAP[viewName];
 
   if (viewName === VIEWS.SETTINGS) {
-      if (subView === 'clients') Component = AdminClientsManager;
-      else if (subView === 'system') Component = AdminSystemSettings;
-      else if (subView === 'field_tests') Component = AdminServicesManager;
-      else if (subView === 'lab_tests') Component = AdminTestsManager;
-      else if (subView === 'sampling') Component = AdminSamplingManager;
+    if (subView === 'clients') Component = AdminClientsManager;
+    else if (subView === 'system') Component = AdminSystemSettings;
+    else if (subView === 'field_tests') Component = AdminServicesManager;
+    else if (subView === 'lab_tests') Component = AdminTestsManager;
+    else if (subView === 'sampling') Component = AdminSamplingManager;
   }
 
   if (!canView(viewName)) {
@@ -63,11 +63,11 @@ const ConfigDrivenPage = ({ viewName, subView, id }) => {
   }
 
   if (!Component) {
-      return (
-          <div className="p-8 border border-dashed rounded-xl bg-muted text-center italic">
-              Component for view "{viewName}" is not yet registered in COMPONENT_MAP.
-          </div>
-      );
+    return (
+      <div className="p-8 border border-dashed rounded-xl bg-muted text-center italic">
+        Component for view "{viewName}" is not yet registered in COMPONENT_MAP.
+      </div>
+    );
   }
 
   return (

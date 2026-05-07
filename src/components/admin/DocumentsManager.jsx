@@ -29,8 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const AccountsManager = () => {
-  const [accounts, setAccounts] = useState([]);
+const DocumentsManager = () => {
+  const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [fromDate, setFromDate] = useState('');
@@ -69,7 +69,7 @@ const AccountsManager = () => {
     }
   };
 
-  const fetchAccounts = async () => {
+  const fetchDocuments = async () => {
     setLoading(true);
     try {
       let query = supabase
@@ -86,12 +86,12 @@ const AccountsManager = () => {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-      setAccounts(data || []);
+      setDocuments(data || []);
     } catch (error) {
-      console.error('Error fetching accounts:', error);
+      console.error('Error fetching documents:', error);
       toast({
         title: "Error",
-        description: "Failed to load accounts. " + error.message,
+        description: "Failed to load documents. " + error.message,
         variant: "destructive"
       });
     } finally {
@@ -100,7 +100,7 @@ const AccountsManager = () => {
   };
 
   useEffect(() => {
-    fetchAccounts();
+    fetchDocuments();
   }, []);
 
   const handleDeleteClick = (record) => {
@@ -122,11 +122,11 @@ const AccountsManager = () => {
 
       if (error) throw error;
 
-      toast({ title: "Account Deleted", description: "The account record has been removed.", variant: "destructive" });
-      fetchAccounts();
+      toast({ title: "Document Deleted", description: "The document record has been removed.", variant: "destructive" });
+      fetchDocuments();
     } catch (error) {
-      console.error('Error deleting account:', error);
-      toast({ title: "Error", description: "Failed to delete account.", variant: "destructive" });
+      console.error('Error deleting document:', error);
+      toast({ title: "Error", description: "Failed to delete document.", variant: "destructive" });
     } finally {
       setDeleteConfirmation({ isOpen: false, recordId: null, quoteNumber: '' });
     }
@@ -136,17 +136,17 @@ const AccountsManager = () => {
     navigate(`/doc/${recordId}`);
   };
 
-  const uniqueUsers = Array.from(new Set(accounts
+  const uniqueUsers = Array.from(new Set(documents
     .map(r => r.users?.full_name)
     .filter(Boolean)))
     .sort();
 
-  const uniqueClients = Array.from(new Set(accounts
+  const uniqueClients = Array.from(new Set(documents
     .map(r => r.clients?.client_name)
     .filter(Boolean)))
     .sort();
 
-  const filteredAccounts = accounts.filter(r => {
+  const filteredDocuments = documents.filter(r => {
     const matchesSearch = (r.quote_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (r.clients?.client_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (r.document_type?.toLowerCase() || '').includes(searchTerm.toLowerCase());
@@ -182,7 +182,7 @@ const AccountsManager = () => {
     return true;
   });
 
-  const sortedAccounts = [...filteredAccounts].sort((a, b) => {
+  const sortedDocuments = [...filteredDocuments].sort((a, b) => {
     let valA, valB;
     switch (sortField) {
       case 'total':
@@ -211,10 +211,10 @@ const AccountsManager = () => {
   });
 
   // Pagination calculations
-  const totalPages = Math.ceil(sortedAccounts.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedDocuments.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedAccounts = sortedAccounts.slice(startIndex, endIndex);
+  const paginatedDocuments = sortedDocuments.slice(startIndex, endIndex);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -233,11 +233,11 @@ const AccountsManager = () => {
     setCurrentPage(1);
   };
 
-  if (loading && accounts.length === 0) {
+  if (loading && documents.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-        <p className="text-gray-500">Loading accounts...</p>
+        <p className="text-gray-500">Loading documents...</p>
       </div>
     );
   }
@@ -261,7 +261,7 @@ const AccountsManager = () => {
           <div className="flex items-center gap-2 px-6 h-12 bg-primary/5 rounded-xl border border-primary/10 whitespace-nowrap">
             <FileText className="w-4 h-4 text-primary/60" />
             <span className="text-sm font-semibold text-gray-700">
-              {sortedAccounts.length} <span className="text-gray-400 font-normal">accounts found</span>
+              {sortedDocuments.length} <span className="text-gray-400 font-normal">documents found</span>
             </span>
           </div>
         </div>
@@ -429,7 +429,7 @@ const AccountsManager = () => {
                   onClick={() => navigate('/doc/new', { state: { forceReset: Date.now() } })}
                   className="bg-primary hover:bg-primary-dark text-white h-10 px-4 rounded-xl shadow-sm text-xs font-semibold"
                 >
-                  <Plus className="w-4 h-4 mr-2" /> Create Invoice / Quotation
+                  <Plus className="w-4 h-4 mr-2" /> Create Document
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="bg-gray-900 text-white border-gray-800">
@@ -460,7 +460,7 @@ const AccountsManager = () => {
             </SelectContent>
           </Select>
           <span className="text-sm text-gray-600">
-            Showing {sortedAccounts.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, sortedAccounts.length)} of {sortedAccounts.length}
+            Showing {sortedDocuments.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, sortedDocuments.length)} of {sortedDocuments.length}
           </span>
         </div>
       </div>
@@ -480,14 +480,14 @@ const AccountsManager = () => {
               </tr>
             </thead>
             <tbody>
-              {paginatedAccounts.length === 0 ? (
+              {paginatedDocuments.length === 0 ? (
                 <tr>
                   <td colSpan="2" className="py-10 text-center text-gray-500">
-                    No accounts found.
+                    No documents found.
                   </td>
                 </tr>
               ) : (
-                paginatedAccounts.map((record) => (
+                paginatedDocuments.map((record) => (
                   <tr key={record.id} className="border-b hover:bg-gray-50 transition-colors">
                     {/* Document # + other details */}
                     <td className="py-2 px-4 text-sm text-gray-600">
@@ -632,7 +632,7 @@ const AccountsManager = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center text-red-600">
               <AlertCircle className="w-5 h-5 mr-2" />
-              Delete Account?
+              Delete Document?
             </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete <span className="font-semibold text-gray-900">{deleteConfirmation.quoteNumber}</span>?
@@ -651,4 +651,4 @@ const AccountsManager = () => {
   );
 };
 
-export default AccountsManager;
+export default DocumentsManager;
