@@ -59,19 +59,21 @@ const JobsManager = ({ id }) => {
 
     useEffect(() => {
         if (id) {
+            // Wait for listing to load first if it's in progress
+            if (loading && records.length === 0) return;
+
             const existing = records.find(r => String(r.id) === String(id));
             if (existing) {
                 setEditingRecord({ ...existing });
                 setIsAddingNew(false);
             } else if (!authLoading) {
-                // If records are loaded but id not found, it might be a new record or invalid
-                // Or we can fetch it directly
+                // Only fetch directly if not found in already loaded records
                 fetchJobById(id);
             }
         } else {
             setEditingRecord(null);
         }
-    }, [id, records, authLoading]);
+    }, [id, records, authLoading, loading]);
 
     const fetchJobById = async (jobId) => {
         if (!user || !user.id) return;
