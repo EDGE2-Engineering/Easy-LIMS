@@ -134,6 +134,9 @@ const NewQuotationPage = () => {
     const [linkedJobId, setLinkedJobId] = useState(searchParams.get('jobId') || null);
     const [documentCreatorId, setDocumentCreatorId] = useState(null);
     const isNavigatingRef = useRef(false);
+    const isReadOnly = useMemo(() => {
+        return user?.role === ROLES.ACCOUNTS.slug && savedRecordId && (documentCreatorId === null || documentCreatorId !== user?.id);
+    }, [user, savedRecordId, documentCreatorId]);
 
 
     const taxCGST = settings?.tax_cgst ? Number(settings.tax_cgst) : 9;
@@ -1052,7 +1055,7 @@ const NewQuotationPage = () => {
                     </div>
                     <div className="flex items-center gap-2">
 
-                        {!(user?.role === ROLES.ACCOUNTS.slug && savedRecordId && (documentCreatorId === null || documentCreatorId !== user?.id)) && (
+                        {!isReadOnly && (
                             <Button onClick={handleSaveToDatabase} disabled={isSavingRecord} className="bg-green-800 hover:bg-green-900 text-white">
                                 {isSavingRecord ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                                 {savedRecordId ? 'Update' : 'Save'} {documentType}
@@ -1113,6 +1116,7 @@ const NewQuotationPage = () => {
                                         // style={{ width: '100%', paddingInline: '17%' }}
                                         value={quoteDetails.date}
                                         onChange={e => setQuoteDetails({ ...quoteDetails, date: e.target.value })}
+                                        disabled={isReadOnly}
                                     />
                                 </div>
                                 <div>
@@ -1124,6 +1128,7 @@ const NewQuotationPage = () => {
                                         value={discount}
                                         onChange={e => setDiscount(Number(e.target.value))}
                                         placeholder="Enter discount %"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
                             </div>
@@ -1136,6 +1141,7 @@ const NewQuotationPage = () => {
                                 <div>
                                     <Label>Client Name</Label>
                                     <Select
+                                        disabled={isReadOnly}
 
                                         value={clientNameSelection}
                                         onValueChange={(value) => {
@@ -1188,7 +1194,7 @@ const NewQuotationPage = () => {
                                             }
                                         }}
                                     >
-                                        <SelectTrigger className="h-15 text-sm border-gray-200 bg-gray-50/30" style={{ textAlign: 'left' }}>
+                                        <SelectTrigger className={cn("h-15 text-sm border-gray-200 bg-gray-50/30", isReadOnly && "cursor-not-allowed")} style={{ textAlign: 'left' }}>
                                             <SelectValue
                                                 placeholder="Select client"
                                             />
@@ -1238,8 +1244,9 @@ const NewQuotationPage = () => {
                                                             });
                                                         }
                                                     }}
+                                                    disabled={isReadOnly}
                                                 >
-                                                    <SelectTrigger className="h-10 text-sm border-gray-200 bg-gray-50/30">
+                                                    <SelectTrigger className={cn("h-10 text-sm border-gray-200 bg-gray-50/30", isReadOnly && "cursor-not-allowed")}>
                                                         <SelectValue placeholder="Pick a contact..." />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -1272,6 +1279,7 @@ const NewQuotationPage = () => {
                                                 setQuoteDetails({ ...quoteDetails, clientName: e.target.value });
                                             }}
                                             placeholder="Enter custom client name"
+                                            disabled={isReadOnly}
                                         />
                                     )}
                                 </div>
@@ -1282,6 +1290,7 @@ const NewQuotationPage = () => {
                                         value={quoteDetails.clientAddress}
                                         onChange={e => setQuoteDetails({ ...quoteDetails, clientAddress: e.target.value })}
                                         placeholder="Enter client address"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
                                 <div className="pt-2 border-t">
@@ -1291,6 +1300,7 @@ const NewQuotationPage = () => {
                                         value={quoteDetails.contractorName}
                                         onChange={e => setQuoteDetails({ ...quoteDetails, contractorName: e.target.value })}
                                         placeholder="Enter contractor name"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
                                 <div>
@@ -1300,6 +1310,7 @@ const NewQuotationPage = () => {
                                         value={quoteDetails.contractorAddress}
                                         onChange={e => setQuoteDetails({ ...quoteDetails, contractorAddress: e.target.value })}
                                         placeholder="Enter contractor address"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
                                 <div className="pt-2 border-t">
@@ -1309,6 +1320,7 @@ const NewQuotationPage = () => {
                                         value={quoteDetails.projectName}
                                         onChange={e => setQuoteDetails({ ...quoteDetails, projectName: e.target.value })}
                                         placeholder="Enter project name"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
                                 <div>
@@ -1318,6 +1330,7 @@ const NewQuotationPage = () => {
                                         value={quoteDetails.projectAddress}
                                         onChange={e => setQuoteDetails({ ...quoteDetails, projectAddress: e.target.value })}
                                         placeholder="Enter project address"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
 
@@ -1339,6 +1352,7 @@ const NewQuotationPage = () => {
                                                 type="date"
                                                 value={quoteDetails.paymentDate || ''}
                                                 onChange={e => setQuoteDetails({ ...quoteDetails, paymentDate: e.target.value })}
+                                                disabled={isReadOnly}
                                             />
                                         </div>
                                         <div>
@@ -1346,6 +1360,7 @@ const NewQuotationPage = () => {
                                             <Select
                                                 value={quoteDetails.paymentMode || ''}
                                                 onValueChange={(value) => setQuoteDetails({ ...quoteDetails, paymentMode: value })}
+                                                disabled={isReadOnly}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select Mode" />
@@ -1369,6 +1384,7 @@ const NewQuotationPage = () => {
                                                 value={quoteDetails.paymentAmount || ''}
                                                 onChange={e => setQuoteDetails({ ...quoteDetails, paymentAmount: e.target.value })}
                                                 placeholder="Enter amount"
+                                                disabled={isReadOnly}
                                             />
                                         </div>
                                     </div>
@@ -1379,6 +1395,7 @@ const NewQuotationPage = () => {
                                             onChange={e => setQuoteDetails({ ...quoteDetails, bankDetails: e.target.value })}
                                             placeholder="Enter bank name, cheque number, or transaction ID"
                                             rows={2}
+                                            disabled={isReadOnly}
                                         />
                                     </div>
                                 </div>
@@ -1395,22 +1412,25 @@ const NewQuotationPage = () => {
                                 <div className="grid grid-cols-3 gap-1">
                                     <Button
                                         variant={newItemType === 'service' ? 'default' : 'outline'}
-                                        onClick={() => { setNewItemType('service'); setSelectedItemId(''); }}
-                                        className="w-full flex items-center gap-2 text-xs"
+                                        onClick={() => { if (!isReadOnly) { setNewItemType('service'); setSelectedItemId(''); } }}
+                                        className={cn("w-full flex items-center gap-2 text-xs", isReadOnly && "opacity-50 cursor-not-allowed")}
+                                        disabled={isReadOnly}
                                     >
                                         <Drill className="w-2 h-2" /> Field Tests
                                     </Button>
                                     <Button
                                         variant={newItemType === 'test' ? 'default' : 'outline'}
-                                        onClick={() => { setNewItemType('test'); setSelectedItemId(''); }}
-                                        className="w-full flex items-center gap-2 text-xs"
+                                        onClick={() => { if (!isReadOnly) { setNewItemType('test'); setSelectedItemId(''); } }}
+                                        className={cn("w-full flex items-center gap-2 text-xs", isReadOnly && "opacity-50 cursor-not-allowed")}
+                                        disabled={isReadOnly}
                                     >
                                         <TestTube className="w-2 h-2" /> Lab Tests
                                     </Button>
                                     <Button
                                         variant={newItemType === 'sampling' ? 'default' : 'outline'}
-                                        onClick={() => { setNewItemType('sampling'); setSelectedItemId(''); }}
-                                        className="w-full flex items-center gap-2 text-xs"
+                                        onClick={() => { if (!isReadOnly) { setNewItemType('sampling'); setSelectedItemId(''); } }}
+                                        className={cn("w-full flex items-center gap-2 text-xs", isReadOnly && "opacity-50 cursor-not-allowed")}
+                                        disabled={isReadOnly}
                                     >
                                         <SwatchBook className="w-2 h-2" /> Sampling
                                     </Button>
@@ -1421,12 +1441,8 @@ const NewQuotationPage = () => {
                                     <ReactSelect
                                         className="mt-1"
                                         classNamePrefix="react-select"
-                                        options={newItemType === 'service'
-                                            ? services.map(s => ({ value: s.id, label: s.serviceType }))
-                                            : newItemType === 'sampling'
-                                                ? samplingData.map(s => ({ value: s.id, label: `${s.serviceType} - ${Array.isArray(s.materials) ? s.materials.join(', ') : (s.materials || '')}` }))
-                                                : tests.map(t => ({ value: t.id, label: `${t.testType} - ${Array.isArray(t.materials) ? t.materials.join(', ') : (t.materials || '')}` }))
-                                        }
+                                        isDisabled={isReadOnly}
+                                        // ... existing options ...
                                         value={selectedItemId ? {
                                             value: selectedItemId,
                                             label: newItemType === 'service'
@@ -1468,10 +1484,11 @@ const NewQuotationPage = () => {
                                         min="1"
                                         value={qty}
                                         onChange={e => setQty(e.target.value)}
+                                        disabled={isReadOnly}
                                     />
                                 </div>
 
-                                <Button onClick={handleAddItem} className="w-full" disabled={!selectedItemId}>
+                                 <Button onClick={handleAddItem} className="w-full" disabled={!selectedItemId || isReadOnly}>
                                     Add Item
                                 </Button>
                             </div>
@@ -1654,31 +1671,33 @@ const NewQuotationPage = () => {
                                                                 <td className="py-2 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">{item.qty}</td>
                                                                 <td className="py-2 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200"><Rupee />{item.total.toLocaleString()}</td>
                                                                 <td className="text-right print:hidden align-top">
-                                                                    <div className="flex items-center justify-end gap-1">
-                                                                        <button
-                                                                            onClick={() => handleMoveItemUp(slNo - 1)}
-                                                                            disabled={slNo === 1}
-                                                                            className="text-gray-400 hover:text-gray-600 p-1 disabled:opacity-30 transition-colors"
-                                                                            title="Move Up"
-                                                                        >
-                                                                            <ChevronUp className="w-4 h-4" />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleMoveItemDown(slNo - 1)}
-                                                                            disabled={slNo === items.length}
-                                                                            className="text-gray-400 hover:text-gray-600 p-1 disabled:opacity-30 transition-colors"
-                                                                            title="Move Down"
-                                                                        >
-                                                                            <ChevronDown className="w-4 h-4" />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleDeleteItem(item.id)}
-                                                                            className="text-red-400 hover:text-red-600 p-1 transition-colors"
-                                                                            title="Delete"
-                                                                        >
-                                                                            <Trash2 className="w-4 h-4" />
-                                                                        </button>
-                                                                    </div>
+                                                                    {!isReadOnly && (
+                                                                        <div className="flex items-center justify-end gap-1">
+                                                                            <button
+                                                                                onClick={() => handleMoveItemUp(slNo - 1)}
+                                                                                disabled={slNo === 1}
+                                                                                className="text-gray-400 hover:text-gray-600 p-1 disabled:opacity-30 transition-colors"
+                                                                                title="Move Up"
+                                                                            >
+                                                                                <ChevronUp className="w-4 h-4" />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => handleMoveItemDown(slNo - 1)}
+                                                                                disabled={slNo === items.length}
+                                                                                className="text-gray-400 hover:text-gray-600 p-1 disabled:opacity-30 transition-colors"
+                                                                                title="Move Down"
+                                                                            >
+                                                                                <ChevronDown className="w-4 h-4" />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => handleDeleteItem(item.id)}
+                                                                                className="text-red-400 hover:text-red-600 p-1 transition-colors"
+                                                                                title="Delete"
+                                                                            >
+                                                                                <Trash2 className="w-4 h-4" />
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
                                                                 </td>
                                                             </tr>
                                                         );
