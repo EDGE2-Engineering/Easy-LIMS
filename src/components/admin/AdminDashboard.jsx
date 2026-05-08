@@ -42,6 +42,8 @@ const AdminDashboard = () => {
             month: 0,
             year: 0
         },
+        pendingLeaves: 0,
+        pendingOtherApprovals: 0,
         leavesToday: [],
         upcomingLeaves: []
     });
@@ -72,22 +74,40 @@ const AdminDashboard = () => {
             const reportsPending = (counts[WORKFLOW_STATES.REPORT_GENERATED] || 0) + (counts[WORKFLOW_STATES.REPORT_UNDER_REVIEW] || 0);
             const paymentsPending = (counts[WORKFLOW_STATES.AWAITING_PAYMENT] || 0) + (counts[WORKFLOW_STATES.INVOICE_GENERATED] || 0);
 
-            // 2. Fetch Leaves (from approved request_approvals)
-            const { data: approvedRequests, error: approvError } = await supabase
+            // 2. Fetch Pending Approvals & Leave Records
+            const { data: approvals, error: approvError } = await supabase
                 .from('request_approvals')
-                .select('*, requester:users!request_approvals_requester_id_fkey(full_name, username, role)')
-                .eq('request_type', 'LEAVE')
-                .eq('status', 'APPROVED');
+                .select('*, requester:users!request_approvals_requester_id_fkey(full_name, username, role)');
             
             if (approvError) throw approvError;
 
+            const pendingLeaveApprovalsCount = (approvals || []).filter(r => r.status === 'PENDING' && r.request_type === 'LEAVE').length;
+            const otherPendingApprovalsCount = (approvals || []).filter(r => r.status === 'PENDING' && r.request_type !== 'LEAVE').length;
+            const approvedLeaves = (approvals || []).filter(r => r.status === 'APPROVED' && r.request_type === 'LEAVE');
+
+            const calculateWorkingDays = (start, end) => {
+                let count = 0;
+                let cur = new Date(start);
+                const last = new Date(end);
+                while (cur <= last) {
+                    if (cur.getDay() !== 0) count++;
+                    cur.setDate(cur.getDate() + 1);
+                }
+                return count;
+            };
+
             // Expand requests into individual day records for easier filtering
-            const expandedLeaves = (approvedRequests || []).flatMap(req => {
+            const expandedLeaves = (approvedLeaves || []).flatMap(req => {
                 const { startDate, endDate, leaveType, reason } = req.request_data;
+                const workingDays = calculateWorkingDays(startDate, endDate);
                 const dates = getDatesBetween(new Date(startDate), new Date(endDate));
                 return dates.map(date => ({
                     id: `${req.id}-${date.getTime()}`,
+                    request_id: req.id,
                     leave_date: date.toISOString().split('T')[0],
+                    startDate,
+                    endDate,
+                    workingDays,
                     leave_type: leaveType,
                     comments: reason,
                     users: req.requester,
@@ -101,8 +121,16 @@ const AdminDashboard = () => {
             nextWeek.setDate(nextWeek.getDate() + 7);
             const nextWeekStr = nextWeek.toISOString().split('T')[0];
             
+            // Filter unique requests for upcoming leaves to avoid showing the same leave multiple times
+            const seenRequests = new Set();
             const upcomingLeaves = expandedLeaves
-                .filter(l => l.leave_date > today && l.leave_date <= nextWeekStr)
+                .filter(l => {
+                    if (l.leave_date > today && l.leave_date <= nextWeekStr && !seenRequests.has(l.request_id)) {
+                        seenRequests.add(l.request_id);
+                        return true;
+                    }
+                    return false;
+                })
                 .sort((a, b) => a.leave_date.localeCompare(b.leave_date));
 
             // 3. Fetch Total Staff
@@ -211,6 +239,8 @@ const AdminDashboard = () => {
                 pendingInquiries: pendingInquiries,
                 expenditures: expMetrics,
                 quotations: quoteMetrics,
+                pendingLeaves: pendingLeaveApprovalsCount,
+                pendingOtherApprovals: otherPendingApprovalsCount,
                 leavesToday: leavesToday,
                 upcomingLeaves: upcomingLeaves
             });
@@ -377,7 +407,11 @@ const AdminDashboard = () => {
                                                                 return u?.full_name || u?.username || 'Unknown User';
                                                             })()}
                                                         </p>
-                                                        <p className="text-[10px] font-bold text-gray-400 uppercase truncate">{leave.comments || 'Casual Leave'}</p>
+                                                        <p className="text-[10px] font-bold text-primary uppercase truncate">
+                                                            {new Date(leave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(leave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                            <span className="ml-1 text-gray-400">({leave.workingDays} {leave.workingDays === 1 ? 'day' : 'days'})</span>
+                                                        </p>
+                                                        <p className="text-[9px] font-medium text-gray-400 line-clamp-1 italic">{leave.comments || 'No reason provided'}</p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -412,7 +446,11 @@ const AdminDashboard = () => {
                                                                 return u?.full_name || u?.username || 'Unknown User';
                                                             })()}
                                                         </p>
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-tight">{leave.comments || 'Planned Leave'}</p>
+                                                        <p className="text-[10px] font-bold text-blue-500 uppercase truncate">
+                                                            {new Date(leave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(leave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                            <span className="ml-1 text-gray-400">({leave.workingDays} {leave.workingDays === 1 ? 'day' : 'days'})</span>
+                                                        </p>
+                                                        <p className="text-[9px] font-medium text-gray-400 line-clamp-1 italic">{leave.comments || 'Planned Leave'}</p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -424,18 +462,35 @@ const AdminDashboard = () => {
                                     <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                         <Activity className="w-3 h-3" /> Daily Priorities
                                     </h4>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-3 gap-3">
                                         <div 
-                                            className="p-4 bg-orange-50/50 rounded-2xl border border-orange-100 flex flex-col gap-1 cursor-pointer hover:bg-orange-100/50 transition-colors"
-                                            onClick={() => window.location.hash = '#/settings/approvals'}
+                                            className="p-4 bg-orange-50/50 rounded-2xl border border-orange-100 flex items-center justify-between cursor-pointer hover:bg-orange-100/50 transition-colors group"
+                                            onClick={() => window.location.hash = '#/settings/jobs'}
                                         >
-                                            <span className="text-xl font-black text-orange-600 tracking-tight">{workflowCounts[WORKFLOW_STATES.UNDER_REVIEW] || 0}</span>
-                                            <span className="text-[9px] font-black text-orange-400 uppercase tracking-tight">Needs Review</span>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-xl font-black text-orange-600 tracking-tight">{workflowCounts[WORKFLOW_STATES.UNDER_REVIEW] || 0}</span>
+                                                <span className="text-[9px] font-black text-orange-400 uppercase tracking-tight">Job Reviews Pending</span>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-orange-300 group-hover:translate-x-1 transition-transform" />
                                         </div>
-                                        <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex flex-col gap-1">
+
+                                        <div 
+                                            className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex flex-col gap-1 cursor-pointer hover:bg-blue-100/50 transition-colors"
+                                            onClick={() => window.location.hash = '#/settings/documents'}
+                                        >
                                             <span className="text-xl font-black text-blue-600 tracking-tight">{workflowCounts[WORKFLOW_STATES.REPORT_SIGNED] || 0}</span>
                                             <span className="text-[9px] font-black text-blue-400 uppercase tracking-tight">Ready to Invoice</span>
                                         </div>
+
+
+                                        <div 
+                                            className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex flex-col gap-1 cursor-pointer hover:bg-indigo-100/50 transition-colors"
+                                            onClick={() => window.location.hash = '#/settings/approvals'}
+                                        >
+                                            <span className="text-xl font-black text-indigo-600 tracking-tight">{stats.pendingLeaves}</span>
+                                            <span className="text-[9px] font-black text-indigo-400 uppercase tracking-tight">Leave Requests</span>
+                                        </div>
+
                                     </div>
                                 </div>
 
@@ -499,7 +554,7 @@ const AdminDashboard = () => {
                                         </div>
                                         <CardContent className="p-8 space-y-6 relative">
                                             <div className="space-y-1">
-                                                <h3 className="text-2xl font-black tracking-tight">Expenditures</h3>
+                                                <h3 className="text-xl font-black tracking-tight">Expenditures</h3>
                                                 <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Financial Outflow</p>
                                             </div>
                                             <div className="space-y-4">
@@ -544,7 +599,7 @@ const AdminDashboard = () => {
                                         </div>
                                         <CardContent className="p-8 space-y-6 relative">
                                             <div className="space-y-1">
-                                                <h3 className="text-2xl font-black tracking-tight">Quotations</h3>
+                                                <h3 className="text-xl font-black tracking-tight">Quotations</h3>
                                                 <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Business Proposals</p>
                                             </div>
                                             <div className="space-y-4">
