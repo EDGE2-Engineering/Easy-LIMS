@@ -429,7 +429,7 @@ const AdminDashboard = () => {
                                     
                                     {stats.upcomingLeaves.length === 0 ? (
                                         <div className="p-4 bg-gray-50/50 rounded-2xl text-center border border-dashed border-gray-200">
-                                            <p className="text-[10px] font-bold text-gray-400 italic">No leaves scheduled soon.</p>
+                                            <p className="text-[10px] font-bold text-gray-400 italic">No upcoming leaves scheduled.</p>
                                         </div>
                                     ) : (
                                         <div className="space-y-2">
