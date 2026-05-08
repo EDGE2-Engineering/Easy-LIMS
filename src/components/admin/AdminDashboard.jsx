@@ -17,8 +17,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
+import { useSettings } from '@/contexts/SettingsContext';
 
 const AdminDashboard = () => {
+    const { settings } = useSettings();
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
@@ -31,6 +33,11 @@ const AdminDashboard = () => {
         totalInquiries: 0,
         pendingInquiries: 0,
         expenditures: {
+            week: 0,
+            month: 0,
+            year: 0
+        },
+        quotations: {
             week: 0,
             month: 0,
             year: 0
@@ -161,6 +168,38 @@ const AdminDashboard = () => {
                 return acc;
             }, { week: 0, month: 0, year: 0 });
 
+            // 7. Fetch Quotations
+            const { data: quotes, error: quotesErr } = await supabase
+                .from('documents')
+                .select('content, created_at')
+                .eq('document_type', 'Quotation');
+            
+            if (quotesErr) throw quotesErr;
+
+            const taxCGST = settings?.tax_cgst ? Number(settings.tax_cgst) : 9;
+            const taxSGST = settings?.tax_sgst ? Number(settings.tax_sgst) : 9;
+            const taxTotalPercent = taxCGST + taxSGST;
+
+            const quoteMetrics = (quotes || []).reduce((acc, q) => {
+                const content = q.content || {};
+                const items = content.items || [];
+                const discount = content.discount || 0;
+                
+                const subtotal = items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+                const discountedSubtotal = subtotal * (1 - discount / 100);
+                const total = discountedSubtotal * (1 + taxTotalPercent / 100);
+
+                const dateStr = q.created_at ? q.created_at.split('T')[0] : "";
+                
+                if (dateStr.startsWith(currentYear)) {
+                    acc.year += total;
+                    if (dateStr >= firstDayOfMonthStr) acc.month += total;
+                    if (dateStr >= firstDayOfWeekStr) acc.week += total;
+                }
+                
+                return acc;
+            }, { week: 0, month: 0, year: 0 });
+
             setStats({
                 totalJobs: jobs.length,
                 activeJobs: active,
@@ -171,6 +210,7 @@ const AdminDashboard = () => {
                 totalInquiries: inquiries?.length || 0,
                 pendingInquiries: pendingInquiries,
                 expenditures: expMetrics,
+                quotations: quoteMetrics,
                 leavesToday: leavesToday,
                 upcomingLeaves: upcomingLeaves
             });
@@ -440,94 +480,103 @@ const AdminDashboard = () => {
                         </Tooltip>
                     </motion.div>
 
-                    <motion.div variants={item}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Card className="border-none shadow-sm bg-gradient-to-br from-red-500 to-red-700 rounded-3xl overflow-hidden text-white relative">
-                                    <div className="absolute top-0 right-0 p-8 opacity-10">
-                                        <Wallet className="w-24 h-24" />
-                                    </div>
-                                    <CardContent className="p-8 space-y-6 relative">
-                                        <div className="space-y-1">
-                                            <h3 className="text-2xl font-black tracking-tight">Expenditures</h3>
-                                            <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Financial Outflow</p>
-                                        </div>
-                                        <div className="space-y-4">
-                                            {[
-                                                { label: 'This Week', value: stats.expenditures.week },
-                                                { label: 'This Month', value: stats.expenditures.month },
-                                                { label: 'This Year', value: stats.expenditures.year },
-                                            ].map((exp, idx) => (
-                                                <div key={idx} className="space-y-2">
-                                                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                                                        <span>{exp.label}</span>
-                                                        <span className="text-sm">₹{exp.value.toLocaleString()}</span>
-                                                    </div>
-                                                    <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                                                        <div 
-                                                            className="h-full bg-white rounded-full transition-all duration-1000" 
-                                                            style={{ 
-                                                                width: exp.label === 'This Year' ? '100%' : 
-                                                                       exp.label === 'This Month' ? `${Math.min(100, (exp.value / (stats.expenditures.year || 1)) * 100)}%` :
-                                                                       `${Math.min(100, (exp.value / (stats.expenditures.month || 1)) * 100)}%`
-                                                            }} 
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
-                                <p className="text-xs">Summary of organizational expenditures across different time periods.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </motion.div>
-
-                    <motion.div variants={item}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Card className="border-none shadow-sm bg-gradient-to-br from-primary to-primary-dark rounded-3xl overflow-hidden text-white relative">
-                            <div className="absolute top-0 right-0 p-8 opacity-10">
-                                <Target className="w-24 h-24" />
-                            </div>
-                            <CardContent className="p-8 space-y-6 relative">
-                                <div className="space-y-1">
-                                    <h3 className="text-2xl font-black tracking-tight">System Goals</h3>
-                                    <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Efficiency Metrics</p>
-                                </div>
-                                <div className="space-y-4">
-                                    {[
-                                        { label: 'Sample Testing TAT', value: '2.4 Days', progress: 85 },
-                                        { label: 'Data Accuracy Rate', value: '99.2%', progress: 99 },
-                                        { label: 'Payment Collection', value: '72%', progress: 72 },
-                                    ].map((goal, idx) => (
-                                        <div key={idx} className="space-y-2">
-                                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                                                <span>{goal.label}</span>
-                                                <span>{goal.value}</span>
-                                            </div>
-                                            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                                <div className="h-full bg-white rounded-full" style={{ width: `${goal.progress}%` }} />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
-                                <p className="text-xs">Real-time tracking of organizational efficiency metrics and targets.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </motion.div>
 
                 </div>
 
                 {/* Right Column: Workflow Pipeline & Recent Activity */}
                 <div className="lg:col-span-2 space-y-8">
                     
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <motion.div variants={item}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Card className="border-none shadow-sm bg-gradient-to-br from-red-500 to-red-700 rounded-3xl overflow-hidden text-white relative">
+                                        <div className="absolute top-0 right-0 p-8 opacity-10">
+                                            <Wallet className="w-24 h-24" />
+                                        </div>
+                                        <CardContent className="p-8 space-y-6 relative">
+                                            <div className="space-y-1">
+                                                <h3 className="text-2xl font-black tracking-tight">Expenditures</h3>
+                                                <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Financial Outflow</p>
+                                            </div>
+                                            <div className="space-y-4">
+                                                {[
+                                                    { label: 'This Week', value: stats.expenditures.week },
+                                                    { label: 'This Month', value: stats.expenditures.month },
+                                                    { label: 'This Year', value: stats.expenditures.year },
+                                                ].map((exp, idx) => (
+                                                    <div key={idx} className="space-y-2">
+                                                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                                            <span>{exp.label}</span>
+                                                            <span className="text-sm">₹{exp.value.toLocaleString()}</span>
+                                                        </div>
+                                                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                            <div 
+                                                                className="h-full bg-white rounded-full transition-all duration-1000" 
+                                                                style={{ 
+                                                                    width: exp.label === 'This Year' ? '100%' : 
+                                                                           exp.label === 'This Month' ? `${Math.min(100, (exp.value / (stats.expenditures.year || 1)) * 100)}%` :
+                                                                           `${Math.min(100, (exp.value / (stats.expenditures.month || 1)) * 100)}%`
+                                                                }} 
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
+                                    <p className="text-xs">Summary of organizational expenditures across different time periods.</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </motion.div>
+
+                        <motion.div variants={item}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Card className="border-none shadow-sm bg-gradient-to-br from-blue-950 to-slate-800 rounded-3xl overflow-hidden text-white relative">
+                                        <div className="absolute top-0 right-0 p-8 opacity-10">
+                                            <TrendingUp className="w-24 h-24" />
+                                        </div>
+                                        <CardContent className="p-8 space-y-6 relative">
+                                            <div className="space-y-1">
+                                                <h3 className="text-2xl font-black tracking-tight">Quotations</h3>
+                                                <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Business Proposals</p>
+                                            </div>
+                                            <div className="space-y-4">
+                                                {[
+                                                    { label: 'This Week', value: stats.quotations.week },
+                                                    { label: 'This Month', value: stats.quotations.month },
+                                                    { label: 'This Year', value: stats.quotations.year },
+                                                ].map((quote, idx) => (
+                                                    <div key={idx} className="space-y-2">
+                                                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                                            <span>{quote.label}</span>
+                                                            <span className="text-sm">₹{quote.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                                                        </div>
+                                                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                            <div 
+                                                                className="h-full bg-white rounded-full transition-all duration-1000" 
+                                                                style={{ 
+                                                                    width: quote.label === 'This Year' ? '100%' : 
+                                                                           quote.label === 'This Month' ? `${Math.min(100, (quote.value / (stats.quotations.year || 1)) * 100)}%` :
+                                                                           `${Math.min(100, (quote.value / (stats.quotations.month || 1)) * 100)}%`
+                                                                }} 
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
+                                    <p className="text-xs">Summary of total quotation values issued across different time periods.</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </motion.div>
+                    </div>
                     {/* Workflow Funnel / Pipeline */}
                     <motion.div variants={item}>
                         <Tooltip>
@@ -540,10 +589,10 @@ const AdminDashboard = () => {
                                     </CardTitle>
                                     <CardDescription className="text-xs font-medium text-gray-400 uppercase tracking-widest">Jobs distributed by current state</CardDescription>
                                 </div>
-                                <div className="flex items-center gap-1">
+                                {/* <div className="flex items-center gap-1">
                                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Live</span>
-                                </div>
+                                </div> */}
                             </CardHeader>
                             <CardContent className="p-6">
                                 <div className="flex flex-col gap-3">
@@ -585,7 +634,7 @@ const AdminDashboard = () => {
                         </Tooltip>
                     </motion.div>
 
-                    {/* Recent Activity Feed */}
+                    {/* Recent Activity Feed
                     <motion.div variants={item}>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -648,7 +697,7 @@ const AdminDashboard = () => {
                                 <p className="text-xs">Live feed of the most recent actions and state transitions within the application.</p>
                             </TooltipContent>
                         </Tooltip>
-                    </motion.div>
+                    </motion.div> */}
                 </div>
             </div>
             </motion.div>
