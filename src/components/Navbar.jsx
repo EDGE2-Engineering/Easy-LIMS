@@ -178,7 +178,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                 '/settings/utilities': 'Access helpful calculation utilities',
                 '/settings/inward_register': 'Register and manage material reception',
                 '/settings/testing': 'Laboratory testing workflow and data entry',
-                '/settings/documents': 'Manage documents',
+                '/settings/documents': 'For accounts team to create quotes and invoices',
               };
 
               return (
