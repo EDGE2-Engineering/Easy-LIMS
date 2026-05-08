@@ -75,12 +75,15 @@ const AdminCompanyCalendar = () => {
                     const dates = [];
                     let curr = new Date(start);
                     while (curr <= end) {
-                        dates.push({
-                            date: format(curr, 'yyyy-MM-dd'),
-                            requester: req.requester?.full_name || 'Unknown',
-                            type: req.request_data.leaveType || 'General Leave',
-                            reason: req.request_data.reason
-                        });
+                        // Skip Sundays
+                        if (curr.getDay() !== 0) {
+                            dates.push({
+                                date: format(curr, 'yyyy-MM-dd'),
+                                requester: req.requester?.full_name || 'Unknown',
+                                type: req.request_data.leaveType || 'General Leave',
+                                reason: req.request_data.reason
+                            });
+                        }
                         curr.setDate(curr.getDate() + 1);
                     }
                     return dates;
