@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { 
     CheckCircle2, XCircle, Clock, User, Calendar, 
     MessageSquare, AlertCircle, Filter, ChevronRight,
-    ArrowUpRight, Info
+    ArrowUpRight, Info, ShieldCheck
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -30,7 +30,7 @@ const ApprovalsManager = () => {
         try {
             const { data, error } = await supabase
                 .from('request_approvals')
-                .select('*, requester:users!request_approvals_requester_id_fkey(full_name, username, role)')
+                .select('*, requester:users!request_approvals_requester_id_fkey(full_name, username, role), reviewer:users!request_approvals_reviewed_by_fkey(full_name, username)')
                 .eq('status', filter)
                 .order('created_at', { ascending: false });
 
@@ -48,7 +48,7 @@ const ApprovalsManager = () => {
         }
     };
 
-    const handleAction = async (request, action) => {
+    const handleAction = async (request, action, remarks) => {
         try {
             const status = action === 'approve' ? 'APPROVED' : 'REJECTED';
             const { error } = await supabase
@@ -56,7 +56,8 @@ const ApprovalsManager = () => {
                 .update({
                     status: status,
                     reviewed_by: user.id,
-                    reviewed_at: new Date().toISOString()
+                    reviewed_at: new Date().toISOString(),
+                    admin_remarks: remarks
                 })
                 .eq('id', request.id);
 
@@ -88,6 +89,7 @@ const ApprovalsManager = () => {
     };
 
     const RequestCard = ({ request }) => {
+        const [adminRemarks, setAdminRemarks] = useState('');
         const data = request.request_data;
         const isLeave = request.request_type === 'LEAVE';
 
@@ -162,6 +164,29 @@ const ApprovalsManager = () => {
                                     {data.reason || "No specific reason provided."}
                                 </p>
                             </div>
+
+                            {request.status !== 'PENDING' && request.admin_remarks && (
+                                <div className="space-y-1 pt-2 border-t border-gray-50">
+                                    <p className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                                        <ShieldCheck className="w-3 h-3" /> Admin Remarks
+                                    </p>
+                                    <p className="text-sm font-medium text-gray-700 leading-relaxed italic bg-primary/5 p-3 rounded-xl border border-primary/10">
+                                        "{request.admin_remarks}"
+                                    </p>
+                                </div>
+                            )}
+
+                            {request.status === 'PENDING' && (
+                                <div className="space-y-2 pt-2 border-t border-gray-50">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Decision Remarks (Optional)</p>
+                                    <textarea 
+                                        className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20 min-h-[80px]"
+                                        placeholder="Add any comments regarding your decision..."
+                                        value={adminRemarks}
+                                        onChange={(e) => setAdminRemarks(e.target.value)}
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         {/* Right: Actions */}
@@ -169,13 +194,13 @@ const ApprovalsManager = () => {
                             {request.status === 'PENDING' ? (
                                 <>
                                     <Button 
-                                        onClick={() => handleAction(request, 'approve')}
+                                        onClick={() => handleAction(request, 'approve', adminRemarks)}
                                         className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs gap-2 shadow-lg shadow-emerald-500/20 px-6"
                                     >
                                         <CheckCircle2 className="w-4 h-4" /> Approve
                                     </Button>
                                     <Button 
-                                        onClick={() => handleAction(request, 'reject')}
+                                        onClick={() => handleAction(request, 'reject', adminRemarks)}
                                         variant="outline"
                                         className="rounded-xl border-rose-200 text-rose-600 hover:bg-rose-50 font-black text-xs gap-2 px-6"
                                     >
@@ -183,11 +208,18 @@ const ApprovalsManager = () => {
                                     </Button>
                                 </>
                             ) : (
-                                <Badge className={`px-4 py-2 rounded-xl border-none font-black text-xs ${
-                                    request.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
-                                }`}>
-                                    {request.status}
-                                </Badge>
+                                <div className="space-y-3 flex flex-col items-center">
+                                    <Badge className={`px-4 py-2 rounded-xl border-none font-black text-xs ${
+                                        request.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
+                                    }`}>
+                                        {request.status}
+                                    </Badge>
+                                    <div className="text-center">
+                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Reviewed By</p>
+                                        <p className="text-[10px] font-bold text-gray-900">{request.reviewer?.full_name || 'System'}</p>
+                                        <p className="text-[8px] font-bold text-gray-400">{new Date(request.reviewed_at).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>

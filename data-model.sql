@@ -39,6 +39,7 @@ CREATE TABLE public.clients (
   updated_at timestamp with time zone DEFAULT now(),
   contacts jsonb DEFAULT '[]'::jsonb,
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  gstin text,
   CONSTRAINT clients_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.collection_centers (
@@ -93,6 +94,20 @@ CREATE TABLE public.hsn_sac_codes (
   description text NOT NULL,
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   CONSTRAINT hsn_sac_codes_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.inquiries (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  client_name text NOT NULL,
+  phone_number text,
+  email text,
+  description text,
+  received_at timestamp with time zone DEFAULT now(),
+  received_by bigint NOT NULL,
+  status text DEFAULT 'PENDING'::text CHECK (status = ANY (ARRAY['PENDING'::text, 'FOLLOWED_UP'::text, 'CONVERTED'::text, 'CLOSED'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT inquiries_pkey PRIMARY KEY (id),
+  CONSTRAINT inquiries_received_by_fkey FOREIGN KEY (received_by) REFERENCES public.users(id)
 );
 CREATE TABLE public.job_tests (
   category text NOT NULL,
