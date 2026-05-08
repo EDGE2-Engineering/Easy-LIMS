@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { format, startOfYear, endOfYear, eachMonthOfInterval, startOfMonth, endOfMonth, eachDayOfInterval, isSunday, isSameDay, addYears, subYears, startOfToday, isAfter, isBefore, parseISO } from 'date-fns';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List as ListIcon, Plus, Pencil, Trash2, X, Check, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, List as ListIcon, Plus, Pencil, Trash2, X, Check, Download, Users, MessageSquare } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
 const AdminCompanyCalendar = () => {
     const { toast } = useToast();
@@ -24,6 +25,8 @@ const AdminCompanyCalendar = () => {
     const [isHoliday, setIsHoliday] = useState(true);
     const [editingEvent, setEditingEvent] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [leaves, setLeaves] = useState([]);
+    const [leavesOnSelectedDate, setLeavesOnSelectedDate] = useState([]);
 
     const fetchEvents = useCallback(async () => {
         setLoading(true);
@@ -47,13 +50,65 @@ const AdminCompanyCalendar = () => {
         }
     }, [toast]);
 
+    const fetchLeaves = useCallback(async () => {
+        try {
+            const { data: allRequests, error } = await supabase
+                .from('request_approvals')
+                .select('*, requester:users!request_approvals_requester_id_fkey(full_name, username)');
+
+            if (error) throw error;
+            
+            const approvedLeaves = (allRequests || []).filter(r => r.request_type === 'LEAVE' && r.status === 'APPROVED');
+
+            // Expand into individual days for easy calendar matching
+            const expanded = approvedLeaves.flatMap(req => {
+                try {
+                    const { startDate, endDate } = req.request_data;
+                    if (!startDate || !endDate) return [];
+
+                    // Use new Date(str) for consistency with dashboard parsing
+                    const start = new Date(startDate);
+                    const end = new Date(endDate);
+                    
+                    if (isNaN(start.getTime()) || isNaN(end.getTime())) return [];
+
+                    const dates = [];
+                    let curr = new Date(start);
+                    while (curr <= end) {
+                        dates.push({
+                            date: format(curr, 'yyyy-MM-dd'),
+                            requester: req.requester?.full_name || 'Unknown',
+                            type: req.request_data.leaveType || 'General Leave',
+                            reason: req.request_data.reason
+                        });
+                        curr.setDate(curr.getDate() + 1);
+                    }
+                    return dates;
+                } catch (err) {
+                    console.error("Error expanding leave request:", err);
+                    return [];
+                }
+            });
+            setLeaves(expanded);
+        } catch (error) {
+            console.error('Error fetching leaves:', error);
+        }
+    }, []);
+
     useEffect(() => {
         fetchEvents();
-    }, [fetchEvents]);
+        fetchLeaves();
+    }, [fetchEvents, fetchLeaves]);
 
     const handleDateClick = (date) => {
         const existingEvent = events.find(e => isSameDay(parseISO(e.event_date), date));
         setSelectedDate(date);
+        
+        // Find leaves for this date
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const leavesOnDate = leaves.filter(l => l.date === dateStr);
+        setLeavesOnSelectedDate(leavesOnDate);
+
         if (existingEvent) {
             setEditingEvent(existingEvent);
             setEventName(existingEvent.event_name);
@@ -199,7 +254,9 @@ const AdminCompanyCalendar = () => {
                                         <div key={`empty-${i}`} />
                                     ))}
                                     {days.map((day) => {
+                                        const dateStr = format(day, 'yyyy-MM-dd');
                                         const event = events.find(e => isSameDay(parseISO(e.event_date), day));
+                                        const hasLeave = leaves.some(l => l.date === dateStr);
                                         const isSun = isSunday(day);
                                         const isToday = isSameDay(day, new Date());
 
@@ -211,15 +268,21 @@ const AdminCompanyCalendar = () => {
                                                     relative h-8 w-full rounded-lg text-xs transition-all flex flex-col items-center justify-center
                                                     ${event?.is_holiday ? 'bg-orange-100 text-orange-700 font-bold hover:bg-orange-200 ring-2 ring-orange-100 ring-offset-0' : 
                                                       isSun ? 'text-red-600 font-semibold bg-red-50 hover:bg-red-100' : 
+                                                      hasLeave ? 'bg-indigo-50/50 text-indigo-700 hover:bg-indigo-100/50 border border-indigo-200 shadow-sm' :
                                                       'text-gray-700 hover:bg-gray-100'}
                                                     ${isToday ? 'bg-primary/10 text-primary font-bold border border-primary/20' : ''}
                                                 `}
-                                                title={event ? event.event_name : format(day, 'PP')}
+                                                title={event ? event.event_name : hasLeave ? 'Employee(s) on Leave' : format(day, 'PP')}
                                             >
                                                 {day.getDate()}
-                                                {event && (
-                                                    <div className={`hidden absolute bottom-0.5 w-1 h-1 rounded-full ${event.is_holiday ? 'bg-orange-500' : 'bg-primary'}`} />
-                                                )}
+                                                <div className="flex gap-0.5 mt-0.5">
+                                                    {event && (
+                                                        <div className={`w-1 h-1 rounded-full ${event.is_holiday ? 'bg-orange-500' : 'bg-primary'}`} />
+                                                    )}
+                                                    {hasLeave && (
+                                                        <div className="w-1 h-1 rounded-full bg-indigo-500" />
+                                                    )}
+                                                </div>
                                             </button>
                                         );
                                     })}
@@ -450,9 +513,16 @@ const AdminCompanyCalendar = () => {
                     <div className={`h-2 w-full ${isSunday(selectedDate) ? 'bg-red-500' : 'bg-primary'}`} />
                     <div className="p-6">
                         <DialogHeader>
-                            <DialogTitle className="text-xl font-bold text-gray-900">
-                                {editingEvent ? 'Edit Event' : 'Add Event'}
-                            </DialogTitle>
+                            <div className="flex items-center justify-between">
+                                <DialogTitle className="text-xl font-bold text-gray-900">
+                                    {editingEvent ? 'Edit Event' : 'Add Event'}
+                                </DialogTitle>
+                                {leavesOnSelectedDate.length > 0 && (
+                                    <Badge className="bg-indigo-100 text-indigo-600 border-none font-black text-[10px] px-3 py-1">
+                                        {leavesOnSelectedDate.length} Staff on Leave
+                                    </Badge>
+                                )}
+                            </div>
                             <p className="text-sm text-gray-500">
                                 {selectedDate && format(selectedDate, 'EEEE, do MMMM yyyy')}
                                 {selectedDate && isSunday(selectedDate) && <span className="ml-2 text-red-500 font-bold">(Sunday)</span>}
@@ -489,6 +559,37 @@ const AdminCompanyCalendar = () => {
                                     Mark as Company Holiday
                                 </Label>
                             </div>
+
+                            {/* Employee Leaves Section */}
+                            {leavesOnSelectedDate.length > 0 && (
+                                <div className="pt-4 border-t border-gray-100 space-y-3">
+                                    <h4 className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2">
+                                        <Users className="w-3 h-3" /> Employees on Leave
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {leavesOnSelectedDate.map((leave, idx) => (
+                                            <div key={idx} className="flex items-center justify-between p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
+                                                <div>
+                                                    <p className="text-sm font-bold text-indigo-900">{leave.requester}</p>
+                                                    <p className="text-[10px] font-medium text-indigo-400 uppercase">{leave.type}</p>
+                                                </div>
+                                                {leave.reason && (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <div className="p-1.5 bg-white rounded-lg cursor-help">
+                                                                <MessageSquare className="w-3.5 h-3.5 text-indigo-300" />
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                            <p className="text-xs">{leave.reason}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
