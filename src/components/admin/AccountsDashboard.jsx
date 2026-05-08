@@ -275,7 +275,7 @@ const AccountsDashboard = () => {
                     </motion.div>
 
                     {/* My Leaves / Actions */}
-                    <motion.div variants={item} className="space-y-6">
+                    <motion.div variants={item} className="space-y-6 hidden">
                         <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
                             <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
                                 <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
