@@ -16,7 +16,7 @@ const AdminSamplingManager = lazy(() => import('@/components/admin/AdminSampling
 const ExpensesManager = lazy(() => import('@/components/admin/ExpensesManager.jsx'));
 const LeavesManager = lazy(() => import('@/components/admin/LeavesManager.jsx'));
 const UtilitiesManager = lazy(() => import('@/components/admin/UtilitiesManager.jsx'));
-const Dashboard = lazy(() => import('@/components/admin/Dashboard.jsx'));
+const AdminDashboard = lazy(() => import('@/components/admin/AdminDashboard.jsx'));
 const AnalystDashboard = lazy(() => import('@/components/admin/AnalystDashboard.jsx'));
 const AccountsDashboard = lazy(() => import('@/components/admin/AccountsDashboard.jsx'));
 const ApprovalsManager = lazy(() => import('@/components/admin/ApprovalsManager.jsx'));
@@ -25,7 +25,7 @@ const AdminOrganizationSettings = lazy(() => import('@/components/admin/AdminOrg
 const InquiriesManager = lazy(() => import('@/components/admin/InquiriesManager.jsx'));
 
 const COMPONENT_MAP = {
-  [VIEWS.DASHBOARD]: Dashboard,
+  [VIEWS.DASHBOARD]: AdminDashboard,
   [VIEWS.ANALYST_DASHBOARD]: AnalystDashboard,
   [VIEWS.ACCOUNTS_DASHBOARD]: AccountsDashboard,
   [VIEWS.APPROVALS]: ApprovalsManager,

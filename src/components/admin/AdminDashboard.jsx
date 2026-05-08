@@ -18,7 +18,7 @@ import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 
-const Dashboard = () => {
+const AdminDashboard = () => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
@@ -217,7 +217,7 @@ const Dashboard = () => {
             <div className="h-[70vh] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="w-12 h-12 animate-spin text-primary opacity-20" />
-                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest animate-pulse">Initializing Dashboard...</p>
+                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest animate-pulse">Initializing Admin Dashboard...</p>
                 </div>
             </div>
         );
@@ -656,4 +656,4 @@ const Dashboard = () => {
     );
 };
 
-export default Dashboard;
+export default AdminDashboard;
