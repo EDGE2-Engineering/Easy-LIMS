@@ -425,7 +425,10 @@ const AdminDashboard = () => {
                                         <Activity className="w-3 h-3" /> Daily Priorities
                                     </h4>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <div className="p-4 bg-orange-50/50 rounded-2xl border border-orange-100 flex flex-col gap-1">
+                                        <div 
+                                            className="p-4 bg-orange-50/50 rounded-2xl border border-orange-100 flex flex-col gap-1 cursor-pointer hover:bg-orange-100/50 transition-colors"
+                                            onClick={() => window.location.hash = '#/settings/approvals'}
+                                        >
                                             <span className="text-xl font-black text-orange-600 tracking-tight">{workflowCounts[WORKFLOW_STATES.UNDER_REVIEW] || 0}</span>
                                             <span className="text-[9px] font-black text-orange-400 uppercase tracking-tight">Needs Review</span>
                                         </div>
