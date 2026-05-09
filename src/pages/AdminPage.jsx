@@ -38,6 +38,7 @@ const AdminPage = () => {
         work_log: VIEWS.WORK_LOG,
         utilities: VIEWS.UTILITIES,
         inward_register: VIEWS.MATERIAL_INWARD,
+        material_inward: VIEWS.MATERIAL_INWARD,
         testing: VIEWS.TESTING,
         documents: VIEWS.DOCUMENTS,
         approvals: VIEWS.APPROVALS,

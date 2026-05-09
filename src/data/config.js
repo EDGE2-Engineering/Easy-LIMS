@@ -257,8 +257,8 @@ export const APP_CONFIG = {
         }
     },
     viewPermissions: {
-        [ROLES.SUPER_ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.ACCOUNTS_DASHBOARD && v !== VIEWS.MATERIAL_INWARD),
-        [ROLES.ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.ACCOUNTS_DASHBOARD && v !== VIEWS.MATERIAL_INWARD),
+        [ROLES.SUPER_ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.ACCOUNTS_DASHBOARD),
+        [ROLES.ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.ACCOUNTS_DASHBOARD),
         [ROLES.ANALYST.slug]: [VIEWS.ANALYST_DASHBOARD, VIEWS.JOBS],
         [ROLES.TECHNICIAN.slug]: [VIEWS.TESTING],
         [ROLES.MRO.slug]: [VIEWS.MATERIAL_INWARD],
