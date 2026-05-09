@@ -512,7 +512,7 @@ const JobsManager = ({ id }) => {
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900">{isAddingNew ? 'Create New Job' : `Job: ${editingRecord.job_code}`}</h2>
+                            <h2 className="text-xl font-bold text-gray-900">{isAddingNew ? 'Create New Job' : `Job ID: ${editingRecord.job_code}`}</h2>
                             <p className="text-sm text-gray-500">Manage job details and track its progress in the laboratory workflow.</p>
                         </div>
                     </div>
