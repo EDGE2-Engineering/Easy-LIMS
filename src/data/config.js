@@ -98,7 +98,7 @@ export const VIEWS = {
 };
 
 export const ACTIONS = {
-    SEND_QUOTATION: { name: 'SEND_QUOTATION', label: 'Send Quotation' },
+    SEND_QUOTATION: { name: 'SEND_QUOTATION', label: 'Create Quotation' },
     RECEIVE_WORK_ORDER: { name: 'RECEIVE_WORK_ORDER', label: 'Receive Work Order' },
     RECEIVE_MATERIAL: { name: 'RECEIVE_MATERIAL', label: 'Receive Material' },
     ASSIGN_TECHNICIANS: { name: 'ASSIGN_TECHNICIANS', label: 'Assign Technicians' },
