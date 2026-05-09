@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useReactToPrint } from 'react-to-print';
-import { Plus, Trash2, Printer, FileText, ArrowLeft, X, Save, Loader2, CreditCard, ChevronUp, ChevronDown, AlertCircle, Axe, TestTube, BriefcaseBusiness, Drill, SwatchBook } from 'lucide-react';
+import { Plus, Trash2, Printer, FileText, ArrowLeft, X, Building2, Save, Loader2, CreditCard, ChevronUp, ChevronDown, AlertCircle, Axe, TestTube, BriefcaseBusiness, Drill, SwatchBook } from 'lucide-react';
 import { Link, useSearchParams, useLocation, useNavigate, useParams, useBlocker } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { getNextDocNumber } from '@/utils/docUtils';
@@ -18,6 +18,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTermsAndConditions } from '@/contexts/TermsAndConditionsContext';
 import { useTechnicals } from '@/contexts/TechnicalsContext';
+import { useBankAccounts } from '@/contexts/BankAccountsContext';
 import Rupee from '@/components/Rupee';
 import {
     Select,
@@ -119,6 +120,7 @@ const NewQuotationPage = () => {
     const { samplingData } = useSampling();
     const { clients } = useClients();
     const { settings } = useSettings();
+    const { bankAccounts, loading: accountsLoading } = useBankAccounts();
     const { terms } = useTermsAndConditions();
     const { technicals } = useTechnicals();
     const { user, isStandard } = useAuth();
@@ -162,6 +164,7 @@ const NewQuotationPage = () => {
         paymentMode: '',
         paymentAmount: '',
         bankDetails: '',
+        selectedBankId: '',
         selectedTcTypes: [],
         selectedTechTypes: []
     }), [user?.fullName]);
@@ -323,6 +326,23 @@ const NewQuotationPage = () => {
             });
         }
     }, [user, quoteDetails.generatedBy, items, documentType, discount]);
+
+
+    // Auto-select default bank account if not already set
+    useEffect(() => {
+        if (bankAccounts.length > 0 && !quoteDetails.selectedBankId) {
+            const defaultAcc = bankAccounts.find(a => a.is_default) || bankAccounts[0];
+            if (defaultAcc) {
+                setQuoteDetails(prev => ({ ...prev, selectedBankId: defaultAcc.id }));
+            }
+        }
+    }, [bankAccounts, quoteDetails.selectedBankId]);
+
+    const selectedBank = useMemo(() => {
+        if (bankAccounts.length === 0) return null;
+        return bankAccounts.find(a => a.id === quoteDetails.selectedBankId) || bankAccounts.find(a => a.is_default) || bankAccounts[0];
+    }, [bankAccounts, quoteDetails.selectedBankId]);
+
 
 
 
@@ -1349,6 +1369,43 @@ const NewQuotationPage = () => {
                             </div>
                         </div>
 
+                        {/* Billing & Bank Selection Section */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
+                            <h2 className="text-lg font-semibold mb-4 flex items-center text-gray-900">
+                                <Building2 className="w-5 h-5 mr-2 text-primary" />
+                                Bank Account Selection
+                            </h2>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Select Bank Account for this Document</Label>
+                                    <Select
+                                        value={quoteDetails.selectedBankId || ''}
+                                        onValueChange={(value) => setQuoteDetails({ ...quoteDetails, selectedBankId: value })}
+                                        disabled={isReadOnly}
+                                    >
+                                        <SelectTrigger className="h-12 rounded-xl bg-gray-50/30 border-gray-200">
+                                            <SelectValue placeholder="Select a bank account" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {bankAccounts.length === 0 ? (
+                                                <SelectItem value="none" disabled>No bank accounts configured</SelectItem>
+                                            ) : (
+                                                bankAccounts.map(acc => (
+                                                    <SelectItem key={acc.id} value={acc.id}>
+                                                        <div className="flex flex-col items-start py-1 text-left">
+                                                            <span className="font-bold text-gray-900">{acc.bank_name} {acc.is_default && '(Default)'}</span>
+                                                            <span className="text-[10px] text-gray-500">{acc.bank_account_number} | {acc.branch_name}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                ))
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-[10px] text-gray-500 italic mt-1 ml-1">The selected bank details will be shown in the print preview and PDF.</p>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Payment Received Details Section - Only for Tax Invoice */}
                         {documentType === 'Tax Invoice' && (
                             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
@@ -1844,23 +1901,23 @@ const NewQuotationPage = () => {
                                                         <tbody>
                                                             <tr>
                                                                 <td className="py-1 font-semibold w-32">Name:</td>
-                                                                <td className="py-1">{settings?.bank_account_holder_name || 'EDGE2 Engineering Solutions India Pvt. Ltd.'}</td>
+                                                                <td className="py-1">{selectedBank?.bank_account_holder_name || settings?.bank_account_holder_name || 'EDGE2 Engineering Solutions India Pvt. Ltd.'}</td>
                                                             </tr>
                                                             <tr>
                                                                 <td className="py-1 font-semibold">A/c. No:</td>
-                                                                <td className="py-1">{settings?.bank_account_number || '560321000022687'}</td>
+                                                                <td className="py-1">{selectedBank?.bank_account_number || settings?.bank_account_number || '560321000022687'}</td>
                                                             </tr>
                                                             <tr>
                                                                 <td className="py-1 font-semibold">IFSC Code:</td>
-                                                                <td className="py-1">{settings?.ifsc_code || 'UBIN0907634'}</td>
+                                                                <td className="py-1">{selectedBank?.ifsc_code || settings?.ifsc_code || 'UBIN0907634'}</td>
                                                             </tr>
                                                             <tr>
                                                                 <td className="py-1 font-semibold">Branch:</td>
-                                                                <td className="py-1">{settings?.branch_name || 'Bangalore - Peenya'}</td>
+                                                                <td className="py-1">{selectedBank?.branch_name || settings?.branch_name || 'Bangalore - Peenya'}</td>
                                                             </tr>
                                                             <tr>
                                                                 <td className="py-1 font-semibold">Bank:</td>
-                                                                <td className="py-1">{settings?.bank_name || 'Union Bank of India'}</td>
+                                                                <td className="py-1">{selectedBank?.bank_name || settings?.bank_name || 'Union Bank of India'}</td>
                                                             </tr>
                                                         </tbody>
                                                     </table>

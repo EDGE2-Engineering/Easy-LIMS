@@ -16,6 +16,7 @@ const SettingsProvider = ({ children }) => {
         tax_cgst: 9,
         tax_sgst: 9
     });
+    const [settingsMetadata, setSettingsMetadata] = useState({}); // Stores IDs and other metadata per key
     const [loading, setLoading] = useState(true);
 
     const fetchSettings = useCallback(async () => {
@@ -32,12 +33,15 @@ const SettingsProvider = ({ children }) => {
 
             if (data && data.length > 0) {
                 const newSettings = {};
+                const metadata = {};
                 data.forEach(item => {
                     // Try to parse numbers, otherwise keep as string
                     const numVal = Number(item.setting_value);
                     newSettings[item.setting_key] = isNaN(numVal) ? item.setting_value : numVal;
+                    metadata[item.setting_key] = { id: item.id };
                 });
                 setSettings(prev => ({ ...prev, ...newSettings }));
+                setSettingsMetadata(metadata);
             }
         } catch (err) {
             console.error("Fetch Settings Exception:", err);
@@ -51,25 +55,42 @@ const SettingsProvider = ({ children }) => {
         setSettings(prev => ({ ...prev, [key]: value }));
 
         try {
-            const { error } = await supabase
+            const payload = {
+                setting_key: key,
+                setting_value: String(value),
+                updated_at: new Date().toISOString()
+            };
+
+            // If we have an ID for this setting, include it to ensure upsert works correctly
+            if (settingsMetadata[key]?.id) {
+                payload.id = settingsMetadata[key].id;
+            }
+
+            const { data, error } = await supabase
                 .from('app_settings')
-                .upsert({
-                    setting_key: key,
-                    setting_value: String(value),
-                    updated_at: new Date().toISOString()
-                });
+                .upsert(payload, { onConflict: 'setting_key' }) // Try onConflict as backup
+                .select();
 
             if (error) {
                 console.error(`Failed to update setting ${key}:`, error);
-                // Re-fetch to revert if needed, or implement proper revert logic
+                // Re-fetch to revert if needed
                 await fetchSettings();
                 throw error;
+            }
+
+            // Update metadata with new ID if it was a new insertion
+            if (data && data[0]) {
+                setSettingsMetadata(prev => ({
+                    ...prev,
+                    [key]: { id: data[0].id }
+                }));
             }
         } catch (err) {
             console.error("Update Setting Exception:", err);
             throw err;
         }
-    }, [fetchSettings]);
+    }, [fetchSettings, settingsMetadata]);
+
 
     useEffect(() => {
         fetchSettings();

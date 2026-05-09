@@ -15,6 +15,7 @@ import { MaterialsProvider } from '@/contexts/MaterialsContext';
 import { SamplingProvider } from '@/contexts/SamplingContext';
 import { ExpensesProvider } from '@/contexts/ExpensesContext';
 import { WorkflowProvider } from '@/contexts/WorkflowContext';
+import { BankAccountsProvider } from '@/contexts/BankAccountsContext';
 import { getSiteContent } from '@/data/config';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
@@ -106,7 +107,7 @@ function App() {
                           <TermsAndConditionsProvider>
                             <TechnicalsProvider>
                               <ExpensesProvider>
-
+                                <BankAccountsProvider>
                                 <Helmet>
                                   <title>{getSiteContent().global?.siteName}</title>
                                   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -125,6 +126,7 @@ function App() {
                                   </TooltipProvider>
                                   <Toaster />
                                 </div>
+                                </BankAccountsProvider>
                               </ExpensesProvider>
                             </TechnicalsProvider>
                           </TermsAndConditionsProvider>
