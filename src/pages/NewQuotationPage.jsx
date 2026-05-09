@@ -552,7 +552,7 @@ const NewQuotationPage = () => {
                     items,
                     discount
                 },
-                job_id: searchParams.get('jobId') || null,
+                job_id: linkedJobId || searchParams.get('jobId') || null,
                 created_by: userId,
                 updated_at: new Date().toISOString()
             };
