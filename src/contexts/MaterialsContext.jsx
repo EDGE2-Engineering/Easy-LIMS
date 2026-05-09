@@ -1,19 +1,23 @@
 
-import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useContext, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { MATERIALS } from '@/data/config';
 
 const MaterialsContext = createContext();
 
+const configFallback = () =>
+    MATERIALS.map((m, i) => ({ id: `config-${i}`, name: m.name ?? m }));
+
 const MaterialsProvider = ({ children }) => {
     const [materials, setMaterials] = useState([]);
     const [loading, setLoading] = useState(true);
+    const dbAvailable = useRef(true);
 
     const fetchMaterials = useCallback(async () => {
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('materials')
+                .from('material_samples')
                 .select('*')
                 .order('name', { ascending: true });
 
@@ -30,9 +34,9 @@ const MaterialsProvider = ({ children }) => {
 
             // Auto-seed the table from config.js if it's empty
             if (data && data.length === 0 && MATERIALS.length > 0) {
-                const seedPayload = MATERIALS.map(m => ({ name: m.name }));
+                const seedPayload = MATERIALS.map(m => ({ name: m.name ?? m }));
                 const { data: seeded, error: seedError } = await supabase
-                    .from('materials')
+                    .from('material_samples')
                     .insert(seedPayload)
                     .select();
 
@@ -41,7 +45,7 @@ const MaterialsProvider = ({ children }) => {
                     setMaterials(configFallback());
                 } else {
                     const { data: refetched } = await supabase
-                        .from('materials')
+                        .from('material_samples')
                         .select('*')
                         .order('name', { ascending: true });
                     setMaterials(refetched ?? configFallback());
@@ -62,7 +66,7 @@ const MaterialsProvider = ({ children }) => {
         if (!dbAvailable.current) throw new Error('Materials table is not available in this deployment.');
         try {
             const { data, error } = await supabase
-                .from('materials')
+                .from('material_samples')
                 .insert([materialData])
                 .select();
             if (error) throw error;
@@ -79,7 +83,7 @@ const MaterialsProvider = ({ children }) => {
         if (!dbAvailable.current) throw new Error('Materials table is not available in this deployment.');
         try {
             const { data, error } = await supabase
-                .from('materials')
+                .from('material_samples')
                 .update(materialData)
                 .eq('id', id)
                 .select();
@@ -97,7 +101,7 @@ const MaterialsProvider = ({ children }) => {
         if (!dbAvailable.current) throw new Error('Materials table is not available in this deployment.');
         try {
             const { error } = await supabase
-                .from('materials')
+                .from('material_samples')
                 .delete()
                 .eq('id', id);
             if (error) throw error;

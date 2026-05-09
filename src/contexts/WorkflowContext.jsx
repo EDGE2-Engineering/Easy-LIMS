@@ -11,30 +11,9 @@ export const WorkflowProvider = ({ children }) => {
 
     const fetchWorkflow = useCallback(async () => {
         setLoading(true);
-        try {
-            const { data, error } = await supabase
-                .from('workflow_config')
-                .select('*')
-                .order('updated_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-            if (error) throw error;
-
-            if (data && data.config) {
-                setWorkflow(data.config);
-            } else {
-                // If no config in DB, use hardcoded as fallback
-                setWorkflow(APP_CONFIG.workflow);
-            }
-        } catch (err) {
-            console.error('Error fetching workflow config:', err);
-            setError(err);
-            // Fallback
-            setWorkflow(APP_CONFIG.workflow);
-        } finally {
-            setLoading(false);
-        }
+        // Using local config only - remote table 'workflow_config' is not present
+        setWorkflow(APP_CONFIG.workflow);
+        setLoading(false);
     }, []);
 
     useEffect(() => {

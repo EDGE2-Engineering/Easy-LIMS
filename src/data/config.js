@@ -130,6 +130,7 @@ export const NAV_ITEM_IDS = {
     INQUIRIES: 'inquiries',
     MATERIAL_INWARD: 'material_inward',
     DOCUMENTS: 'documents',
+    EXPENSES: 'expenses',
 };
 
 // IDs for settings dropdown sub-items (used in APP_CONFIG.navbar.settingsItems)
@@ -313,6 +314,7 @@ export const APP_CONFIG = {
             [ROLES.ACCOUNTS.slug]: [
                 NAV_ITEM_IDS.ACCOUNTS_DASHBOARD,
                 NAV_ITEM_IDS.DOCUMENTS,
+                NAV_ITEM_IDS.EXPENSES,
             ],
             [ROLES.HUMAN_RESOURCE.slug]: [
                 // HR has no main nav items; everything is under Settings → Organization

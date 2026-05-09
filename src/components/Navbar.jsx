@@ -109,6 +109,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     { navItemId: NAV_ITEM_IDS.MATERIAL_INWARD,    view: VIEWS.MATERIAL_INWARD,    path: '/settings/inward_register',  label: 'Inward',      icon: Package },
     // { navItemId: 'testing', view: VIEWS.TESTING, path: '/settings/testing', label: 'Testing', icon: TestTube },
     { navItemId: NAV_ITEM_IDS.DOCUMENTS,          view: VIEWS.DOCUMENTS,          path: '/settings/documents',        label: 'Documents',   icon: Files },
+    { navItemId: NAV_ITEM_IDS.EXPENSES,           view: VIEWS.EXPENSES,           path: '/settings/expenses',         label: 'Expenses',    icon: IndianRupee },
   ];
 
   const SETTINGS_SUB_ITEMS = [

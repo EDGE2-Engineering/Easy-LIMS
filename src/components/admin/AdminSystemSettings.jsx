@@ -4,7 +4,7 @@ import { MermaidDiagram } from '@lightenna/react-mermaid-diagram';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { Ruler, Hash, CreditCard, FileText, Axe, Building2, Info, CheckCircle2, ChevronRight, ZoomIn, ZoomOut, RotateCcw, HandHeart, SwatchBook, TestTube, MapPin, BriefcaseBusiness, Package, UsersRound, Fullscreen, IndianRupee, Calendar, ShieldCheck, GitBranch } from 'lucide-react';
+import { Ruler, Hash, CreditCard, FileText, Axe, Building2, Info, CheckCircle2, ChevronRight, ZoomIn, ZoomOut, RotateCcw, HandHeart, SwatchBook, TestTube, MapPin, BriefcaseBusiness, Package, UsersRound, Fullscreen, IndianRupee, Calendar, ShieldCheck } from 'lucide-react';
 
 
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
@@ -16,7 +16,7 @@ import AdminTechnicalsManager from './AdminTechnicalsManager';
 import AdminCollectionCentersManager from './AdminCollectionCentersManager';
 import AdminMaterialsManager from './AdminMaterialsManager';
 import AdminUsersManager from './AdminUsersManager';
-import WorkflowConfigurator from './WorkflowConfigurator';
+
 
 import { enableInfoDiagramZoom, getSiteContent } from '../../data/config';
 
@@ -155,21 +155,7 @@ const AdminSystemSettings = ({ id }) => {
                             </Tooltip>
                         </TabsTrigger>
 
-                        <TabsTrigger
-                            value="workflow"
-                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-                        >
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div className="flex items-center gap-2">
-                                        <GitBranch className="w-4 h-4" /> Workflow
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                    <p className="text-xs">Configure job states and transitions</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TabsTrigger>
+
                     </TabsList>
                 </div>
 
@@ -209,9 +195,7 @@ const AdminSystemSettings = ({ id }) => {
                 </TabsContent>
 
 
-                <TabsContent value="workflow" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <WorkflowConfigurator />
-                </TabsContent>
+
 
 
 
