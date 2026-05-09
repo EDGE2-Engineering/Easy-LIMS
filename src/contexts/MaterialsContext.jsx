@@ -18,16 +18,18 @@ const MaterialsProvider = ({ children }) => {
                 .order('name', { ascending: true });
 
             if (error) {
-                // Table may not exist — fall back gracefully to config.js list
-                console.warn("Materials table not available, falling back to config.js:", error.message);
-                const fallback = MATERIALS.map((m, i) => ({ id: m.id || i + 1, name: m.name }));
-                setMaterials(fallback);
+                // PGRST205 = table not found in schema cache — use config silently
+                if (error.code === 'PGRST205') {
+                    dbAvailable.current = false;
+                } else {
+                    console.warn('Materials fetch error:', error.message);
+                }
+                setMaterials(configFallback());
                 return;
             }
 
             // Auto-seed the table from config.js if it's empty
             if (data && data.length === 0 && MATERIALS.length > 0) {
-                console.log("Materials table is empty — seeding from config.js...");
                 const seedPayload = MATERIALS.map(m => ({ name: m.name }));
                 const { data: seeded, error: seedError } = await supabase
                     .from('materials')
@@ -35,83 +37,73 @@ const MaterialsProvider = ({ children }) => {
                     .select();
 
                 if (seedError) {
-                    // Seeding failed — still fall back to config list so UI has options
-                    console.error("Error seeding materials:", seedError.message);
-                    const fallback = MATERIALS.map((m, i) => ({ id: m.id || i + 1, name: m.name }));
-                    setMaterials(fallback);
+                    console.error('Error seeding materials:', seedError.message);
+                    setMaterials(configFallback());
                 } else {
-                    // Re-fetch after seeding
                     const { data: refetched } = await supabase
                         .from('materials')
                         .select('*')
                         .order('name', { ascending: true });
-                    
-                    if (refetched) {
-                        setMaterials(refetched);
-                        return;
-                    }
+                    setMaterials(refetched ?? configFallback());
                 }
+                return;
             }
 
-            if (data && data.length > 0) {
-                setMaterials(data);
-            }
-        } catch (error) {
-            console.error("Error loading materials:", error);
-            // Final fallback: always show config-based options
-            const fallback = MATERIALS.map((m, i) => ({ id: m.id || i + 1, name: m.name }));
-            setMaterials(fallback);
+            setMaterials(data && data.length > 0 ? data : configFallback());
+        } catch (err) {
+            console.error('Error loading materials:', err);
+            setMaterials(configFallback());
         } finally {
             setLoading(false);
         }
     }, []);
 
     const addMaterial = useCallback(async (materialData) => {
+        if (!dbAvailable.current) throw new Error('Materials table is not available in this deployment.');
         try {
             const { data, error } = await supabase
                 .from('materials')
                 .insert([materialData])
                 .select();
-
             if (error) throw error;
             if (data) {
                 setMaterials(prev => [...prev, data[0]].sort((a, b) => a.name.localeCompare(b.name)));
             }
         } catch (error) {
-            console.error("Error adding material:", error);
+            console.error('Error adding material:', error);
             throw error;
         }
     }, []);
 
     const updateMaterial = useCallback(async (id, materialData) => {
+        if (!dbAvailable.current) throw new Error('Materials table is not available in this deployment.');
         try {
             const { data, error } = await supabase
                 .from('materials')
                 .update(materialData)
                 .eq('id', id)
                 .select();
-
             if (error) throw error;
             if (data) {
                 setMaterials(prev => prev.map(m => m.id === id ? data[0] : m).sort((a, b) => a.name.localeCompare(b.name)));
             }
         } catch (error) {
-            console.error("Error updating material:", error);
+            console.error('Error updating material:', error);
             throw error;
         }
     }, []);
 
     const deleteMaterial = useCallback(async (id) => {
+        if (!dbAvailable.current) throw new Error('Materials table is not available in this deployment.');
         try {
             const { error } = await supabase
                 .from('materials')
                 .delete()
                 .eq('id', id);
-
             if (error) throw error;
             setMaterials(prev => prev.filter(m => m.id !== id));
         } catch (error) {
-            console.error("Error deleting material:", error);
+            console.error('Error deleting material:', error);
             throw error;
         }
     }, []);
