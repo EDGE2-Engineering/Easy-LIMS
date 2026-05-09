@@ -8,6 +8,13 @@ import { useToast } from '@/components/ui/use-toast';
 import { Save, Plus, IndianRupee, Trash2, Edit, CheckCircle2, Building2, AlertCircle, Loader2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
 
 const AdminSettingsManager = () => {
@@ -237,43 +244,43 @@ const AdminSettingsManager = () => {
                             <Building2 className="w-5 h-5 text-primary" />
                             Bank Accounts
                         </h3>
-                        {!showBankForm && (
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => {
-                                    setShowBankForm(true);
-                                    setEditingBankId(null);
-                                    setBankForm({
-                                        bank_name: '',
-                                        bank_account_holder_name: '',
-                                        bank_account_number: '',
-                                        branch_name: '',
-                                        ifsc_code: '',
-                                        is_default: false
-                                    });
-                                }}
-                                className="rounded-xl"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add Account
-                            </Button>
-                        )}
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                                setShowBankForm(true);
+                                setEditingBankId(null);
+                                setBankForm({
+                                    bank_name: '',
+                                    bank_account_holder_name: '',
+                                    bank_account_number: '',
+                                    branch_name: '',
+                                    ifsc_code: '',
+                                    is_default: false
+                                });
+                            }}
+                            className="rounded-xl"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Account
+                        </Button>
                     </div>
 
-                    {showBankForm && (
-                        <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-200 space-y-4 animate-in fade-in slide-in-from-top-4">
-                            <div className="flex justify-between items-center mb-2">
-                                <h4 className="font-medium text-gray-900">{editingBankId ? 'Edit Bank Account' : 'New Bank Account'}</h4>
-                                <Button variant="ghost" size="sm" onClick={() => setShowBankForm(false)}>Cancel</Button>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Dialog open={showBankForm} onOpenChange={setShowBankForm}>
+                        <DialogContent className="sm:max-w-[600px] rounded-3xl">
+                            <DialogHeader>
+                                <DialogTitle className="text-xl font-bold">
+                                    {editingBankId ? 'Edit Bank Account' : 'New Bank Account'}
+                                </DialogTitle>
+                            </DialogHeader>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
                                 <div className="space-y-2">
                                     <Label>Bank Name</Label>
                                     <Input
                                         value={bankForm.bank_name}
                                         onChange={(e) => setBankForm({...bankForm, bank_name: e.target.value})}
                                         placeholder="e.g. HDFC Bank"
+                                        className="rounded-xl"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -282,6 +289,7 @@ const AdminSettingsManager = () => {
                                         value={bankForm.bank_account_holder_name}
                                         onChange={(e) => setBankForm({...bankForm, bank_account_holder_name: e.target.value})}
                                         placeholder="e.g. EDGE2 Engineering"
+                                        className="rounded-xl"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -290,6 +298,7 @@ const AdminSettingsManager = () => {
                                         value={bankForm.bank_account_number}
                                         onChange={(e) => setBankForm({...bankForm, bank_account_number: e.target.value})}
                                         placeholder="e.g. 1234567890"
+                                        className="rounded-xl"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -298,6 +307,7 @@ const AdminSettingsManager = () => {
                                         value={bankForm.branch_name}
                                         onChange={(e) => setBankForm({...bankForm, branch_name: e.target.value})}
                                         placeholder="e.g. Peenya Branch"
+                                        className="rounded-xl"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -306,6 +316,7 @@ const AdminSettingsManager = () => {
                                         value={bankForm.ifsc_code}
                                         onChange={(e) => setBankForm({...bankForm, ifsc_code: e.target.value})}
                                         placeholder="e.g. HDFC0001234"
+                                        className="rounded-xl"
                                     />
                                 </div>
                                 <div className="flex items-center space-x-2 pt-8">
@@ -319,18 +330,25 @@ const AdminSettingsManager = () => {
                                     <Label htmlFor="is_default" className="cursor-pointer">Set as default account</Label>
                                 </div>
                             </div>
-                            <div className="pt-4">
+                            <DialogFooter className="pt-4">
+                                <Button 
+                                    variant="ghost" 
+                                    onClick={() => setShowBankForm(false)}
+                                    className="rounded-xl"
+                                >
+                                    Cancel
+                                </Button>
                                 <Button 
                                     onClick={editingBankId ? handleUpdateBank : handleAddBank} 
-                                    className="w-full md:w-auto"
+                                    className="rounded-xl"
                                     disabled={isProcessingBank || !bankForm.bank_name || !bankForm.bank_account_number}
                                 >
                                     {isProcessingBank && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                                     {editingBankId ? 'Update Bank Account' : 'Add Bank Account'}
                                 </Button>
-                            </div>
-                        </div>
-                    )}
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {bankAccounts.length === 0 ? (
