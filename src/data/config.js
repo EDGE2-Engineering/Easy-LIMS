@@ -121,6 +121,29 @@ export const NAVBAR_ACTIONS = {
     APPLY_LEAVE: 'APPLY_LEAVE',
 };
 
+// IDs for main navbar items (used in APP_CONFIG.navbar.navItems)
+export const NAV_ITEM_IDS = {
+    DASHBOARD: 'dashboard',
+    ANALYST_DASHBOARD: 'analyst_dashboard',
+    ACCOUNTS_DASHBOARD: 'accounts_dashboard',
+    JOBS: 'jobs',
+    INQUIRIES: 'inquiries',
+    MATERIAL_INWARD: 'material_inward',
+    DOCUMENTS: 'documents',
+};
+
+// IDs for settings dropdown sub-items (used in APP_CONFIG.navbar.settingsItems)
+export const SETTINGS_ITEM_IDS = {
+    ORGANIZATION: 'organization',
+    CLIENTS: 'clients',
+    CLIENT_PRICING: 'client_pricing',
+    FIELD_TESTS: 'field_tests',
+    LAB_TESTS: 'lab_tests',
+    SAMPLING: 'sampling',
+    UTILITIES: 'utilities',
+    SYSTEM: 'system',
+};
+
 
 export const APP_CONFIG = {
     workflow: {
@@ -246,6 +269,9 @@ export const APP_CONFIG = {
         }
     },
     navbar: {
+        // ── Button-level actions (e.g. Apply Leave in user dropdown) ──────────
+        // List NAVBAR_ACTIONS values each role is allowed to trigger.
+        // An empty array means no extra actions are shown for that role.
         permissions: {
             [ROLES.SUPER_ADMIN.slug]: [],
             [ROLES.ADMIN.slug]: [],
@@ -254,7 +280,77 @@ export const APP_CONFIG = {
             [ROLES.MRO.slug]: [NAVBAR_ACTIONS.APPLY_LEAVE],
             [ROLES.ACCOUNTS.slug]: [NAVBAR_ACTIONS.APPLY_LEAVE],
             [ROLES.HUMAN_RESOURCE.slug]: [NAVBAR_ACTIONS.APPLY_LEAVE]
-        }
+        },
+
+        // ── Main navbar links ─────────────────────────────────────────────────
+        // List NAV_ITEM_IDS values each role can see in the top navigation bar.
+        // Set a role to null (or omit it) to fall back to viewPermissions logic.
+        navItems: {
+            [ROLES.SUPER_ADMIN.slug]: [
+                NAV_ITEM_IDS.DASHBOARD,
+                NAV_ITEM_IDS.JOBS,
+                NAV_ITEM_IDS.INQUIRIES,
+                // NAV_ITEM_IDS.MATERIAL_INWARD,
+                NAV_ITEM_IDS.DOCUMENTS,
+            ],
+            [ROLES.ADMIN.slug]: [
+                NAV_ITEM_IDS.DASHBOARD,
+                NAV_ITEM_IDS.JOBS,
+                NAV_ITEM_IDS.INQUIRIES,
+                // NAV_ITEM_IDS.MATERIAL_INWARD,
+                NAV_ITEM_IDS.DOCUMENTS,
+            ],
+            [ROLES.ANALYST.slug]: [
+                NAV_ITEM_IDS.ANALYST_DASHBOARD,
+                NAV_ITEM_IDS.JOBS,
+            ],
+            [ROLES.TECHNICIAN.slug]: [
+                // Testing view is commented-out globally; add NAV_ITEM_IDS.TESTING when re-enabled
+            ],
+            [ROLES.MRO.slug]: [
+                NAV_ITEM_IDS.MATERIAL_INWARD,
+            ],
+            [ROLES.ACCOUNTS.slug]: [
+                NAV_ITEM_IDS.ACCOUNTS_DASHBOARD,
+                NAV_ITEM_IDS.DOCUMENTS,
+            ],
+            [ROLES.HUMAN_RESOURCE.slug]: [
+                // HR has no main nav items; everything is under Settings → Organization
+            ],
+        },
+
+        // ── Settings dropdown sub-items ───────────────────────────────────────
+        // List SETTINGS_ITEM_IDS values each role can see in the Settings menu.
+        // Set a role to null (or omit it) to fall back to viewPermissions logic.
+        settingsItems: {
+            [ROLES.SUPER_ADMIN.slug]: [
+                SETTINGS_ITEM_IDS.ORGANIZATION,
+                SETTINGS_ITEM_IDS.CLIENTS,
+                SETTINGS_ITEM_IDS.CLIENT_PRICING,
+                SETTINGS_ITEM_IDS.FIELD_TESTS,
+                SETTINGS_ITEM_IDS.LAB_TESTS,
+                SETTINGS_ITEM_IDS.SAMPLING,
+                SETTINGS_ITEM_IDS.UTILITIES,
+                SETTINGS_ITEM_IDS.SYSTEM,
+            ],
+            [ROLES.ADMIN.slug]: [
+                SETTINGS_ITEM_IDS.ORGANIZATION,
+                SETTINGS_ITEM_IDS.CLIENTS,
+                SETTINGS_ITEM_IDS.CLIENT_PRICING,
+                SETTINGS_ITEM_IDS.FIELD_TESTS,
+                SETTINGS_ITEM_IDS.LAB_TESTS,
+                SETTINGS_ITEM_IDS.SAMPLING,
+                SETTINGS_ITEM_IDS.UTILITIES,
+                SETTINGS_ITEM_IDS.SYSTEM,
+            ],
+            [ROLES.ANALYST.slug]: [],
+            [ROLES.TECHNICIAN.slug]: [],
+            [ROLES.MRO.slug]: [],
+            [ROLES.ACCOUNTS.slug]: [],
+            [ROLES.HUMAN_RESOURCE.slug]: [
+                SETTINGS_ITEM_IDS.ORGANIZATION,
+            ],
+        },
     },
     viewPermissions: {
         [ROLES.SUPER_ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.ACCOUNTS_DASHBOARD),

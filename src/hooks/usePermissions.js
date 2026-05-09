@@ -36,10 +36,47 @@ export const usePermissions = () => {
         return allowedActions.includes(actionId);
     };
 
+    /**
+     * Returns true if the current role's navItems list includes the given item ID.
+     * Falls back to viewPermissions-based canView() when the role has no explicit list.
+     * @param {string} itemId  – one of NAV_ITEM_IDS values
+     * @param {string} viewName – the VIEWS value used as a fallback
+     */
+    const canShowNavItem = (itemId, viewName) => {
+        if (!user || !user.role) return false;
+        const roleList = APP_CONFIG.navbar.navItems?.[user.role];
+        if (Array.isArray(roleList)) {
+            return roleList.includes(itemId);
+        }
+        // Fallback: use the view-based permission
+        return viewName ? canView(viewName) : false;
+    };
+
+    /**
+     * Returns true if the current role's settingsItems list includes the given item ID.
+     * Falls back to viewPermissions-based logic when the role has no explicit list.
+     * @param {string} itemId   – one of SETTINGS_ITEM_IDS values
+     * @param {string|string[]} viewName – the VIEWS value(s) used as a fallback
+     */
+    const canShowSettingsItem = (itemId, viewName) => {
+        if (!user || !user.role) return false;
+        const roleList = APP_CONFIG.navbar.settingsItems?.[user.role];
+        if (Array.isArray(roleList)) {
+            return roleList.includes(itemId);
+        }
+        // Fallback: use the view-based permission
+        if (Array.isArray(viewName)) {
+            return viewName.some(v => canView(v));
+        }
+        return viewName ? canView(viewName) : canView(VIEWS.SETTINGS);
+    };
+
     return {
         canView,
         canPerformAction,
         canShowNavbarAction,
+        canShowNavItem,
+        canShowSettingsItem,
         role: user?.role,
         departments: user?.departments || []
     };

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Files, Briefcase, IndianRupee, Wallet, ClipboardCheck, Calculator, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness, CalendarOff, LayoutDashboard, CheckCircle2, Calendar, Loader2, Send, Building2, MessageSquare } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
-import { getSiteContent, VIEWS, ROLES, NAVBAR_ACTIONS } from '@/data/config';
+import { getSiteContent, VIEWS, ROLES, NAVBAR_ACTIONS, NAV_ITEM_IDS, SETTINGS_ITEM_IDS } from '@/data/config';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useToast } from '@/components/ui/use-toast';
@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 const Navbar = ({ isDirty = false, isSaving = false }) => {
   const { user, logout, isAdmin } = useAuth();
   const content = getSiteContent();
-  const { canView, canShowNavbarAction } = usePermissions();
+  const { canView, canShowNavbarAction, canShowNavItem, canShowSettingsItem } = usePermissions();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -101,35 +101,32 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
   };
 
   const ALL_NAV_ITEMS = [
-    { view: VIEWS.DASHBOARD, path: '/settings/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { view: VIEWS.ANALYST_DASHBOARD, path: '/settings/analyst_dashboard', label: 'My Dashboard', icon: LayoutDashboard },
-    { view: VIEWS.ACCOUNTS_DASHBOARD, path: '/settings/accounts_dashboard', label: 'My Dashboard', icon: LayoutDashboard },
-    { view: VIEWS.JOBS, path: '/settings/jobs', label: 'Jobs', icon: Briefcase },
-    { view: VIEWS.INQUIRIES, path: '/settings/inquiries', label: 'Inquiries', icon: MessageSquare },
-    { view: VIEWS.MATERIAL_INWARD, path: '/settings/inward_register', label: 'Inward', icon: Package },
-    // { view: VIEWS.TESTING, path: '/settings/testing', label: 'Testing', icon: TestTube },
-    { view: VIEWS.DOCUMENTS, path: '/settings/documents', label: 'Documents', icon: Files },
+    { navItemId: NAV_ITEM_IDS.DASHBOARD,          view: VIEWS.DASHBOARD,          path: '/settings/dashboard',        label: 'Dashboard',   icon: LayoutDashboard },
+    { navItemId: NAV_ITEM_IDS.ANALYST_DASHBOARD,  view: VIEWS.ANALYST_DASHBOARD,  path: '/settings/analyst_dashboard',label: 'My Dashboard',icon: LayoutDashboard },
+    { navItemId: NAV_ITEM_IDS.ACCOUNTS_DASHBOARD, view: VIEWS.ACCOUNTS_DASHBOARD, path: '/settings/accounts_dashboard',label: 'My Dashboard',icon: LayoutDashboard },
+    { navItemId: NAV_ITEM_IDS.JOBS,               view: VIEWS.JOBS,               path: '/settings/jobs',             label: 'Jobs',        icon: Briefcase },
+    { navItemId: NAV_ITEM_IDS.INQUIRIES,          view: VIEWS.INQUIRIES,          path: '/settings/inquiries',        label: 'Inquiries',   icon: MessageSquare },
+    { navItemId: NAV_ITEM_IDS.MATERIAL_INWARD,    view: VIEWS.MATERIAL_INWARD,    path: '/settings/inward_register',  label: 'Inward',      icon: Package },
+    // { navItemId: 'testing', view: VIEWS.TESTING, path: '/settings/testing', label: 'Testing', icon: TestTube },
+    { navItemId: NAV_ITEM_IDS.DOCUMENTS,          view: VIEWS.DOCUMENTS,          path: '/settings/documents',        label: 'Documents',   icon: Files },
   ];
 
   const SETTINGS_SUB_ITEMS = [
-    { id: 'organization', label: 'Organization', icon: Building2, path: '/settings/organization', description: 'Manage expenses, leaves, and approvals', views: [VIEWS.EXPENSES, VIEWS.WORK_LOG, VIEWS.APPROVALS] },
-    { id: 'clients', label: 'Clients', icon: BriefcaseBusiness, path: '/settings/clients', description: 'Manage your client database', view: VIEWS.SETTINGS },
-    { id: 'client_pricing', label: 'Client Pricing', icon: IndianRupee, path: '/settings/client_pricing', description: 'Configure custom prices per client', view: VIEWS.CLIENT_PRICING },
-    { id: 'field_tests', label: 'Field Tests', icon: Drill, path: '/settings/field_tests', description: 'Configure on-site testing services', view: VIEWS.SETTINGS },
-    { id: 'lab_tests', label: 'Lab Tests', icon: TestTube, path: '/settings/lab_tests', description: 'Manage laboratory testing parameters', view: VIEWS.SETTINGS },
-    { id: 'sampling', label: 'Sampling', icon: SwatchBook, path: '/settings/sampling', description: 'Configure material sampling methods', view: VIEWS.SETTINGS },
-    { id: 'utilities', label: 'Utilities', icon: Calculator, path: '/settings/utilities', description: 'Access the handy tools', view: VIEWS.UTILITIES },
-    { id: 'system', label: 'System', icon: Cpu, path: '/settings/system', description: 'General system settings and users', view: VIEWS.SETTINGS },
+    { id: SETTINGS_ITEM_IDS.ORGANIZATION,   label: 'Organization',   icon: Building2,        path: '/settings/organization',    description: 'Manage expenses, leaves, and approvals', views: [VIEWS.EXPENSES, VIEWS.WORK_LOG, VIEWS.APPROVALS] },
+    { id: SETTINGS_ITEM_IDS.CLIENTS,        label: 'Clients',        icon: BriefcaseBusiness,path: '/settings/clients',          description: 'Manage your client database',             view: VIEWS.SETTINGS },
+    { id: SETTINGS_ITEM_IDS.CLIENT_PRICING, label: 'Client Pricing', icon: IndianRupee,      path: '/settings/client_pricing',   description: 'Configure custom prices per client',      view: VIEWS.CLIENT_PRICING },
+    { id: SETTINGS_ITEM_IDS.FIELD_TESTS,    label: 'Field Tests',    icon: Drill,            path: '/settings/field_tests',      description: 'Configure on-site testing services',     view: VIEWS.SETTINGS },
+    { id: SETTINGS_ITEM_IDS.LAB_TESTS,      label: 'Lab Tests',      icon: TestTube,         path: '/settings/lab_tests',        description: 'Manage laboratory testing parameters',   view: VIEWS.SETTINGS },
+    { id: SETTINGS_ITEM_IDS.SAMPLING,       label: 'Sampling',       icon: SwatchBook,       path: '/settings/sampling',         description: 'Configure material sampling methods',    view: VIEWS.SETTINGS },
+    { id: SETTINGS_ITEM_IDS.UTILITIES,      label: 'Utilities',      icon: Calculator,       path: '/settings/utilities',        description: 'Access the handy tools',                 view: VIEWS.UTILITIES },
+    { id: SETTINGS_ITEM_IDS.SYSTEM,         label: 'System',         icon: Cpu,              path: '/settings/system',           description: 'General system settings and users',      view: VIEWS.SETTINGS },
   ];
 
-  const navItems = ALL_NAV_ITEMS.filter(item => canView(item.view));
+  const navItems = ALL_NAV_ITEMS.filter(item => canShowNavItem(item.navItemId, item.view));
 
-  const visibleSettingsSubItems = SETTINGS_SUB_ITEMS.filter(item => {
-    if (canView(VIEWS.SETTINGS)) return true;
-    if (item.view && canView(item.view)) return true;
-    if (item.views && item.views.some(v => canView(v))) return true;
-    return false;
-  });
+  const visibleSettingsSubItems = SETTINGS_SUB_ITEMS.filter(item =>
+    canShowSettingsItem(item.id, item.views ?? item.view)
+  );
 
   const canShowSettings = canView(VIEWS.SETTINGS) || visibleSettingsSubItems.length > 0;
 
