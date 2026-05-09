@@ -321,16 +321,19 @@ const AdminDashboard = () => {
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 {[
-                    { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', trend: 'In Progress' },
-                    { label: 'Pending Reports', value: stats.pendingReports, icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', trend: 'Awaiting Action' },
-                    { label: 'Awaiting Payment', value: stats.pendingPayments, icon: IndianRupee, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', trend: 'Documents' },
-                    { label: 'Total Clients', value: stats.totalClients, icon: BriefcaseBusiness, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', trend: 'Network' },
-                    { label: 'New Inquiries', value: stats.totalInquiries, icon: MessageSquare, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100', trend: `${stats.pendingInquiries} Pending` },
+                    { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', trend: 'In Progress', path: '#/settings/jobs' },
+                    { label: 'Pending Reports', value: stats.pendingReports, icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', trend: 'Awaiting Action', path: '#/settings/jobs' },
+                    { label: 'Awaiting Payment', value: stats.pendingPayments, icon: IndianRupee, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', trend: 'Documents', path: '#/settings/documents' },
+                    { label: 'Total Clients', value: stats.totalClients, icon: BriefcaseBusiness, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', trend: 'Network', path: '#/settings/clients' },
+                    { label: 'New Inquiries', value: stats.totalInquiries, icon: MessageSquare, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100', trend: `${stats.pendingInquiries} Pending`, path: '#/settings/inquiries' },
                 ].map((stat, idx) => (
                     <motion.div key={idx} variants={item}>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Card className={`border-none shadow-sm ${stat.bg}/30 relative overflow-hidden group`}>
+                                <Card 
+                                    className={`border-none shadow-sm ${stat.bg}/30 relative overflow-hidden group cursor-pointer hover:shadow-md transition-all active:scale-95`}
+                                    onClick={() => window.location.hash = stat.path}
+                                >
                                     <div className={`absolute top-0 right-0 w-16 h-16 ${stat.bg} rounded-bl-[64px] -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110 duration-500`} />
                                     <CardContent className="p-4 relative">
                                         <div className="flex items-center gap-3">
@@ -366,7 +369,10 @@ const AdminDashboard = () => {
                     <motion.div variants={item}>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
+                                <Card 
+                                    className="border-none shadow-sm bg-white rounded-3xl overflow-hidden cursor-pointer hover:shadow-md transition-all active:scale-[0.99]"
+                                    onClick={() => window.location.hash = '#/settings/organization/leaves'}
+                                >
                                     <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
@@ -495,8 +501,11 @@ const AdminDashboard = () => {
                                 </div>
 
                                 <div className="pt-4 border-t border-gray-50 space-y-4">
-                                    <div className="flex items-center justify-between px-1">
-                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <div 
+                                        className="flex items-center justify-between px-1 cursor-pointer group/inq"
+                                        onClick={() => window.location.hash = '#/settings/inquiries'}
+                                    >
+                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 group-hover/inq:text-primary transition-colors">
                                             <MessageSquare className="w-3 h-3" /> Recent Inquiries
                                         </h4>
                                         <Button 
@@ -548,7 +557,10 @@ const AdminDashboard = () => {
                         <motion.div variants={item}>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Card className="border-none shadow-sm bg-gradient-to-br from-red-500 to-red-700 rounded-3xl overflow-hidden text-white relative">
+                                <Card 
+                                    className="border-none shadow-sm bg-gradient-to-br from-red-500 to-red-700 rounded-3xl overflow-hidden text-white relative cursor-pointer hover:shadow-xl hover:shadow-red-500/20 transition-all active:scale-[0.98] group"
+                                    onClick={() => window.location.hash = '#/settings/expenses'}
+                                >
                                         <div className="absolute top-0 right-0 p-8 opacity-10">
                                             <Wallet className="w-24 h-24" />
                                         </div>
@@ -593,7 +605,10 @@ const AdminDashboard = () => {
                         <motion.div variants={item}>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Card className="border-none shadow-sm bg-gradient-to-br from-blue-950 to-slate-800 rounded-3xl overflow-hidden text-white relative">
+                                <Card 
+                                    className="border-none shadow-sm bg-gradient-to-br from-blue-950 to-slate-800 rounded-3xl overflow-hidden text-white relative cursor-pointer hover:shadow-xl hover:shadow-blue-900/20 transition-all active:scale-[0.98] group"
+                                    onClick={() => window.location.hash = '#/settings/documents'}
+                                >
                                         <div className="absolute top-0 right-0 p-8 opacity-10">
                                             <TrendingUp className="w-24 h-24" />
                                         </div>
@@ -639,7 +654,10 @@ const AdminDashboard = () => {
                     <motion.div variants={item}>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
+                                <Card 
+                                    className="border-none shadow-sm bg-white rounded-3xl overflow-hidden cursor-pointer hover:shadow-md transition-all active:scale-[0.99]"
+                                    onClick={() => window.location.hash = '#/settings/jobs'}
+                                >
                             <CardHeader className="p-6 border-b border-gray-50 flex flex-row items-center justify-between">
                                 <div className="space-y-1">
                                     <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">

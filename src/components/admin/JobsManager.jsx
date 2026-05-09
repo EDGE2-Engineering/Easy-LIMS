@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Plus, ArrowLeft, Save, Loader2, Package, ArrowRight, FileText, ExternalLink, CheckCircle2, Edit, UserPlus, Trash2, AlertCircle, SortAsc, SortDesc } from 'lucide-react';
+import { Search, Plus, ArrowLeft, Save, Loader2, Package, ArrowRight, FileText, ExternalLink, CheckCircle2, Edit, UserPlus, Trash2, AlertCircle, SortAsc, SortDesc, Calendar, Filter, X, Download } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
@@ -46,6 +46,83 @@ const JobsManager = ({ id }) => {
     const [techAssignments, setTechAssignments] = useState([]);
     const [sortField, setSortField] = useState('created_at');
     const [sortOrder, setSortOrder] = useState('desc');
+
+    // Advanced Filters State (from ExpensesManager)
+    const [filterByCreator, setFilterByCreator] = useState('all');
+    const [filterDateStart, setFilterDateStart] = useState('');
+    const [filterDateEnd, setFilterDateEnd] = useState('');
+    const [datePreset, setDatePreset] = useState('custom');
+    const [showFilters, setShowFilters] = useState(false);
+
+    const creators = useMemo(() => {
+        const set = new Set(records.map(r => r.users?.full_name).filter(Boolean));
+        return Array.from(set).sort();
+    }, [records]);
+
+    const applyDatePreset = (preset) => {
+        const now = new Date();
+        let start = '';
+        let end = '';
+        const formatDate = (date) => date.toISOString().split('T')[0];
+
+        switch (preset) {
+            case 'this_month':
+                start = formatDate(new Date(now.getFullYear(), now.getMonth(), 1));
+                end = formatDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+                break;
+            case 'last_month':
+                start = formatDate(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+                end = formatDate(new Date(now.getFullYear(), now.getMonth(), 0));
+                break;
+            case 'this_year':
+                start = formatDate(new Date(now.getFullYear(), 0, 1));
+                end = formatDate(new Date(now.getFullYear(), 11, 31));
+                break;
+            case 'last_year':
+                start = formatDate(new Date(now.getFullYear() - 1, 0, 1));
+                end = formatDate(new Date(now.getFullYear() - 1, 11, 31));
+                break;
+            case 'ytd':
+                start = formatDate(new Date(now.getFullYear(), 0, 1));
+                end = formatDate(now);
+                break;
+            case 'custom':
+                start = '';
+                end = '';
+                break;
+            default:
+                break;
+        }
+
+        setFilterDateStart(start);
+        setFilterDateEnd(end);
+        setDatePreset(preset);
+    };
+
+    const downloadCSV = () => {
+        if (filteredRecords.length === 0) return;
+        const headers = ['Job Code', 'Client', 'Project Name', 'Quotation Amount', 'Created On', 'Created By', 'Status'];
+        const rows = filteredRecords.map(r => [
+            r.job_code,
+            `"${r.clients?.client_name?.replace(/"/g, '""') || ''}"`,
+            `"${r.project_name?.replace(/"/g, '""') || ''}"`,
+            r.quotationAmount || 0,
+            new Date(r.created_at).toLocaleDateString('en-IN'),
+            r.users?.full_name || '-',
+            getStatusLabel(r.status)
+        ]);
+        const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `Jobs_Report_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast({ title: "Report Downloaded", description: `Exported ${filteredRecords.length} records to CSV.` });
+    };
 
     const { toast } = useToast();
     const navigate = useNavigate();
@@ -463,12 +540,26 @@ const JobsManager = ({ id }) => {
     const getStatusLabel = (status) => workflow.states[status]?.label || status;
 
     const filteredRecords = useMemo(() => {
-        let result = records.filter(r =>
-            ((r.job_code || r.job_id)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                r.clients?.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                r.project_name?.toLowerCase().includes(searchTerm.toLowerCase())) &&
-            (filterStatus === 'all' || r.status === filterStatus)
-        );
+        let result = records.filter(r => {
+            // Search filter
+            const searchStr = searchTerm.toLowerCase();
+            const matchesSearch = (r.job_code || r.job_id)?.toLowerCase().includes(searchStr) ||
+                r.clients?.client_name?.toLowerCase().includes(searchStr) ||
+                r.project_name?.toLowerCase().includes(searchStr);
+            if (!matchesSearch) return false;
+
+            // Status filter
+            if (filterStatus !== 'all' && r.status !== filterStatus) return false;
+
+            // Creator filter
+            if (filterByCreator !== 'all' && r.users?.full_name !== filterByCreator) return false;
+
+            // Date range filter
+            if (filterDateStart && new Date(r.created_at) < new Date(filterDateStart + "T00:00:00")) return false;
+            if (filterDateEnd && new Date(r.created_at) > new Date(filterDateEnd + "T23:59:59")) return false;
+
+            return true;
+        });
 
         // Sorting
         result.sort((a, b) => {
@@ -494,13 +585,17 @@ const JobsManager = ({ id }) => {
         });
 
         return result;
-    }, [records, searchTerm, filterStatus, sortField, sortOrder]);
+    }, [records, searchTerm, filterStatus, sortField, sortOrder, filterByCreator, filterDateStart, filterDateEnd]);
 
     const resetAll = () => {
         setSearchTerm('');
         setFilterStatus('all');
         setSortField('created_at');
         setSortOrder('desc');
+        setFilterByCreator('all');
+        setFilterDateStart('');
+        setFilterDateEnd('');
+        setDatePreset('custom');
     };
 
     if (editingRecord) {
@@ -799,20 +894,41 @@ const JobsManager = ({ id }) => {
                 {/* Filters and Actions Row */}
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Filter</span>
-                            <Select value={filterStatus} onValueChange={setFilterStatus}>
-                                <SelectTrigger className="w-48 h-10 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
-                                    <SelectValue placeholder="All States" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All States</SelectItem>
-                                    {Object.entries(workflow.states).map(([id, s]) => (
-                                        <SelectItem key={id} value={id}>{s.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant={showFilters ? "secondary" : "outline"}
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className={`h-10 px-4 rounded-xl transition-all border-gray-200 ${showFilters ? 'bg-primary/10 text-primary border-primary/20' : 'bg-gray-50/50'}`}
+                                >
+                                    <Filter className="w-4 h-4 mr-2" />
+                                    <span className="text-sm font-bold uppercase tracking-widest leading-none">Filters</span>
+                                    {(filterStatus !== 'all' || filterByCreator !== 'all' || filterDateStart || filterDateEnd) && (
+                                        <Badge className="ml-2 bg-primary text-white scale-75">!</Badge>
+                                    )}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                <p className="text-xs">Show advanced filtering options</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    onClick={downloadCSV}
+                                    disabled={filteredRecords.length === 0}
+                                    className="hidden h-10 px-4 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all text-sm font-bold uppercase tracking-widest leading-none"
+                                >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    <span>Export CSV</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                <p className="text-xs">Download filtered jobs as CSV</p>
+                            </TooltipContent>
+                        </Tooltip>
 
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Sort</span>
@@ -822,9 +938,9 @@ const JobsManager = ({ id }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="created_at">Date Created</SelectItem>
-                                    <SelectItem value="job_id">Job ID</SelectItem>
+                                    <SelectItem value="job_code">Job Code</SelectItem>
                                     <SelectItem value="client_name">Client Name</SelectItem>
-                                    <SelectItem value="quotationAmount">Quotation Amount</SelectItem>
+                                    <SelectItem value="quotationAmount">Amount</SelectItem>
                                 </SelectContent>
                             </Select>
                             <Tooltip>
@@ -843,18 +959,99 @@ const JobsManager = ({ id }) => {
                                 </TooltipContent>
                             </Tooltip>
                         </div>
+                    </div>
 
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={resetAll}
-                            disabled={!searchTerm && filterStatus === 'all' && sortField === 'created_at' && sortOrder === 'desc'}
-                            className="text-gray-400 hover:text-red-500 h-10 text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2"
-                        >
-                            Reset
-                        </Button>
+                    <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">
+                        Total Jobs: <span className="text-primary">{filteredRecords.length}</span>
                     </div>
                 </div>
+
+                {/* Advanced Filters Panel */}
+                {showFilters && (
+                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm animate-in slide-in-from-top-2 duration-200">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center">
+                                <Filter className="w-4 h-4 mr-2 text-primary" />
+                                Advanced Filters
+                            </h3>
+                            <Button variant="ghost" size="sm" onClick={resetAll} className="text-xs text-gray-400 hover:text-red-500 font-bold uppercase tracking-widest">
+                                <X className="w-3 h-3 mr-1" /> Reset All
+                            </Button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</Label>
+                                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                                    <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
+                                        <SelectValue placeholder="All States" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All States</SelectItem>
+                                        {Object.entries(workflow.states).map(([id, s]) => (
+                                            <SelectItem key={id} value={id}>{s.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Quick Date</Label>
+                                <Select value={datePreset} onValueChange={applyDatePreset}>
+                                    <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
+                                        <SelectValue placeholder="Custom" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="custom">Custom Range</SelectItem>
+                                        <SelectItem value="this_month">This Month</SelectItem>
+                                        <SelectItem value="last_month">Last Month</SelectItem>
+                                        <SelectItem value="ytd">Year to Date (YTD)</SelectItem>
+                                        <SelectItem value="this_year">This Year</SelectItem>
+                                        <SelectItem value="last_year">Last Year</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">From Date</Label>
+                                <Input
+                                    type="date"
+                                    value={filterDateStart}
+                                    max={new Date().toISOString().split('T')[0]}
+                                    onChange={(e) => {
+                                        setFilterDateStart(e.target.value);
+                                        setDatePreset('custom');
+                                    }}
+                                    className="h-10 text-sm bg-gray-50 border-transparent rounded-xl"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">To Date</Label>
+                                <Input
+                                    type="date"
+                                    value={filterDateEnd}
+                                    max={new Date().toISOString().split('T')[0]}
+                                    onChange={(e) => {
+                                        setFilterDateEnd(e.target.value);
+                                        setDatePreset('custom');
+                                    }}
+                                    className="h-10 text-sm bg-gray-50 border-transparent rounded-xl"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Created By</Label>
+                                <Select value={filterByCreator} onValueChange={setFilterByCreator}>
+                                    <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
+                                        <SelectValue placeholder="All Users" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Users</SelectItem>
+                                        {creators.map(c => (
+                                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
