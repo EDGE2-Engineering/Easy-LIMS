@@ -18,7 +18,10 @@ const MaterialsProvider = ({ children }) => {
                 .order('name', { ascending: true });
 
             if (error) {
-                console.error("Error fetching materials:", error.message);
+                // Table may not exist — fall back gracefully to config.js list
+                console.warn("Materials table not available, falling back to config.js:", error.message);
+                const fallback = MATERIALS.map((m, i) => ({ id: m.id || i + 1, name: m.name }));
+                setMaterials(fallback);
                 return;
             }
 
@@ -32,18 +35,32 @@ const MaterialsProvider = ({ children }) => {
                     .select();
 
                 if (seedError) {
+                    // Seeding failed — still fall back to config list so UI has options
                     console.error("Error seeding materials:", seedError.message);
-                } else if (seeded) {
-                    setMaterials(seeded.sort((a, b) => a.name.localeCompare(b.name)));
-                    return;
+                    const fallback = MATERIALS.map((m, i) => ({ id: m.id || i + 1, name: m.name }));
+                    setMaterials(fallback);
+                } else {
+                    // Re-fetch after seeding
+                    const { data: refetched } = await supabase
+                        .from('materials')
+                        .select('*')
+                        .order('name', { ascending: true });
+                    
+                    if (refetched) {
+                        setMaterials(refetched);
+                        return;
+                    }
                 }
             }
 
-            if (data) {
+            if (data && data.length > 0) {
                 setMaterials(data);
             }
         } catch (error) {
             console.error("Error loading materials:", error);
+            // Final fallback: always show config-based options
+            const fallback = MATERIALS.map((m, i) => ({ id: m.id || i + 1, name: m.name }));
+            setMaterials(fallback);
         } finally {
             setLoading(false);
         }

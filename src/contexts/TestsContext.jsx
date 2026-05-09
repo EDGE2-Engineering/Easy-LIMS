@@ -52,9 +52,7 @@ const TestsProvider = ({ children }) => {
             test_method_specification: t.testMethodSpecification,
             num_days: t.numDays,
             price: t.price,
-            hsn_code: t.hsnCode || t.hsn_code || '',
-            tc_list: t.tcList || t.tc_list || [],
-            tech_list: t.techList || t.tech_list || []
+            hsn_code: t.hsnCode || t.hsn_code || ''
         };
         if (t.id && typeof t.id === 'number') {
             payload.id = t.id;
@@ -156,30 +154,76 @@ const TestsProvider = ({ children }) => {
 
     const updateTest = useCallback(async (updatedTest) => {
 
+        const previousTests = [...tests];
         setTests(prev => prev.map(t => t.id === updatedTest.id ? updatedTest : t));
+
         try {
             const dbPayload = mapToDb(updatedTest);
             const { id, ...updates } = dbPayload;
             const { error } = await supabase.from('tests').update(updates).eq('id', id);
-            if (error) console.warn("Supabase Update Failed (tests):", error.message);
+
+            if (error) {
+                console.error("Supabase Update Failed (tests):", error.message);
+                setTests(previousTests);
+                throw error;
+            }
+
+            // Sync T&C
+            await supabase.from('test_to_terms_conditions').delete().eq('test_id', id);
+            if (updatedTest.tcList?.length > 0) {
+                const { data: terms } = await supabase.from('terms_and_conditions').select('id').in('type', updatedTest.tcList);
+                if (terms?.length > 0) {
+                    await supabase.from('test_to_terms_conditions').insert(terms.map(term => ({ test_id: id, tc_id: term.id })));
+                }
+            }
+
+            // Sync Technicals
+            await supabase.from('test_to_technicals').delete().eq('test_id', id);
+            if (updatedTest.techList?.length > 0) {
+                const { data: techs } = await supabase.from('technicals').select('id').in('type', updatedTest.techList);
+                if (techs?.length > 0) {
+                    await supabase.from('test_to_technicals').insert(techs.map(tech => ({ test_id: id, technical_id: tech.id })));
+                }
+            }
+
+            await fetchTests();
         } catch (err) {
-            console.warn("Update Test Exception:", err);
+            console.error("Update Test Exception:", err);
+            setTests(previousTests);
             throw err;
         }
-    }, [mapToDb]);
+    }, [tests, mapToDb, fetchTests]);
 
     const addTest = useCallback(async (newTest) => {
         try {
             const { data, error } = await supabase.from('tests').insert(mapToDb(newTest)).select();
             if (error) throw error;
             if (data && data.length > 0) {
-                setTests(prev => [...prev, mapFromDb(data[0])]);
+                const id = data[0].id;
+
+                // Sync T&C
+                if (newTest.tcList?.length > 0) {
+                    const { data: terms } = await supabase.from('terms_and_conditions').select('id').in('type', newTest.tcList);
+                    if (terms?.length > 0) {
+                        await supabase.from('test_to_terms_conditions').insert(terms.map(term => ({ test_id: id, tc_id: term.id })));
+                    }
+                }
+
+                // Sync Technicals
+                if (newTest.techList?.length > 0) {
+                    const { data: techs } = await supabase.from('technicals').select('id').in('type', newTest.techList);
+                    if (techs?.length > 0) {
+                        await supabase.from('test_to_technicals').insert(techs.map(tech => ({ test_id: id, technical_id: tech.id })));
+                    }
+                }
+
+                await fetchTests();
             }
         } catch (err) {
             console.error("Add Test Exception:", err);
             throw err;
         }
-    }, [mapToDb, mapFromDb]);
+    }, [mapToDb, fetchTests]);
 
     const deleteTest = useCallback(async (id) => {
         setTests(prev => prev.filter(t => t.id !== id));

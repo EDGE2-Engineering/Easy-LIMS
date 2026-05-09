@@ -386,7 +386,7 @@ const AdminTestsManager = () => {
                                 })) || []
                             }
                             onChange={(selectedOptions) => {
-                                handleChange('tcList', selectedOptions.map(option => option.value));
+                                handleChange('tcList', selectedOptions ? selectedOptions.map(option => option.value) : []);
                             }}
                             styles={{
                                 control: (base) => ({
@@ -418,7 +418,7 @@ const AdminTestsManager = () => {
                                 })) || []
                             }
                             onChange={(selectedOptions) => {
-                                handleChange('techList', selectedOptions.map(option => option.value));
+                                handleChange('techList', selectedOptions ? selectedOptions.map(option => option.value) : []);
                             }}
                             styles={{
                                 control: (base) => ({

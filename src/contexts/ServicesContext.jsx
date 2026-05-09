@@ -47,9 +47,7 @@ const ServicesProvider = ({ children }) => {
             method_of_sampling: s.methodOfSampling || s.method_of_sampling || 'NA',
             num_bhs: typeof s.numBHs === 'number' ? s.numBHs : Number(s.num_bhs ?? 0),
             measure: s.measure || 'NA',
-            hsn_code: s.hsnCode || s.hsn_code || '',
-            tc_list: s.tcList || s.tc_list || [],
-            tech_list: s.techList || s.tech_list || []
+            hsn_code: s.hsnCode || s.hsn_code || ''
         };
         if (s.id && typeof s.id === 'number') {
             payload.id = s.id;
@@ -159,11 +157,10 @@ const ServicesProvider = ({ children }) => {
             const { id, ...updates } = dbPayload;
             updates.updated_at = new Date().toISOString();
 
-            const { error, data } = await supabase
+            const { error } = await supabase
                 .from('services')
                 .update(updates)
-                .eq('id', id)
-                .select();
+                .eq('id', id);
 
             if (error) {
                 console.error("Supabase Update Failed (services):", error);
@@ -171,21 +168,36 @@ const ServicesProvider = ({ children }) => {
                 throw new Error(`Failed to update service: ${error.message}`);
             }
 
-            if (data && data.length > 0) {
-                const updated = mapFromDb(data[0]);
-                setServices(prev => prev.map(s => s.id === updated.id ? updated : s));
+            // Sync T&C
+            await supabase.from('service_to_terms_conditions').delete().eq('service_id', id);
+            if (updatedService.tcList?.length > 0) {
+                const { data: terms } = await supabase.from('terms_and_conditions').select('id').in('type', updatedService.tcList);
+                if (terms?.length > 0) {
+                    await supabase.from('service_to_terms_conditions').insert(terms.map(t => ({ service_id: id, tc_id: t.id })));
+                }
             }
+
+            // Sync Technicals
+            await supabase.from('service_to_technicals').delete().eq('service_id', id);
+            if (updatedService.techList?.length > 0) {
+                const { data: techs } = await supabase.from('technicals').select('id').in('type', updatedService.techList);
+                if (techs?.length > 0) {
+                    await supabase.from('service_to_technicals').insert(techs.map(t => ({ service_id: id, technical_id: t.id })));
+                }
+            }
+
+            await fetchServices();
         } catch (err) {
             console.error("Update Service Exception:", err);
             setServices(previousServices);
             throw err;
         }
-    }, [services, mapToDb, mapFromDb]);
+    }, [services, mapToDb, fetchServices]);
 
     const addService = useCallback(async (newService) => {
 
         const previousServices = [...services];
-        
+
         try {
             const dbPayload = mapToDb(newService);
             dbPayload.created_at = new Date().toISOString();
@@ -203,15 +215,32 @@ const ServicesProvider = ({ children }) => {
             }
 
             if (data && data.length > 0) {
-                const added = mapFromDb(data[0]);
-                setServices(prev => [...prev, added]);
+                const id = data[0].id;
+
+                // Sync T&C
+                if (newService.tcList?.length > 0) {
+                    const { data: terms } = await supabase.from('terms_and_conditions').select('id').in('type', newService.tcList);
+                    if (terms?.length > 0) {
+                        await supabase.from('service_to_terms_conditions').insert(terms.map(t => ({ service_id: id, tc_id: t.id })));
+                    }
+                }
+
+                // Sync Technicals
+                if (newService.techList?.length > 0) {
+                    const { data: techs } = await supabase.from('technicals').select('id').in('type', newService.techList);
+                    if (techs?.length > 0) {
+                        await supabase.from('service_to_technicals').insert(techs.map(t => ({ service_id: id, technical_id: t.id })));
+                    }
+                }
+
+                await fetchServices();
             }
         } catch (err) {
             console.error("Add Service Exception:", err);
             setServices(previousServices);
             throw err;
         }
-    }, [services, mapToDb, mapFromDb]);
+    }, [services, mapToDb, fetchServices]);
 
     const deleteService = useCallback(async (id) => {
         const previousServices = [...services];

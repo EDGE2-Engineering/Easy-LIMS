@@ -217,7 +217,18 @@ const AdminSamplingManager = () => {
                             classNamePrefix="select"
                             placeholder="Select Materials..."
                             value={editingItem.materials?.map(m => ({ value: m, label: m })) || []}
-                            onChange={(options) => handleChange('materials', options.map(o => o.value))}
+                            onChange={(options) => handleChange('materials', options ? options.map(o => o.value) : [])}
+                            styles={{
+                                control: (base) => ({
+                                    ...base,
+                                    minHeight: '40px',
+                                    borderRadius: '0.5rem',
+                                    borderColor: '#e5e7eb',
+                                    '&:hover': {
+                                        borderColor: '#6366f1'
+                                    }
+                                })
+                            }}
                         />
                     </div>
 
@@ -313,7 +324,18 @@ const AdminSamplingManager = () => {
                             classNamePrefix="select"
                             placeholder="Select T&C..."
                             value={editingItem.tcList?.map(t => ({ value: t, label: t })) || []}
-                            onChange={(options) => handleChange('tcList', options.map(o => o.value))}
+                            onChange={(options) => handleChange('tcList', options ? options.map(o => o.value) : [])}
+                            styles={{
+                                control: (base) => ({
+                                    ...base,
+                                    minHeight: '40px',
+                                    borderRadius: '0.5rem',
+                                    borderColor: '#e5e7eb',
+                                    '&:hover': {
+                                        borderColor: '#6366f1'
+                                    }
+                                })
+                            }}
                         />
                     </div>
 
@@ -326,7 +348,18 @@ const AdminSamplingManager = () => {
                             classNamePrefix="select"
                             placeholder="Select Technicals..."
                             value={editingItem.techList?.map(t => ({ value: t, label: t })) || []}
-                            onChange={(options) => handleChange('techList', options.map(o => o.value))}
+                            onChange={(options) => handleChange('techList', options ? options.map(o => o.value) : [])}
+                            styles={{
+                                control: (base) => ({
+                                    ...base,
+                                    minHeight: '40px',
+                                    borderRadius: '0.5rem',
+                                    borderColor: '#e5e7eb',
+                                    '&:hover': {
+                                        borderColor: '#6366f1'
+                                    }
+                                })
+                            }}
                         />
                     </div>
                 </div>
