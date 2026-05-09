@@ -552,7 +552,7 @@ const AdminDashboard = () => {
                                         <div className="absolute top-0 right-0 p-8 opacity-10">
                                             <Wallet className="w-24 h-24" />
                                         </div>
-                                        <CardContent className="p-8 space-y-6 relative">
+                                        <CardContent className="p-4 space-y-6 relative">
                                             <div className="space-y-1">
                                                 <h3 className="text-xl font-black tracking-tight">Expenditures</h3>
                                                 <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Financial Outflow</p>
@@ -597,7 +597,7 @@ const AdminDashboard = () => {
                                         <div className="absolute top-0 right-0 p-8 opacity-10">
                                             <TrendingUp className="w-24 h-24" />
                                         </div>
-                                        <CardContent className="p-8 space-y-6 relative">
+                                        <CardContent className="p-4 space-y-6 relative">
                                             <div className="space-y-1">
                                                 <h3 className="text-xl font-black tracking-tight">Quotations</h3>
                                                 <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Business Proposals</p>
