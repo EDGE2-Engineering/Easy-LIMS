@@ -79,6 +79,17 @@ const AdminUsersManager = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Enforce lowercase username
+        if (/[A-Z]/.test(formData.username)) {
+            toast({
+                title: 'Validation Error',
+                description: 'Username must be in all lowercase characters.',
+                variant: 'destructive'
+            });
+            return;
+        }
+
         try {
             const userData = {
                 username: formData.username,
@@ -266,7 +277,13 @@ const AdminUsersManager = () => {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid gap-2">
                             <Label>Username</Label>
-                            <Input value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} required />
+                            <Input 
+                                value={formData.username} 
+                                onChange={e => setFormData({ ...formData, username: e.target.value })} 
+                                required 
+                                className={/[A-Z]/.test(formData.username) ? 'border-red-500 focus:ring-red-500' : ''}
+                            />
+                            <p className="text-[10px] text-gray-400 font-medium italic">Usernames must be in all small case (e.g. john.doe)</p>
                         </div>
                         <div className="grid gap-2">
                             <Label>Password</Label>
