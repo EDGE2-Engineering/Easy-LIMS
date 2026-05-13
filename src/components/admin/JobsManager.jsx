@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { WORKFLOW_STATES, MATERIALS, ROLES } from '@/data/config';
+import { WORKFLOW_STATES, MATERIALS, ROLES, ACTIONS } from '@/data/config';
 import { useWorkflowConfig } from '@/contexts/WorkflowContext';
 import {
     AlertDialog,
@@ -46,6 +46,9 @@ const JobsManager = ({ id }) => {
     const [techAssignments, setTechAssignments] = useState([]);
     const [sortField, setSortField] = useState('created_at');
     const [sortOrder, setSortOrder] = useState('desc');
+    const [showingAuditLogs, setShowingAuditLogs] = useState(false);
+    const [auditLogs, setAuditLogs] = useState([]);
+    const [loadingLogs, setLoadingLogs] = useState(false);
 
     // Advanced Filters State (from ExpensesManager)
     const [filterByCreator, setFilterByCreator] = useState('all');
@@ -405,6 +408,28 @@ const JobsManager = ({ id }) => {
         }
     };
 
+    const fetchAuditLogs = async (jobId) => {
+        setLoadingLogs(true);
+        try {
+            const { data, error } = await supabase
+                .from('job_workflow_logs')
+                .select(`
+                    *,
+                    users:performed_by(full_name, username)
+                `)
+                .eq('job_id', jobId)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setAuditLogs(data || []);
+        } catch (error) {
+            console.error('Error fetching audit logs:', error);
+            toast({ title: "Error", description: "Failed to fetch audit logs", variant: "destructive" });
+        } finally {
+            setLoadingLogs(false);
+        }
+    };
+
     useEffect(() => {
         if (editingRecord?.id) {
             fetchJobDocs(editingRecord.id);
@@ -611,6 +636,20 @@ const JobsManager = ({ id }) => {
                             <p className="text-xs text-gray-500">Manage job details and track its progress in the laboratory workflow.</p>
                         </div>
                     </div>
+                    {!isAddingNew && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                                setShowingAuditLogs(true);
+                                fetchAuditLogs(editingRecord.id);
+                            }}
+                            className="text-[10px] font-bold text-blue-500 hover:text-blue-600 hover:bg-blue-50 uppercase tracking-widest flex items-center gap-2 transition-all rounded-lg px-3"
+                        >
+                            <FileText className="w-3.5 h-3.5" />
+                            Audit Logs
+                        </Button>
+                    )}
                 </div>
 
                 {!isAddingNew && (
@@ -621,6 +660,16 @@ const JobsManager = ({ id }) => {
                             currentStatus={editingRecord.status}
                             onTransition={reloadEditingRecord}
                             onActionClick={async (actionId, action, performAction) => {
+                                if (actionId === 'SEND_QUOTATION') {
+                                    const existingQuotation = linkedDocs.find(d => d.document_type === 'Quotation');
+                                    if (existingQuotation) {
+                                        const success = await performAction(actionId);
+                                        if (success) {
+                                            navigate(`/doc/${existingQuotation.id}`);
+                                        }
+                                        return false;
+                                    }
+                                }
                                 if (actionId === 'RECEIVE_WORK_ORDER') { setShowingWoForm(true); return false; }
                                 if (actionId === 'RECEIVE_MATERIAL') { setShowingMaterialForm(true); return false; }
                                 if (actionId === 'ASSIGN_TECHNICIANS') { setShowingTechForm(true); return false; }
@@ -628,7 +677,6 @@ const JobsManager = ({ id }) => {
                                 if (actionId === 'GENERATE_INVOICE') {
                                     const existingInvoice = linkedDocs.find(d => d.document_type === 'Tax Invoice');
                                     if (existingInvoice) {
-                                        // Invoice already exists, so just perform the state transition
                                         const success = await performAction(actionId);
                                         if (success) reloadEditingRecord();
                                         return false;
@@ -676,9 +724,82 @@ const JobsManager = ({ id }) => {
                             </DialogContent>
                         </Dialog>
 
+                        <Dialog open={showingAuditLogs} onOpenChange={setShowingAuditLogs}>
+                            <DialogContent className="max-w-[800px] max-h-[80vh] flex flex-col">
+                                <DialogHeader>
+                                    <DialogTitle className="flex items-center gap-2 text-blue-600">
+                                        <FileText className="w-5 h-5" />
+                                        Job Audit Logs: {editingRecord.job_code}
+                                    </DialogTitle>
+                                </DialogHeader>
+                                <div className="flex-grow overflow-y-auto mt-4 pr-2">
+                                    {loadingLogs ? (
+                                        <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
+                                            <Loader2 className="w-8 h-8 animate-spin" />
+                                            <p className="text-xs font-medium uppercase tracking-widest">Loading Logs...</p>
+                                        </div>
+                                    ) : auditLogs.length > 0 ? (
+                                        <div className="rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+                                            <table className="w-full text-left text-xs">
+                                                <thead className="bg-gray-50 border-b">
+                                                    <tr>
+                                                        <th className="p-4 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Date & Time</th>
+                                                        <th className="p-4 font-bold text-gray-400 uppercase tracking-widest text-[9px]">User</th>
+                                                        {/* <th className="p-4 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Action</th> */}
+                                                        <th className="p-4 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Transition</th>
+                                                        <th className="p-4 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Remarks</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-50">
+                                                    {auditLogs.map((log) => (
+                                                        <tr key={log.id} className="hover:bg-blue-50/30 transition-colors">
+                                                            <td className="p-4 font-medium text-gray-600 whitespace-nowrap">
+                                                                {new Date(log.created_at).toLocaleString('en-IN', {
+                                                                    dateStyle: 'medium',
+                                                                    timeStyle: 'short'
+                                                                })}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                <div className="font-bold text-gray-900">{log.users?.full_name || log.users?.username || '-'}</div>
+                                                            </td>
+                                                            {/* <td className="p-4">
+                                                                <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] font-bold uppercase">
+                                                                    {ACTIONS[log.action_id]?.label || log.action_id}
+                                                                </Badge>
+                                                            </td> */}
+                                                            <td className="p-4">
+                                                                <div className="flex items-center gap-2 text-[10px]">
+                                                                    <span className="text-gray-600">{getStatusLabel(log.from_state)}</span>
+                                                                    <ArrowRight className="w-3 h-3 text-blue-600" />
+                                                                    <span className="font-bold text-primary">{getStatusLabel(log.to_state)}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-4 text-gray-500 italic">
+                                                                {log.remarks || '-'}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
+                                            <AlertCircle className="w-8 h-8 opacity-20" />
+                                            <p className="text-xs font-medium uppercase tracking-widest italic">No logs found for this job.</p>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="mt-6 flex justify-end">
+                                    <Button onClick={() => setShowingAuditLogs(false)} className="rounded-xl px-8 h-10">
+                                        Close
+                                    </Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+
                         {/* Linked Documents Summary */}
                         {isAdmin() && linkedDocs.length > 0 && (
-                            <div className="p-6 bg-blue-50/30 rounded-2xl border border-blue-100/50">
+                            <div className="p-2 bg-blue-50/30 rounded-xl border border-blue-100/50">
                                 <h4 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-4 flex items-center gap-2"><FileText className="w-3 h-3" /> Job Documents</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                     {linkedDocs.map(doc => (

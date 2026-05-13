@@ -446,9 +446,23 @@ const NewQuotationPage = () => {
     // Load job details if jobId is present in searchParams (to pre-fill for a new document)
     useEffect(() => {
         const jobId = searchParams.get('jobId');
+        const docType = searchParams.get('type') || 'Quotation';
         if (jobId && !savedRecordId && clients.length > 0) {
             const loadJobDetails = async () => {
                 try {
+                    // Check if a document of this type already exists for this job
+                    const { data: existingDoc } = await supabase
+                        .from('documents')
+                        .select('id')
+                        .eq('job_id', jobId)
+                        .eq('document_type', docType)
+                        .maybeSingle();
+
+                    if (existingDoc) {
+                        navigate(`/doc/${existingDoc.id}`, { replace: true });
+                        return;
+                    }
+
                     const { data, error } = await supabase
                         .from('jobs')
                         .select(`
@@ -480,7 +494,7 @@ const NewQuotationPage = () => {
                             
                             // Synchronize lastSavedData to avoid marking doc as dirty immediately on job load
                             setLastSavedData(prevSaved => {
-                                if (!prevSaved) return JSON.stringify({ quoteDetails: newDetails, items, documentType, discount });
+                                if (!prevSaved) return JSON.stringify({ quoteDetails: newDetails, items, documentType: docType, discount });
                                 try {
                                     const parsed = JSON.parse(prevSaved);
                                     if (JSON.stringify(parsed.quoteDetails) === JSON.stringify(prev)) {
@@ -509,7 +523,7 @@ const NewQuotationPage = () => {
             };
             loadJobDetails();
         }
-    }, [searchParams, savedRecordId, clients]);
+    }, [searchParams, savedRecordId, clients, navigate]);
 
     const handleSaveToDatabase = async () => {
         if (!user) {

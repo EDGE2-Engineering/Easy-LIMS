@@ -59,11 +59,11 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
                             disabled={loading}
                             size="sm"
                             variant="outline"
-                            className="transition-all hover:scale-105 border-primary/20 hover:bg-primary/5 text-primary"
+                            className="transition-all hover:scale-105 border-primary/20 hover:bg-primary/5 text-primary bg-red-700 hover:bg-red-600"
                             title={`Revert to ${previousStateLabel}`}
                         >
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                           Revert to {previousStateLabel}
+                            <ArrowLeft className="mr-2 h-4 w-4 text-white" />
+                           <p className="text-white "> Revert to {previousStateLabel}</p>
                         </Button>
                     )}
                     {availableActions.map(action => (

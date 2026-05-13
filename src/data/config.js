@@ -159,7 +159,7 @@ export const APP_CONFIG = {
                 ]
             },
             [WORKFLOW_STATES.QUOTATION_SENT]: {
-                label: 'Quotation Sent',
+                label: 'Quotation Created',
                 color: { bg: '#fffbeb', text: '#92400e', border: '#fcd34d' },
                 actions: [
                     { id: ACTIONS.RECEIVE_WORK_ORDER.name, label: ACTIONS.RECEIVE_WORK_ORDER.label, targetState: WORKFLOW_STATES.WORK_ORDER_RECEIVED, roles: [ROLES.ADMIN.slug, ROLES.MRO.slug] }
