@@ -1,29 +1,30 @@
 
-import React, { lazy, Suspense } from 'react';
+import React, { Suspense } from 'react';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { usePermissions } from '@/hooks/usePermissions';
 import { VIEWS } from '@/data/config';
 import { Loader2, ShieldAlert } from 'lucide-react';
 
-const AdminClientsManager = lazy(() => import('@/components/admin/AdminClientsManager.jsx'));
-const AdminUsersManager = lazy(() => import('@/components/admin/AdminUsersManager.jsx'));
-const DocumentsManager = lazy(() => import('@/components/admin/DocumentsManager.jsx'));
-const MaterialInwardManager = lazy(() => import('@/components/admin/MaterialInwardManager'));
-const JobsManager = lazy(() => import('@/components/admin/JobsManager.jsx'));
-const AdminTestsManager = lazy(() => import('@/components/admin/AdminTestsManager.jsx'));
-const AdminServicesManager = lazy(() => import('@/components/admin/AdminServicesManager.jsx'));
-const AdminSystemSettings = lazy(() => import('@/components/admin/AdminSystemSettings.jsx'));
-const AdminSamplingManager = lazy(() => import('@/components/admin/AdminSamplingManager.jsx'));
-const ExpensesManager = lazy(() => import('@/components/admin/ExpensesManager.jsx'));
-const LeavesManager = lazy(() => import('@/components/admin/LeavesManager.jsx'));
-const UtilitiesManager = lazy(() => import('@/components/admin/UtilitiesManager.jsx'));
-const AdminDashboard = lazy(() => import('@/components/admin/AdminDashboard.jsx'));
-const AnalystDashboard = lazy(() => import('@/components/admin/AnalystDashboard.jsx'));
-const AccountsDashboard = lazy(() => import('@/components/admin/AccountsDashboard.jsx'));
-const TechnicianDashboard = lazy(() => import('@/components/admin/TechnicianDashboard.jsx'));
-const ApprovalsManager = lazy(() => import('@/components/admin/ApprovalsManager.jsx'));
-const AdminClientPricingManager = lazy(() => import('@/components/admin/AdminClientPricingManager.jsx'));
-const AdminOrganizationSettings = lazy(() => import('@/components/admin/AdminOrganizationSettings.jsx'));
-const InquiriesManager = lazy(() => import('@/components/admin/InquiriesManager.jsx'));
+const AdminClientsManager = lazyWithRetry(() => import('@/components/admin/AdminClientsManager.jsx'));
+const AdminUsersManager = lazyWithRetry(() => import('@/components/admin/AdminUsersManager.jsx'));
+const DocumentsManager = lazyWithRetry(() => import('@/components/admin/DocumentsManager.jsx'));
+const MaterialInwardManager = lazyWithRetry(() => import('@/components/admin/MaterialInwardManager'));
+const JobsManager = lazyWithRetry(() => import('@/components/admin/JobsManager.jsx'));
+const AdminTestsManager = lazyWithRetry(() => import('@/components/admin/AdminTestsManager.jsx'));
+const AdminServicesManager = lazyWithRetry(() => import('@/components/admin/AdminServicesManager.jsx'));
+const AdminSystemSettings = lazyWithRetry(() => import('@/components/admin/AdminSystemSettings.jsx'));
+const AdminSamplingManager = lazyWithRetry(() => import('@/components/admin/AdminSamplingManager.jsx'));
+const ExpensesManager = lazyWithRetry(() => import('@/components/admin/ExpensesManager.jsx'));
+const LeavesManager = lazyWithRetry(() => import('@/components/admin/LeavesManager.jsx'));
+const UtilitiesManager = lazyWithRetry(() => import('@/components/admin/UtilitiesManager.jsx'));
+const AdminDashboard = lazyWithRetry(() => import('@/components/admin/AdminDashboard.jsx'));
+const AnalystDashboard = lazyWithRetry(() => import('@/components/admin/AnalystDashboard.jsx'));
+const AccountsDashboard = lazyWithRetry(() => import('@/components/admin/AccountsDashboard.jsx'));
+const TechnicianDashboard = lazyWithRetry(() => import('@/components/admin/TechnicianDashboard.jsx'));
+const ApprovalsManager = lazyWithRetry(() => import('@/components/admin/ApprovalsManager.jsx'));
+const AdminClientPricingManager = lazyWithRetry(() => import('@/components/admin/AdminClientPricingManager.jsx'));
+const AdminOrganizationSettings = lazyWithRetry(() => import('@/components/admin/AdminOrganizationSettings.jsx'));
+const InquiriesManager = lazyWithRetry(() => import('@/components/admin/InquiriesManager.jsx'));
 
 const COMPONENT_MAP = {
   [VIEWS.DASHBOARD]: AdminDashboard,
@@ -41,7 +42,7 @@ const COMPONENT_MAP = {
   [VIEWS.CLIENT_PRICING]: AdminClientPricingManager,
   [VIEWS.INQUIRIES]: InquiriesManager,
   [VIEWS.ORGANIZATION]: AdminOrganizationSettings,
-  [VIEWS.TESTING]: lazy(() => import('@/components/admin/TestingDashboard.jsx'))
+  [VIEWS.TESTING]: lazyWithRetry(() => import('@/components/admin/TestingDashboard.jsx'))
 };
 
 const ConfigDrivenPage = ({ viewName, subView, id }) => {
