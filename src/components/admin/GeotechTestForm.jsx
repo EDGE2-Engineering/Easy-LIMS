@@ -86,14 +86,17 @@ export default function GeotechTestForm({ value, onChange }) {
     const addBorehole = () => {
         setFormData({
             ...formData,
-            boreholeLogs: [...formData.boreholeLogs, [{ depth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]]
+            boreholeLogs: [...formData.boreholeLogs, [{ depth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]],
+            sbcDetails: [...formData.sbcDetails, [{ depth: '', sbcValue: '' }]]
         });
     };
 
     const removeBorehole = (index) => {
         const newLogs = [...formData.boreholeLogs];
         newLogs.splice(index, 1);
-        setFormData({ ...formData, boreholeLogs: newLogs });
+        const newSbc = [...formData.sbcDetails];
+        newSbc.splice(index, 1);
+        setFormData({ ...formData, boreholeLogs: newLogs, sbcDetails: newSbc });
     };
 
     const handleSoilSearch = (e, boreholeIndex, depthIndex) => {
@@ -110,6 +113,28 @@ export default function GeotechTestForm({ value, onChange }) {
     const selectSoilType = (type, boreholeIndex, depthIndex) => {
         handleBoreholeDepthChange(boreholeIndex, depthIndex, 'soilType', type);
         setShowSoilSuggestions(false);
+    };
+
+    // --- SBC Handlers ---
+    const handleSbcChange = (boreholeIndex, entryIndex, field, val) => {
+        const newSbc = [...formData.sbcDetails];
+        if (!newSbc[boreholeIndex]) newSbc[boreholeIndex] = [];
+        if (!newSbc[boreholeIndex][entryIndex]) newSbc[boreholeIndex][entryIndex] = {};
+        newSbc[boreholeIndex][entryIndex][field] = val;
+        setFormData({ ...formData, sbcDetails: newSbc });
+    };
+
+    const addSbcEntry = (boreholeIndex) => {
+        const newSbc = [...formData.sbcDetails];
+        if (!newSbc[boreholeIndex]) newSbc[boreholeIndex] = [];
+        newSbc[boreholeIndex].push({ depth: '', sbcValue: '' });
+        setFormData({ ...formData, sbcDetails: newSbc });
+    };
+
+    const removeSbcEntry = (boreholeIndex, entryIndex) => {
+        const newSbc = [...formData.sbcDetails];
+        newSbc[boreholeIndex].splice(entryIndex, 1);
+        setFormData({ ...formData, sbcDetails: newSbc });
     };
 
     // --- Lab Test Handlers ---
@@ -217,9 +242,17 @@ export default function GeotechTestForm({ value, onChange }) {
                                                             )}
                                                         </td>
                                                         <td className="px-2 py-2">
-                                                            <Input value={depthData.spt1} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'spt1', e.target.value)} className="h-8 mb-1" placeholder="15cm" />
-                                                            <Input value={depthData.spt2} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'spt2', e.target.value)} className="h-8 mb-1" placeholder="30cm" />
-                                                            <Input value={depthData.spt3} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'spt3', e.target.value)} className="h-8" placeholder="45cm" />
+                                                            {depthData.natureOfSampling === 'DS' ? (
+                                                                <div className="flex flex-col items-center justify-center h-full min-h-[100px] text-[10px] text-gray-400 font-medium italic bg-gray-50/50 rounded-md border border-dashed border-gray-200 px-2 text-center leading-tight">
+                                                                    SPT Not Required for Disturbed Sampling (DS)
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <Input value={depthData.spt1} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'spt1', e.target.value)} className="h-8 mb-1" placeholder="15cm" />
+                                                                    <Input value={depthData.spt2} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'spt2', e.target.value)} className="h-8 mb-1" placeholder="30cm" />
+                                                                    <Input value={depthData.spt3} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'spt3', e.target.value)} className="h-8" placeholder="45cm" />
+                                                                </>
+                                                            )}
                                                         </td>
                                                         <td className="px-2 py-2">
                                                             {logs.length > 1 && (
@@ -239,6 +272,74 @@ export default function GeotechTestForm({ value, onChange }) {
                             <div className="flex justify-center pt-4 border-t">
                                 <Button type="button" variant="outline" onClick={addBorehole} className="text-primary"><Plus className="w-4 h-4 mr-2" /> Add Borehole</Button>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* SBC DETAILS SECTION */}
+                    <div className="bg-gray-50/30 p-4 rounded-xl border border-gray-100">
+                        <h3 className="text-md font-bold text-gray-800 mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+                            <LandPlot className="w-4 h-4 text-primary" />
+                            SBC Details
+                        </h3>
+                        <div className="space-y-4">
+                            {formData.boreholeLogs.map((_, boreholeIndex) => (
+                                <div key={boreholeIndex} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h4 className="text-sm font-bold text-gray-800">SBC - BH {boreholeIndex + 1}</h4>
+                                    </div>
+                                    <div className="border rounded-lg bg-white mb-4 overflow-hidden">
+                                        <table className="w-full text-sm text-left border-collapse">
+                                            <thead className="text-[11px] text-gray-500 uppercase bg-gray-50/50 border-b">
+                                                <tr>
+                                                    <th className="px-3 py-2 font-bold">Depth (m)</th>
+                                                    <th className="px-3 py-2 font-bold">SBC Value (t/m²)</th>
+                                                    <th className="px-3 py-2 w-[50px]"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {(formData.sbcDetails[boreholeIndex] || []).map((sbcData, entryIndex) => (
+                                                    <tr key={entryIndex} className="border-b last:border-0">
+                                                        <td className="px-2 py-2">
+                                                            <Input 
+                                                                value={sbcData.depth} 
+                                                                onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'depth', e.target.value)} 
+                                                                className="h-8" 
+                                                                placeholder="Depth"
+                                                            />
+                                                        </td>
+                                                        <td className="px-2 py-2">
+                                                            <Input 
+                                                                value={sbcData.sbcValue} 
+                                                                onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'sbcValue', e.target.value)} 
+                                                                className="h-8" 
+                                                                placeholder="SBC Value"
+                                                            />
+                                                        </td>
+                                                        <td className="px-2 py-2 text-right">
+                                                            {formData.sbcDetails[boreholeIndex]?.length > 1 && (
+                                                                <Button type="button" variant="ghost" size="icon" onClick={() => removeSbcEntry(boreholeIndex, entryIndex)} className="text-red-500 h-8 w-8">
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {(!formData.sbcDetails[boreholeIndex] || formData.sbcDetails[boreholeIndex].length === 0) && (
+                                                    <tr>
+                                                        <td colSpan="3" className="px-3 py-4 text-center text-gray-500 italic text-xs">No entries. Click "Add Entry" to begin.</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => addSbcEntry(boreholeIndex)} className="text-primary h-8"><Plus className="w-4 h-4 mr-2" /> Add Entry</Button>
+                                </div>
+                            ))}
+                            {formData.boreholeLogs.length === 0 && (
+                                <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500 italic">
+                                    Add a borehole to enter SBC details.
+                                </div>
+                            )}
                         </div>
                     </div>
                 </TabsContent>

@@ -213,6 +213,10 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                                                     <span className="font-semibold text-gray-700">Lab Tests</span>
                                                                     <span className="text-sm px-2 py-1 bg-blue-100 text-blue-700 rounded-md font-medium">{testResults[cat]['GeotechData'].labTestResults?.length || 0} Boreholes</span>
                                                                 </div>
+                                                                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex justify-between items-center">
+                                                                    <span className="font-semibold text-gray-700">SBC Details</span>
+                                                                    <span className="text-sm px-2 py-1 bg-purple-100 text-purple-700 rounded-md font-medium">{testResults[cat]['GeotechData'].sbcDetails?.length || 0} Boreholes</span>
+                                                                </div>
                                                                 {/* Display more mini-summaries here as needed */}
                                                                 <p className="text-xs text-gray-400 italic col-span-full mt-1">Click Edit Results to manage complex geotechnical tables.</p>
                                                             </div>
