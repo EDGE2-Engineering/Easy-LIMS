@@ -206,12 +206,12 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                                         ) : (
                                                             <div className="text-sm text-gray-600 grid grid-cols-2 gap-4 mt-3">
                                                                 <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex justify-between items-center">
-                                                                    <span className="font-semibold text-gray-700">Borehole Logs</span>
-                                                                    <span className="text-sm px-2 py-1 bg-green-100 text-green-700 rounded-md font-medium">{testResults[cat]['GeotechData'].boreholeLogs?.length || 0} Levels</span>
+                                                                    <span className="font-semibold text-gray-700">Borehole Depths</span>
+                                                                    <span className="text-sm px-2 py-1 bg-green-100 text-green-700 rounded-md font-medium">{testResults[cat]['GeotechData'].boreholeLogs?.length || 0} Boreholes</span>
                                                                 </div>
                                                                 <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex justify-between items-center">
                                                                     <span className="font-semibold text-gray-700">Lab Tests</span>
-                                                                    <span className="text-sm px-2 py-1 bg-blue-100 text-blue-700 rounded-md font-medium">{testResults[cat]['GeotechData'].labTestResults?.length || 0} Levels</span>
+                                                                    <span className="text-sm px-2 py-1 bg-blue-100 text-blue-700 rounded-md font-medium">{testResults[cat]['GeotechData'].labTestResults?.length || 0} Boreholes</span>
                                                                 </div>
                                                                 {/* Display more mini-summaries here as needed */}
                                                                 <p className="text-xs text-gray-400 italic col-span-full mt-1">Click Edit Results to manage complex geotechnical tables.</p>
@@ -262,7 +262,7 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                                 <TooltipTrigger asChild>
                                                     <Button onClick={() => setSelectedCategory(cat)} className="bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20">
                                                         <Edit className="mr-2 h-4 w-4" />
-                                                        Edit {cat} Results
+                                                        Edit {cat} Test Data
                                                     </Button>
                                                 </TooltipTrigger>
                                                 <TooltipContent className="bg-gray-900 text-white border-gray-800">
@@ -284,67 +284,67 @@ const TestingManager = ({ initialJobId, onClose }) => {
 
             {/* Category Test Data Input Dialog */}
             <Dialog open={!!selectedCategory} onOpenChange={(open) => !open && setSelectedCategory(null)}>
-                <DialogContent className="max-w-[1200px] max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-xl border-b pb-4">
+                <DialogContent className="max-w-[1100px] max-h-[90vh] overflow-hidden flex flex-col p-0 bg-white rounded-2xl shadow-2xl border-none">
+                    <DialogHeader className="px-6 py-4 border-b bg-gray-50/50">
+                        <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-800">
                             <FlaskConical className="w-5 h-5 text-primary" />
-                            Edit {selectedCategory} Results
+                            {selectedCategory} Test Data Entry
                         </DialogTitle>
                     </DialogHeader>
                     {selectedCategory && (
-                        <div className="py-4 space-y-8">
-                            {GEOTECH_NAMES.includes(selectedCategory) && (
-                                <div className="space-y-4 rounded-xl border border-gray-100 p-6 bg-white shadow-sm mb-6">
-                                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
-                                        <div className="w-2 h-2 rounded-full bg-primary" />
-                                         Geotechnical Inputs
-                                    </h3>
-                                    <GeotechTestForm 
-                                        value={testResults[selectedCategory]?.['GeotechData'] || {}}
-                                        onChange={(val) => setTestResults(prev => ({ 
-                                            ...prev, 
-                                            [selectedCategory]: {
-                                                ...(prev[selectedCategory] || {}),
-                                                'GeotechData': val
-                                            }
-                                        }))}
-                                    />
-                                </div>
-                            )}
-                            {Object.keys(TEST_SCHEMA[selectedCategory] || {}).map(testName => (
-                                <div key={testName} className="space-y-4 border border-gray-100 rounded-xl p-6 bg-white shadow-sm">
-                                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-primary" />
-                                        {testName}
-                                    </h3>
-                                    <div className="bg-gray-50/50 p-6 rounded-xl border border-gray-100 shadow-inner">
-                                        <DynamicForm 
-                                            schema={TEST_SCHEMA[selectedCategory]?.[testName]} 
-                                            values={testResults[selectedCategory]?.[testName]?.values || {}}
-                                            onChange={(fId, val) => handleResultChange(selectedCategory, testName, fId, val)}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-sm font-bold text-gray-700">Test Remarks & Observations</Label>
-                                        <textarea 
-                                            className="w-full p-4 min-h-[80px] text-sm border border-gray-200 bg-white rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-y"
-                                            placeholder={`Enter any specific observations or notes for ${testName}...`}
-                                            value={testResults[selectedCategory]?.[testName]?.remarks || ""}
-                                            onChange={(e) => setTestResults(prev => ({
-                                                ...prev,
+                        <div className="flex flex-col h-full overflow-hidden">
+                            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                                {GEOTECH_NAMES.includes(selectedCategory) && (
+                                    <div className="space-y-4 rounded-xl border border-gray-100 p-4 bg-white shadow-sm mb-4">
+                                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 mb-2">
+                                            Geotechnical Inputs
+                                        </h3>
+                                        <GeotechTestForm 
+                                            value={testResults[selectedCategory]?.['GeotechData'] || {}}
+                                            onChange={(val) => setTestResults(prev => ({ 
+                                                ...prev, 
                                                 [selectedCategory]: {
                                                     ...(prev[selectedCategory] || {}),
-                                                    [testName]: { ...((prev[selectedCategory] || {})[testName] || {}), remarks: e.target.value }
+                                                    'GeotechData': val
                                                 }
                                             }))}
                                         />
                                     </div>
-                                </div>
-                            ))}
-                            <div className="flex justify-end gap-3 pt-1 mt-1 sticky bottom-0 pb-2 z-10">
-                                <Button variant="outline" className="px-6 rounded-xl" onClick={() => setSelectedCategory(null)} disabled={isSaving}>Cancel</Button>
-                                <Button className="px-6 rounded-xl bg-primary hover:bg-primary-dark shadow-md" onClick={async () => { await handleSaveResults(selectedCategory); setSelectedCategory(null); }} disabled={isSaving}>
-                                    {isSaving ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />} Save Results
+                                )}
+                                {Object.keys(TEST_SCHEMA[selectedCategory] || {}).map(testName => (
+                                    <div key={testName} className="space-y-4 border border-gray-100 rounded-xl p-4 bg-white shadow-sm">
+                                        <h3 className="text-md font-bold text-gray-800 flex items-center gap-2">
+                                            {testName}
+                                        </h3>
+                                        <div className="bg-gray-50/30 p-4 rounded-xl border border-gray-100">
+                                            <DynamicForm 
+                                                schema={TEST_SCHEMA[selectedCategory]?.[testName]} 
+                                                values={testResults[selectedCategory]?.[testName]?.values || {}}
+                                                onChange={(fId, val) => handleResultChange(selectedCategory, testName, fId, val)}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-[13px] font-bold text-gray-600">Test Remarks & Observations</Label>
+                                            <textarea 
+                                                className="w-full p-3 min-h-[60px] text-sm border border-gray-200 bg-white rounded-lg focus:ring-1 focus:ring-primary/30 focus:border-primary outline-none transition-all resize-y"
+                                                placeholder={`Enter notes for ${testName}...`}
+                                                value={testResults[selectedCategory]?.[testName]?.remarks || ""}
+                                                onChange={(e) => setTestResults(prev => ({
+                                                    ...prev,
+                                                    [selectedCategory]: {
+                                                        ...(prev[selectedCategory] || {}),
+                                                        [testName]: { ...((prev[selectedCategory] || {})[testName] || {}), remarks: e.target.value }
+                                                    }
+                                                }))}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50/80 backdrop-blur-sm shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+                                <Button variant="ghost" className="px-6 rounded-xl hover:bg-gray-200/50 font-medium text-gray-600" onClick={() => setSelectedCategory(null)} disabled={isSaving}>Cancel</Button>
+                                <Button className="px-8 rounded-xl bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold" onClick={async () => { await handleSaveResults(selectedCategory); setSelectedCategory(null); }} disabled={isSaving}>
+                                    {isSaving ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />} Save All Results
                                 </Button>
                             </div>
                         </div>
