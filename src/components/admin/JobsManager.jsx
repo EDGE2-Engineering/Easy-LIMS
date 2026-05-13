@@ -789,11 +789,11 @@ const JobsManager = ({ id }) => {
                                         </div>
                                     )}
                                 </div>
-                                <div className="mt-6 flex justify-end">
+                                {/* <div className="mt-2 flex justify-end">
                                     <Button onClick={() => setShowingAuditLogs(false)} className="rounded-xl px-8 h-10">
                                         Close
                                     </Button>
-                                </div>
+                                </div> */}
                             </DialogContent>
                         </Dialog>
 

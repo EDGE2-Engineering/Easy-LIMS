@@ -14,11 +14,15 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MATERIALS, ROLES } from '@/data/config';
 import GeotechTestForm from './GeotechTestForm';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { camelCaseToTitleCase } from '@/lib/utils';
+
+// Names of geotechnical material types (matched against TEST_SCHEMA keys)
+const GEOTECH_NAMES = ['Soil', 'Rock', 'Soil and Rock'];
 
 const TestingManager = ({ initialJobId, onClose }) => {
     const [jobDetails, setJobDetails] = useState(null);
@@ -28,6 +32,7 @@ const TestingManager = ({ initialJobId, onClose }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [techCapabilities, setTechCapabilities] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState(null);
+    const [entryMode, setEntryMode] = useState('Drilling'); // 'Manual' or 'Drilling'
     const { toast } = useToast();
     const { user, isAdmin } = useAuth();
     const { canAction } = usePermissions();
@@ -36,6 +41,16 @@ const TestingManager = ({ initialJobId, onClose }) => {
     useEffect(() => {
         if (initialJobId) fetchData();
     }, [initialJobId]);
+
+    useEffect(() => {
+        if (selectedCategory) {
+            if (GEOTECH_NAMES.includes(selectedCategory)) {
+                setEntryMode('Drilling');
+            } else {
+                setEntryMode('Manual');
+            }
+        }
+    }, [selectedCategory]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -139,9 +154,6 @@ const TestingManager = ({ initialJobId, onClose }) => {
     const hasMaterialsGap = samples.length > 0 && sampleCategories.length === 0;
     const allCategories = [...new Set([...sampleCategories, ...dataCats])];
 
-    // Names of geotechnical material types (matched against TEST_SCHEMA keys)
-    const GEOTECH_NAMES = ['Soil', 'Rock', 'Soil and Rock'];
-
     const isSoilTech = user?.role === ROLES.TECHNICIAN.slug && user?.departments?.includes('Soil Investigation');
 
     // Admin sees all; Technicians see only authorized or already-recorded categories
@@ -166,7 +178,7 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                     </p>
                                 </div>
                             )}
-                            <TabsList className="bg-white border rounded-xl p-1 mb-6 flex-wrap h-auto">
+                            <TabsList className="bg-white border rounded-xl p-1 mb-6 flex-wrap h-auto min-h-0 py-1">
                                 {visibleCategories.map(cat => (
                                     <TabsTrigger key={cat} value={cat} className="px-6 py-2.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white">
                                         {cat}
@@ -498,22 +510,127 @@ const TestingManager = ({ initialJobId, onClose }) => {
                     </DialogHeader>
                     {selectedCategory && (
                         <div className="flex flex-col h-full overflow-hidden">
-                            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-                                {GEOTECH_NAMES.includes(selectedCategory) && (
-                                    <div className="space-y-4 rounded-xl border border-gray-100 p-4 bg-white shadow-sm mb-4">
-                                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 mb-2">
-                                            Geotechnical Inputs
-                                        </h3>
-                                        <GeotechTestForm 
-                                            value={testResults[selectedCategory]?.['GeotechData'] || {}}
-                                            onChange={(val) => setTestResults(prev => ({ 
-                                                ...prev, 
-                                                [selectedCategory]: {
-                                                    ...(prev[selectedCategory] || {}),
-                                                    'GeotechData': val
-                                                }
-                                            }))}
-                                        />
+                            <div className="flex-1 overflow-y-auto p-2 space-y-6 custom-scrollbar">
+                                {selectedCategory && (
+                                    <div className="space-y-4">
+                                        {/* Entry Mode Selection - Only for Geotech categories */}
+                                        {GEOTECH_NAMES.includes(selectedCategory) && (
+                                            <div className="flex items-center gap-4 p-2 bg-gray-50 rounded-xl border border-gray-100">
+  <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+    Entry Mode
+  </Label>
+
+  <Select value={entryMode} onValueChange={setEntryMode}>
+    <SelectTrigger className="h-8 w-[180px] bg-white border-gray-200 text-xs px-2">
+      <SelectValue placeholder="Select mode" />
+    </SelectTrigger>
+
+    <SelectContent>
+      <SelectItem className="text-xs py-1 min-h-0" value="Manual">
+        Manual
+      </SelectItem>
+
+      <SelectItem className="text-xs py-1 min-h-0" value="Drilling">
+        Drilling
+      </SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+                                        )}
+
+                                        {/* Drilling Form (Geotech Only) */}
+                                        {GEOTECH_NAMES.includes(selectedCategory) && entryMode === 'Drilling' && (
+                                            <div className="space-y-4 rounded-xl border border-gray-100 p-4 bg-white shadow-sm mb-4">
+                                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 mb-2">
+                                                    Geotechnical Inputs
+                                                </h3>
+                                                <GeotechTestForm 
+                                                    value={testResults[selectedCategory]?.['GeotechData'] || {}}
+                                                    onChange={(val) => setTestResults(prev => ({ 
+                                                        ...prev, 
+                                                        [selectedCategory]: {
+                                                            ...(prev[selectedCategory] || {}),
+                                                            'GeotechData': val
+                                                        }
+                                                    }))}
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Manual Form (Regular Tests or Geotech in Manual Mode) */}
+                                        {((!GEOTECH_NAMES.includes(selectedCategory)) || entryMode === 'Manual') && (
+                                            <div className="space-y-6">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    {(() => {
+                                                        const assignedTestTypes = (jobDetails.test_types || {})[selectedCategory] || [];
+                                                        const dataTestTypes = Object.keys(testResults[selectedCategory] || {}).filter(k => k !== 'GeotechData');
+                                                        const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
+
+                                                        if (testTypes.length === 0) {
+                                                            return (
+                                                                <div className="col-span-full p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                                                    <p className="text-gray-500 text-sm">No regular tests assigned to this category.</p>
+                                                                    <p className="text-xs text-gray-400 mt-1">Assign tests in the Job Manager to see them here.</p>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return testTypes.map(testName => (
+                                                            <div key={testName} className="p-4 rounded-xl border border-gray-100 bg-white shadow-sm space-y-4">
+                                                                <div className="flex items-center justify-between border-b pb-2 mb-2">
+                                                                    <h4 className="text-sm font-bold text-gray-800">{testName}</h4>
+                                                                    <Badge variant="outline" className="text-[10px] uppercase font-bold">Regular Test</Badge>
+                                                                </div>
+                                                                <div className="space-y-3">
+                                                                    {/* This is a simplified dynamic field entry. 
+                                                                        Ideally, this would be driven by a TEST_SCHEMA config.
+                                                                        For now, we'll allow entering a "Result" value. */}
+                                                                    <div className="grid gap-2">
+                                                                        <Label className="text-[10px] font-bold text-gray-400 uppercase">Test Value / Result</Label>
+                                                                        <Input 
+                                                                            value={testResults[selectedCategory]?.[testName]?.values?.['Result'] || ''}
+                                                                            onChange={(e) => setTestResults(prev => ({
+                                                                                ...prev,
+                                                                                [selectedCategory]: {
+                                                                                    ...(prev[selectedCategory] || {}),
+                                                                                    [testName]: {
+                                                                                        ...(prev[selectedCategory]?.[testName] || {}),
+                                                                                        values: {
+                                                                                            ...(prev[selectedCategory]?.[testName]?.values || {}),
+                                                                                            'Result': e.target.value
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }))}
+                                                                            placeholder="Enter numerical or descriptive result"
+                                                                            className="h-9"
+                                                                        />
+                                                                    </div>
+                                                                    <div className="grid gap-2">
+                                                                        <Label className="text-[10px] font-bold text-gray-400 uppercase">Remarks</Label>
+                                                                        <Input 
+                                                                            value={testResults[selectedCategory]?.[testName]?.remarks || ''}
+                                                                            onChange={(e) => setTestResults(prev => ({
+                                                                                ...prev,
+                                                                                [selectedCategory]: {
+                                                                                    ...(prev[selectedCategory] || {}),
+                                                                                    [testName]: {
+                                                                                        ...(prev[selectedCategory]?.[testName] || {}),
+                                                                                        remarks: e.target.value
+                                                                                    }
+                                                                                }
+                                                                            }))}
+                                                                            placeholder="Optional remarks"
+                                                                            className="h-9 text-xs"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ));
+                                                    })()}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                                 
