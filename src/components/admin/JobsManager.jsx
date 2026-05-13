@@ -696,65 +696,69 @@ const JobsManager = ({ id }) => {
 
                 {/* Main Content Sections */}
                 <div className="space-y-10">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {isAdmin() && (<div className="space-y-6">
+                    <div className="bg-white p-4 rounded-sm border border-gray-100 shadow-sm">
+                        <div className="space-y-6">
                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Client Details</h3>
 
-                            <div className="space-y-2">
-                                <Label className="text-gray-700 font-semibold">Client</Label>
-                                {isAdmin() ? <ReactSelect
-                                    className="mt-1"
-                                    classNamePrefix="react-select"
-                                    options={clients.map(c => ({ value: c.id, label: c.client_name }))}
-                                    value={editingRecord.client_id ? {
-                                        value: editingRecord.client_id,
-                                        label: clients.find(c => String(c.id) === String(editingRecord.client_id))?.client_name
-                                    } : null}
-                                    onChange={(option) => setEditingRecord({ ...editingRecord, client_id: option ? option.value : '' })}
-                                    placeholder="Search Clients..."
-                                    isSearchable
-                                    isClearable
-                                    // isDisabled={!isAdmin()}
-                                    styles={{
-                                        control: (base) => ({
-                                            ...base,
-                                            height: '48px',
-                                            borderColor: '#e2e8f0',
-                                            borderRadius: '0.75rem',
-                                            paddingLeft: '4px',
-                                            boxShadow: 'none',
-                                            '&:hover': {
-                                                borderColor: '#94a3b8'
-                                            }
-                                        }),
-                                        option: (base, state) => ({
-                                            ...base,
-                                            backgroundColor: state.isSelected ? '#0f172a' : state.isFocused ? '#f1f5f9' : 'white',
-                                            color: state.isSelected ? 'white' : '#1e293b',
-                                            fontSize: '0.875rem'
-                                        })
-                                    }}
-                                />
-                                : <p className="text-sm h-12 border-gray-200 rounded-xl">{editingRecord.client_name || ''}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-gray-700 font-semibold">Project Name</Label>
-                                {!isAdmin() && <p className="text-sm h-12 border-gray-200 rounded-xl">{editingRecord.project_name || ''}</p>}
-                                {isAdmin() && <Input className="h-12 border-gray-200 rounded-xl" value={editingRecord.project_name || ''} onChange={e => setEditingRecord({ ...editingRecord, project_name: e.target.value })} />}
-                            </div>
-                            {!isAddingNew && editingRecord.work_order_id && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 <div className="space-y-2">
-                                    <Label className="text-gray-700 font-semibold">Work Order ID</Label>
-                                    {!isAdmin() && <p className="text-sm h-12 border-gray-200 rounded-xl">{editingRecord.work_order_id || ''}</p>}
-                                    {isAdmin() && (<Input
-                                        className="h-12 border-gray-200 rounded-xl bg-gray-50/50"
-                                        value={editingRecord.work_order_id || ''}
-                                        onChange={e => setEditingRecord({ ...editingRecord, work_order_id: e.target.value })}
-                                        placeholder="e.g. WO/2026/088"
-                                    />)}
+                                    <Label className="text-xs text-gray-700 font-semibold">Client</Label>
+                                    {isAdmin() ? <ReactSelect
+                                        className="mt-1 text-xs"
+                                        classNamePrefix="react-select"
+                                        options={clients.map(c => ({ value: c.id, label: c.client_name }))}
+                                        value={editingRecord.client_id ? {
+                                            value: editingRecord.client_id,
+                                            label: clients.find(c => String(c.id) === String(editingRecord.client_id))?.client_name
+                                        } : null}
+                                        onChange={(option) => setEditingRecord({ ...editingRecord, client_id: option ? option.value : '' })}
+                                        placeholder="Search Clients..."
+                                        isSearchable
+                                        isClearable
+                                        // isDisabled={!isAdmin()}
+                                        styles={{
+                                            control: (base) => ({
+                                                ...base,
+                                                minHeight: '40px',
+                                                height: '40px',
+                                                borderColor: '#e2e8f0',
+                                                borderRadius: '0.75rem',
+                                                paddingLeft: '8px',
+                                                boxShadow: 'none',
+                                                backgroundColor: 'white',
+                                                '&:hover': {
+                                                    borderColor: '#94a3b8'
+                                                }
+                                            }),
+                                            option: (base, state) => ({
+                                                ...base,
+                                                backgroundColor: state.isSelected ? '#0f172a' : state.isFocused ? '#f1f5f9' : 'white',
+                                                color: state.isSelected ? 'white' : '#1e293b',
+                                                fontSize: '0.75rem'
+                                            })
+                                        }}
+                                    />
+                                    : <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">{editingRecord.clients?.client_name || editingRecord.client_name || ''}</p>}
                                 </div>
-                            )}
-                        </div>)}
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-gray-700 font-semibold">Project Name</Label>
+                                    {!isAdmin() && <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">{editingRecord.project_name || ''}</p>}
+                                    {isAdmin() && <Input className="text-xs h-10 border-gray-200 rounded-xl bg-white" value={editingRecord.project_name || ''} onChange={e => setEditingRecord({ ...editingRecord, project_name: e.target.value })} />}
+                                </div>
+                                {!isAddingNew && editingRecord.work_order_id && (
+                                    <div className="space-y-2">
+                                        <Label className="text-xs text-gray-700 font-semibold">Work Order ID</Label>
+                                        {!isAdmin() && <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">{editingRecord.work_order_id || ''}</p>}
+                                        {isAdmin() && (<Input
+                                            className="text-xs h-10 border-gray-200 rounded-xl bg-white"
+                                            value={editingRecord.work_order_id || ''}
+                                            onChange={e => setEditingRecord({ ...editingRecord, work_order_id: e.target.value })}
+                                            placeholder="e.g. WO/2026/088"
+                                        />)}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     {!isAddingNew && (
