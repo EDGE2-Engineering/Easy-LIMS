@@ -10,6 +10,18 @@ CREATE TABLE public.app_settings (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   CONSTRAINT app_settings_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.bank_accounts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  bank_name text NOT NULL,
+  bank_account_holder_name text,
+  bank_account_number text,
+  branch_name text,
+  ifsc_code text,
+  is_default boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT bank_accounts_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.client_service_prices (
   price numeric NOT NULL,
   created_at timestamp with time zone DEFAULT now(),

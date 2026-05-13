@@ -14,9 +14,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TEST_SCHEMA } from '@/data/test_schemas';
 import { MATERIALS } from '@/data/config';
-import DynamicForm from '@/components/common/DynamicForm';
 import GeotechTestForm from './GeotechTestForm';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -79,18 +77,6 @@ const TestingManager = ({ initialJobId, onClose }) => {
         }
     };
 
-    const handleResultChange = (category, testName, fieldId, value) => {
-        setTestResults(prev => ({
-            ...prev,
-            [category]: {
-                ...(prev[category] || {}),
-                [testName]: {
-                    ...((prev[category] || {})[testName] || {}),
-                    values: { ...(((prev[category] || {})[testName] || {}).values || {}), [fieldId]: value }
-                }
-            }
-        }));
-    };
 
     const handleSaveResults = async (category) => {
         setIsSaving(true);
@@ -150,12 +136,8 @@ const TestingManager = ({ initialJobId, onClose }) => {
     )];
     const dataCats = Object.keys(testResults);
 
-    // Fallback: if no material names resolved (null material_id on old samples, or materials table inaccessible),
-    // admins see all available TEST_SCHEMA keys so data can always be entered.
     const hasMaterialsGap = samples.length > 0 && sampleCategories.length === 0;
-    const schemaFallbackCats = hasMaterialsGap && isAdmin() ? Object.keys(TEST_SCHEMA) : [];
-
-    const allCategories = [...new Set([...sampleCategories, ...dataCats, ...schemaFallbackCats])];
+    const allCategories = [...new Set([...sampleCategories, ...dataCats])];
 
     // Admin sees all; Technicians see only authorized or already-recorded categories
     const visibleCategories = isAdmin()
@@ -189,8 +171,7 @@ const TestingManager = ({ initialJobId, onClose }) => {
                             {visibleCategories.map(cat => {
                                 const assignedTestTypes = (jobDetails.test_types || {})[cat] || [];
                                 const dataTestTypes = Object.keys(testResults[cat] || {}).filter(k => k !== 'GeotechData');
-                                const schemaTestTypes = Object.keys(TEST_SCHEMA[cat] || {});
-                                const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes, ...schemaTestTypes])];
+                                const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
                                 return (
                                     <TabsContent key={cat} value={cat} className="space-y-6 outline-none">
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -227,32 +208,24 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                             {testTypes.map(testName => {
                                                 const testValues = testResults[cat]?.[testName]?.values || {};
                                                 const hasData = Object.keys(testValues).length > 0;
-                                                const testSchema = TEST_SCHEMA[cat]?.[testName] || [];
                                                 
                                                 return (
                                                     <div key={testName} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full">
                                                         <div>
                                                             <h4 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
                                                                 <div className={`w-2 h-2 rounded-full ${hasData ? 'bg-green-500' : 'bg-amber-400'}`} />
-                                                                {/* {camelCaseToTitleCase(testName)}  */}
-                                                                                                                                {testName}
-
+                                                                {testName}
                                                             </h4>
                                                             {!hasData ? (
                                                                 <p className="text-xs text-gray-500 mb-4">Pending input</p>
                                                             ) : (
                                                                 <div className="mb-6 space-y-2 max-h-40 overflow-y-auto no-scrollbar border p-3 rounded-lg bg-gray-50/50">
-                                                                    {Object.entries(testValues).map(([k, v]) => {
-                                                                        const schemaField = testSchema.find(f => f.id === k);
-                                                                        const label = schemaField ? schemaField.label : k;
-                                                                        const unit = schemaField?.unit ? ` ${schemaField.unit}` : '';
-                                                                        return (
-                                                                            <div key={k} className="flex justify-between items-center text-xs border-b border-gray-100 last:border-0 pb-1 last:pb-0">
-                                                                                <span className="text-gray-500 max-w-[55%] truncate pr-2" title={label}>{label}</span>
-                                                                                <span className="font-medium text-gray-900 truncate text-right" title={String(v) + unit}>{String(v) || '-'} {v ? unit : ''}</span>
-                                                                            </div>
-                                                                        );
-                                                                    })}
+                                                                    {Object.entries(testValues).map(([k, v]) => (
+                                                                        <div key={k} className="flex justify-between items-center text-xs border-b border-gray-100 last:border-0 pb-1 last:pb-0">
+                                                                            <span className="text-gray-500 max-w-[55%] truncate pr-2" title={k}>{k}</span>
+                                                                            <span className="font-medium text-gray-900 truncate text-right" title={String(v)}>{String(v) || '-'}</span>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -315,35 +288,7 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                         />
                                     </div>
                                 )}
-                                {Object.keys(TEST_SCHEMA[selectedCategory] || {}).map(testName => (
-                                    <div key={testName} className="space-y-4 border border-gray-100 rounded-xl p-4 bg-white shadow-sm">
-                                        <h3 className="text-md font-bold text-gray-800 flex items-center gap-2">
-                                            {testName}
-                                        </h3>
-                                        <div className="bg-gray-50/30 p-4 rounded-xl border border-gray-100">
-                                            <DynamicForm 
-                                                schema={TEST_SCHEMA[selectedCategory]?.[testName]} 
-                                                values={testResults[selectedCategory]?.[testName]?.values || {}}
-                                                onChange={(fId, val) => handleResultChange(selectedCategory, testName, fId, val)}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-[13px] font-bold text-gray-600">Test Remarks & Observations</Label>
-                                            <textarea 
-                                                className="w-full p-3 min-h-[60px] text-sm border border-gray-200 bg-white rounded-lg focus:ring-1 focus:ring-primary/30 focus:border-primary outline-none transition-all resize-y"
-                                                placeholder={`Enter notes for ${testName}...`}
-                                                value={testResults[selectedCategory]?.[testName]?.remarks || ""}
-                                                onChange={(e) => setTestResults(prev => ({
-                                                    ...prev,
-                                                    [selectedCategory]: {
-                                                        ...(prev[selectedCategory] || {}),
-                                                        [testName]: { ...((prev[selectedCategory] || {})[testName] || {}), remarks: e.target.value }
-                                                    }
-                                                }))}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
+                                
                             </div>
                             <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50/80 backdrop-blur-sm shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
                                 <Button variant="ghost" className="px-6 rounded-xl hover:bg-gray-200/50 font-medium text-gray-600" onClick={() => setSelectedCategory(null)} disabled={isSaving}>Cancel</Button>

@@ -80,6 +80,11 @@ const ExpensesProvider = ({ children }) => {
 
         try {
             const dbPayload = mapToDb(expenseWithId);
+            // Remove temp string ID before insert, DB will generate a bigint ID
+            if (typeof dbPayload.id === 'string' && dbPayload.id.startsWith('exp_')) {
+                delete dbPayload.id;
+            }
+
             const { error, data } = await supabase
                 .from('expenses')
                 .insert(dbPayload)
