@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MATERIALS } from '@/data/config';
+import { MATERIALS, ROLES } from '@/data/config';
 import GeotechTestForm from './GeotechTestForm';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -139,13 +139,19 @@ const TestingManager = ({ initialJobId, onClose }) => {
     const hasMaterialsGap = samples.length > 0 && sampleCategories.length === 0;
     const allCategories = [...new Set([...sampleCategories, ...dataCats])];
 
+    // Names of geotechnical material types (matched against TEST_SCHEMA keys)
+    const GEOTECH_NAMES = ['Soil', 'Rock', 'Soil and Rock'];
+
+    const isSoilTech = user?.role === ROLES.TECHNICIAN.slug && user?.departments?.includes('Soil Investigation');
+
     // Admin sees all; Technicians see only authorized or already-recorded categories
     const visibleCategories = isAdmin()
         ? allCategories
-        : allCategories.filter(c => techCapabilities.includes(c) || dataCats.includes(c));
-
-    // Names of geotechnical material types (matched against TEST_SCHEMA keys)
-    const GEOTECH_NAMES = ['Soil', 'Rock', 'Soil and Rock'];
+        : allCategories.filter(c => {
+            if (techCapabilities.includes(c) || dataCats.includes(c)) return true;
+            if (isSoilTech && GEOTECH_NAMES.includes(c)) return true;
+            return false;
+        });
 
     return (
         <div className="w-full animate-in fade-in duration-500">

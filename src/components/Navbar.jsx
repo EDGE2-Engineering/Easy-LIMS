@@ -104,6 +104,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     { navItemId: NAV_ITEM_IDS.DASHBOARD,          view: VIEWS.DASHBOARD,          path: '/settings/dashboard',        label: 'Dashboard',   icon: LayoutDashboard },
     { navItemId: NAV_ITEM_IDS.ANALYST_DASHBOARD,  view: VIEWS.ANALYST_DASHBOARD,  path: '/settings/analyst_dashboard',label: 'My Dashboard',icon: LayoutDashboard },
     { navItemId: NAV_ITEM_IDS.ACCOUNTS_DASHBOARD, view: VIEWS.ACCOUNTS_DASHBOARD, path: '/settings/accounts_dashboard',label: 'My Dashboard',icon: LayoutDashboard },
+    { navItemId: NAV_ITEM_IDS.TECHNICIAN_DASHBOARD, view: VIEWS.TECHNICIAN_DASHBOARD, path: '/settings/technician_dashboard', label: 'My Dashboard', icon: LayoutDashboard },
     { navItemId: NAV_ITEM_IDS.JOBS,               view: VIEWS.JOBS,               path: '/settings/jobs',             label: 'Jobs',        icon: Briefcase },
     { navItemId: NAV_ITEM_IDS.INQUIRIES,          view: VIEWS.INQUIRIES,          path: '/settings/inquiries',        label: 'Inquiries',   icon: MessageSquare },
     { navItemId: NAV_ITEM_IDS.MATERIAL_INWARD,    view: VIEWS.MATERIAL_INWARD,    path: '/settings/inward_register',  label: 'Inward',      icon: Package },

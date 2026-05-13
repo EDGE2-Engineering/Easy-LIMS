@@ -94,7 +94,8 @@ export const VIEWS = {
     INQUIRIES: 'Inquiries',
     ORGANIZATION: 'Organization',
     ANALYST_DASHBOARD: 'Analyst Dashboard',
-    ACCOUNTS_DASHBOARD: 'Accounts Dashboard'
+    ACCOUNTS_DASHBOARD: 'Accounts Dashboard',
+    TECHNICIAN_DASHBOARD: 'Technician Dashboard'
 };
 
 export const ACTIONS = {
@@ -131,6 +132,7 @@ export const NAV_ITEM_IDS = {
     MATERIAL_INWARD: 'material_inward',
     DOCUMENTS: 'documents',
     EXPENSES: 'expenses',
+    TECHNICIAN_DASHBOARD: 'technician_dashboard',
 };
 
 // IDs for settings dropdown sub-items (used in APP_CONFIG.navbar.settingsItems)
@@ -306,7 +308,8 @@ export const APP_CONFIG = {
                 NAV_ITEM_IDS.JOBS,
             ],
             [ROLES.TECHNICIAN.slug]: [
-                // Testing view is commented-out globally; add NAV_ITEM_IDS.TESTING when re-enabled
+                NAV_ITEM_IDS.TECHNICIAN_DASHBOARD,
+                NAV_ITEM_IDS.JOBS,
             ],
             [ROLES.MRO.slug]: [
                 NAV_ITEM_IDS.MATERIAL_INWARD,
@@ -358,7 +361,7 @@ export const APP_CONFIG = {
         [ROLES.SUPER_ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.ACCOUNTS_DASHBOARD),
         [ROLES.ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.ACCOUNTS_DASHBOARD),
         [ROLES.ANALYST.slug]: [VIEWS.ANALYST_DASHBOARD, VIEWS.JOBS],
-        [ROLES.TECHNICIAN.slug]: [VIEWS.TESTING],
+        [ROLES.TECHNICIAN.slug]: [VIEWS.TECHNICIAN_DASHBOARD, VIEWS.JOBS, VIEWS.TESTING],
         [ROLES.MRO.slug]: [VIEWS.MATERIAL_INWARD],
         [ROLES.ACCOUNTS.slug]: [VIEWS.ACCOUNTS_DASHBOARD, VIEWS.DOCUMENTS, VIEWS.EXPENSES],
         [ROLES.HUMAN_RESOURCE.slug]: [VIEWS.WORK_LOG, VIEWS.APPROVALS]

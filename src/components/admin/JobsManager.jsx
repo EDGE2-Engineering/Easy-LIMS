@@ -168,8 +168,8 @@ const JobsManager = ({ id }) => {
             
             if (data) {
                 const actualJobId = data.id;
-                // Security check for analysts
-                if (!isAdmin() && user?.role === ROLES.ANALYST.slug) {
+                // Security check for analysts and technicians
+                if (!isAdmin() && (user?.role === ROLES.ANALYST.slug || user?.role === ROLES.TECHNICIAN.slug)) {
                     const { data: assignments, error: assignError } = await supabase
                         .from('job_to_technicians')
                         .select('id')
@@ -339,7 +339,7 @@ const JobsManager = ({ id }) => {
                 let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
                 if (isNaN(userId)) userId = -1;
 
-                if (user?.role === ROLES.ANALYST.slug) {
+                if (user?.role === ROLES.ANALYST.slug || user?.role === ROLES.TECHNICIAN.slug) {
                     const { data: assignments } = await supabase
                         .from('job_to_technicians')
                         .select('job_id')

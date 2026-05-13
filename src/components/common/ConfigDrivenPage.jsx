@@ -19,6 +19,7 @@ const UtilitiesManager = lazy(() => import('@/components/admin/UtilitiesManager.
 const AdminDashboard = lazy(() => import('@/components/admin/AdminDashboard.jsx'));
 const AnalystDashboard = lazy(() => import('@/components/admin/AnalystDashboard.jsx'));
 const AccountsDashboard = lazy(() => import('@/components/admin/AccountsDashboard.jsx'));
+const TechnicianDashboard = lazy(() => import('@/components/admin/TechnicianDashboard.jsx'));
 const ApprovalsManager = lazy(() => import('@/components/admin/ApprovalsManager.jsx'));
 const AdminClientPricingManager = lazy(() => import('@/components/admin/AdminClientPricingManager.jsx'));
 const AdminOrganizationSettings = lazy(() => import('@/components/admin/AdminOrganizationSettings.jsx'));
@@ -28,6 +29,7 @@ const COMPONENT_MAP = {
   [VIEWS.DASHBOARD]: AdminDashboard,
   [VIEWS.ANALYST_DASHBOARD]: AnalystDashboard,
   [VIEWS.ACCOUNTS_DASHBOARD]: AccountsDashboard,
+  [VIEWS.TECHNICIAN_DASHBOARD]: TechnicianDashboard,
   [VIEWS.APPROVALS]: ApprovalsManager,
   [VIEWS.JOBS]: JobsManager,
   [VIEWS.MATERIAL_INWARD]: MaterialInwardManager,
