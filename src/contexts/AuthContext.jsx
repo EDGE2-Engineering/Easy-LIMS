@@ -4,6 +4,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { ROLES, DEPARTMENTS } from '@/data/config';
 import { STORAGE_KEYS } from '@/data/storageKeys';
+import { useToast } from '@/components/ui/use-toast';
 
 
 const AuthContext = createContext();
@@ -13,6 +14,9 @@ const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+    const { toast } = useToast();
+
+    const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
     const notifyLogin = useCallback(async (username, fullName) => {
         const message = `🔔 *Login Alert*\n\nUser: \`${fullName}\` (@${username})`;
@@ -81,6 +85,41 @@ const AuthProvider = ({ children }) => {
         setUser(null);
         localStorage.removeItem(STORAGE_KEYS.SESSION);
     }, []);
+
+    // Inactivity timeout logic
+    useEffect(() => {
+        let timeoutId;
+
+        const resetTimer = () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            if (user) {
+                timeoutId = setTimeout(() => {
+                    logout();
+                    toast({
+                        title: "Session Timed Out",
+                        description: "You have been logged out due to inactivity.",
+                        variant: "destructive",
+                    });
+                }, INACTIVITY_TIMEOUT);
+            }
+        };
+
+        const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+
+        if (user) {
+            resetTimer();
+            activityEvents.forEach(event => {
+                window.addEventListener(event, resetTimer);
+            });
+        }
+
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            activityEvents.forEach(event => {
+                window.removeEventListener(event, resetTimer);
+            });
+        };
+    }, [user, logout, toast, INACTIVITY_TIMEOUT]);
 
     const isSuperAdmin = useCallback(() => user?.role === ROLES.SUPER_ADMIN.slug, [user?.role]);
     const isAdmin = useCallback(() => user?.role === ROLES.ADMIN.slug || user?.role === ROLES.SUPER_ADMIN.slug, [user?.role]);

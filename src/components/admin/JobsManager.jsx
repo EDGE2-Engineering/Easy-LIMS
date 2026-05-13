@@ -600,21 +600,21 @@ const JobsManager = ({ id }) => {
 
     if (editingRecord) {
         return (
-            <div className="space-y-6 bg-white p-8 rounded-2xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-right-4 duration-500">
+            <div className="space-y-6 bg-white p-2 rounded-xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-right-4 duration-500">
                 <div className="flex justify-between items-center mb-8">
                     <div className="flex items-center gap-4">
                         <Button variant="ghost" size="icon" onClick={() => navigate('/settings/jobs')} className="rounded-full bg-gray-50 hover:bg-primary/10 hover:text-primary transition-all">
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                         <div>
-                            <h2 className="text-xl font-bold text-gray-900">{isAddingNew ? 'Create New Job' : `Job ID: ${editingRecord.job_code}`}</h2>
-                            <p className="text-sm text-gray-500">Manage job details and track its progress in the laboratory workflow.</p>
+                            <h2 className="text-sm font-bold text-gray-900">{isAddingNew ? 'Create New Job' : `Job ID: ${editingRecord.job_code}`}</h2>
+                            <p className="text-xs text-gray-500">Manage job details and track its progress in the laboratory workflow.</p>
                         </div>
                     </div>
                 </div>
 
                 {!isAddingNew && (
-                    <div className="mb-10 space-y-6">
+                    <div className="mb-2 space-y-2">
                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Workflow Actions</h3>
                         <WorkflowPanel
                             jobId={editingRecord.id}

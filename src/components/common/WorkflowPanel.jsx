@@ -47,8 +47,8 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
     };
 
     return (
-        <Card className="mb-6 border-l-4 border-l-primary shadow-sm bg-background/50 backdrop-blur-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <Card className="mb-2 border-l-4 border-l-primary shadow-sm bg-background/50 backdrop-blur-sm">
+            <CardHeader className="space-y-0 p-2 flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                     Current Status: <span className="text-primary font-bold">{currentStateConfig?.label || currentStatus}</span>
                 </CardTitle>
