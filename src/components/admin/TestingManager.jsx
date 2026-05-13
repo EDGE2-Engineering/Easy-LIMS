@@ -24,6 +24,20 @@ import { camelCaseToTitleCase } from '@/lib/utils';
 // Names of geotechnical material types (matched against TEST_SCHEMA keys)
 const GEOTECH_NAMES = ['Soil', 'Rock', 'Soil and Rock'];
 
+const MANUAL_GEOTECH_FIELDS = [
+    { key: 'sample_mark', label: 'Sample Mark / ID', type: 'text' },
+    { key: 'depth', label: 'Depth (m)', type: 'text' },
+    { key: 'description', label: 'Soil Description', type: 'textarea' },
+    { key: 'moisture', label: 'Moisture Content (%)', type: 'number' },
+    { key: 'specific_gravity', label: 'Specific Gravity', type: 'number' },
+    { key: 'liquid_limit', label: 'Liquid Limit (LL)', type: 'number' },
+    { key: 'plastic_limit', label: 'Plastic Limit (PL)', type: 'number' },
+    { key: 'plasticity_index', label: 'Plasticity Index (PI)', type: 'number' },
+    { key: 'gravel', label: 'Gravel (%)', type: 'number' },
+    { key: 'sand', label: 'Sand (%)', type: 'number' },
+    { key: 'silt_clay', label: 'Silt & Clay (%)', type: 'number' },
+];
+
 const TestingManager = ({ initialJobId, onClose }) => {
     const [jobDetails, setJobDetails] = useState(null);
     const [samples, setSamples] = useState([]);
@@ -188,7 +202,7 @@ const TestingManager = ({ initialJobId, onClose }) => {
 
                             {visibleCategories.map(cat => {
                                 const assignedTestTypes = (jobDetails.test_types || {})[cat] || [];
-                                const dataTestTypes = Object.keys(testResults[cat] || {}).filter(k => k !== 'GeotechData');
+                                const dataTestTypes = Object.keys(testResults[cat] || {}).filter(k => k !== 'GeotechData' && k !== 'ManualData');
                                 const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
                                 return (
                                     <TabsContent key={cat} value={cat} className="space-y-6 outline-none">
@@ -445,6 +459,30 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                                     </div>
                                                 </div>
                                             )}
+                                            
+                                            {/* Manual Geotech Data Card */}
+                                            {testResults[cat]?.['ManualData'] && Object.keys(testResults[cat]?.['ManualData']).length > 0 && (
+                                                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full md:col-span-1 lg:col-span-1">
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
+                                                            <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                                            Manual Investigation Data
+                                                        </h4>
+                                                        <div className="space-y-2 mt-4 bg-gray-50/50 p-3 rounded-lg border">
+                                                            {Object.entries(testResults[cat]?.['ManualData']).map(([key, val]) => {
+                                                                if (!val) return null;
+                                                                const field = MANUAL_GEOTECH_FIELDS.find(f => f.key === key);
+                                                                return (
+                                                                    <div key={key} className="flex justify-between items-start text-xs border-b border-gray-100 last:border-0 pb-1 last:pb-0">
+                                                                        <span className="text-gray-500 font-medium">{field?.label || key}:</span>
+                                                                        <span className="text-gray-900 font-bold text-right ml-2">{val}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                             {testTypes.map(testName => {
                                                 const testValues = testResults[cat]?.[testName]?.values || {};
                                                 const hasData = Object.keys(testValues).length > 0;
@@ -560,75 +598,122 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                         {/* Manual Form (Regular Tests or Geotech in Manual Mode) */}
                                         {((!GEOTECH_NAMES.includes(selectedCategory)) || entryMode === 'Manual') && (
                                             <div className="space-y-6">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    {(() => {
-                                                        const assignedTestTypes = (jobDetails.test_types || {})[selectedCategory] || [];
-                                                        const dataTestTypes = Object.keys(testResults[selectedCategory] || {}).filter(k => k !== 'GeotechData');
-                                                        const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
-
-                                                        if (testTypes.length === 0) {
-                                                            return (
-                                                                <div className="col-span-full p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                                                                    <p className="text-gray-500 text-sm">No regular tests assigned to this category.</p>
-                                                                    <p className="text-xs text-gray-400 mt-1">Assign tests in the Job Manager to see them here.</p>
-                                                                </div>
-                                                            );
-                                                        }
-
-                                                        return testTypes.map(testName => (
-                                                            <div key={testName} className="p-4 rounded-xl border border-gray-100 bg-white shadow-sm space-y-4">
-                                                                <div className="flex items-center justify-between border-b pb-2 mb-2">
-                                                                    <h4 className="text-sm font-bold text-gray-800">{testName}</h4>
-                                                                    <Badge variant="outline" className="text-[10px] uppercase font-bold">Regular Test</Badge>
-                                                                </div>
-                                                                <div className="space-y-3">
-                                                                    {/* This is a simplified dynamic field entry. 
-                                                                        Ideally, this would be driven by a TEST_SCHEMA config.
-                                                                        For now, we'll allow entering a "Result" value. */}
-                                                                    <div className="grid gap-2">
-                                                                        <Label className="text-[10px] font-bold text-gray-400 uppercase">Test Value / Result</Label>
-                                                                        <Input 
-                                                                            value={testResults[selectedCategory]?.[testName]?.values?.['Result'] || ''}
+                                                {GEOTECH_NAMES.includes(selectedCategory) && entryMode === 'Manual' ? (
+                                                    <div className="space-y-6">
+                                                        <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 flex items-center gap-3 mb-4">
+                                                            <AlertCircle className="w-4 h-4 text-amber-500" />
+                                                            <p className="text-xs text-amber-800">Entering manual geotechnical data for <strong>{selectedCategory}</strong>. This is typically used for Trial Pits or Manual Auger investigations.</p>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                            {MANUAL_GEOTECH_FIELDS.map(field => (
+                                                                <div key={field.key} className={`p-4 rounded-xl border border-gray-100 bg-white shadow-sm space-y-2 ${field.type === 'textarea' ? 'col-span-full' : ''}`}>
+                                                                    <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{field.label}</Label>
+                                                                    {field.type === 'textarea' ? (
+                                                                        <textarea 
+                                                                            value={testResults[selectedCategory]?.['ManualData']?.[field.key] || ''}
                                                                             onChange={(e) => setTestResults(prev => ({
                                                                                 ...prev,
                                                                                 [selectedCategory]: {
                                                                                     ...(prev[selectedCategory] || {}),
-                                                                                    [testName]: {
-                                                                                        ...(prev[selectedCategory]?.[testName] || {}),
-                                                                                        values: {
-                                                                                            ...(prev[selectedCategory]?.[testName]?.values || {}),
-                                                                                            'Result': e.target.value
-                                                                                        }
+                                                                                    'ManualData': {
+                                                                                        ...(prev[selectedCategory]?.['ManualData'] || {}),
+                                                                                        [field.key]: e.target.value
                                                                                     }
                                                                                 }
                                                                             }))}
-                                                                            placeholder="Enter numerical or descriptive result"
+                                                                            className="w-full min-h-[80px] p-2 text-sm border rounded-lg focus:ring-1 focus:ring-primary outline-none transition-all"
+                                                                            placeholder={`Enter ${field.label.toLowerCase()}...`}
+                                                                        />
+                                                                    ) : (
+                                                                        <Input 
+                                                                            type={field.type}
+                                                                            value={testResults[selectedCategory]?.['ManualData']?.[field.key] || ''}
+                                                                            onChange={(e) => setTestResults(prev => ({
+                                                                                ...prev,
+                                                                                [selectedCategory]: {
+                                                                                    ...(prev[selectedCategory] || {}),
+                                                                                    'ManualData': {
+                                                                                        ...(prev[selectedCategory]?.['ManualData'] || {}),
+                                                                                        [field.key]: e.target.value
+                                                                                    }
+                                                                                }
+                                                                            }))}
+                                                                            placeholder={`--`}
                                                                             className="h-9"
                                                                         />
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        {(() => {
+                                                            const assignedTestTypes = (jobDetails.test_types || {})[selectedCategory] || [];
+                                                            const dataTestTypes = Object.keys(testResults[selectedCategory] || {}).filter(k => k !== 'GeotechData' && k !== 'ManualData');
+                                                            const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
+
+                                                            if (testTypes.length === 0) {
+                                                                return (
+                                                                    <div className="col-span-full p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                                                        <p className="text-gray-500 text-sm">No regular tests assigned to this category.</p>
+                                                                        <p className="text-xs text-gray-400 mt-1">Assign tests in the Job Manager to see them here.</p>
                                                                     </div>
-                                                                    <div className="grid gap-2">
-                                                                        <Label className="text-[10px] font-bold text-gray-400 uppercase">Remarks</Label>
-                                                                        <Input 
-                                                                            value={testResults[selectedCategory]?.[testName]?.remarks || ''}
-                                                                            onChange={(e) => setTestResults(prev => ({
-                                                                                ...prev,
-                                                                                [selectedCategory]: {
-                                                                                    ...(prev[selectedCategory] || {}),
-                                                                                    [testName]: {
-                                                                                        ...(prev[selectedCategory]?.[testName] || {}),
-                                                                                        remarks: e.target.value
+                                                                );
+                                                            }
+
+                                                            return testTypes.map(testName => (
+                                                                <div key={testName} className="p-4 rounded-xl border border-gray-100 bg-white shadow-sm space-y-4">
+                                                                    <div className="flex items-center justify-between border-b pb-2 mb-2">
+                                                                        <h4 className="text-sm font-bold text-gray-800">{testName}</h4>
+                                                                        <Badge variant="outline" className="text-[10px] uppercase font-bold">Regular Test</Badge>
+                                                                    </div>
+                                                                    <div className="space-y-3">
+                                                                        <div className="grid gap-2">
+                                                                            <Label className="text-[10px] font-bold text-gray-400 uppercase">Test Value / Result</Label>
+                                                                            <Input 
+                                                                                value={testResults[selectedCategory]?.[testName]?.values?.['Result'] || ''}
+                                                                                onChange={(e) => setTestResults(prev => ({
+                                                                                    ...prev,
+                                                                                    [selectedCategory]: {
+                                                                                        ...(prev[selectedCategory] || {}),
+                                                                                        [testName]: {
+                                                                                            ...(prev[selectedCategory]?.[testName] || {}),
+                                                                                            values: {
+                                                                                                ...(prev[selectedCategory]?.[testName]?.values || {}),
+                                                                                                'Result': e.target.value
+                                                                                            }
+                                                                                        }
                                                                                     }
-                                                                                }
-                                                                            }))}
-                                                                            placeholder="Optional remarks"
-                                                                            className="h-9 text-xs"
-                                                                        />
+                                                                                }))}
+                                                                                placeholder="Enter numerical or descriptive result"
+                                                                                className="h-9"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="grid gap-2">
+                                                                            <Label className="text-[10px] font-bold text-gray-400 uppercase">Remarks</Label>
+                                                                            <Input 
+                                                                                value={testResults[selectedCategory]?.[testName]?.remarks || ''}
+                                                                                onChange={(e) => setTestResults(prev => ({
+                                                                                    ...prev,
+                                                                                    [selectedCategory]: {
+                                                                                        ...(prev[selectedCategory] || {}),
+                                                                                        [testName]: {
+                                                                                            ...(prev[selectedCategory]?.[testName] || {}),
+                                                                                            remarks: e.target.value
+                                                                                        }
+                                                                                    }
+                                                                                }))}
+                                                                                placeholder="Optional remarks"
+                                                                                className="h-9 text-xs"
+                                                                            />
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        ));
-                                                    })()}
-                                                </div>
+                                                            ));
+                                                        })()}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>

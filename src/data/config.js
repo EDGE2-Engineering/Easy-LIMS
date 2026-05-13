@@ -66,7 +66,6 @@ export const WORKFLOW_STATES = {
     MATERIAL_RECEIVED: 'MATERIAL_RECEIVED',
     TECHNICIANS_ASSIGNED: 'TECHNICIANS_ASSIGNED',
     UNDER_TESTING: 'UNDER_TESTING',
-    TESTING_COMPLETE: 'TESTING_COMPLETE',
     UNDER_REVIEW: 'UNDER_REVIEW',
     DATA_VERIFIED: 'DATA_VERIFIED',
     REPORT_GENERATED: 'REPORT_GENERATED',
@@ -99,23 +98,22 @@ export const VIEWS = {
 };
 
 export const ACTIONS = {
-    SEND_QUOTATION: { name: 'SEND_QUOTATION', label: 'Create Quotation' },
-    RECEIVE_WORK_ORDER: { name: 'RECEIVE_WORK_ORDER', label: 'Receive Work Order' },
-    RECEIVE_MATERIAL: { name: 'RECEIVE_MATERIAL', label: 'Receive Material' },
-    ASSIGN_TECHNICIANS: { name: 'ASSIGN_TECHNICIANS', label: 'Assign Technicians' },
-    START_TESTING: { name: 'START_TESTING', label: 'Start Testing' },
-    COMPLETE_TESTING: { name: 'COMPLETE_TESTING', label: 'Complete Testing' },
-    SUBMIT_FOR_REVIEW: { name: 'SUBMIT_FOR_REVIEW', label: 'Submit for Review' },
-    APPROVE_TEST_RESULTS: { name: 'APPROVE_TEST_RESULTS', label: 'Approve Test Results' },
-    REJECT_TEST_RESULTS: { name: 'REJECT_TEST_RESULTS', label: 'Reject Test Results' },
-    GENERATE_REPORT: { name: 'GENERATE_REPORT', label: 'Generate Report' },
-    SUBMIT_REPORT_REVIEW: { name: 'SUBMIT_REPORT_REVIEW', label: 'Submit for Review' },
-    SIGN_REPORT: { name: 'SIGN_REPORT', label: 'Sign Report' },
-    GENERATE_INVOICE: { name: 'GENERATE_INVOICE', label: 'Generate Invoice' },
-    SEND_TO_CLIENT: { name: 'SEND_TO_CLIENT', label: 'Send to Client' },
-    CONFIRM_PAYMENT: { name: 'CONFIRM_PAYMENT', label: 'Confirm Payment' },
-    RELEASE_REPORT: { name: 'RELEASE_REPORT', label: 'Release Report' },
-    MARK_JOB_COMPLETE: { name: 'MARK_JOB_COMPLETE', label: 'Mark as Complete' }
+    SEND_QUOTATION: { name: 'SEND_QUOTATION', label: 'Create Quotation', description: 'Generate a formal quotation for the client based on requested tests.' },
+    RECEIVE_WORK_ORDER: { name: 'RECEIVE_WORK_ORDER', label: 'Receive Work Order', description: 'Log the client\'s confirmed work order into the system.' },
+    RECEIVE_MATERIAL: { name: 'RECEIVE_MATERIAL', label: 'Receive Material', description: 'Record the arrival of samples and perform material inwarding.' },
+    ASSIGN_TECHNICIANS: { name: 'ASSIGN_TECHNICIANS', label: 'Assign Technicians', description: 'Assign specific lab personnel to perform the required tests.' },
+    START_TESTING: { name: 'START_TESTING', label: 'Start Testing', description: 'Initiate the laboratory testing process for the assigned samples.' },
+    COMPLETE_TESTING_AND_SUBMIT_FOR_REVIEW: { name: 'COMPLETE_TESTING_AND_SUBMIT_FOR_REVIEW', label: 'Complete Testing & Submit for Review', description: 'Finish all tests, enter results, and submit them for administrative review.' },
+    APPROVE_TEST_RESULTS: { name: 'APPROVE_TEST_RESULTS', label: 'Approve Test Results', description: 'Verify and approve the laboratory test data for accuracy.' },
+    REJECT_TEST_RESULTS: { name: 'REJECT_TEST_RESULTS', label: 'Reject Test Results', description: 'Identify issues in test data and send back for re-testing.' },
+    GENERATE_REPORT: { name: 'GENERATE_REPORT', label: 'Generate Report', description: 'Prepare the final technical report based on approved test data.' },
+    SUBMIT_REPORT_REVIEW: { name: 'SUBMIT_REPORT_REVIEW', label: 'Submit for Review', description: 'Submit the generated report for final quality and technical review.' },
+    SIGN_REPORT: { name: 'SIGN_REPORT', label: 'Sign Report', description: 'Digitally sign the report to finalize and authorize it for release.' },
+    GENERATE_INVOICE: { name: 'GENERATE_INVOICE', label: 'Generate Invoice', description: 'Create a tax invoice for the services rendered.' },
+    SEND_TO_CLIENT: { name: 'SEND_TO_CLIENT', label: 'Send to Client', description: 'Dispatch the invoice and notifications to the client.' },
+    CONFIRM_PAYMENT: { name: 'CONFIRM_PAYMENT', label: 'Confirm Payment', description: 'Verify that payment has been received and logged in accounts.' },
+    RELEASE_REPORT: { name: 'RELEASE_REPORT', label: 'Release Report', description: 'Officially release the signed report to the client.' },
+    MARK_JOB_COMPLETE: { name: 'MARK_JOB_COMPLETE', label: 'Mark as Complete', description: 'Close the job after all deliverables and payments are finalized.' }
 };
 
 export const NAVBAR_ACTIONS = {
@@ -155,113 +153,106 @@ export const APP_CONFIG = {
                 label: 'Job Created',
                 color: { bg: '#f1f5f9', text: '#475569', border: '#cbd5e1' },
                 actions: [
-                    { id: ACTIONS.SEND_QUOTATION.name, label: ACTIONS.SEND_QUOTATION.label, targetState: WORKFLOW_STATES.QUOTATION_SENT, roles: [ROLES.ADMIN.slug, ROLES.MRO.slug], navigate: '/doc/new?jobId={jobId}&type=Quotation' }
+                    { id: ACTIONS.SEND_QUOTATION.name, label: ACTIONS.SEND_QUOTATION.label, description: ACTIONS.SEND_QUOTATION.description, targetState: WORKFLOW_STATES.QUOTATION_SENT, roles: [ROLES.ADMIN.slug, ROLES.MRO.slug], navigate: '/doc/new?jobId={jobId}&type=Quotation' }
                 ]
             },
             [WORKFLOW_STATES.QUOTATION_SENT]: {
                 label: 'Quotation Created',
                 color: { bg: '#fffbeb', text: '#92400e', border: '#fcd34d' },
                 actions: [
-                    { id: ACTIONS.RECEIVE_WORK_ORDER.name, label: ACTIONS.RECEIVE_WORK_ORDER.label, targetState: WORKFLOW_STATES.WORK_ORDER_RECEIVED, roles: [ROLES.ADMIN.slug, ROLES.MRO.slug] }
+                    { id: ACTIONS.RECEIVE_WORK_ORDER.name, label: ACTIONS.RECEIVE_WORK_ORDER.label, description: ACTIONS.RECEIVE_WORK_ORDER.description, targetState: WORKFLOW_STATES.WORK_ORDER_RECEIVED, roles: [ROLES.ADMIN.slug, ROLES.MRO.slug] }
                 ]
             },
             [WORKFLOW_STATES.WORK_ORDER_RECEIVED]: {
                 label: 'Work Order Received',
                 color: { bg: '#fff7ed', text: '#9a3412', border: '#fdba74' },
                 actions: [
-                    { id: ACTIONS.RECEIVE_MATERIAL.name, label: ACTIONS.RECEIVE_MATERIAL.label, targetState: WORKFLOW_STATES.MATERIAL_RECEIVED, roles: [ROLES.ADMIN.slug, ROLES.MRO.slug] }
+                    { id: ACTIONS.RECEIVE_MATERIAL.name, label: ACTIONS.RECEIVE_MATERIAL.label, description: ACTIONS.RECEIVE_MATERIAL.description, targetState: WORKFLOW_STATES.MATERIAL_RECEIVED, roles: [ROLES.ADMIN.slug, ROLES.MRO.slug] }
                 ]
             },
             [WORKFLOW_STATES.MATERIAL_RECEIVED]: {
                 label: 'Material Received',
                 color: { bg: '#fef3c7', text: '#78350f', border: '#f59e0b' },
                 actions: [
-                    { id: ACTIONS.ASSIGN_TECHNICIANS.name, label: ACTIONS.ASSIGN_TECHNICIANS.label, targetState: WORKFLOW_STATES.TECHNICIANS_ASSIGNED, roles: [ROLES.ADMIN.slug] }
+                    { id: ACTIONS.ASSIGN_TECHNICIANS.name, label: ACTIONS.ASSIGN_TECHNICIANS.label, description: ACTIONS.ASSIGN_TECHNICIANS.description, targetState: WORKFLOW_STATES.TECHNICIANS_ASSIGNED, roles: [ROLES.ADMIN.slug] }
                 ]
             },
             [WORKFLOW_STATES.TECHNICIANS_ASSIGNED]: {
                 label: 'Technicians Assigned',
                 color: { bg: '#fef9c3', text: '#713f12', border: '#fde047' },
                 actions: [
-                    { id: ACTIONS.START_TESTING.name, label: ACTIONS.START_TESTING.label, targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.TECHNICIAN.slug, ROLES.ADMIN.slug, ROLES.ANALYST.slug] }
+                    { id: ACTIONS.START_TESTING.name, label: ACTIONS.START_TESTING.label, description: ACTIONS.START_TESTING.description, targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.TECHNICIAN.slug, ROLES.ADMIN.slug, ROLES.ANALYST.slug] }
                 ]
             },
             [WORKFLOW_STATES.UNDER_TESTING]: {
                 label: 'Under Testing',
                 color: { bg: '#eff6ff', text: '#1d4ed8', border: '#93c5fd' },
                 actions: [
-                    { id: ACTIONS.COMPLETE_TESTING.name, label: ACTIONS.COMPLETE_TESTING.label, targetState: WORKFLOW_STATES.TESTING_COMPLETE, roles: [ROLES.TECHNICIAN.slug, ROLES.ADMIN.slug, ROLES.ANALYST.slug] }
-                ]
-            },
-            [WORKFLOW_STATES.TESTING_COMPLETE]: {
-                label: 'Testing Complete',
-                color: { bg: '#dbeafe', text: '#1e40af', border: '#60a5fa' },
-                actions: [
-                    { id: ACTIONS.SUBMIT_FOR_REVIEW.name, label: ACTIONS.SUBMIT_FOR_REVIEW.label, targetState: WORKFLOW_STATES.UNDER_REVIEW, roles: [ROLES.TECHNICIAN.slug, ROLES.ADMIN.slug, ROLES.ANALYST.slug] }
+                    { id: ACTIONS.COMPLETE_TESTING_AND_SUBMIT_FOR_REVIEW.name, label: ACTIONS.COMPLETE_TESTING_AND_SUBMIT_FOR_REVIEW.label, description: ACTIONS.COMPLETE_TESTING_AND_SUBMIT_FOR_REVIEW.description, targetState: WORKFLOW_STATES.UNDER_REVIEW, roles: [ROLES.TECHNICIAN.slug, ROLES.ADMIN.slug, ROLES.ANALYST.slug] }
                 ]
             },
             [WORKFLOW_STATES.UNDER_REVIEW]: {
                 label: 'Under Review',
                 color: { bg: '#f5f3ff', text: '#6d28d9', border: '#c4b5fd' },
                 actions: [
-                    { id: ACTIONS.APPROVE_TEST_RESULTS.name, label: ACTIONS.APPROVE_TEST_RESULTS.label, targetState: WORKFLOW_STATES.DATA_VERIFIED, roles: [ROLES.ADMIN.slug] },
-                    { id: ACTIONS.REJECT_TEST_RESULTS.name, label: ACTIONS.REJECT_TEST_RESULTS.label, targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.ADMIN.slug] }
+                    { id: ACTIONS.APPROVE_TEST_RESULTS.name, label: ACTIONS.APPROVE_TEST_RESULTS.label, description: ACTIONS.APPROVE_TEST_RESULTS.description, targetState: WORKFLOW_STATES.DATA_VERIFIED, roles: [ROLES.ADMIN.slug] },
+                    { id: ACTIONS.REJECT_TEST_RESULTS.name, label: ACTIONS.REJECT_TEST_RESULTS.label, description: ACTIONS.REJECT_TEST_RESULTS.description, targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.ADMIN.slug] }
                 ]
             },
             [WORKFLOW_STATES.DATA_VERIFIED]: {
                 label: 'Data Verified',
                 color: { bg: '#ede9fe', text: '#5b21b6', border: '#a78bfa' },
                 actions: [
-                    { id: ACTIONS.GENERATE_REPORT.name, label: ACTIONS.GENERATE_REPORT.label, targetState: WORKFLOW_STATES.REPORT_GENERATED, roles: [ROLES.ADMIN.slug, ROLES.MRO.slug] }
+                    { id: ACTIONS.GENERATE_REPORT.name, label: ACTIONS.GENERATE_REPORT.label, description: ACTIONS.GENERATE_REPORT.description, targetState: WORKFLOW_STATES.REPORT_GENERATED, roles: [ROLES.ADMIN.slug, ROLES.MRO.slug] }
                 ]
             },
             [WORKFLOW_STATES.REPORT_GENERATED]: {
                 label: 'Report Generated',
                 color: { bg: '#fdf4ff', text: '#7e22ce', border: '#d8b4fe' },
                 actions: [
-                    { id: ACTIONS.SUBMIT_REPORT_REVIEW.name, label: ACTIONS.SUBMIT_REPORT_REVIEW.label, targetState: WORKFLOW_STATES.REPORT_UNDER_REVIEW, roles: [ROLES.ADMIN.slug, ROLES.MRO.slug] }
+                    { id: ACTIONS.SUBMIT_REPORT_REVIEW.name, label: ACTIONS.SUBMIT_REPORT_REVIEW.label, description: ACTIONS.SUBMIT_REPORT_REVIEW.description, targetState: WORKFLOW_STATES.REPORT_UNDER_REVIEW, roles: [ROLES.ADMIN.slug, ROLES.MRO.slug] }
                 ]
             },
             [WORKFLOW_STATES.REPORT_UNDER_REVIEW]: {
                 label: 'Report Under Review',
                 color: { bg: '#fce7f3', text: '#9d174d', border: '#f9a8d4' },
                 actions: [
-                    { id: ACTIONS.SIGN_REPORT.name, label: ACTIONS.SIGN_REPORT.label, targetState: WORKFLOW_STATES.REPORT_SIGNED, roles: [ROLES.ADMIN.slug] }
+                    { id: ACTIONS.SIGN_REPORT.name, label: ACTIONS.SIGN_REPORT.label, description: ACTIONS.SIGN_REPORT.description, targetState: WORKFLOW_STATES.REPORT_SIGNED, roles: [ROLES.ADMIN.slug] }
                 ]
             },
             [WORKFLOW_STATES.REPORT_SIGNED]: {
                 label: 'Report Signed',
                 color: { bg: '#ecfdf5', text: '#065f46', border: '#6ee7b7' },
                 actions: [
-                    { id: ACTIONS.GENERATE_INVOICE.name, label: ACTIONS.GENERATE_INVOICE.label, targetState: WORKFLOW_STATES.INVOICE_GENERATED, roles: [ROLES.ACCOUNTS.slug], navigate: '/doc/new?jobId={jobId}&type=Tax Invoice' }
+                    { id: ACTIONS.GENERATE_INVOICE.name, label: ACTIONS.GENERATE_INVOICE.label, description: ACTIONS.GENERATE_INVOICE.description, targetState: WORKFLOW_STATES.INVOICE_GENERATED, roles: [ROLES.ACCOUNTS.slug], navigate: '/doc/new?jobId={jobId}&type=Tax Invoice' }
                 ]
             },
             [WORKFLOW_STATES.INVOICE_GENERATED]: {
                 label: 'Invoice Generated',
                 color: { bg: '#f0fdfa', text: '#0f766e', border: '#5eead4' },
                 actions: [
-                    { id: ACTIONS.SEND_TO_CLIENT.name, label: ACTIONS.SEND_TO_CLIENT.label, targetState: WORKFLOW_STATES.AWAITING_PAYMENT, roles: [ROLES.ACCOUNTS.slug] }
+                    { id: ACTIONS.SEND_TO_CLIENT.name, label: ACTIONS.SEND_TO_CLIENT.label, description: ACTIONS.SEND_TO_CLIENT.description, targetState: WORKFLOW_STATES.AWAITING_PAYMENT, roles: [ROLES.ACCOUNTS.slug] }
                 ]
             },
             [WORKFLOW_STATES.AWAITING_PAYMENT]: {
                 label: 'Awaiting Payment',
                 color: { bg: '#fff1f2', text: '#be123c', border: '#fda4af' },
                 actions: [
-                    { id: ACTIONS.CONFIRM_PAYMENT.name, label: ACTIONS.CONFIRM_PAYMENT.label, targetState: WORKFLOW_STATES.PAYMENT_RECEIVED, roles: [ROLES.ACCOUNTS.slug] }
+                    { id: ACTIONS.CONFIRM_PAYMENT.name, label: ACTIONS.CONFIRM_PAYMENT.label, description: ACTIONS.CONFIRM_PAYMENT.description, targetState: WORKFLOW_STATES.PAYMENT_RECEIVED, roles: [ROLES.ACCOUNTS.slug] }
                 ]
             },
             [WORKFLOW_STATES.PAYMENT_RECEIVED]: {
                 label: 'Payment Received',
                 color: { bg: '#f0fdf4', text: '#15803d', border: '#86efac' },
                 actions: [
-                    { id: ACTIONS.RELEASE_REPORT.name, label: ACTIONS.RELEASE_REPORT.label, targetState: WORKFLOW_STATES.REPORT_RELEASED, roles: [ROLES.ACCOUNTS.slug] }
+                    { id: ACTIONS.RELEASE_REPORT.name, label: ACTIONS.RELEASE_REPORT.label, description: ACTIONS.RELEASE_REPORT.description, targetState: WORKFLOW_STATES.REPORT_RELEASED, roles: [ROLES.ACCOUNTS.slug] }
                 ]
             },
             [WORKFLOW_STATES.REPORT_RELEASED]: {
                 label: 'Report Released',
                 color: { bg: '#dcfce7', text: '#166534', border: '#4ade80' },
                 actions: [
-                    { id: ACTIONS.MARK_JOB_COMPLETE.name, label: ACTIONS.MARK_JOB_COMPLETE.label, targetState: WORKFLOW_STATES.JOB_COMPLETE, roles: [ROLES.ADMIN.slug] }
+                    { id: ACTIONS.MARK_JOB_COMPLETE.name, label: ACTIONS.MARK_JOB_COMPLETE.label, description: ACTIONS.MARK_JOB_COMPLETE.description, targetState: WORKFLOW_STATES.JOB_COMPLETE, roles: [ROLES.ADMIN.slug] }
                 ]
             },
             [WORKFLOW_STATES.JOB_COMPLETE]: {

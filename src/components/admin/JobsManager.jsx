@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { cn } from '@/lib/utils';
 import { Search, Plus, ArrowLeft, Save, Loader2, Package, ArrowRight, FileText, ExternalLink, CheckCircle2, Edit, UserPlus, Trash2, AlertCircle, SortAsc, SortDesc, Calendar, Filter, X, Download } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -636,7 +637,7 @@ const JobsManager = ({ id }) => {
                             <p className="text-xs text-gray-500">Manage job details and track its progress in the laboratory workflow.</p>
                         </div>
                     </div>
-                    {!isAddingNew && (
+                    {!isAddingNew && isAdmin() && (
                         <Button
                             variant="ghost"
                             size="sm"
@@ -817,8 +818,8 @@ const JobsManager = ({ id }) => {
 
                 {/* Main Content Sections */}
                 <div className="space-y-10">
-                    <div className="bg-white p-4 rounded-sm border border-gray-100 shadow-sm">
-                        <div className="space-y-6">
+                    <div className={cn("bg-white p-4 rounded-sm border border-gray-100 shadow-sm", isAdmin() ? "block" : "hidden")}>
+                        <div className="space-y-6" >
                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Client Details</h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
