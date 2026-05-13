@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Loader2, AlertCircle, Package, CheckCircle2, FlaskConical, Beaker, Clock, Calendar, ArrowLeft, Save, X, Send, Edit } from 'lucide-react';
+import { Search, Loader2, AlertCircle, Package, CheckCircle2, FlaskConical, Beaker, Clock, Calendar, ArrowLeft, Save, X, Send, Edit, Layers, LandPlot } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
@@ -182,30 +182,252 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                     <TabsContent key={cat} value={cat} className="space-y-6 outline-none">
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                             {GEOTECH_NAMES.includes(cat) && (
-                                                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full md:col-span-2 lg:col-span-3">
+                                                <div className="fontbg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full md:col-span-2 lg:col-span-3">
                                                     <div>
-                                                        <h4 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
-                                                            <div className={`w-2 h-2 rounded-full ${Object.keys(testResults[cat]?.['GeotechData'] || {}).length > 0 ? 'bg-green-500' : 'bg-amber-400'}`} />
+                                                        <h4 className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
+                                                            {/* <div className={`w-2 h-2 rounded-full ${Object.keys(testResults[cat]?.['GeotechData'] || {}).length > 0 ? 'bg-green-500' : 'bg-amber-400'}`} /> */}
                                                             Geotechnical Data
                                                         </h4>
                                                         {!testResults[cat]?.['GeotechData'] || Object.keys(testResults[cat]?.['GeotechData'] || {}).length === 0 ? (
                                                             <p className="text-xs text-gray-500 mb-4">Pending geotechnical input</p>
                                                         ) : (
-                                                            <div className="text-sm text-gray-600 grid grid-cols-2 gap-4 mt-3">
-                                                                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex justify-between items-center">
-                                                                    <span className="font-semibold text-gray-700">Borehole Depths</span>
-                                                                    <span className="text-sm px-2 py-1 bg-green-100 text-green-700 rounded-md font-medium">{testResults[cat]['GeotechData'].boreholeLogs?.length || 0} Boreholes</span>
-                                                                </div>
-                                                                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex justify-between items-center">
-                                                                    <span className="font-semibold text-gray-700">Lab Tests</span>
-                                                                    <span className="text-sm px-2 py-1 bg-blue-100 text-blue-700 rounded-md font-medium">{testResults[cat]['GeotechData'].labTestResults?.length || 0} Boreholes</span>
-                                                                </div>
-                                                                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex justify-between items-center">
-                                                                    <span className="font-semibold text-gray-700">SBC Details</span>
-                                                                    <span className="text-sm px-2 py-1 bg-purple-100 text-purple-700 rounded-md font-medium">{testResults[cat]['GeotechData'].sbcDetails?.length || 0} Boreholes</span>
-                                                                </div>
-                                                                {/* Display more mini-summaries here as needed */}
-                                                                <p className="text-xs text-gray-400 italic col-span-full mt-1">Click Edit Results to manage complex geotechnical tables.</p>
+                                                            <div className="space-y-8 mt-4">
+                                                                {(() => {
+                                                                    const geotechData = testResults[cat]?.['GeotechData'] || {};
+                                                                    const { boreholeLogs = [], labTestResults = [], sbcDetails = [], grainSizeAnalysis = [] } = geotechData;
+                                                                    
+                                                                    return (
+                                                                        <>
+                                                                            {/* Borehole Logs Table */}
+                                                                            {boreholeLogs.some(bh => bh.length > 0) && (
+                                                                                <div className="space-y-3">
+                                                                                    <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                                                                        <FlaskConical className="w-3 h-3 text-primary" /> Borehole Logs
+                                                                                    </h5>
+                                                                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
+                                                                                        <table className="w-full text-left text-[11px]">
+                                                                                            <thead className="bg-gray-50 border-b">
+                                                                                                <tr>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">BH</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Depth (m)</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Sampling</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Soil Type</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">SPT (15/30/45)</th>
+                                                                                                </tr>
+                                                                                            </thead>
+                                                                                            <tbody className="divide-y divide-gray-50">
+                                                                                                {boreholeLogs.map((bh, bhIdx) => bh.map((d, dIdx) => (
+                                                                                                    <tr key={`bh-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
+                                                                                                        <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
+                                                                                                        <td className="p-3 text-gray-900 font-medium">{d.depth || '-'}</td>
+                                                                                                        <td className="p-3"><Badge variant="outline" className="text-[9px] font-bold py-0 h-4 bg-gray-50">{d.natureOfSampling || '-'}</Badge></td>
+                                                                                                        <td className="p-3 text-gray-600 max-w-[200px] truncate" title={d.soilType}>{d.soilType || '-'}</td>
+                                                                                                        <td className="p-3 font-mono text-gray-500">{d.spt1 || '-'}/{d.spt2 || '-'}/{d.spt3 || '-'}</td>
+                                                                                                    </tr>
+                                                                                                )))}
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Lab Test Results Table */}
+                                                                            {labTestResults.some(bh => bh.length > 0) && (
+                                                                                <div className="space-y-3">
+                                                                                    <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                                                                        <Beaker className="w-3 h-3 text-blue-500" /> Lab Test Results
+                                                                                    </h5>
+                                                                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
+                                                                                        <table className="w-full text-left text-[11px]">
+                                                                                            <thead className="bg-gray-50 border-b">
+                                                                                                <tr>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">BH</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Depth</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Density/Moist.</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Grain Size (G/S/SC)</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Atterberg (LL/PL/PI)</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">SG/FSI</th>
+                                                                                                </tr>
+                                                                                            </thead>
+                                                                                            <tbody className="divide-y divide-gray-50">
+                                                                                                {labTestResults.map((bh, bhIdx) => bh.map((d, dIdx) => (
+                                                                                                    <tr key={`lab-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
+                                                                                                        <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
+                                                                                                        <td className="p-3 text-gray-900 font-medium">{d.depth || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-600">{d.bulkDensity || '-'}/{d.moistureContent || '-'}%</td>
+                                                                                                        <td className="p-3 text-gray-600">{d.grainSizeDistribution?.gravel || '-'}/{d.grainSizeDistribution?.sand || '-'}/{d.grainSizeDistribution?.siltAndClay || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-600">{d.atterbergLimits?.liquidLimit || '-'}/{d.atterbergLimits?.plasticLimit || '-'}/{d.atterbergLimits?.plasticityIndex || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-600">{d.specificGravity || '-'}/{d.freeSwellIndex || '-'}%</td>
+                                                                                                    </tr>
+                                                                                                )))}
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* SBC Details Table */}
+                                                                            {sbcDetails.some(bh => bh.length > 0) && (
+                                                                                <div className="space-y-3">
+                                                                                    <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                                                                        <Package className="w-3 h-3 text-purple-500" /> SBC Details
+                                                                                    </h5>
+                                                                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden max-w-md">
+                                                                                        <table className="w-full text-left text-[11px]">
+                                                                                            <thead className="bg-gray-50 border-b">
+                                                                                                <tr>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">BH</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Depth (m)</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">SBC Value (t/m²)</th>
+                                                                                                </tr>
+                                                                                            </thead>
+                                                                                            <tbody className="divide-y divide-gray-50">
+                                                                                                {sbcDetails.map((bh, bhIdx) => bh.map((d, dIdx) => (
+                                                                                                    <tr key={`sbc-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
+                                                                                                        <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
+                                                                                                        <td className="p-3 text-gray-900 font-medium">{d.depth || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900 font-bold tabular-nums">{d.sbcValue || '-'}</td>
+                                                                                                    </tr>
+                                                                                                )))}
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Sub-Soil Profile Table */}
+                                                                            {geotechData.subSoilProfile?.some(bh => bh.length > 0) && (
+                                                                                <div className="space-y-3">
+                                                                                    <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                                                                        <LandPlot className="w-3 h-3 text-emerald-500" /> Sub-Soil Profile
+                                                                                    </h5>
+                                                                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
+                                                                                        <table className="w-full text-left text-[11px]">
+                                                                                            <thead className="bg-gray-50 border-b">
+                                                                                                <tr>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">BH</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Depth (m)</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Description</th>
+                                                                                                </tr>
+                                                                                            </thead>
+                                                                                            <tbody className="divide-y divide-gray-50">
+                                                                                                {geotechData.subSoilProfile.map((bh, bhIdx) => bh.map((d, dIdx) => (
+                                                                                                    <tr key={`profile-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
+                                                                                                        <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
+                                                                                                        <td className="p-3 text-gray-900 font-medium">{d.depth || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-600">{d.description || '-'}</td>
+                                                                                                    </tr>
+                                                                                                )))}
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Sieve Analysis Table */}
+                                                                            {grainSizeAnalysis.some(bh => bh.length > 0) && (
+                                                                                <div className="space-y-3">
+                                                                                    <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                                                                        <Layers className="w-3 h-3 text-orange-500" /> Sieve Analysis (Passing %)
+                                                                                    </h5>
+                                                                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
+                                                                                        <table className="w-full text-left text-[11px]">
+                                                                                            <thead className="bg-gray-50 border-b">
+                                                                                                <tr>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">BH</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Depth</th>
+                                                                                                    {[4.75, 2.36, 1.18, 0.60, 0.425, 0.30, 0.15, 0.075, 'Pan'].map(size => (
+                                                                                                        <th key={size} className="p-2 font-bold text-gray-400 text-center text-[9px] uppercase">{size}</th>
+                                                                                                    ))}
+                                                                                                </tr>
+                                                                                            </thead>
+                                                                                            <tbody className="divide-y divide-gray-50">
+                                                                                                {grainSizeAnalysis.map((bh, bhIdx) => bh.map((d, dIdx) => (
+                                                                                                    <tr key={`sieve-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
+                                                                                                        <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
+                                                                                                        <td className="p-3 text-gray-900 font-medium">{d.depth || '-'}</td>
+                                                                                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                                                                                                            <td key={num} className="p-2 text-center text-gray-500 font-mono">{d[`sieve${num}`] || '-'}</td>
+                                                                                                        ))}
+                                                                                                    </tr>
+                                                                                                )))}
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                            {/* Chemical Analysis Table */}
+                                                                            {geotechData.chemicalAnalysis?.some(d => d.phValue || d.sulphates) && (
+                                                                                <div className="space-y-3">
+                                                                                    <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                                                                        <FlaskConical className="w-3 h-3 text-rose-500" /> Chemical Analysis
+                                                                                    </h5>
+                                                                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden max-w-2xl">
+                                                                                        <table className="w-full text-left text-[11px]">
+                                                                                            <thead className="bg-gray-50 border-b">
+                                                                                                <tr>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">pH Value</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Sulphates</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Chlorides</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Other Parameters</th>
+                                                                                                </tr>
+                                                                                            </thead>
+                                                                                            <tbody className="divide-y divide-gray-50">
+                                                                                                {geotechData.chemicalAnalysis.map((d, idx) => (
+                                                                                                    <tr key={`chem-${idx}`} className="hover:bg-gray-50/30 transition-colors">
+                                                                                                        <td className="p-3 text-gray-900 font-medium">{d.phValue || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-600">{d.sulphates || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-600">{d.chlorides || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-500 italic text-[10px]">
+                                                                                                            {d.additionalKeys?.filter(k => k.key).map(k => `${k.key}: ${k.value}`).join(', ') || '-'}
+                                                                                                        </td>
+                                                                                                    </tr>
+                                                                                                ))}
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Direct Shear Results Table */}
+                                                                            {geotechData.directShearResults?.some(bh => bh.length > 0) && (
+                                                                                <div className="space-y-3">
+                                                                                    <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                                                                        <Beaker className="w-3 h-3 text-indigo-500" /> Direct Shear Results
+                                                                                    </h5>
+                                                                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden max-w-2xl">
+                                                                                        <table className="w-full text-left text-[11px]">
+                                                                                            <thead className="bg-gray-50 border-b">
+                                                                                                <tr>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">BH</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Shear Box Size</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Depth</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">c Value</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">phi Value</th>
+                                                                                                </tr>
+                                                                                            </thead>
+                                                                                            <tbody className="divide-y divide-gray-50">
+                                                                                                {geotechData.directShearResults.map((bh, bhIdx) => bh.map((d, dIdx) => (
+                                                                                                    <tr key={`shear-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
+                                                                                                        <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
+                                                                                                        <td className="p-3 text-gray-600">{d.shearBoxSize || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-600">{d.depthOfSample || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900 font-bold">{d.cValue || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900 font-bold">{d.phiValue || '-'}</td>
+                                                                                                    </tr>
+                                                                                                )))}
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                        </>
+                                                                    );
+                                                                })()}
+                                                                <p className="text-[10px] text-gray-400 italic mt-4 flex items-center gap-2">
+                                                                    <div className="w-1 h-1 rounded-full bg-gray-300" />
+                                                                    Click Edit Results to manage complex geotechnical tables.
+                                                                </p>
                                                             </div>
                                                         )}
                                                     </div>
