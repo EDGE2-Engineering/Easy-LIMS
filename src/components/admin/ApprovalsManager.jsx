@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { 
     CheckCircle2, XCircle, Clock, User, Calendar, 
     MessageSquare, AlertCircle, Filter, ChevronRight,
-    ArrowUpRight, Info, ShieldCheck
+    ArrowUpRight, Info, ShieldCheck, ExternalLink
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { WORKFLOW_STATES, ROLES } from '@/data/config';
 
 const ApprovalsManager = () => {
     const { toast } = useToast();
@@ -28,14 +29,42 @@ const ApprovalsManager = () => {
     const fetchRequests = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
+            // 1. Fetch Request Approvals (Leaves, etc)
+            const { data: requestData, error: requestError } = await supabase
                 .from('request_approvals')
                 .select('*, requester:users!request_approvals_requester_id_fkey(full_name, username, role), reviewer:users!request_approvals_reviewed_by_fkey(full_name, username)')
                 .eq('status', filter)
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
-            setRequests(data || []);
+            if (requestError) throw requestError;
+
+            // 2. Fetch Jobs Pending Review (if filter is PENDING)
+            let jobRequests = [];
+            if (filter === 'PENDING') {
+                const { data: jobs, error: jobsError } = await supabase
+                    .from('jobs')
+                    .select('*, clients(client_name), users:created_by(full_name)')
+                    .eq('status', WORKFLOW_STATES.UNDER_REVIEW);
+                
+                if (jobsError) throw jobsError;
+
+                jobRequests = (jobs || []).map(job => ({
+                    id: `job-${job.id}`,
+                    real_id: job.id,
+                    request_type: 'JOB_REVIEW',
+                    status: 'PENDING',
+                    created_at: job.updated_at || job.created_at,
+                    requester: job.users,
+                    request_data: {
+                        job_code: job.job_code,
+                        project_name: job.project_name,
+                        client_name: job.clients?.client_name,
+                        id: job.id
+                    }
+                }));
+            }
+
+            setRequests([...jobRequests, ...(requestData || [])]);
         } catch (error) {
             console.error("Error fetching requests:", error);
             toast({
@@ -50,23 +79,56 @@ const ApprovalsManager = () => {
 
     const handleAction = async (request, action, remarks) => {
         try {
-            const status = action === 'approve' ? 'APPROVED' : 'REJECTED';
-            const { error } = await supabase
-                .from('request_approvals')
-                .update({
-                    status: status,
-                    reviewed_by: user.id,
-                    reviewed_at: new Date().toISOString(),
-                    admin_remarks: remarks
-                })
-                .eq('id', request.id);
+            if (request.request_type === 'JOB_REVIEW') {
+                const targetState = action === 'approve' ? WORKFLOW_STATES.DATA_VERIFIED : WORKFLOW_STATES.UNDER_TESTING;
+                
+                // Update Job Status
+                const { error: updateError } = await supabase
+                    .from('jobs')
+                    .update({
+                        status: targetState,
+                        updated_at: new Date().toISOString(),
+                        updated_by: user.id
+                    })
+                    .eq('id', request.real_id);
 
-            if (error) throw error;
+                if (updateError) throw updateError;
 
-            toast({
-                title: "Success",
-                description: `Request ${status.toLowerCase()} successfully.`,
-            });
+                // Log Workflow Transition
+                await supabase
+                    .from('job_workflow_logs')
+                    .insert({
+                        job_id: request.real_id,
+                        from_state: WORKFLOW_STATES.UNDER_REVIEW,
+                        to_state: targetState,
+                        action_id: action === 'approve' ? 'APPROVE_TEST_RESULTS' : 'REJECT_TEST_RESULTS',
+                        performed_by: user.id,
+                        remarks: remarks || (action === 'approve' ? 'Approved via Approvals Manager' : 'Rejected via Approvals Manager')
+                    });
+
+                toast({
+                    title: "Success",
+                    description: `Job review ${action === 'approve' ? 'approved' : 'rejected'} successfully.`,
+                });
+            } else {
+                const status = action === 'approve' ? 'APPROVED' : 'REJECTED';
+                const { error } = await supabase
+                    .from('request_approvals')
+                    .update({
+                        status: status,
+                        reviewed_by: user.id,
+                        reviewed_at: new Date().toISOString(),
+                        admin_remarks: remarks
+                    })
+                    .eq('id', request.id);
+
+                if (error) throw error;
+
+                toast({
+                    title: "Success",
+                    description: `Request ${status.toLowerCase()} successfully.`,
+                });
+            }
             fetchRequests();
         } catch (error) {
             console.error("Error updating request:", error);
@@ -150,6 +212,35 @@ const ApprovalsManager = () => {
                                         </p>
                                     </div>
                                 </div>
+                            ) : request.request_type === 'JOB_REVIEW' ? (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="p-3 bg-orange-50/30 rounded-xl border border-orange-100/50">
+                                            <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest">Job Code</p>
+                                            <p className="text-sm font-bold text-orange-900 mt-1 flex items-center gap-2">
+                                                <ShieldCheck className="w-4 h-4" /> {data.job_code}
+                                            </p>
+                                        </div>
+                                        <div className="p-3 bg-blue-50/30 rounded-xl border border-blue-100/50">
+                                            <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Client</p>
+                                            <p className="text-sm font-bold text-blue-900 mt-1 flex items-center gap-2 truncate">
+                                                <User className="w-4 h-4" /> {data.client_name}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Project Name</p>
+                                        <p className="text-sm font-bold text-gray-700 mt-1">{data.project_name || 'N/A'}</p>
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="w-full rounded-xl border-dashed border-primary/20 text-primary hover:bg-primary/5 gap-2 font-bold text-[10px] uppercase tracking-widest"
+                                        onClick={() => window.location.hash = `#/settings/jobs?id=${data.id}`}
+                                    >
+                                        <ExternalLink className="w-3 h-3" /> View Full Job Details
+                                    </Button>
+                                </div>
                             ) : (
                                 <div className="p-4 bg-gray-50 rounded-xl text-gray-600 text-sm italic">
                                     {JSON.stringify(data)}
@@ -161,7 +252,7 @@ const ApprovalsManager = () => {
                                     <MessageSquare className="w-3 h-3" /> Requester Remarks
                                 </p>
                                 <p className="text-sm font-medium text-gray-700 leading-relaxed">
-                                    {data.reason || "No specific reason provided."}
+                                    {data.reason || data.project_name || "No specific details provided."}
                                 </p>
                             </div>
 

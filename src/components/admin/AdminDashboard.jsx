@@ -471,7 +471,7 @@ const AdminDashboard = () => {
                                     <div className="grid grid-cols-3 gap-3">
                                         <div 
                                             className="p-4 bg-orange-50/50 rounded-2xl border border-orange-100 flex items-center justify-between cursor-pointer hover:bg-orange-100/50 transition-colors group"
-                                            onClick={() => window.location.hash = '#/settings/jobs'}
+                                            onClick={(e) => { e.stopPropagation(); window.location.hash = '#/settings/approvals'; }}
                                         >
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-xl font-black text-orange-600 tracking-tight">{workflowCounts[WORKFLOW_STATES.UNDER_REVIEW] || 0}</span>
@@ -482,7 +482,7 @@ const AdminDashboard = () => {
 
                                         <div 
                                             className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex flex-col gap-1 cursor-pointer hover:bg-blue-100/50 transition-colors"
-                                            onClick={() => window.location.hash = '#/settings/documents'}
+                                            onClick={(e) => { e.stopPropagation(); window.location.hash = '#/settings/documents'; }}
                                         >
                                             <span className="text-xl font-black text-blue-600 tracking-tight">{workflowCounts[WORKFLOW_STATES.REPORT_SIGNED] || 0}</span>
                                             <span className="text-[9px] font-black text-blue-400 uppercase tracking-tight">Ready to Invoice</span>
@@ -491,7 +491,7 @@ const AdminDashboard = () => {
 
                                         <div 
                                             className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex flex-col gap-1 cursor-pointer hover:bg-indigo-100/50 transition-colors"
-                                            onClick={() => window.location.hash = '#/settings/approvals'}
+                                            onClick={(e) => { e.stopPropagation(); window.location.hash = '#/settings/approvals'; }}
                                         >
                                             <span className="text-xl font-black text-indigo-600 tracking-tight">{stats.pendingLeaves}</span>
                                             <span className="text-[9px] font-black text-indigo-400 uppercase tracking-tight">Leave Requests</span>
