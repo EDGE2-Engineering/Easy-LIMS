@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { APP_CONFIG } from '@/data/config';
 import { useWorkflowConfig } from '@/contexts/WorkflowContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { CheckCircle2, Circle, ArrowRight, ArrowLeft, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Circle, ArrowRight, ArrowLeft, ChevronRight, ChevronLeft } from 'lucide-react';
 
 const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) => {
     const navigate = useNavigate();
@@ -63,10 +63,10 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
                                     disabled={loading}
                                     size="sm"
                                     variant="outline"
-                                    className="transition-all hover:scale-105 border-primary/20 hover:bg-primary/5 text-primary bg-red-700 hover:bg-red-600"
+                                    className="transition-all hover:scale-105 border-primary/20 hover:bg-primary/5 text-primary bg-red-700 hover:bg-red-600 text-xs px-2"
                                 >
-                                    <ArrowLeft className="mr-2 h-4 w-4 text-white" />
-                                    <p className="text-white "> Revert to {previousStateLabel}</p>
+                                    <ChevronLeft className="mr-1 h-4 w-4 text-white" />
+                                    <p className="text-white"> Revert to {previousStateLabel}</p>
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -81,10 +81,10 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
                                     onClick={() => handleAction(action.id, action)}
                                     disabled={loading}
                                     size="sm"
-                                    className="transition-all hover:scale-105"
+                                    className="transition-all hover:scale-105 text-xs px-2"
                                 >
                                     {action.label}
-                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                    <ChevronRight className="ml-1 h-4 w-4" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
@@ -104,7 +104,7 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
                         return (
                             <div key={stateKey} className="flex items-center flex-shrink-0">
                                 <div className={`flex flex-col items-center ${isCurrent ? 'opacity-100 scale-110' : 'opacity-40'} transition-all`}>
-                                    <div className={`p-1 rounded-full ${isPast ? 'bg-green-500 text-white' : isCurrent ? 'bg-primary text-white shadow-lg' : 'bg-muted text-muted-foreground'}`}>
+                                    <div className={`p-0 rounded-full ${isPast ? 'bg-green-500 text-white' : isCurrent ? 'bg-primary text-white shadow-lg' : 'bg-muted text-muted-foreground'}`}>
                                         {isPast ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
                                     </div>
                                     <span className={`text-[10px] mt-1 font-semibold ${isCurrent ? 'text-primary' : ''}`}>{state.label}</span>
