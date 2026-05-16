@@ -24,18 +24,9 @@ const AuthProvider = ({ children }) => {
     }, []);
 
 
-    useEffect(() => {
-        // Check for existing session in localStorage
-        const storedUser = localStorage.getItem(STORAGE_KEYS.SESSION);
-        if (storedUser) {
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (e) {
-                console.error("Failed to parse stored user", e);
-                localStorage.removeItem(STORAGE_KEYS.SESSION);
-            }
-        }
-        setLoading(false);
+    const logout = useCallback(() => {
+        setUser(null);
+        localStorage.removeItem(STORAGE_KEYS.SESSION);
     }, []);
 
     const login = useCallback(async (username, password) => {
@@ -46,7 +37,7 @@ const AuthProvider = ({ children }) => {
                 .eq('username', username)
                 .eq('password', password)
                 .eq('is_active', true)
-                .single();
+                .maybeSingle();
 
             if (error || !data) {
                 throw new Error("Invalid username or password");
@@ -81,10 +72,73 @@ const AuthProvider = ({ children }) => {
         }
     }, [notifyLogin]);
 
-    const logout = useCallback(() => {
-        setUser(null);
-        localStorage.removeItem(STORAGE_KEYS.SESSION);
-    }, []);
+    useEffect(() => {
+        const verifySession = async () => {
+            const storedUser = localStorage.getItem(STORAGE_KEYS.SESSION);
+            if (storedUser) {
+                try {
+                    const parsedUser = JSON.parse(storedUser);
+                    // Verify if user is still active in DB
+                    const { data, error } = await supabase
+                        .from('users')
+                        .select('is_active')
+                        .eq('id', parsedUser.id)
+                        .maybeSingle();
+
+                    if (error || !data || !data.is_active) {
+                        localStorage.removeItem(STORAGE_KEYS.SESSION);
+                        setUser(null);
+                        if (data && !data.is_active) {
+                             toast({
+                                title: "Account Deactivated",
+                                description: "Your account is no longer active.",
+                                variant: "destructive",
+                            });
+                        }
+                    } else {
+                        setUser(parsedUser);
+                    }
+                } catch (e) {
+                    console.error("Failed to parse stored user", e);
+                    localStorage.removeItem(STORAGE_KEYS.SESSION);
+                }
+            }
+            setLoading(false);
+        };
+        verifySession();
+    }, [toast]);
+
+    // Real-time status check
+    useEffect(() => {
+        if (!user?.id) return;
+
+        const channel = supabase
+            .channel(`user-status-${user.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'users',
+                    filter: `id=eq.${user.id}`,
+                },
+                (payload) => {
+                    if (payload.new && payload.new.is_active === false) {
+                        logout();
+                        toast({
+                            title: "Account Deactivated",
+                            description: "Your account has been deactivated. You have been logged out.",
+                            variant: "destructive",
+                        });
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user?.id, logout, toast]);
 
     // Inactivity timeout logic
     useEffect(() => {

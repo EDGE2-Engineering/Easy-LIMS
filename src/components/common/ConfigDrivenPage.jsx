@@ -24,12 +24,14 @@ const ApprovalsManager = lazyWithRetry(() => import('@/components/admin/Approval
 const AdminClientPricingManager = lazyWithRetry(() => import('@/components/admin/AdminClientPricingManager.jsx'));
 const AdminOrganizationSettings = lazyWithRetry(() => import('@/components/admin/AdminOrganizationSettings.jsx'));
 const InquiriesManager = lazyWithRetry(() => import('@/components/admin/InquiriesManager.jsx'));
+const MroDashboard = lazyWithRetry(() => import('@/components/admin/MroDashboard.jsx'));
 
 const COMPONENT_MAP = {
   [VIEWS.DASHBOARD]: AdminDashboard,
   [VIEWS.ANALYST_DASHBOARD]: AnalystDashboard,
   [VIEWS.ACCOUNTS_DASHBOARD]: AccountsDashboard,
   [VIEWS.TECHNICIAN_DASHBOARD]: TechnicianDashboard,
+  [VIEWS.MRO_DASHBOARD]: MroDashboard,
   [VIEWS.APPROVALS]: ApprovalsManager,
   [VIEWS.JOBS]: JobsManager,
   [VIEWS.DOCUMENTS]: DocumentsManager,

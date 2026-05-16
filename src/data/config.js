@@ -93,7 +93,8 @@ export const VIEWS = {
     ORGANIZATION: 'Organization',
     ANALYST_DASHBOARD: 'Analyst Dashboard',
     ACCOUNTS_DASHBOARD: 'Accounts Dashboard',
-    TECHNICIAN_DASHBOARD: 'Technician Dashboard'
+    TECHNICIAN_DASHBOARD: 'Technician Dashboard',
+    MRO_DASHBOARD: 'MRO Dashboard'
 };
 
 export const ACTIONS = {
@@ -129,6 +130,7 @@ export const NAV_ITEM_IDS = {
     DOCUMENTS: 'documents',
     EXPENSES: 'expenses',
     TECHNICIAN_DASHBOARD: 'technician_dashboard',
+    MRO_DASHBOARD: 'mro_dashboard',
     CLIENTS: 'clients',
 };
 
@@ -300,6 +302,7 @@ export const APP_CONFIG = {
                 NAV_ITEM_IDS.JOBS,
             ],
             [ROLES.MRO.slug]: [
+                NAV_ITEM_IDS.MRO_DASHBOARD,
                 NAV_ITEM_IDS.JOBS,
                 NAV_ITEM_IDS.CLIENTS,
             ],
@@ -352,7 +355,7 @@ export const APP_CONFIG = {
         [ROLES.ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.ACCOUNTS_DASHBOARD),
         [ROLES.ANALYST.slug]: [VIEWS.ANALYST_DASHBOARD, VIEWS.JOBS],
         [ROLES.TECHNICIAN.slug]: [VIEWS.TECHNICIAN_DASHBOARD, VIEWS.JOBS, VIEWS.TESTING],
-        [ROLES.MRO.slug]: [VIEWS.JOBS, VIEWS.SETTINGS],
+        [ROLES.MRO.slug]: [VIEWS.MRO_DASHBOARD, VIEWS.JOBS, VIEWS.SETTINGS],
         [ROLES.ACCOUNTS.slug]: [VIEWS.ACCOUNTS_DASHBOARD, VIEWS.DOCUMENTS, VIEWS.EXPENSES, VIEWS.SETTINGS],
         [ROLES.HUMAN_RESOURCE.slug]: [VIEWS.WORK_LOG, VIEWS.APPROVALS]
     }
