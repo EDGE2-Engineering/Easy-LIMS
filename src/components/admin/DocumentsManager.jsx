@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Trash2, ExternalLink, FileText, Loader2, AlertCircle, ArrowUpDown, SortAsc, SortDesc, Calendar, Plus } from 'lucide-react';
+import ReactSelect from 'react-select';
+import { Search, Trash2, ExternalLink, FileText, Loader2, AlertCircle, ArrowUpDown, SortAsc, SortDesc, Calendar, Plus, Filter, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,8 @@ import { format } from 'date-fns';
 import Rupee from '../Rupee';
 import { useSettings } from '@/contexts/SettingsContext';
 import { ROLES } from '@/data/config';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +47,8 @@ const DocumentsManager = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [showFilters, setShowFilters] = useState(false);
+  const [datePreset, setDatePreset] = useState('custom');
   const { toast } = useToast();
   const navigate = useNavigate();
   const { settings } = useSettings();
@@ -75,7 +80,7 @@ const DocumentsManager = () => {
     try {
       let query = supabase
         .from('documents')
-        .select('*, users(full_name), clients(client_name, gstin)');
+        .select('*, users(full_name), clients(client_name, gstin), jobs(project_name)');
 
       if (isStandard()) {
         query = query.eq('created_by', user.id);
@@ -139,6 +144,46 @@ const DocumentsManager = () => {
 
   const handleOpen = (recordId, docNumber) => {
     navigate(`/doc/${recordId}`);
+  };
+  
+  const applyDatePreset = (preset) => {
+    const now = new Date();
+    let start = '';
+    let end = '';
+    const formatDateStr = (date) => date.toISOString().split('T')[0];
+
+    switch (preset) {
+      case 'this_month':
+        start = formatDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
+        end = formatDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+        break;
+      case 'last_month':
+        start = formatDateStr(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+        end = formatDateStr(new Date(now.getFullYear(), now.getMonth(), 0));
+        break;
+      case 'this_year':
+        start = formatDateStr(new Date(now.getFullYear(), 0, 1));
+        end = formatDateStr(new Date(now.getFullYear(), 11, 31));
+        break;
+      case 'last_year':
+        start = formatDateStr(new Date(now.getFullYear() - 1, 0, 1));
+        end = formatDateStr(new Date(now.getFullYear() - 1, 11, 31));
+        break;
+      case 'ytd':
+        start = formatDateStr(new Date(now.getFullYear(), 0, 1));
+        end = formatDateStr(now);
+        break;
+      case 'custom':
+        start = '';
+        end = '';
+        break;
+      default:
+        break;
+    }
+
+    setFromDate(start);
+    setToDate(end);
+    setDatePreset(preset);
   };
 
   const uniqueUsers = Array.from(new Set(documents
@@ -226,7 +271,7 @@ const DocumentsManager = () => {
     setCurrentPage(1);
   }, [searchTerm, fromDate, toDate, filterDocType, filterUser, filterClient, sortField, sortOrder]);
 
-  const resetFilters = () => {
+  const resetAll = () => {
     setSearchTerm('');
     setFromDate('');
     setToDate('');
@@ -236,6 +281,8 @@ const DocumentsManager = () => {
     setSortField('date');
     setSortOrder('desc');
     setCurrentPage(1);
+    setShowFilters(false);
+    setDatePreset('custom');
   };
 
   if (loading && documents.length === 0) {
@@ -248,202 +295,243 @@ const DocumentsManager = () => {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Control Panel: Search, Filters, Sorting */}
-      <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-6">
-        {/* Top Row: Prominent Search Bar and Record Count */}
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col gap-4">
+        {/* Row 1: Search and Primary Actions */}
         <div className="flex flex-col sm:flex-row items-center gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <div className="relative flex-grow">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               placeholder="Search by invoice/quote number or client name..."
-              className="pl-12 h-12 text-sm bg-gray-50/30 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
+              className="pl-10 h-10 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          {/* Record Count Status */}
-          <div className="flex items-center gap-2 px-6 h-12 bg-primary/5 rounded-xl border border-primary/10 whitespace-nowrap">
-            <FileText className="w-4 h-4 text-primary/60" />
-            <span className="text-sm font-semibold text-gray-700">
-              {sortedDocuments.length} <span className="text-gray-400 font-normal">documents found</span>
-            </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => navigate('/doc/new', { state: { forceReset: Date.now() } })}
+                className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+              >
+                <Plus className="w-4 h-4 mr-2" /> Create Document
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+              <p className="text-xs">Generate a new billing or proposal document</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Row 2: Filters Toggle, Sorting, and Stats */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={showFilters ? "secondary" : "outline"}
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`h-10 px-4 rounded-xl transition-all border-gray-200 ${showFilters ? 'bg-primary/10 text-primary border-primary/20' : 'bg-gray-50/50'}`}
+                >
+                  <Filter className="w-4 h-4 mr-2" />
+                  <span className="text-sm font-bold uppercase tracking-widest leading-none">Filters</span>
+                  {(fromDate || toDate || filterDocType !== 'all' || filterUser !== 'all' || filterClient !== 'all') && (
+                    <Badge className="ml-2 bg-primary text-white scale-75">!</Badge>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                <p className="text-xs">Show advanced filtering options</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Sort</span>
+              <Select value={sortField} onValueChange={setSortField}>
+                <SelectTrigger className="w-40 h-10 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">Date Created</SelectItem>
+                  <SelectItem value="total">Total Amount</SelectItem>
+                  <SelectItem value="client">Client Name</SelectItem>
+                  {!isStandard() && <SelectItem value="user">Created By</SelectItem>}
+                </SelectContent>
+              </Select>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 border-gray-200 bg-gray-50/50 rounded-lg"
+                    onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                  >
+                    {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                  <p className="text-xs">Toggle {sortOrder === 'asc' ? 'Descending' : 'Ascending'} Sort</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+
+          <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">
+            Showing <span className="text-primary">{sortedDocuments.length === 0 ? 0 : startIndex + 1}–{Math.min(endIndex, sortedDocuments.length)}</span> of <span className="text-primary">{sortedDocuments.length}</span> Documents
           </div>
         </div>
 
-        {/* Bottom Row: Filters, Sorting */}
-        <div className="flex flex-wrap items-center justify-between gap-6">
-          <div className="flex flex-wrap items-start gap-6 flex-1">
+        {/* Advanced Filters Panel */}
+        {showFilters && (
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm animate-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center">
+                <Filter className="w-4 h-4 mr-2 text-primary" />
+                Advanced Filters
+              </h3>
+              <Button variant="ghost" size="sm" onClick={resetAll} className="text-xs text-gray-400 hover:text-red-500 font-bold uppercase tracking-widest">
+                <X className="w-3 h-3 mr-1" /> Reset All
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Document Type</Label>
+                <Select value={filterDocType} onValueChange={setFilterDocType}>
+                  <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="Tax Invoice">Tax Invoice</SelectItem>
+                    <SelectItem value="Quotation">Quotation</SelectItem>
+                    <SelectItem value="Proforma Invoice">Proforma Invoice</SelectItem>
+                    <SelectItem value="Purchase Order">Purchase Order</SelectItem>
+                    <SelectItem value="Delivery Challan">Delivery Challan</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Filters Group */}
-            <div className="flex items-start gap-3">
-              <span className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-2">
-                Filters
-              </span>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Quick Date</Label>
+                <Select value={datePreset} onValueChange={applyDatePreset}>
+                  <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
+                    <SelectValue placeholder="Custom" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="custom">Custom Range</SelectItem>
+                    <SelectItem value="this_month">This Month</SelectItem>
+                    <SelectItem value="last_month">Last Month</SelectItem>
+                    <SelectItem value="ytd">Year to Date (YTD)</SelectItem>
+                    <SelectItem value="this_year">This Year</SelectItem>
+                    <SelectItem value="last_year">Last Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <div className="flex flex-col gap-3">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">From Date</Label>
+                <Input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => {
+                    setFromDate(e.target.value);
+                    setDatePreset('custom');
+                  }}
+                  className="h-10 text-sm bg-gray-50 border-transparent rounded-xl"
+                />
+              </div>
 
-                {/* Row 1 – Date Range */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div className="flex items-center gap-2 bg-gray-50/50 p-1 px-3 rounded-lg border border-gray-100 focus-within:border-primary/30 transition-colors">
-                    <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
-                    <Input
-                      type="date"
-                      className="w-auto min-w-[130px] h-9 text-sm border-none bg-transparent focus-visible:ring-0 cursor-pointer p-0"
-                      value={fromDate}
-                      title="From Date"
-                      onChange={(e) => setFromDate(e.target.value)}
-                    />
-                    <span className="text-gray-300 font-light px-1">to</span>
-                    <Input
-                      type="date"
-                      className="w-auto min-w-[130px] h-9 text-sm border-none bg-transparent focus-visible:ring-0 cursor-pointer p-0"
-                      value={toDate}
-                      title="To Date"
-                      onChange={(e) => setToDate(e.target.value)}
-                    />
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">To Date</Label>
+                <Input
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => {
+                    setToDate(e.target.value);
+                    setDatePreset('custom');
+                  }}
+                  className="h-10 text-sm bg-gray-50 border-transparent rounded-xl"
+                />
+              </div>
 
-                {/* Row 2 – Select Filters */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Select value={filterDocType} onValueChange={setFilterDocType}>
-                    <SelectTrigger className="w-32 h-9 text-sm bg-gray-50/50 border-gray-200 rounded-lg focus:ring-1 focus:ring-primary/20">
-                      <SelectValue placeholder="All Types" />
+              {!isStandard() && (
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Created By</Label>
+                  <Select value={filterUser} onValueChange={setFilterUser}>
+                    <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
+                      <SelectValue placeholder="All Users" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="Tax Invoice">Tax Invoice</SelectItem>
-                      <SelectItem value="Quotation">Quotation</SelectItem>
-                      <SelectItem value="Proforma Invoice">Proforma Invoice</SelectItem>
-                      <SelectItem value="Purchase Order">Purchase Order</SelectItem>
-                      <SelectItem value="Delivery Challan">Delivery Challan</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  {!isStandard() && (
-                    <Select value={filterUser} onValueChange={setFilterUser}>
-                      <SelectTrigger className="w-36 h-9 text-sm bg-gray-50/50 border-gray-200 rounded-lg focus:ring-1 focus:ring-primary/20">
-                        <SelectValue placeholder="All Users" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Users</SelectItem>
-                        {uniqueUsers.map(user => (
-                          <SelectItem key={user} value={user}>
-                            {user}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-
-                  <Select value={filterClient} onValueChange={setFilterClient}>
-                    <SelectTrigger className="w-72 h-9 text-sm bg-gray-50/50 border-gray-200 rounded-lg text-left focus:ring-1 focus:ring-primary/20">
-                      <SelectValue placeholder="All Clients" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Clients</SelectItem>
-                      {uniqueClients.map(client => (
-                        <SelectItem key={client} value={client}>
-                          {client}
-                        </SelectItem>
+                      <SelectItem value="all">All Users</SelectItem>
+                      {uniqueUsers.map(u => (
+                        <SelectItem key={u} value={u}>{u}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+              )}
 
-              </div>
-            </div>
-
-            <div className="h-8 w-px bg-gray-100 hidden xl:block" />
-
-            {/* Sorting Group */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">
-                Sort
-              </span>
-
-              <div className="flex items-center gap-2">
-                <Select value={sortField} onValueChange={setSortField}>
-                  <SelectTrigger className="w-40 h-9 text-sm bg-gray-50/50 border-gray-200 rounded-lg focus:ring-1 focus:ring-primary/20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="date">Date Created</SelectItem>
-                    <SelectItem value="total">Total Amount</SelectItem>
-                    <SelectItem value="client">Client Name</SelectItem>
-                    {!isStandard() && <SelectItem value="user">Created By</SelectItem>}
-                  </SelectContent>
-                </Select>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 hover:bg-primary/5 hover:text-primary transition-colors border-gray-200 rounded-lg flex-shrink-0"
-                      onClick={() =>
-                        setSortOrder(prev => (prev === "asc" ? "desc" : "asc"))
+              <div className="space-y-2 md:col-span-2">
+                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Client</Label>
+                <ReactSelect
+                  className="text-sm"
+                  classNamePrefix="react-select"
+                  options={[
+                    { value: 'all', label: 'All Clients' },
+                    ...uniqueClients.map(c => ({ value: c, label: c }))
+                  ]}
+                  value={{ value: filterClient, label: filterClient === 'all' ? 'All Clients' : filterClient }}
+                  onChange={(option) => setFilterClient(option ? option.value : 'all')}
+                  placeholder="Search Clients..."
+                  isSearchable
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      minHeight: '40px',
+                      height: '40px',
+                      borderColor: 'transparent',
+                      borderRadius: '0.75rem',
+                      backgroundColor: '#f9fafb', // gray-50
+                      boxShadow: 'none',
+                      fontSize: '0.875rem', // text-sm (14px)
+                      '&:hover': {
+                        borderColor: '#e2e8f0'
                       }
-                    >
-                      {sortOrder === "asc" ? (
-                        <SortAsc className="w-4 h-4" />
-                      ) : (
-                        <SortDesc className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                    <p className="text-xs">Toggle {sortOrder === 'asc' ? 'Descending' : 'Ascending'} Sort</p>
-                  </TooltipContent>
-                </Tooltip>
+                    }),
+                    singleValue: (base) => ({
+                      ...base,
+                      color: '#111827', // gray-900
+                      fontWeight: '500'
+                    }),
+                    placeholder: (base) => ({
+                      ...base,
+                      color: '#9ca3af' // gray-400
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected ? '#f1f5f9' : state.isFocused ? '#f1f5f9' : 'white',
+                      color: state.isSelected ? '#0f172a' : '#1e293b',
+                      fontSize: '0.875rem', // text-sm
+                      fontWeight: state.isSelected ? '700' : '600',
+                      cursor: 'pointer',
+                      '&:active': {
+                        backgroundColor: '#e2e8f0'
+                      }
+                    }),
+                    menu: (base) => ({
+                      ...base,
+                      borderRadius: '1rem',
+                      overflow: 'hidden',
+                      boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                      border: '1px solid #f1f5f9',
+                      zIndex: 50
+                    })
+                  }}
+                />
               </div>
             </div>
-
           </div>
-
-          <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={resetFilters}
-                  disabled={
-                    !searchTerm &&
-                    !fromDate &&
-                    !toDate &&
-                    filterDocType === "all" &&
-                    filterUser === "all" &&
-                    filterClient === "all" &&
-                    sortField === "date" &&
-                    sortOrder === "desc"
-                  }
-                  className="text-red-900 bg-red-50 hover:bg-red-500 hover:text-white h-9 text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2 whitespace-nowrap"
-                >
-                  Reset All
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                <p className="text-xs">Clear all filters and sorting</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={() => navigate('/doc/new', { state: { forceReset: Date.now() } })}
-                  className="bg-primary hover:bg-primary-dark text-white h-10 px-4 rounded-xl shadow-sm text-xs font-semibold"
-                >
-                  <Plus className="w-4 h-4 mr-2" /> Create Document
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                <p className="text-xs">Generate a new billing or proposal document</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-
+        )}
       </div>
 
       {/* Pagination Controls - Top */}
@@ -476,9 +564,9 @@ const DocumentsManager = () => {
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="text-left py-2 px-4 font-semibold text-sm text-gray-600 pr-0">Document #</th>
-                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-4">Created On</th>
-                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-2">Client</th>
-                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-2">Total Amount</th>
+                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-6">Created On</th>
+                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-10">Client and Project Name</th>
+                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-10">Total Amount</th>
                 <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-10">Created By</th>
                 <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600">Document Type</th>
                 <th className="text-right py-3 px-2 font-semibold text-sm text-gray-600">Actions</th>
@@ -532,6 +620,7 @@ const DocumentsManager = () => {
                     <td className="justify-left items-center">
                       <div className="text-black font-regular text-sm">{record.clients?.client_name || '-'}</div>
                       {record.clients?.gstin && <div className="text-[10px] text-gray-400 font-medium mt-0.5">GSTIN: {record.clients.gstin}</div>}
+                      {record.jobs?.project_name && <div className="text-[10px] text-gray-400 font-medium mt-0.5">Project: {record.jobs.project_name}</div>}
                     </td>
 
                     <td className="justify-left items-center">
