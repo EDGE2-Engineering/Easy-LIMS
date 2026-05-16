@@ -978,10 +978,10 @@ const JobsManager = ({ id }) => {
                     )}
                 </div>
 
-                {canModify && isAdmin() && (
+                {canModify && (
                     <div className="flex justify-end gap-3 pt-8 border-t">
-                        <Button variant="outline" className="h-10 p-2 rounded-lg" onClick={() => navigate('/settings/jobs')}>Cancel</Button>
-                        <Button className="h-10 p-2 rounded-lg bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20" onClick={handleSave} disabled={isSaving}>
+                        <Button variant="outline" className="h-10 p-2 text-xs rounded-lg" onClick={() => navigate('/settings/jobs')}>Cancel</Button>
+                        <Button className="h-10 p-2 text-xs rounded-lg bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20" onClick={handleSave} disabled={isSaving}>
                             {isSaving ? <Loader2 className="animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Job Details
                         </Button>
                     </div>
