@@ -26,6 +26,7 @@ const AdminDashboard = () => {
     const [stats, setStats] = useState({
         totalJobs: 0,
         activeJobs: 0,
+        ongoingTesting: 0,
         pendingReports: 0,
         pendingPayments: 0,
         totalStaff: 0,
@@ -75,6 +76,7 @@ const AdminDashboard = () => {
             const active = jobs.filter(j => j.status !== WORKFLOW_STATES.JOB_COMPLETE).length;
             const reportsPending = (counts[WORKFLOW_STATES.REPORT_GENERATED] || 0) + (counts[WORKFLOW_STATES.REPORT_UNDER_REVIEW] || 0);
             const paymentsPending = (counts[WORKFLOW_STATES.AWAITING_PAYMENT] || 0) + (counts[WORKFLOW_STATES.INVOICE_GENERATED] || 0);
+            const testingOngoing = (counts[WORKFLOW_STATES.UNDER_TESTING] || 0);
 
             // 2. Fetch Pending Approvals & Leave Records
             const { data: approvals, error: approvError } = await supabase
@@ -231,6 +233,7 @@ const AdminDashboard = () => {
             setStats({
                 totalJobs: jobs.length,
                 activeJobs: active,
+                ongoingTesting: testingOngoing,
                 pendingReports: reportsPending,
                 pendingPayments: paymentsPending,
                 totalStaff: staffCount || 0,
@@ -320,6 +323,7 @@ const AdminDashboard = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     {[
                         { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', trend: 'In Progress', path: '#/settings/jobs' },
+                        { label: 'Ongoing Testing', value: stats.ongoingTesting, icon: Activity, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', trend: 'Lab Operations', path: '#/settings/jobs?status=UNDER_TESTING' },
                         { label: 'Pending Reports', value: stats.pendingReports, icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', trend: 'Awaiting Action', path: '#/settings/jobs' },
                         { label: 'Awaiting Payment', value: stats.pendingPayments, icon: IndianRupee, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', trend: 'Documents', path: '#/settings/documents' },
                         { label: 'Total Clients', value: stats.totalClients, icon: BriefcaseBusiness, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', trend: 'Network', path: '#/settings/clients' },

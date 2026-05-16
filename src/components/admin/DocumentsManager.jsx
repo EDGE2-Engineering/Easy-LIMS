@@ -563,13 +563,13 @@ const DocumentsManager = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left py-2 px-4 font-semibold text-sm text-gray-600 pr-0">Document #</th>
-                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-6">Created On</th>
-                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-10">Client and Project Name</th>
-                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-10">Total Amount</th>
-                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600 pr-10">Created By</th>
-                <th className="text-left py-0 px-0 font-semibold text-sm text-gray-600">Document Type</th>
-                <th className="text-right py-3 px-2 font-semibold text-sm text-gray-600">Actions</th>
+                <th className="text-center text-xs py-2 px-4 font-semibold text-sm text-gray-600 pr-0">Document #</th>
+                <th className="text-center text-xs py-0 px-0 font-semibold text-sm text-gray-600 pr-8">Created On</th>
+                <th className="text-left text-xs py-0 px-0 font-semibold text-sm text-gray-600 pr-10">Client and Project Name</th>
+                <th className="text-left text-xs py-0 px-0 font-semibold text-sm text-gray-600 pr-10">Total Amount</th>
+                <th className="text-left text-xs py-0 px-0 font-semibold text-sm text-gray-600 pr-2">Created By</th>
+                <th className="text-center text-xs py-0 px-0 font-semibold text-sm text-gray-600">Document Type</th>
+                <th className="text-center text-xs py-3 px-2 font-semibold text-sm text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -583,7 +583,7 @@ const DocumentsManager = () => {
                 paginatedDocuments.map((record) => (
                   <tr key={record.id} className="border-b hover:bg-gray-50 transition-colors">
                     {/* Document # + other details */}
-                    <td className="py-2 px-4 text-sm text-gray-600">
+                    <td className="py-2 px-4 text-xs text-gray-600">
                       <div className="font-semibold text-gray-900 flex items-center gap-2">
                         <span className="font-semibold font-mono text-black text-md bg-gray-200 p-1 rounded">{record.quote_number}</span>
                         {/* <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${record.document_type === 'Tax Invoice'
@@ -614,26 +614,26 @@ const DocumentsManager = () => {
                     </td>
 
                     <td className="justify-left items-center">
-                      <span className="text-black font-regular text-sm"> {format(new Date(record.created_at), 'dd MMM yyyy')}</span>
+                      <span className="text-black font-regular text-xs"> {format(new Date(record.created_at), 'dd MMM yyyy')}</span>
                     </td>
 
                     <td className="justify-left items-center">
-                      <div className="text-black font-regular text-sm">{record.clients?.client_name || '-'}</div>
-                      {record.clients?.gstin && <div className="text-[10px] text-gray-400 font-medium mt-0.5">GSTIN: {record.clients.gstin}</div>}
-                      {record.jobs?.project_name && <div className="text-[10px] text-gray-400 font-medium mt-0.5">Project: {record.jobs.project_name}</div>}
+                      <div className="text-black font-bold text-xs">{record.clients?.client_name || '-'}</div>
+                      {record.jobs?.project_name && <div className="text-[10px] text-gray-700 font-medium mt-0.5">Project: {record.jobs.project_name}</div>}
+                      {record.clients?.gstin && <div className="text-[10px] text-gray-700 font-medium mt-0.5">GSTIN: {record.clients.gstin}</div>}
                     </td>
 
                     <td className="justify-left items-center">
-                      <span className="text-black font-regular text-sm"> <Rupee />{calculateRecordTotal(record).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <span className="text-black font-regular text-xs"> <Rupee />{calculateRecordTotal(record).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </td>
 
                     <td className="justify-left items-center">
-                      <span className="text-black font-regular text-sm"> {record.users?.full_name || '-'}
+                      <span className="text-black font-regular text-xs"> {record.users?.full_name || '-'}
                       </span>
                     </td>
 
-                    <td className="justify-left items-center">
+                    <td className="text-center py-2 px-4">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${record.document_type === 'Tax Invoice'
                         ? 'bg-blue-100 text-blue-800'
                         : record.document_type === 'Proforma Invoice'
