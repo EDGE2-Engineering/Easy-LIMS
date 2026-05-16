@@ -64,3 +64,22 @@ android: android-install
 	@cd mobile-apps/android && npx expo prebuild --platform android
 	@echo "Starting Android build/run process..."
 	@cd mobile-apps/android && npm run android
+
+
+init-test:
+	@if [ ! -f test.env ]; then \
+		printf "username=test\npassword=test\nAPI_URL=http://localhost:8000\n" > test.env; \
+	fi
+# 	@npx playwright install --with-deps
+
+test: init-test
+	@npx playwright test --headed
+	@npx playwright show-report
+
+test-e2e: init-test
+	@npm run test:e2e
+	@npx playwright show-report
+
+test-ui: init-test
+	@npx playwright test --ui
+	@npx playwright show-report
