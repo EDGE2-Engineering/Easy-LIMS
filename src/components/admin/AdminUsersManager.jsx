@@ -6,7 +6,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, UserMinus, UserCheck, Search, UsersRound } from 'lucide-react';
+import { Plus, Pencil, UserMinus, UserCheck, Search, UsersRound, Filter, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
@@ -23,6 +23,9 @@ const AdminUsersManager = () => {
     const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
     const [userToToggle, setUserToToggle] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
+    const [filterRole, setFilterRole] = useState('all');
+    const [filterStatus, setFilterStatus] = useState('all');
     const [formData, setFormData] = useState({
         username: '',
         password: '',
@@ -51,12 +54,27 @@ const AdminUsersManager = () => {
         } finally { setLoading(false); }
     };
 
-    const filteredUsers = users.filter(u =>
-        (u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (u.full_name && u.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (u.role && u.role.toLowerCase().includes(searchTerm.toLowerCase()))) &&
-        u.role !== ROLES.SUPER_ADMIN.slug
-    );
+    const filteredUsers = users.filter(u => {
+        if (u.role === ROLES.SUPER_ADMIN.slug) return false;
+        const searchStr = searchTerm.toLowerCase();
+        const matchesSearch =
+            u.username.toLowerCase().includes(searchStr) ||
+            (u.full_name && u.full_name.toLowerCase().includes(searchStr)) ||
+            (u.role && u.role.toLowerCase().includes(searchStr));
+        if (!matchesSearch) return false;
+        if (filterRole !== 'all' && u.role !== filterRole) return false;
+        if (filterStatus === 'active' && !u.is_active) return false;
+        if (filterStatus === 'inactive' && u.is_active) return false;
+        return true;
+    });
+
+    const resetFilters = () => {
+        setSearchTerm('');
+        setFilterRole('all');
+        setFilterStatus('all');
+    };
+
+    const hasActiveFilters = filterRole !== 'all' || filterStatus !== 'all';
 
     const handleNewUser = () => {
         setEditingUser(null);
@@ -153,35 +171,111 @@ const AdminUsersManager = () => {
                         <div className="p-2 bg-primary/10 rounded-2xl">
                             <UsersRound className="w-6 h-6 text-primary" />
                         </div>
-                        Users Master
+                        Users
                     </h1>
                     <p className="text-gray-500 font-medium mt-1 uppercase text-[10px] tracking-widest ml-1">Manage system user accounts and roles</p>
                 </div>
             </div>
 
-            <div className="flex items-center gap-3">
-                <div className="relative flex-grow">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                        placeholder="Search users..."
-                        className="pl-10 w-full h-10 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+            <div className="flex flex-col gap-4">
+                {/* Search + Add Row */}
+                <div className="flex items-center gap-3">
+                    <div className="relative flex-grow">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                            placeholder="Search users..."
+                            className="pl-10 w-full h-10 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                onClick={handleNewUser}
+                                className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+                            >
+                                <Plus className="w-4 h-4 mr-2" /> Add User
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Create a new system user account</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            onClick={handleNewUser}
-                            className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
-                        >
-                            <Plus className="w-4 h-4 mr-2" /> Add User
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                        <p className="text-xs">Create a new system user account</p>
-                    </TooltipContent>
-                </Tooltip>
+
+                {/* Filters and Actions Row */}
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-4">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant={showFilters ? "secondary" : "outline"}
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className={`h-10 px-4 rounded-xl transition-all border-gray-200 ${showFilters ? 'bg-primary/10 text-primary border-primary/20' : 'bg-gray-50/50'}`}
+                                >
+                                    <Filter className="w-4 h-4 mr-2" />
+                                    <span className="text-sm font-bold uppercase tracking-widest leading-none">Filters</span>
+                                    {hasActiveFilters && (
+                                        <Badge className="ml-2 bg-primary text-white scale-75">!</Badge>
+                                    )}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                <p className="text-xs">Show advanced filtering options</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
+                    <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">
+                        Total Users: <span className="text-primary">{filteredUsers.length}</span>
+                    </div>
+                </div>
+
+                {/* Filter Panel */}
+                {showFilters && (
+                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm animate-in slide-in-from-top-2 duration-200">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center">
+                                <Filter className="w-4 h-4 mr-2 text-primary" />
+                                Filters
+                            </h3>
+                            <Button variant="ghost" size="sm" onClick={resetFilters} className="text-xs text-gray-400 hover:text-red-500 font-bold uppercase tracking-widest">
+                                <X className="w-3 h-3 mr-1" /> Reset All
+                            </Button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Role</Label>
+                                <Select value={filterRole} onValueChange={setFilterRole}>
+                                    <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
+                                        <SelectValue placeholder="All Roles" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Roles</SelectItem>
+                                        {Object.entries(ROLES)
+                                            .filter(([key]) => key !== 'SUPER_ADMIN')
+                                            .map(([key, role]) => (
+                                                <SelectItem key={role.slug} value={role.slug}>{role.label}</SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</Label>
+                                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                                    <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
+                                        <SelectValue placeholder="All" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All</SelectItem>
+                                        <SelectItem value="active">Active</SelectItem>
+                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -359,10 +453,10 @@ const AdminUsersManager = () => {
 
             <AlertDialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
                 <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Confirm Status Change</AlertDialogTitle></AlertDialogHeader>
+                    <AlertDialogHeader><AlertDialogTitle>{userToToggle?.is_active ? 'Are you sure you want to deactivate this user?' : 'Are you sure you want to activate this user?'}</AlertDialogTitle></AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmToggleStatus}>Change Status</AlertDialogAction>
+                        <AlertDialogAction className="bg-red-500" onClick={confirmToggleStatus}>{userToToggle?.is_active ? 'Deactivate' : 'Activate'}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

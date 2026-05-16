@@ -46,7 +46,7 @@ import {
 import ReactSelect from 'react-select';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { format } from 'date-fns';
-import { getSiteContent, ROLES } from '@/data/config';
+import { getSiteContent, ROLES, WORKFLOW_STATES } from '@/data/config';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { sendTelegramNotification } from '@/lib/notifier';
@@ -135,6 +135,8 @@ const NewQuotationPage = () => {
     const [lastSavedData, setLastSavedData] = useState(null);
     const [linkedJobId, setLinkedJobId] = useState(searchParams.get('jobId') || null);
     const [documentCreatorId, setDocumentCreatorId] = useState(null);
+    const [showAutoJobDialog, setShowAutoJobDialog] = useState(false);
+    const bypassJobCheckRef = useRef(false);
     const isNavigatingRef = useRef(false);
     const isReadOnly = useMemo(() => {
         return user?.role === ROLES.ACCOUNTS.slug && savedRecordId && (documentCreatorId === null || documentCreatorId !== user?.id);
@@ -558,8 +560,18 @@ const NewQuotationPage = () => {
 
             const updatedQuoteDetails = { ...quoteDetails, quoteNumber: docNumber };
 
-            const selectedClient = clients.find(c => c.clientName === quoteDetails.clientName);
+            const selectedClient = clients.find(c => (c.clientName || '').trim() === (quoteDetails.clientName || '').trim());
             const clientId = selectedClient?.id || null;
+
+            if (!clientId && !savedRecordId) {
+                setIsSavingRecord(false);
+                toast({
+                    title: "Valid Client Required",
+                    description: "A job cannot be created without a registered client. Please select a client from the list instead of using 'Other'.",
+                    variant: "destructive"
+                });
+                return;
+            }
 
             // Robustly determine the integer user ID for bigint columns
             let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
@@ -574,6 +586,35 @@ const NewQuotationPage = () => {
                 throw new Error("Unable to determine a valid numeric User ID. Please try logging out and back in.");
             }
 
+            // Resolve job_id — auto-create a job if one isn't already linked
+            let resolvedJobId = linkedJobId || searchParams.get('jobId') || null;
+
+            if (!resolvedJobId && !bypassJobCheckRef.current) {
+                setIsSavingRecord(false);
+                setShowAutoJobDialog(true);
+                return;
+            }
+
+            if (!resolvedJobId) {
+                // Auto-create a job so the document always has a parent job
+                const jobPayload = {
+                    client_id: clientId,
+                    project_name: quoteDetails.projectName || '',
+                    status: WORKFLOW_STATES.QUOTATION_SENT,
+                    created_by: userId,
+                    updated_by: userId,
+                    updated_at: new Date().toISOString()
+                };
+                const { data: newJob, error: jobError } = await supabase
+                    .from('jobs')
+                    .insert(jobPayload)
+                    .select('id')
+                    .single();
+                if (jobError) throw new Error('Failed to auto-create job: ' + jobError.message);
+                resolvedJobId = newJob.id;
+                setLinkedJobId(newJob.id);
+            }
+
             const recordData = {
                 quote_number: docNumber,
                 document_type: documentType,
@@ -586,7 +627,7 @@ const NewQuotationPage = () => {
                     items,
                     discount
                 },
-                job_id: linkedJobId || searchParams.get('jobId') || null,
+                job_id: resolvedJobId,
                 created_by: userId,
                 updated_at: new Date().toISOString()
             };
@@ -1175,13 +1216,13 @@ const NewQuotationPage = () => {
                             <div className="space-y-2 border-t pt-2">
                                 <div>
                                     <Label>Client Name</Label>
-                                    <Select
-                                        disabled={isReadOnly}
-
-                                        value={clientNameSelection}
-                                        onValueChange={(value) => {
+                                    <ReactSelect
+                                        isDisabled={isReadOnly}
+                                        value={clientNameSelection ? CLIENT_OPTIONS.find(o => o.value === clientNameSelection) || null : null}
+                                        onChange={(option) => {
+                                            const value = option ? option.value : '';
                                             setClientNameSelection(value);
-                                            if (value !== 'Other') {
+                                            if (value && value !== 'Other') {
                                                 const selectedClient = clients.find(c => c.clientName === value);
                                                 const contacts = selectedClient?.contacts || [];
                                                 const primaryContact = contacts.find(con => con.is_primary) || contacts[0] || {};
@@ -1198,7 +1239,6 @@ const NewQuotationPage = () => {
                                                 });
                                                 setCustomClientName('');
 
-                                                // Pre-select the primary contact in the dropdown
                                                 if (primaryIdx >= 0) {
                                                     setContactSelectionIdx(primaryIdx.toString());
                                                 } else if (contacts.length > 0) {
@@ -1207,7 +1247,6 @@ const NewQuotationPage = () => {
                                                     setContactSelectionIdx('');
                                                 }
 
-                                                // Update item prices based on the new client
                                                 if (items.length > 0) {
                                                     const updatedItems = items.map(item => {
                                                         const newPrice = getAppropiatePrice(item.sourceId, item.type, selectedClient?.id);
@@ -1219,7 +1258,7 @@ const NewQuotationPage = () => {
                                                     });
                                                     setItems(updatedItems);
                                                 }
-                                            } else {
+                                            } else if (value === 'Other') {
                                                 setQuoteDetails({
                                                     ...quoteDetails,
                                                     clientName: customClientName,
@@ -1228,22 +1267,38 @@ const NewQuotationPage = () => {
                                                     email: '',
                                                     phone: ''
                                                 });
+                                            } else {
+                                                setQuoteDetails({ ...quoteDetails, clientName: '' });
                                             }
                                         }}
-                                    >
-                                        <SelectTrigger className={cn("h-15 text-sm border-gray-200 bg-gray-50/30", isReadOnly && "cursor-not-allowed")} style={{ textAlign: 'left' }}>
-                                            <SelectValue
-                                                placeholder="Select client"
-                                            />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {CLIENT_OPTIONS.map(option => (
-                                                <SelectItem key={option.value} value={option.value} className="font-normal text-sm justify-start max-w-[420px]">
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                        options={CLIENT_OPTIONS}
+                                        placeholder="Search client..."
+                                        isSearchable
+                                        isClearable
+                                        classNamePrefix="react-select"
+                                        styles={{
+                                            control: (base, state) => ({
+                                                ...base,
+                                                minHeight: '40px',
+                                                borderColor: state.isFocused ? '#6366f1' : '#e5e7eb',
+                                                borderRadius: '0.5rem',
+                                                backgroundColor: 'rgba(249,250,251,0.3)',
+                                                boxShadow: 'none',
+                                                opacity: isReadOnly ? 0.6 : 1,
+                                                cursor: isReadOnly ? 'not-allowed' : 'default',
+                                                '&:hover': { borderColor: '#6366f1' }
+                                            }),
+                                            option: (base, state) => ({
+                                                ...base,
+                                                backgroundColor: state.isSelected ? '#6366f1' : state.isFocused ? '#f3f4f6' : 'white',
+                                                color: state.isSelected ? 'white' : '#1f2937',
+                                                fontSize: '0.875rem'
+                                            }),
+                                            placeholder: (base) => ({ ...base, color: '#9ca3af', fontSize: '0.875rem' }),
+                                            singleValue: (base) => ({ ...base, fontSize: '0.875rem' }),
+                                            menu: (base) => ({ ...base, zIndex: 50 })
+                                        }}
+                                    />
 
                                     {clientNameSelection !== 'Other' && clientNameSelection !== '' && (() => {
                                         const selectedClient = clients.find(c => (c.clientName || '').trim() === clientNameSelection.trim());
@@ -2167,6 +2222,36 @@ const NewQuotationPage = () => {
                     </AlertDialogContent>
                 </AlertDialog>
             </div>
+
+            {/* Auto-create Job Confirmation */}
+            <AlertDialog open={showAutoJobDialog} onOpenChange={setShowAutoJobDialog}>
+                <AlertDialogContent className="max-w-md">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2 text-xl font-bold">
+                            <BriefcaseBusiness className="w-5 h-5 text-primary" />
+                            Note
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-gray-600 py-3">
+                            Before saving this {documentType.toLowerCase()}, the system will automatically create a <strong>new Job</strong> and link this {documentType.toLowerCase()} to it.
+                            
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => {
+                            bypassJobCheckRef.current = false;
+                        }}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            className="bg-primary hover:bg-primary-dark"
+                            onClick={() => {
+                                bypassJobCheckRef.current = true;
+                                handleSaveToDatabase();
+                            }}
+                        >
+                            OK
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

@@ -150,7 +150,7 @@ const AdminSystemSettings = ({ id }) => {
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                    <p className="text-xs">System users Master</p>
+                                    <p className="text-xs">System users</p>
                                 </TooltipContent>
                             </Tooltip>
                         </TabsTrigger>
