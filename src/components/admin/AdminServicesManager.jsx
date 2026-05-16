@@ -522,24 +522,24 @@ const AdminServicesManager = () => {
             </div>
 
             {/* Pagination Controls - Top */}
-            <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-lg shadow border border-gray-100">
+            <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-2 rounded-lg shadow border border-gray-100">
                 <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-600">Items per page:</span>
+                    <span className="text-xs text-gray-600">Items per page:</span>
                     <Select value={itemsPerPage.toString()} onValueChange={(value) => {
                         setItemsPerPage(Number(value));
                         setCurrentPage(1);
                     }}>
-                        <SelectTrigger className="w-24 h-9 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
-                            <SelectValue />
+                        <SelectTrigger className="w-24 h-9 text-xs bg-gray-50/50 border-gray-200 rounded-lg">
+                            <SelectValue className="text-xs" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="10">10</SelectItem>
-                            <SelectItem value="25">25</SelectItem>
-                            <SelectItem value="50">50</SelectItem>
-                            <SelectItem value="100">100</SelectItem>
+                            <SelectItem value="10" className="text-xs">10</SelectItem>
+                            <SelectItem value="25" className="text-xs">25</SelectItem>
+                            <SelectItem value="50" className="text-xs">50</SelectItem>
+                            <SelectItem value="100" className="text-xs">100</SelectItem>
                         </SelectContent>
                     </Select>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-xs text-gray-600">
                         Showing {sortedServices.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, sortedServices.length)} of {sortedServices.length}
                     </span>
                 </div>
