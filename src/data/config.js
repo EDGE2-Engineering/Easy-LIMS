@@ -94,7 +94,8 @@ export const VIEWS = {
     ANALYST_DASHBOARD: 'Analyst Dashboard',
     ACCOUNTS_DASHBOARD: 'Accounts Dashboard',
     TECHNICIAN_DASHBOARD: 'Technician Dashboard',
-    MRO_DASHBOARD: 'MRO Dashboard'
+    MRO_DASHBOARD: 'MRO Dashboard',
+    HR_DASHBOARD: 'HR Dashboard'
 };
 
 export const ACTIONS = {
@@ -132,6 +133,7 @@ export const NAV_ITEM_IDS = {
     TECHNICIAN_DASHBOARD: 'technician_dashboard',
     MRO_DASHBOARD: 'mro_dashboard',
     CLIENTS: 'clients',
+    HR_DASHBOARD: 'hr_dashboard',
 };
 
 // IDs for settings dropdown sub-items (used in APP_CONFIG.navbar.settingsItems)
@@ -313,7 +315,7 @@ export const APP_CONFIG = {
                 NAV_ITEM_IDS.CLIENTS,
             ],
             [ROLES.HUMAN_RESOURCE.slug]: [
-                // HR has no main nav items; everything is under Settings → Organization
+                NAV_ITEM_IDS.HR_DASHBOARD,
             ],
         },
 
@@ -357,7 +359,7 @@ export const APP_CONFIG = {
         [ROLES.TECHNICIAN.slug]: [VIEWS.TECHNICIAN_DASHBOARD, VIEWS.JOBS, VIEWS.TESTING],
         [ROLES.MRO.slug]: [VIEWS.MRO_DASHBOARD, VIEWS.JOBS, VIEWS.SETTINGS],
         [ROLES.ACCOUNTS.slug]: [VIEWS.ACCOUNTS_DASHBOARD, VIEWS.DOCUMENTS, VIEWS.EXPENSES, VIEWS.SETTINGS],
-        [ROLES.HUMAN_RESOURCE.slug]: [VIEWS.WORK_LOG, VIEWS.APPROVALS]
+        [ROLES.HUMAN_RESOURCE.slug]: [VIEWS.HR_DASHBOARD, VIEWS.WORK_LOG, VIEWS.APPROVALS]
     }
 };
 

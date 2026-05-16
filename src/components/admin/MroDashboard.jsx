@@ -27,6 +27,7 @@ const MroDashboard = () => {
         totalSamples: 0,
         activeJobsCount: 0
     });
+    const [leaveRequests, setLeaveRequests] = useState([]);
 
     useEffect(() => {
         if (user?.id) {
@@ -85,6 +86,16 @@ const MroDashboard = () => {
                 totalSamples: samplesCount || 0,
                 activeJobsCount: activeJobs || 0
             });
+
+            // 6. Fetch user's leave requests
+            const { data: requests, error: requestsError } = await supabase
+                .from('request_approvals')
+                .select('*')
+                .eq('requester_id', user.id)
+                .order('created_at', { ascending: false });
+
+            if (requestsError) throw requestsError;
+            setLeaveRequests(requests || []);
 
         } catch (error) {
             console.error("MRO Dashboard Fetch Error:", error);
@@ -145,9 +156,9 @@ const MroDashboard = () => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {[
                         { label: 'Total Inward Entries', value: stats.totalInwards, icon: ClipboardList, color: 'text-blue-600', bg: 'bg-blue-50' },
-                        { label: 'Total Samples Logged', value: stats.totalSamples, icon: Box, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                        { label: 'Awaiting Inward', value: stats.pendingMaterialCount, icon: Clock, color: 'text-orange-600', bg: 'bg-orange-50' },
                         { label: 'Active Jobs', value: stats.activeJobsCount, icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                        { label: 'Awaiting Inward', value: stats.pendingMaterialCount, icon: Clock, color: 'text-orange-600', bg: 'bg-orange-50' },
+                        { label: 'Pending Leave Requests', value: leaveRequests.filter(r => r.status === 'PENDING').length, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
                     ].map((stat, idx) => (
                         <motion.div key={idx} variants={item}>
                             <Card className={`border-none shadow-sm ${stat.bg}/30 relative overflow-hidden group`}>
@@ -168,7 +179,7 @@ const MroDashboard = () => {
                     ))}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Jobs Awaiting Material */}
                     <motion.div variants={item} className="lg:col-span-2 space-y-6">
                         <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
@@ -262,6 +273,48 @@ const MroDashboard = () => {
                                         </Button>
                                     </div>
                                 )}
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+
+                    {/* Right Column: Leave Requests */}
+                    <motion.div variants={item} className="space-y-6">
+                        <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
+                            <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
+                                <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-primary" /> My Leave Requests
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="divide-y divide-gray-50 max-h-[400px] overflow-y-auto">
+                                    {leaveRequests.length === 0 ? (
+                                        <div className="p-8 text-center text-gray-400 font-medium italic text-sm">
+                                            No recent leave requests.
+                                        </div>
+                                    ) : (
+                                        leaveRequests.map((req) => (
+                                            <div key={req.id} className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center group">
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-900">
+                                                        {req.request_data?.leaveType || 'Leave Request'}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 font-medium">
+                                                        {new Date(req.request_data?.startDate).toLocaleDateString()} - {new Date(req.request_data?.endDate).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <Badge className={`text-[10px] font-black uppercase border-none ${
+                                                        req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
+                                                        req.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                                        'bg-yellow-100 text-yellow-700'
+                                                    }`}>
+                                                        {req.status}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
                     </motion.div>

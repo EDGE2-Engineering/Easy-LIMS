@@ -106,6 +106,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     { navItemId: NAV_ITEM_IDS.ACCOUNTS_DASHBOARD, view: VIEWS.ACCOUNTS_DASHBOARD, path: '/settings/accounts_dashboard',label: 'My Dashboard',icon: LayoutDashboard },
     { navItemId: NAV_ITEM_IDS.TECHNICIAN_DASHBOARD, view: VIEWS.TECHNICIAN_DASHBOARD, path: '/settings/technician_dashboard', label: 'My Dashboard', icon: LayoutDashboard },
     { navItemId: NAV_ITEM_IDS.MRO_DASHBOARD, view: VIEWS.MRO_DASHBOARD, path: '/settings/mro_dashboard', label: 'My Dashboard', icon: LayoutDashboard },
+    { navItemId: NAV_ITEM_IDS.HR_DASHBOARD, view: VIEWS.HR_DASHBOARD, path: '/settings/hr_dashboard', label: 'My Dashboard', icon: LayoutDashboard },
     { navItemId: NAV_ITEM_IDS.JOBS,               view: VIEWS.JOBS,               path: '/settings/jobs',             label: 'Jobs',        icon: Briefcase },
     { navItemId: NAV_ITEM_IDS.INQUIRIES,          view: VIEWS.INQUIRIES,          path: '/settings/inquiries',        label: 'Inquiries',   icon: MessageSquare },
     // { navItemId: 'testing', view: VIEWS.TESTING, path: '/settings/testing', label: 'Testing', icon: TestTube },

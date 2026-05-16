@@ -159,8 +159,8 @@ const AccountsDashboard = () => {
                     {[
                         { label: 'Quotations Created', value: stats.totalQuotations, icon: FileClock, color: 'text-blue-600', bg: 'bg-blue-50' },
                         { label: 'Invoices Generated', value: stats.totalInvoices, icon: FileCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                        { label: 'Awaiting Invoicing', value: stats.pendingInvoicesCount, icon: Receipt, color: 'text-orange-600', bg: 'bg-orange-50' },
                         { label: 'Total Billed (My Invoices)', value: `₹${stats.totalBilled.toLocaleString()}`, icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                        { label: 'Pending Leave Requests', value: leaveRequests.filter(r => r.status === 'PENDING').length, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
                     ].map((stat, idx) => (
                         <motion.div key={idx} variants={item}>
                             <Card className={`border-none shadow-sm ${stat.bg}/30 relative overflow-hidden group`}>
@@ -275,7 +275,7 @@ const AccountsDashboard = () => {
                     </motion.div>
 
                     {/* My Leaves / Actions */}
-                    <motion.div variants={item} className="space-y-6 hidden">
+                    <motion.div variants={item} className="space-y-6">
                         <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
                             <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
                                 <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">

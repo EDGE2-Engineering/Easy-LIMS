@@ -53,6 +53,7 @@ const JobsManager = ({ id }) => {
 
     // Advanced Filters State (from ExpensesManager)
     const [filterByCreator, setFilterByCreator] = useState('all');
+    const [filterByClient, setFilterByClient] = useState('all');
     const [filterDateStart, setFilterDateStart] = useState('');
     const [filterDateEnd, setFilterDateEnd] = useState('');
     const [datePreset, setDatePreset] = useState('custom');
@@ -170,7 +171,7 @@ const JobsManager = ({ id }) => {
 
             const { data, error } = await supabase.from('jobs').select('*, clients(client_name, gstin)').eq('id', jobId).maybeSingle();
             if (error) throw error;
-            
+
             if (data) {
                 const actualJobId = data.id;
                 // Security check for analysts and technicians
@@ -180,7 +181,7 @@ const JobsManager = ({ id }) => {
                         .select('id')
                         .eq('job_id', actualJobId)
                         .eq('technician_id', userId);
-                    
+
                     if (assignError || !assignments || assignments.length === 0) {
                         console.error("Access Denied Check:", { actualJobId, userId, userRole: user?.role, error: assignError });
                         toast({ title: "Access Denied", description: "You are not assigned to this job.", variant: "destructive" });
@@ -188,7 +189,7 @@ const JobsManager = ({ id }) => {
                         return;
                     }
                 }
-                
+
                 setEditingRecord({ ...data });
                 setIsAddingNew(false);
             }
@@ -349,7 +350,7 @@ const JobsManager = ({ id }) => {
                         .from('job_to_technicians')
                         .select('job_id')
                         .eq('technician_id', userId);
-                    
+
                     const assignedJobIds = (assignments || []).map(a => a.job_id);
                     if (assignedJobIds.length > 0) {
                         query = query.in('id', assignedJobIds);
@@ -581,6 +582,9 @@ const JobsManager = ({ id }) => {
             // Creator filter
             if (filterByCreator !== 'all' && r.users?.full_name !== filterByCreator) return false;
 
+            // Client filter
+            if (filterByClient !== 'all' && String(r.client_id) !== String(filterByClient)) return false;
+
             // Date range filter
             if (filterDateStart && new Date(r.created_at) < new Date(filterDateStart + "T00:00:00")) return false;
             if (filterDateEnd && new Date(r.created_at) > new Date(filterDateEnd + "T23:59:59")) return false;
@@ -612,7 +616,7 @@ const JobsManager = ({ id }) => {
         });
 
         return result;
-    }, [records, searchTerm, filterStatus, sortField, sortOrder, filterByCreator, filterDateStart, filterDateEnd]);
+    }, [records, searchTerm, filterStatus, sortField, sortOrder, filterByCreator, filterByClient, filterDateStart, filterDateEnd]);
 
     const resetAll = () => {
         setSearchTerm('');
@@ -620,6 +624,7 @@ const JobsManager = ({ id }) => {
         setSortField('created_at');
         setSortOrder('desc');
         setFilterByCreator('all');
+        setFilterByClient('all');
         setFilterDateStart('');
         setFilterDateEnd('');
         setDatePreset('custom');
@@ -861,7 +866,7 @@ const JobsManager = ({ id }) => {
                                             })
                                         }}
                                     />
-                                    : <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">{editingRecord.clients?.client_name || editingRecord.client_name || ''}</p>}
+                                        : <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">{editingRecord.clients?.client_name || editingRecord.client_name || ''}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-xs text-gray-700 font-semibold">Project Name</Label>
@@ -892,9 +897,9 @@ const JobsManager = ({ id }) => {
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><FileText className="w-4 h-4" /> Quotation Summary</h3>
                                         {
-                                        canModify && <Button variant="ghost" size="sm" onClick={() => navigate(`/doc/${linkedDocs.find(d => d.document_type === 'Quotation').id}`)} className="h-8 text-xs text-primary hover:bg-primary/5">
-                                            <ExternalLink className="w-3 h-3 mr-1" /> View Full Document
-                                        </Button>
+                                            canModify && <Button variant="ghost" size="sm" onClick={() => navigate(`/doc/${linkedDocs.find(d => d.document_type === 'Quotation').id}`)} className="h-8 text-xs text-primary hover:bg-primary/5">
+                                                <ExternalLink className="w-3 h-3 mr-1" /> View Full Document
+                                            </Button>
                                         }
                                     </div>
                                     <div className="overflow-x-auto">
@@ -1030,7 +1035,7 @@ const JobsManager = ({ id }) => {
                                 >
                                     <Filter className="w-4 h-4 mr-2" />
                                     <span className="text-sm font-bold uppercase tracking-widest leading-none">Filters</span>
-                                    {(filterStatus !== 'all' || filterByCreator !== 'all' || filterDateStart || filterDateEnd) && (
+                                    {(filterStatus !== 'all' || filterByCreator !== 'all' || filterByClient !== 'all' || filterDateStart || filterDateEnd) && (
                                         <Badge className="ml-2 bg-primary text-white scale-75">!</Badge>
                                     )}
                                 </Button>
@@ -1176,6 +1181,67 @@ const JobsManager = ({ id }) => {
                                     </SelectContent>
                                 </Select>
                             </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Client</Label>
+                                <ReactSelect
+                                    className="text-sm"
+                                    classNamePrefix="react-select"
+                                    options={[
+                                        { value: 'all', label: 'All Clients' },
+                                        ...clients.map(c => ({ value: String(c.id), label: c.client_name }))
+                                    ]}
+                                    value={filterByClient === 'all'
+                                        ? { value: 'all', label: 'All Clients' }
+                                        : { value: filterByClient, label: clients.find(c => String(c.id) === String(filterByClient))?.client_name }
+                                    }
+                                    onChange={(option) => setFilterByClient(option ? option.value : 'all')}
+                                    placeholder="Search Clients..."
+                                    isSearchable
+                                    styles={{
+                                        control: (base) => ({
+                                            ...base,
+                                            minHeight: '40px',
+                                            height: '40px',
+                                            borderColor: 'transparent',
+                                            borderRadius: '0.75rem',
+                                            backgroundColor: '#f9fafb', // gray-50
+                                            boxShadow: 'none',
+                                            fontSize: '0.875rem', // text-sm (14px)
+                                            '&:hover': {
+                                                borderColor: '#e2e8f0'
+                                            }
+                                        }),
+                                        singleValue: (base) => ({
+                                            ...base,
+                                            color: '#111827', // gray-900
+                                            fontWeight: '500'
+                                        }),
+                                        placeholder: (base) => ({
+                                            ...base,
+                                            color: '#9ca3af' // gray-400
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected ? '#f1f5f9' : state.isFocused ? '#f1f5f9' : 'white',
+                                            color: state.isSelected ? '#0f172a' : '#1e293b',
+                                            fontSize: '0.875rem', // text-sm
+                                            fontWeight: state.isSelected ? '700' : '600',
+                                            cursor: 'pointer',
+                                            '&:active': {
+                                                backgroundColor: '#e2e8f0'
+                                            }
+                                        }),
+                                        menu: (base) => ({
+                                            ...base,
+                                            borderRadius: '1rem',
+                                            overflow: 'hidden',
+                                            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                                            border: '1px solid #f1f5f9',
+                                            zIndex: 50
+                                        })
+                                    }}
+                                />
+                            </div>
                         </div>
                     </div>
                 )}
@@ -1271,7 +1337,7 @@ const JobsManager = ({ id }) => {
                                                 <p className="text-xs">Delete this job</p>
                                             </TooltipContent>
                                         </Tooltip>}
-                                            </div>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
