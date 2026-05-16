@@ -139,7 +139,8 @@ const NewQuotationPage = () => {
     const bypassJobCheckRef = useRef(false);
     const isNavigatingRef = useRef(false);
     const isReadOnly = useMemo(() => {
-        return user?.role === ROLES.ACCOUNTS.slug && savedRecordId && (documentCreatorId === null || documentCreatorId !== user?.id);
+        const restrictedRoles = [ROLES.ACCOUNTS.slug, ROLES.MRO.slug];
+        return restrictedRoles.includes(user?.role) && savedRecordId && (documentCreatorId === null || documentCreatorId !== user?.id);
     }, [user, savedRecordId, documentCreatorId]);
 
 
@@ -538,7 +539,9 @@ const NewQuotationPage = () => {
         }
 
         // Prevent ACCOUNTS role from updating others' documents
-        if (user.role === ROLES.ACCOUNTS.slug && savedRecordId && documentCreatorId && documentCreatorId !== user.id) {
+        // Prevent restricted roles from updating others' documents
+        const restrictedRoles = [ROLES.ACCOUNTS.slug, ROLES.MRO.slug];
+        if (restrictedRoles.includes(user.role) && savedRecordId && documentCreatorId && documentCreatorId !== user.id) {
             toast({
                 title: "Permission Denied",
                 description: "You cannot update a document created by another user.",

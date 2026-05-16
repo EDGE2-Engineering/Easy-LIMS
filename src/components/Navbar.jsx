@@ -111,6 +111,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     // { navItemId: 'testing', view: VIEWS.TESTING, path: '/settings/testing', label: 'Testing', icon: TestTube },
     { navItemId: NAV_ITEM_IDS.DOCUMENTS,          view: VIEWS.DOCUMENTS,          path: '/settings/documents',        label: 'Documents',   icon: Files },
     { navItemId: NAV_ITEM_IDS.EXPENSES,           view: VIEWS.EXPENSES,           path: '/settings/expenses',         label: 'Expenses',    icon: IndianRupee },
+    { navItemId: NAV_ITEM_IDS.CLIENTS,            view: VIEWS.SETTINGS,           path: '/settings/clients',          label: 'Clients',     icon: BriefcaseBusiness },
   ];
 
   const SETTINGS_SUB_ITEMS = [
@@ -130,7 +131,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     canShowSettingsItem(item.id, item.views ?? item.view)
   );
 
-  const canShowSettings = canView(VIEWS.SETTINGS) || visibleSettingsSubItems.length > 0;
+  const canShowSettings = visibleSettingsSubItems.length > 0;
 
   const isActive = (path, id) => {
     if (path === '/settings/clients') {
@@ -178,6 +179,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                 '/settings/inward_register': 'Register and manage material reception',
                 '/settings/testing': 'Laboratory testing workflow and data entry',
                 '/settings/documents': 'For accounts team to create quotes and invoices',
+                '/settings/clients': 'Manage and track client database and contact information',
               };
 
               return (

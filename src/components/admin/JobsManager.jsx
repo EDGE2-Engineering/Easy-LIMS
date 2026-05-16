@@ -131,6 +131,7 @@ const JobsManager = ({ id }) => {
     const { toast } = useToast();
     const navigate = useNavigate();
     const { user, isAdmin, loading: authLoading } = useAuth();
+    const canModify = isAdmin() || user?.role === ROLES.MRO.slug;
     const { workflow } = useWorkflowConfig();
 
     const [editingRecord, setEditingRecord] = useState(null);
@@ -637,7 +638,7 @@ const JobsManager = ({ id }) => {
                             <p className="text-xs text-gray-500">Manage job details and track its progress in the laboratory workflow.</p>
                         </div>
                     </div>
-                    {!isAddingNew && isAdmin() && (
+                    {!isAddingNew && canModify && (
                         <Button
                             variant="ghost"
                             size="sm"
@@ -799,7 +800,7 @@ const JobsManager = ({ id }) => {
                         </Dialog>
 
                         {/* Linked Documents Summary */}
-                        {isAdmin() && linkedDocs.length > 0 && (
+                        {canModify && linkedDocs.length > 0 && (
                             <div className="p-2 bg-blue-50/30 rounded-xl border border-blue-100/50">
                                 <h4 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-4 flex items-center gap-2"><FileText className="w-3 h-3" /> Job Documents</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -818,14 +819,14 @@ const JobsManager = ({ id }) => {
 
                 {/* Main Content Sections */}
                 <div className="space-y-10">
-                    <div className={cn("bg-white p-4 rounded-sm border border-gray-100 shadow-sm", isAdmin() ? "block" : "hidden")}>
+                    <div className={cn("bg-white p-4 rounded-sm border border-gray-100 shadow-sm", canModify ? "block" : "hidden")}>
                         <div className="space-y-6" >
                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Client Details</h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 <div className="space-y-2">
                                     <Label className="text-xs text-gray-700 font-semibold">Client</Label>
-                                    {isAdmin() ? <ReactSelect
+                                    {canModify ? <ReactSelect
                                         className="mt-1 text-xs"
                                         classNamePrefix="react-select"
                                         options={clients.map(c => ({ value: c.id, label: c.client_name }))}
@@ -864,14 +865,14 @@ const JobsManager = ({ id }) => {
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-xs text-gray-700 font-semibold">Project Name</Label>
-                                    {!isAdmin() && <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">{editingRecord.project_name || ''}</p>}
-                                    {isAdmin() && <Input className="text-xs h-10 border-gray-200 rounded-xl bg-white" value={editingRecord.project_name || ''} onChange={e => setEditingRecord({ ...editingRecord, project_name: e.target.value })} />}
+                                    {!canModify && <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">{editingRecord.project_name || ''}</p>}
+                                    {canModify && <Input className="text-xs h-10 border-gray-200 rounded-xl bg-white" value={editingRecord.project_name || ''} onChange={e => setEditingRecord({ ...editingRecord, project_name: e.target.value })} />}
                                 </div>
                                 {!isAddingNew && editingRecord.work_order_id && (
                                     <div className="space-y-2">
                                         <Label className="text-xs text-gray-700 font-semibold">Work Order ID</Label>
-                                        {!isAdmin() && <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">{editingRecord.work_order_id || ''}</p>}
-                                        {isAdmin() && (<Input
+                                        {!canModify && <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">{editingRecord.work_order_id || ''}</p>}
+                                        {canModify && (<Input
                                             className="text-xs h-10 border-gray-200 rounded-xl bg-white"
                                             value={editingRecord.work_order_id || ''}
                                             onChange={e => setEditingRecord({ ...editingRecord, work_order_id: e.target.value })}
@@ -891,7 +892,7 @@ const JobsManager = ({ id }) => {
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><FileText className="w-4 h-4" /> Quotation Summary</h3>
                                         {
-                                        isAdmin() && <Button variant="ghost" size="sm" onClick={() => navigate(`/doc/${linkedDocs.find(d => d.document_type === 'Quotation').id}`)} className="h-8 text-xs text-primary hover:bg-primary/5">
+                                        canModify && <Button variant="ghost" size="sm" onClick={() => navigate(`/doc/${linkedDocs.find(d => d.document_type === 'Quotation').id}`)} className="h-8 text-xs text-primary hover:bg-primary/5">
                                             <ExternalLink className="w-3 h-3 mr-1" /> View Full Document
                                         </Button>
                                         }
@@ -934,7 +935,7 @@ const JobsManager = ({ id }) => {
                                 <div className="bg-white rounded-2xl shadow-sm">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><Package className="w-4 h-4" /> Material Inward Details</h3>
-                                        {isAdmin() && (
+                                        {canModify && (
                                             <Button variant="outline" size="sm" onClick={() => setShowingMaterialForm(true)} className="h-8 text-xs"><Edit className="w-3 h-3 mr-1" /> Edit Entries</Button>
                                         )}
                                     </div>
@@ -949,7 +950,7 @@ const JobsManager = ({ id }) => {
 
                             {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.TECHNICIANS_ASSIGNED) && (
                                 <div className="bg-white rounded-2xl shadow-sm">
-                                    {isAdmin() && (
+                                    {canModify && (
                                         <div className="flex justify-between items-center mb-6">
                                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><UserPlus className="w-4 h-4" /> Technician Assignments</h3>
                                             <Button variant="outline" size="sm" onClick={() => setShowingTechForm(true)} className="h-8 text-xs"><Edit className="w-3 h-3 mr-1" /> Edit Assignments</Button>
@@ -977,7 +978,7 @@ const JobsManager = ({ id }) => {
                     )}
                 </div>
 
-                {isAdmin() && (
+                {canModify && (
                     <div className="flex justify-end gap-3 pt-8 border-t">
                         <Button variant="outline" className="h-12 px-8 rounded-xl" onClick={() => navigate('/settings/jobs')}>Cancel</Button>
                         <Button className="h-12 px-8 rounded-xl bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20" onClick={handleSave} disabled={isSaving}>
@@ -1004,7 +1005,7 @@ const JobsManager = ({ id }) => {
                     </div>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            {isAdmin() && <Button
+                            {canModify && <Button
                                 onClick={() => { setEditingRecord({ status: WORKFLOW_STATES.JOB_CREATED, project_name: '', client_id: '' }); setIsAddingNew(true); }}
                                 className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
                             >
