@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-    CheckCircle2, XCircle, Clock, User, Calendar, 
+import {
+    CheckCircle2, XCircle, Clock, User, Calendar,
     MessageSquare, AlertCircle, Filter, ChevronRight,
     ArrowUpRight, Info, ShieldCheck, ExternalLink
 } from 'lucide-react';
@@ -44,8 +44,8 @@ const ApprovalsManager = () => {
                 const { data: jobs, error: jobsError } = await supabase
                     .from('jobs')
                     .select('*, clients(client_name), users:created_by(full_name)')
-                    .eq('status', WORKFLOW_STATES.UNDER_REVIEW);
-                
+                    .eq('status', WORKFLOW_STATES.TEST_DATA_UNDER_REVIEW);
+
                 if (jobsError) throw jobsError;
 
                 jobRequests = (jobs || []).map(job => ({
@@ -81,7 +81,7 @@ const ApprovalsManager = () => {
         try {
             if (request.request_type === 'JOB_REVIEW') {
                 const targetState = action === 'approve' ? WORKFLOW_STATES.DATA_VERIFIED : WORKFLOW_STATES.UNDER_TESTING;
-                
+
                 // Update Job Status
                 const { error: updateError } = await supabase
                     .from('jobs')
@@ -99,7 +99,7 @@ const ApprovalsManager = () => {
                     .from('job_workflow_logs')
                     .insert({
                         job_id: request.real_id,
-                        from_state: WORKFLOW_STATES.UNDER_REVIEW,
+                        from_state: WORKFLOW_STATES.TEST_DATA_UNDER_REVIEW,
                         to_state: targetState,
                         action_id: action === 'approve' ? 'APPROVE_TEST_RESULTS' : 'REJECT_TEST_RESULTS',
                         performed_by: user.id,
@@ -179,7 +179,7 @@ const ApprovalsManager = () => {
                                 <div className="space-y-1 ">
                                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Request Type</p>
                                     <Badge className={`${isLeave ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-600'} border-none font-black text-[10px] uppercase tracking-tighter`}>
-                                      {request.request_type}
+                                        {request.request_type}
                                     </Badge>
                                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest pt-4">Requested On</p>
                                     <p className="text-[10px] font-bold text-gray-400 flex items-center gap-1">
@@ -232,9 +232,9 @@ const ApprovalsManager = () => {
                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Project Name</p>
                                         <p className="text-sm font-bold text-gray-700 mt-1">{data.project_name || 'N/A'}</p>
                                     </div>
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
                                         className="w-full rounded-xl border-dashed border-primary/20 text-primary hover:bg-primary/5 gap-2 font-bold text-[10px] uppercase tracking-widest"
                                         onClick={() => window.location.hash = `#/settings/jobs/${data.id}`}
                                     >
@@ -270,7 +270,7 @@ const ApprovalsManager = () => {
                             {request.status === 'PENDING' && (
                                 <div className="space-y-2 pt-2 border-t border-gray-50">
                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Decision Remarks (Optional)</p>
-                                    <textarea 
+                                    <textarea
                                         className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 text-sm focus:outline-none focus:ring-1 focus:ring-primary/20 min-h-[80px]"
                                         placeholder="Add any comments regarding your decision..."
                                         value={adminRemarks}
@@ -284,13 +284,13 @@ const ApprovalsManager = () => {
                         <div className="p-6 border-l border-gray-100 flex flex-row md:flex-col justify-center gap-3 bg-gray-50/20">
                             {request.status === 'PENDING' ? (
                                 <>
-                                    <Button 
+                                    <Button
                                         onClick={() => handleAction(request, 'approve', adminRemarks)}
                                         className="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs gap-2 shadow-lg shadow-emerald-500/20 px-6"
                                     >
                                         <CheckCircle2 className="w-4 h-4" /> Approve
                                     </Button>
-                                    <Button 
+                                    <Button
                                         onClick={() => handleAction(request, 'reject', adminRemarks)}
                                         variant="outline"
                                         className="rounded-xl border-rose-200 text-rose-600 hover:bg-rose-50 font-black text-xs gap-2 px-6"
@@ -300,9 +300,8 @@ const ApprovalsManager = () => {
                                 </>
                             ) : (
                                 <div className="space-y-3 flex flex-col items-center">
-                                    <Badge className={`px-4 py-2 rounded-xl border-none font-black text-xs ${
-                                        request.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
-                                    }`}>
+                                    <Badge className={`px-4 py-2 rounded-xl border-none font-black text-xs ${request.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
+                                        }`}>
                                         {request.status}
                                     </Badge>
                                     <div className="text-center">
@@ -332,17 +331,16 @@ const ApprovalsManager = () => {
                     </h1>
                     <p className="text-gray-500 font-medium mt-1 uppercase text-[10px] tracking-widest ml-1">Review and manage employee requests</p>
                 </div>
-                
+
                 <div className="flex items-center gap-2 bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
                     {['PENDING', 'APPROVED', 'REJECTED'].map((s) => (
                         <button
                             key={s}
                             onClick={() => setFilter(s)}
-                            className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all ${
-                                filter === s 
-                                ? 'bg-primary text-white shadow-lg shadow-primary/25' 
-                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-                            }`}
+                            className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all ${filter === s
+                                    ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                                }`}
                         >
                             {s}
                         </button>

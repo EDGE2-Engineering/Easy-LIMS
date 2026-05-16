@@ -66,7 +66,7 @@ export const WORKFLOW_STATES = {
     MATERIAL_RECEIVED: 'MATERIAL_RECEIVED',
     TECHNICIANS_ASSIGNED: 'TECHNICIANS_ASSIGNED',
     UNDER_TESTING: 'UNDER_TESTING',
-    UNDER_REVIEW: 'UNDER_REVIEW',
+    TEST_DATA_UNDER_REVIEW: 'TEST_DATA_UNDER_REVIEW',
     DATA_VERIFIED: 'DATA_VERIFIED',
     REPORT_GENERATED: 'REPORT_GENERATED',
     REPORT_UNDER_REVIEW: 'REPORT_UNDER_REVIEW',
@@ -191,10 +191,10 @@ export const APP_CONFIG = {
                 label: 'Under Testing',
                 color: { bg: '#eff6ff', text: '#1d4ed8', border: '#93c5fd' },
                 actions: [
-                    { id: ACTIONS.COMPLETE_TESTING_AND_SUBMIT_FOR_REVIEW.name, label: ACTIONS.COMPLETE_TESTING_AND_SUBMIT_FOR_REVIEW.label, description: ACTIONS.COMPLETE_TESTING_AND_SUBMIT_FOR_REVIEW.description, targetState: WORKFLOW_STATES.UNDER_REVIEW, roles: [ROLES.TECHNICIAN.slug, ROLES.ADMIN.slug, ROLES.ANALYST.slug] }
+                    { id: ACTIONS.COMPLETE_TESTING_AND_SUBMIT_FOR_REVIEW.name, label: ACTIONS.COMPLETE_TESTING_AND_SUBMIT_FOR_REVIEW.label, description: ACTIONS.COMPLETE_TESTING_AND_SUBMIT_FOR_REVIEW.description, targetState: WORKFLOW_STATES.TEST_DATA_UNDER_REVIEW, roles: [ROLES.TECHNICIAN.slug, ROLES.ADMIN.slug, ROLES.ANALYST.slug] }
                 ]
             },
-            [WORKFLOW_STATES.UNDER_REVIEW]: {
+            [WORKFLOW_STATES.TEST_DATA_UNDER_REVIEW]: {
                 label: 'Under Review',
                 color: { bg: '#f5f3ff', text: '#6d28d9', border: '#c4b5fd' },
                 actions: [

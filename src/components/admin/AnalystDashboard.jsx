@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    LayoutDashboard, Briefcase, Calendar, FileText, 
+import {
+    LayoutDashboard, Briefcase, Calendar, FileText,
     CheckCircle2, Clock, Activity, Target, MessageSquare, Zap, AlertCircle
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -16,7 +16,7 @@ import { motion } from 'framer-motion';
 const AnalystDashboard = () => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
-    
+
     const [assignedJobs, setAssignedJobs] = useState([]);
     const [leaveRequests, setLeaveRequests] = useState([]);
     const [workflowCounts, setWorkflowCounts] = useState({});
@@ -37,7 +37,7 @@ const AnalystDashboard = () => {
                 .from('job_to_technicians')
                 .select('job_id')
                 .eq('technician_id', userId);
-            
+
             if (assignError) throw assignError;
 
             let jobs = [];
@@ -48,11 +48,11 @@ const AnalystDashboard = () => {
                     .select('*, clients(client_name)')
                     .in('id', jobIds)
                     .order('created_at', { ascending: false });
-                
+
                 if (jobsError) throw jobsError;
                 jobs = jobData || [];
             }
-            
+
             setAssignedJobs(jobs);
 
             // Compute workflow counts for assigned jobs
@@ -106,12 +106,12 @@ const AnalystDashboard = () => {
     }
 
     const activeJobsCount = assignedJobs.filter(j => j.status !== WORKFLOW_STATES.JOB_COMPLETE).length;
-    const pendingVerification = workflowCounts[WORKFLOW_STATES.UNDER_REVIEW] || 0;
+    const pendingVerification = workflowCounts[WORKFLOW_STATES.TEST_DATA_UNDER_REVIEW] || 0;
     const pendingRequests = leaveRequests.filter(r => r.status === 'PENDING').length;
 
     return (
         <TooltipProvider delayDuration={300}>
-            <motion.div 
+            <motion.div
                 variants={container}
                 initial="hidden"
                 animate="show"
@@ -220,11 +220,10 @@ const AnalystDashboard = () => {
                                                     </p>
                                                 </div>
                                                 <div>
-                                                    <Badge className={`text-[10px] font-black uppercase border-none ${
-                                                        req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
-                                                        req.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                                                        'bg-yellow-100 text-yellow-700'
-                                                    }`}>
+                                                    <Badge className={`text-[10px] font-black uppercase border-none ${req.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
+                                                            req.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                                                'bg-yellow-100 text-yellow-700'
+                                                        }`}>
                                                         {req.status}
                                                     </Badge>
                                                 </div>

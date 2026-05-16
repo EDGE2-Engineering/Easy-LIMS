@@ -129,7 +129,7 @@ fun JobItem(job: Job, onClick: () -> Unit) {
                         "JOB_COMPLETE", "REPORT_RELEASED" -> MaterialTheme.colorScheme.primaryContainer
                         "UNDER_TESTING", "TECHNICIANS_ASSIGNED" -> MaterialTheme.colorScheme.secondaryContainer
                         "JOB_CREATED" -> MaterialTheme.colorScheme.surfaceVariant
-                        "UNDER_REVIEW" -> MaterialTheme.colorScheme.tertiaryContainer
+                        "TEST_DATA_UNDER_REVIEW" -> MaterialTheme.colorScheme.tertiaryContainer
                         else -> MaterialTheme.colorScheme.surfaceVariant
                     },
                     shape = RoundedCornerShape(8.dp)

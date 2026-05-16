@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,7 +36,10 @@ const JobsManager = ({ id }) => {
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterStatus, setFilterStatus] = useState('all');
+    const [searchParams] = useSearchParams();
+    const [filterStatus, setFilterStatus] = useState(() => searchParams.get('status') || 'all');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
     const [linkedDocs, setLinkedDocs] = useState([]);
     const [woId, setWoId] = useState('');
     const [showingWoForm, setShowingWoForm] = useState(false);
@@ -618,6 +621,17 @@ const JobsManager = ({ id }) => {
         return result;
     }, [records, searchTerm, filterStatus, sortField, sortOrder, filterByCreator, filterByClient, filterDateStart, filterDateEnd]);
 
+    // Pagination calculations
+    const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedRecords = filteredRecords.slice(startIndex, endIndex);
+
+    // Reset to page 1 when any filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterStatus, filterByCreator, filterDateStart, filterDateEnd]);
+
     const resetAll = () => {
         setSearchTerm('');
         setFilterStatus('all');
@@ -1094,7 +1108,7 @@ const JobsManager = ({ id }) => {
                     </div>
 
                     <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">
-                        Total Jobs: <span className="text-primary">{filteredRecords.length}</span>
+                        Showing <span className="text-primary">{filteredRecords.length === 0 ? 0 : startIndex + 1}–{Math.min(endIndex, filteredRecords.length)}</span> of <span className="text-primary">{filteredRecords.length}</span> Jobs
                     </div>
                 </div>
 
@@ -1247,6 +1261,30 @@ const JobsManager = ({ id }) => {
                 )}
             </div>
 
+            {/* Pagination Controls - Top */}
+            <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-lg shadow border border-gray-100">
+                <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-600">Items per page:</span>
+                    <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                        setItemsPerPage(Number(value));
+                        setCurrentPage(1);
+                    }}>
+                        <SelectTrigger className="w-24 h-9 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="25">25</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <span className="text-sm text-gray-600">
+                        Showing {filteredRecords.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, filteredRecords.length)} of {filteredRecords.length}
+                    </span>
+                </div>
+            </div>
+
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b">
@@ -1261,7 +1299,7 @@ const JobsManager = ({ id }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredRecords.map(r => (
+                        {paginatedRecords.map(r => (
                             <tr key={r.id} className="border-b hover:bg-gray-50/50 transition-colors group">
                                 <td className="py-5 px-6">
                                     <span className="font-mono font-bold text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10">{r.job_code}</span>
@@ -1344,6 +1382,35 @@ const JobsManager = ({ id }) => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination Controls - Bottom */}
+            {totalPages > 1 && (
+                <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-lg shadow border border-gray-100">
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="h-9 px-4 text-sm border-gray-200 bg-gray-50/50 rounded-lg disabled:opacity-50"
+                        >
+                            Previous
+                        </Button>
+                        <span className="text-sm text-gray-600 px-3">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="h-9 px-4 text-sm border-gray-200 bg-gray-50/50 rounded-lg disabled:opacity-50"
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             <AlertDialog open={deleteConfirmation.isOpen} onOpenChange={(isOpen) => !isOpen && setDeleteConfirmation({ isOpen: false, jobId: null, jobCode: '' })}>
                 <AlertDialogContent>

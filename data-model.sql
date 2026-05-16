@@ -175,7 +175,7 @@ CREATE TABLE public.jobs (
 );
 CREATE TABLE public.material_inward_register (
   job_order_no character varying UNIQUE,
-  status character varying NOT NULL DEFAULT 'RECEIVED'::character varying CHECK (status::text = ANY (ARRAY['RECEIVED'::character varying, 'UIN_GENERATED'::character varying, 'SENT_TO_DEPARTMENT'::character varying, 'UNDER_TESTING'::character varying, 'TEST_COMPLETED'::character varying, 'REPORT_GENERATED'::character varying, 'UNDER_REVIEW'::character varying, 'SIGNED'::character varying, 'PAYMENT_PENDING'::character varying, 'PAYMENT_RECEIVED'::character varying, 'REPORT_RELEASED'::character varying, 'COMPLETED'::character varying]::text[])),
+  status character varying NOT NULL DEFAULT 'RECEIVED'::character varying CHECK (status::text = ANY (ARRAY['RECEIVED'::character varying, 'UIN_GENERATED'::character varying, 'SENT_TO_DEPARTMENT'::character varying, 'UNDER_TESTING'::character varying, 'TEST_COMPLETED'::character varying, 'REPORT_GENERATED'::character varying, 'TEST_DATA_UNDER_REVIEW'::character varying, 'SIGNED'::character varying, 'PAYMENT_PENDING'::character varying, 'PAYMENT_RECEIVED'::character varying, 'REPORT_RELEASED'::character varying, 'COMPLETED'::character varying]::text[])),
   created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
   po_wo_number character varying,

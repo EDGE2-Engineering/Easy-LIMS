@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-    LayoutDashboard, Briefcase, Users, Calendar, TrendingUp, 
-    AlertCircle, CheckCircle2, Clock, IndianRupee, FileText, 
-    Package, ArrowUpRight, ArrowDownRight, ChevronRight, UserMinus, 
+import {
+    LayoutDashboard, Briefcase, Users, Calendar, TrendingUp,
+    AlertCircle, CheckCircle2, Clock, IndianRupee, FileText,
+    Package, ArrowUpRight, ArrowDownRight, ChevronRight, UserMinus,
     Zap, Activity, Target, ShieldCheck, CalendarRange,
     BriefcaseBusiness, MessageSquare, Wallet
 } from 'lucide-react';
@@ -38,6 +38,11 @@ const AdminDashboard = () => {
             year: 0
         },
         quotations: {
+            week: 0,
+            month: 0,
+            year: 0
+        },
+        invoices: {
             week: 0,
             month: 0,
             year: 0
@@ -78,7 +83,7 @@ const AdminDashboard = () => {
             const { data: approvals, error: approvError } = await supabase
                 .from('request_approvals')
                 .select('*, requester:users!request_approvals_requester_id_fkey(full_name, username, role)');
-            
+
             if (approvError) throw approvError;
 
             const pendingLeaveApprovalsCount = (approvals || []).filter(r => r.status === 'PENDING' && r.request_type === 'LEAVE').length;
@@ -120,7 +125,7 @@ const AdminDashboard = () => {
             const nextWeek = new Date();
             nextWeek.setDate(nextWeek.getDate() + 7);
             const nextWeekStr = nextWeek.toISOString().split('T')[0];
-            
+
             // Filter unique requests for upcoming leaves to avoid showing the same leave multiple times
             const seenRequests = new Set();
             const upcomingLeaves = expandedLeaves
@@ -146,14 +151,14 @@ const AdminDashboard = () => {
                 .order('created_at', { ascending: false })
                 .limit(5);
             if (activityError) throw activityError;
-            
+
             // 5. Fetch Clients & Inquiries Stats
             const { count: clientsCount, error: clientErr } = await supabase.from('clients').select('*', { count: 'exact', head: true });
             const { data: inquiries, error: inqErr } = await supabase
                 .from('inquiries')
                 .select('client_name, status, description, received_at')
                 .order('received_at', { ascending: false });
-            
+
             if (inqErr) throw inqErr;
             const pendingInquiries = (inquiries || []).filter(i => i.status === 'PENDING').length;
 
@@ -170,11 +175,11 @@ const AdminDashboard = () => {
             const { data: expenses, error: expErr } = await supabase
                 .from('expenses')
                 .select('amount, date');
-            
+
             if (expErr) throw expErr;
 
             const firstDayOfMonthStr = formatDate(new Date(now.getFullYear(), now.getMonth(), 1));
-            
+
             // Get first day of current week (assuming Monday)
             const d = new Date(now);
             const dayOfWeek = d.getDay();
@@ -185,48 +190,53 @@ const AdminDashboard = () => {
             const expMetrics = (expenses || []).reduce((acc, e) => {
                 const amount = Number(e.amount) || 0;
                 const dateStr = e.date || ""; // YYYY-MM-DD
-                
+
                 // Only count expenses from the current year
                 if (dateStr.startsWith(currentYear)) {
                     acc.year += amount;
                     if (dateStr >= firstDayOfMonthStr) acc.month += amount;
                     if (dateStr >= firstDayOfWeekStr) acc.week += amount;
                 }
-                
+
                 return acc;
             }, { week: 0, month: 0, year: 0 });
 
-            // 7. Fetch Quotations
-            const { data: quotes, error: quotesErr } = await supabase
+            // 7. Fetch Quotations & Invoices
+            const { data: allDocs, error: docsErr } = await supabase
                 .from('documents')
-                .select('content, created_at')
-                .eq('document_type', 'Quotation');
-            
-            if (quotesErr) throw quotesErr;
+                .select('content, created_at, document_type')
+                .in('document_type', ['Quotation', 'Tax Invoice']);
+
+            if (docsErr) throw docsErr;
 
             const taxCGST = settings?.tax_cgst ? Number(settings.tax_cgst) : 9;
             const taxSGST = settings?.tax_sgst ? Number(settings.tax_sgst) : 9;
             const taxTotalPercent = taxCGST + taxSGST;
 
-            const quoteMetrics = (quotes || []).reduce((acc, q) => {
-                const content = q.content || {};
-                const items = content.items || [];
-                const discount = content.discount || 0;
-                
-                const subtotal = items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
-                const discountedSubtotal = subtotal * (1 - discount / 100);
-                const total = discountedSubtotal * (1 + taxTotalPercent / 100);
+            const calculateMetrics = (docs) => {
+                return (docs || []).reduce((acc, q) => {
+                    const content = q.content || {};
+                    const items = content.items || [];
+                    const discount = content.discount || 0;
 
-                const dateStr = q.created_at ? q.created_at.split('T')[0] : "";
-                
-                if (dateStr.startsWith(currentYear)) {
-                    acc.year += total;
-                    if (dateStr >= firstDayOfMonthStr) acc.month += total;
-                    if (dateStr >= firstDayOfWeekStr) acc.week += total;
-                }
-                
-                return acc;
-            }, { week: 0, month: 0, year: 0 });
+                    const subtotal = items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
+                    const discountedSubtotal = subtotal * (1 - discount / 100);
+                    const total = discountedSubtotal * (1 + taxTotalPercent / 100);
+
+                    const dateStr = q.created_at ? q.created_at.split('T')[0] : "";
+
+                    if (dateStr.startsWith(currentYear)) {
+                        acc.year += total;
+                        if (dateStr >= firstDayOfMonthStr) acc.month += total;
+                        if (dateStr >= firstDayOfWeekStr) acc.week += total;
+                    }
+
+                    return acc;
+                }, { week: 0, month: 0, year: 0 });
+            };
+
+            const quoteMetrics = calculateMetrics(allDocs.filter(d => d.document_type === 'Quotation'));
+            const invoiceMetrics = calculateMetrics(allDocs.filter(d => d.document_type === 'Tax Invoice'));
 
             setStats({
                 totalJobs: jobs.length,
@@ -239,6 +249,7 @@ const AdminDashboard = () => {
                 pendingInquiries: pendingInquiries,
                 expenditures: expMetrics,
                 quotations: quoteMetrics,
+                invoices: invoiceMetrics,
                 pendingLeaves: pendingLeaveApprovalsCount,
                 pendingOtherApprovals: otherPendingApprovalsCount,
                 leavesToday: leavesToday,
@@ -295,422 +306,473 @@ const AdminDashboard = () => {
 
     return (
         <TooltipProvider delayDuration={300}>
-            <motion.div 
+            <motion.div
                 variants={container}
                 initial="hidden"
                 animate="show"
                 className="space-y-8 pb-12"
             >
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-xl">
-                            <LayoutDashboard className="w-8 h-8 text-primary" />
-                        </div>
-                        Operational Dashboard
-                    </h1>
-                    <p className="text-gray-500 font-medium mt-1">Welcome back, <span className="text-primary font-bold">{user?.fullName || user?.username}</span>. Here's what's happening today.</p>
+                {/* Header Section */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-xl">
+                                <LayoutDashboard className="w-8 h-8 text-primary" />
+                            </div>
+                            Operational Dashboard
+                        </h1>
+                        <p className="text-gray-500 font-medium mt-1">Welcome back, <span className="text-primary font-bold">{user?.fullName || user?.username}</span>. Here's what's happening today.</p>
+                    </div>
+                    <Button onClick={fetchDashboardData} size="sm" variant="ghost" className="rounded-xl h-10 px-4 font-bold text-primary hover:bg-primary/10 transition-all border border-gray-100 bg-white shadow-sm">
+                        <Zap className="w-4 h-4 mr-2" /> Refresh
+                    </Button>
                 </div>
-                <Button onClick={fetchDashboardData} size="sm" variant="ghost" className="rounded-xl h-10 px-4 font-bold text-primary hover:bg-primary/10 transition-all border border-gray-100 bg-white shadow-sm">
-                    <Zap className="w-4 h-4 mr-2" /> Refresh
-                </Button>
-            </div>
 
 
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                {[
-                    { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', trend: 'In Progress', path: '#/settings/jobs' },
-                    { label: 'Pending Reports', value: stats.pendingReports, icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', trend: 'Awaiting Action', path: '#/settings/jobs' },
-                    { label: 'Awaiting Payment', value: stats.pendingPayments, icon: IndianRupee, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', trend: 'Documents', path: '#/settings/documents' },
-                    { label: 'Total Clients', value: stats.totalClients, icon: BriefcaseBusiness, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', trend: 'Network', path: '#/settings/clients' },
-                    { label: 'New Inquiries', value: stats.totalInquiries, icon: MessageSquare, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100', trend: `${stats.pendingInquiries} Pending`, path: '#/settings/inquiries' },
-                ].map((stat, idx) => (
-                    <motion.div key={idx} variants={item}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Card 
-                                    className={`border-none shadow-sm ${stat.bg}/30 relative overflow-hidden group cursor-pointer hover:shadow-md transition-all active:scale-95`}
-                                    onClick={() => window.location.hash = stat.path}
-                                >
-                                    <div className={`absolute top-0 right-0 w-16 h-16 ${stat.bg} rounded-bl-[64px] -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110 duration-500`} />
-                                    <CardContent className="p-4 relative">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color} shrink-0`}>
-                                                <stat.icon className="w-5 h-5" />
-                                            </div>
-                                            <div className="flex-grow min-w-0">
-                                                <div className="flex justify-between items-center mb-0.5">
-                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{stat.label}</p>
-                                                    <Badge variant="outline" className={`hidden bg-white/50 border-none text-[8px] font-black uppercase tracking-tighter ${stat.color} px-1.5 py-0 h-4`}>
-                                                        {stat.trend}
-                                                    </Badge>
-                                                </div>
-                                                <h3 className="text-2xl font-black text-gray-900 tracking-tight leading-none">{stat.value}</h3>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">
-                                <p className="text-xs">The total count of {stat.label.toLowerCase()}</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </motion.div>
-                ))}
-            </div>
-
-            {/* Main Dashboard Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                {/* Left Column: Today View & Staff */}
-                <div className="lg:col-span-1 space-y-8">
-                    <motion.div variants={item}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Card 
-                                    className="border-none shadow-sm bg-white rounded-3xl overflow-hidden cursor-pointer hover:shadow-md transition-all active:scale-[0.99]"
-                                    onClick={() => window.location.hash = '#/settings/organization/leaves'}
-                                >
-                                    <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
-                                <div className="flex items-center justify-between">
-                                    <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
-                                        <Calendar className="w-5 h-5 text-primary" /> Today's Brief
-                                    </CardTitle>
-                                    <Badge className="bg-primary/10 text-primary border-none font-bold hover:bg-primary/20">
-                                        {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                    </Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="p-6 space-y-6">
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between px-1">
-                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                            <UserMinus className="w-3 h-3" /> On Leave Today
-                                        </h4>
-                                        <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full">{stats.leavesToday.length}</span>
-                                    </div>
-                                    
-                                    {stats.leavesToday.length === 0 ? (
-                                        <div className="p-4 bg-gray-50 rounded-2xl text-center border border-dashed border-gray-200">
-                                            <p className="text-xs font-bold text-gray-400 italic">Everyone is in today!</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            {stats.leavesToday.map((leave, idx) => (
-                                                <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100/50 hover:border-primary/20 transition-all group">
-                                                    <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center border border-gray-100 text-xs font-black text-primary">
-                                                        {(() => {
-                                                            const u = leave.users || leave['users!employee_leaves_user_id_fkey'];
-                                                            return (u?.full_name || u?.username || 'U')[0].toUpperCase();
-                                                        })()}
-                                                    </div>
-                                                    <div className="flex-grow min-w-0">
-                                                        <p className="text-sm font-bold text-gray-900 truncate">
-                                                            {(() => {
-                                                                const u = leave.users || leave['users!employee_leaves_user_id_fkey'];
-                                                                return u?.full_name || u?.username || 'Unknown User';
-                                                            })()}
-                                                        </p>
-                                                        <p className="text-[10px] font-bold text-primary uppercase truncate">
-                                                            {new Date(leave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(leave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                                            <span className="ml-1 text-gray-400">({leave.workingDays} {leave.workingDays === 1 ? 'day' : 'days'})</span>
-                                                        </p>
-                                                        <p className="text-[9px] font-medium text-gray-400 line-clamp-1 italic">{leave.comments || 'No reason provided'}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="pt-4 border-t border-gray-50 space-y-4">
-                                    <div className="flex items-center justify-between px-1">
-                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                            <CalendarRange className="w-3 h-3" /> Upcoming Leaves
-                                        </h4>
-                                        <span className="text-[10px] font-black text-blue-400 bg-blue-50 px-2 py-0.5 rounded-full">Next 7 Days</span>
-                                    </div>
-                                    
-                                    {stats.upcomingLeaves.length === 0 ? (
-                                        <div className="p-4 bg-gray-50/50 rounded-2xl text-center border border-dashed border-gray-200">
-                                            <p className="text-[10px] font-bold text-gray-400 italic">No upcoming leaves scheduled.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            {stats.upcomingLeaves.map((leave, idx) => (
-                                                <div key={idx} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-gray-50 hover:border-blue-200 transition-all group shadow-sm">
-                                                    <div className="w-8 h-8 bg-blue-50 rounded-xl flex flex-col items-center justify-center border border-blue-100 text-blue-600">
-                                                        <span className="text-[8px] font-black leading-none">{new Date(leave.leave_date).toLocaleDateString('en-US', { month: 'short' })}</span>
-                                                        <span className="text-xs font-black leading-none">{new Date(leave.leave_date).getDate()}</span>
-                                                    </div>
-                                                    <div className="flex-grow min-w-0">
-                                                        <p className="text-sm font-bold text-gray-900 truncate">
-                                                            {(() => {
-                                                                const u = leave.users || leave['users!employee_leaves_user_id_fkey'];
-                                                                return u?.full_name || u?.username || 'Unknown User';
-                                                            })()}
-                                                        </p>
-                                                        <p className="text-[10px] font-bold text-blue-500 uppercase truncate">
-                                                            {new Date(leave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(leave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                                            <span className="ml-1 text-gray-400">({leave.workingDays} {leave.workingDays === 1 ? 'day' : 'days'})</span>
-                                                        </p>
-                                                        <p className="text-[9px] font-medium text-gray-400 line-clamp-1 italic">{leave.comments || 'Planned Leave'}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="pt-4 border-t border-gray-50 space-y-4">
-                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Activity className="w-3 h-3" /> Daily Priorities
-                                    </h4>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        <div 
-                                            className="p-4 bg-orange-50/50 rounded-2xl border border-orange-100 flex items-center justify-between cursor-pointer hover:bg-orange-100/50 transition-colors group"
-                                            onClick={(e) => { e.stopPropagation(); window.location.hash = '#/settings/approvals'; }}
-                                        >
-                                            <div className="flex flex-col gap-1">
-                                                <span className="text-xl font-black text-orange-600 tracking-tight">{workflowCounts[WORKFLOW_STATES.UNDER_REVIEW] || 0}</span>
-                                                <span className="text-[9px] font-black text-orange-400 uppercase tracking-tight">Job Reviews Pending</span>
-                                            </div>
-                                            <ChevronRight className="w-4 h-4 text-orange-300 group-hover:translate-x-1 transition-transform" />
-                                        </div>
-
-                                        <div 
-                                            className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex flex-col gap-1 cursor-pointer hover:bg-blue-100/50 transition-colors"
-                                            onClick={(e) => { e.stopPropagation(); window.location.hash = '#/settings/documents'; }}
-                                        >
-                                            <span className="text-xl font-black text-blue-600 tracking-tight">{workflowCounts[WORKFLOW_STATES.REPORT_SIGNED] || 0}</span>
-                                            <span className="text-[9px] font-black text-blue-400 uppercase tracking-tight">Ready to Invoice</span>
-                                        </div>
-
-
-                                        <div 
-                                            className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex flex-col gap-1 cursor-pointer hover:bg-indigo-100/50 transition-colors"
-                                            onClick={(e) => { e.stopPropagation(); window.location.hash = '#/settings/approvals'; }}
-                                        >
-                                            <span className="text-xl font-black text-indigo-600 tracking-tight">{stats.pendingLeaves}</span>
-                                            <span className="text-[9px] font-black text-indigo-400 uppercase tracking-tight">Leave Requests</span>
-                                        </div>
-
-                                    </div>
-                                </div>
-
-                                <div className="pt-4 border-t border-gray-50 space-y-4">
-                                    <div 
-                                        className="flex items-center justify-between px-1 cursor-pointer group/inq"
-                                        onClick={() => window.location.hash = '#/settings/inquiries'}
+                {/* Quick Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    {[
+                        { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', trend: 'In Progress', path: '#/settings/jobs' },
+                        { label: 'Pending Reports', value: stats.pendingReports, icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', trend: 'Awaiting Action', path: '#/settings/jobs' },
+                        { label: 'Awaiting Payment', value: stats.pendingPayments, icon: IndianRupee, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', trend: 'Documents', path: '#/settings/documents' },
+                        { label: 'Total Clients', value: stats.totalClients, icon: BriefcaseBusiness, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', trend: 'Network', path: '#/settings/clients' },
+                        { label: 'New Inquiries', value: stats.totalInquiries, icon: MessageSquare, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100', trend: `${stats.pendingInquiries} Pending`, path: '#/settings/inquiries' },
+                    ].map((stat, idx) => (
+                        <motion.div key={idx} variants={item}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Card
+                                        className={`border-none shadow-sm ${stat.bg}/30 relative overflow-hidden group cursor-pointer hover:shadow-md transition-all active:scale-95`}
+                                        onClick={() => window.location.hash = stat.path}
                                     >
-                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 group-hover/inq:text-primary transition-colors">
-                                            <MessageSquare className="w-3 h-3" /> Recent Inquiries
-                                        </h4>
-                                        <Button 
-                                            variant="ghost" 
-                                            size="sm" 
-                                            className="h-5 px-2 text-[8px] font-black uppercase text-primary hover:bg-primary/5"
-                                            onClick={() => window.location.hash = '#/settings/inquiries'}
-                                        >
-                                            View All
-                                        </Button>
-                                    </div>
-                                    
-                                    {recentInquiries.length === 0 ? (
-                                        <div className="p-4 bg-gray-50/50 rounded-2xl text-center border border-dashed border-gray-200">
-                                            <p className="text-[10px] font-bold text-gray-400 italic">No new inquiries.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            {recentInquiries.map((inq, idx) => (
-                                                <div key={idx} className="p-3 bg-white rounded-2xl border border-gray-50 hover:border-rose-100 transition-all group shadow-sm">
-                                                    <div className="flex justify-between items-start mb-1">
-                                                        <p className="text-xs font-bold text-gray-900 truncate flex-grow mr-2">{inq.client_name}</p>
-                                                        <Badge className={`text-[8px] px-1 py-0 h-3.5 border-none font-black uppercase ${inq.status === 'PENDING' ? 'bg-yellow-50 text-yellow-600' : 'bg-blue-50 text-blue-600'}`}>
-                                                            {inq.status}
+                                        <div className={`absolute top-0 right-0 w-16 h-16 ${stat.bg} rounded-bl-[64px] -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110 duration-500`} />
+                                        <CardContent className="p-4 relative">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color} shrink-0`}>
+                                                    <stat.icon className="w-5 h-5" />
+                                                </div>
+                                                <div className="flex-grow min-w-0">
+                                                    <div className="flex justify-between items-center mb-0.5">
+                                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{stat.label}</p>
+                                                        <Badge variant="outline" className={`hidden bg-white/50 border-none text-[8px] font-black uppercase tracking-tighter ${stat.color} px-1.5 py-0 h-4`}>
+                                                            {stat.trend}
                                                         </Badge>
                                                     </div>
-                                                    <p className="text-[9px] text-gray-400 font-medium line-clamp-1">{inq.description || 'No details provided'}</p>
+                                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight leading-none">{stat.value}</h3>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
-                                <p className="text-xs">Summary of staff availability and key priorities that need attention today.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </motion.div>
-
-
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">The total count of {stat.label.toLowerCase()}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </motion.div>
+                    ))}
                 </div>
 
-                {/* Right Column: Workflow Pipeline & Recent Activity */}
-                <div className="lg:col-span-2 space-y-8">
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Main Dashboard Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                    {/* Left Column: Today View & Staff */}
+                    <div className="lg:col-span-1 space-y-8">
                         <motion.div variants={item}>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                <Card 
-                                    className="border-none shadow-sm bg-gradient-to-br from-red-500 to-red-700 rounded-3xl overflow-hidden text-white relative cursor-pointer hover:shadow-xl hover:shadow-red-500/20 transition-all active:scale-[0.98] group"
-                                    onClick={() => window.location.hash = '#/settings/expenses'}
-                                >
-                                        <div className="absolute top-0 right-0 p-8 opacity-10">
-                                            <Wallet className="w-24 h-24" />
-                                        </div>
-                                        <CardContent className="p-4 space-y-6 relative">
-                                            <div className="space-y-1">
-                                                <h3 className="text-xl font-black tracking-tight">Expenditures</h3>
-                                                <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Financial Outflow</p>
+                                    <Card
+                                        className="border-none shadow-sm bg-white rounded-3xl overflow-hidden cursor-pointer hover:shadow-md transition-all active:scale-[0.99]"
+                                        onClick={() => window.location.hash = '#/settings/organization/leaves'}
+                                    >
+                                        <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
+                                            <div className="flex items-center justify-between">
+                                                <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
+                                                    <Calendar className="w-5 h-5 text-primary" /> Today's Brief
+                                                </CardTitle>
+                                                <Badge className="bg-primary/10 text-primary border-none font-bold hover:bg-primary/20">
+                                                    {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                </Badge>
                                             </div>
+                                        </CardHeader>
+                                        <CardContent className="p-6 space-y-6">
                                             <div className="space-y-4">
-                                                {[
-                                                    { label: 'This Week', value: stats.expenditures.week },
-                                                    { label: 'This Month', value: stats.expenditures.month },
-                                                    { label: 'This Year', value: stats.expenditures.year },
-                                                ].map((exp, idx) => (
-                                                    <div key={idx} className="space-y-2">
-                                                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                                                            <span>{exp.label}</span>
-                                                            <span className="text-sm">₹{exp.value.toLocaleString()}</span>
-                                                        </div>
-                                                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                                                            <div 
-                                                                className="h-full bg-white rounded-full transition-all duration-1000" 
-                                                                style={{ 
-                                                                    width: exp.label === 'This Year' ? '100%' : 
-                                                                           exp.label === 'This Month' ? `${Math.min(100, (exp.value / (stats.expenditures.year || 1)) * 100)}%` :
-                                                                           `${Math.min(100, (exp.value / (stats.expenditures.month || 1)) * 100)}%`
-                                                                }} 
-                                                            />
-                                                        </div>
+                                                <div className="flex items-center justify-between px-1">
+                                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                                        <UserMinus className="w-3 h-3" /> On Leave Today
+                                                    </h4>
+                                                    <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full">{stats.leavesToday.length}</span>
+                                                </div>
+
+                                                {stats.leavesToday.length === 0 ? (
+                                                    <div className="p-4 bg-gray-50 rounded-2xl text-center border border-dashed border-gray-200">
+                                                        <p className="text-xs font-bold text-gray-400 italic">Everyone is in today!</p>
                                                     </div>
-                                                ))}
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        {stats.leavesToday.map((leave, idx) => (
+                                                            <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100/50 hover:border-primary/20 transition-all group">
+                                                                <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center border border-gray-100 text-xs font-black text-primary">
+                                                                    {(() => {
+                                                                        const u = leave.users || leave['users!employee_leaves_user_id_fkey'];
+                                                                        return (u?.full_name || u?.username || 'U')[0].toUpperCase();
+                                                                    })()}
+                                                                </div>
+                                                                <div className="flex-grow min-w-0">
+                                                                    <p className="text-sm font-bold text-gray-900 truncate">
+                                                                        {(() => {
+                                                                            const u = leave.users || leave['users!employee_leaves_user_id_fkey'];
+                                                                            return u?.full_name || u?.username || 'Unknown User';
+                                                                        })()}
+                                                                    </p>
+                                                                    <p className="text-[10px] font-bold text-primary uppercase truncate">
+                                                                        {new Date(leave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(leave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                                        <span className="ml-1 text-gray-400">({leave.workingDays} {leave.workingDays === 1 ? 'day' : 'days'})</span>
+                                                                    </p>
+                                                                    <p className="text-[9px] font-medium text-gray-400 line-clamp-1 italic">{leave.comments || 'No reason provided'}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="pt-4 border-t border-gray-50 space-y-4">
+                                                <div className="flex items-center justify-between px-1">
+                                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                                        <CalendarRange className="w-3 h-3" /> Upcoming Leaves
+                                                    </h4>
+                                                    <span className="text-[10px] font-black text-blue-400 bg-blue-50 px-2 py-0.5 rounded-full">Next 7 Days</span>
+                                                </div>
+
+                                                {stats.upcomingLeaves.length === 0 ? (
+                                                    <div className="p-4 bg-gray-50/50 rounded-2xl text-center border border-dashed border-gray-200">
+                                                        <p className="text-[10px] font-bold text-gray-400 italic">No upcoming leaves scheduled.</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        {stats.upcomingLeaves.map((leave, idx) => (
+                                                            <div key={idx} className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-gray-50 hover:border-blue-200 transition-all group shadow-sm">
+                                                                <div className="w-8 h-8 bg-blue-50 rounded-xl flex flex-col items-center justify-center border border-blue-100 text-blue-600">
+                                                                    <span className="text-[8px] font-black leading-none">{new Date(leave.leave_date).toLocaleDateString('en-US', { month: 'short' })}</span>
+                                                                    <span className="text-xs font-black leading-none">{new Date(leave.leave_date).getDate()}</span>
+                                                                </div>
+                                                                <div className="flex-grow min-w-0">
+                                                                    <p className="text-sm font-bold text-gray-900 truncate">
+                                                                        {(() => {
+                                                                            const u = leave.users || leave['users!employee_leaves_user_id_fkey'];
+                                                                            return u?.full_name || u?.username || 'Unknown User';
+                                                                        })()}
+                                                                    </p>
+                                                                    <p className="text-[10px] font-bold text-blue-500 uppercase truncate">
+                                                                        {new Date(leave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(leave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                                        <span className="ml-1 text-gray-400">({leave.workingDays} {leave.workingDays === 1 ? 'day' : 'days'})</span>
+                                                                    </p>
+                                                                    <p className="text-[9px] font-medium text-gray-400 line-clamp-1 italic">{leave.comments || 'Planned Leave'}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="pt-4 border-t border-gray-50 space-y-4">
+                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                                    <Activity className="w-3 h-3" /> Daily Priorities
+                                                </h4>
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    <div
+                                                        className="p-4 bg-orange-50/50 rounded-2xl border border-orange-100 flex items-center justify-between cursor-pointer hover:bg-orange-100/50 transition-colors group"
+                                                        onClick={(e) => { e.stopPropagation(); window.location.hash = '#/settings/approvals'; }}
+                                                    >
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="text-xl font-black text-orange-600 tracking-tight">{workflowCounts[WORKFLOW_STATES.TEST_DATA_UNDER_REVIEW] || 0}</span>
+                                                            <span className="text-[9px] font-black text-orange-400 uppercase tracking-tight">Job Reviews Pending</span>
+                                                        </div>
+                                                        <ChevronRight className="w-4 h-4 text-orange-300 group-hover:translate-x-1 transition-transform" />
+                                                    </div>
+
+                                                    <div
+                                                        className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex flex-col gap-1 cursor-pointer hover:bg-blue-100/50 transition-colors"
+                                                        onClick={(e) => { e.stopPropagation(); window.location.hash = '#/settings/documents'; }}
+                                                    >
+                                                        <span className="text-xl font-black text-blue-600 tracking-tight">{workflowCounts[WORKFLOW_STATES.REPORT_SIGNED] || 0}</span>
+                                                        <span className="text-[9px] font-black text-blue-400 uppercase tracking-tight">Ready to Invoice</span>
+                                                    </div>
+
+
+                                                    <div
+                                                        className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex flex-col gap-1 cursor-pointer hover:bg-indigo-100/50 transition-colors"
+                                                        onClick={(e) => { e.stopPropagation(); window.location.hash = '#/settings/approvals'; }}
+                                                    >
+                                                        <span className="text-xl font-black text-indigo-600 tracking-tight">{stats.pendingLeaves}</span>
+                                                        <span className="text-[9px] font-black text-indigo-400 uppercase tracking-tight">Leave Requests</span>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-4 border-t border-gray-50 space-y-4">
+                                                <div
+                                                    className="flex items-center justify-between px-1 cursor-pointer group/inq"
+                                                    onClick={() => window.location.hash = '#/settings/inquiries'}
+                                                >
+                                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 group-hover/inq:text-primary transition-colors">
+                                                        <MessageSquare className="w-3 h-3" /> Recent Inquiries
+                                                    </h4>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-5 px-2 text-[8px] font-black uppercase text-primary hover:bg-primary/5"
+                                                        onClick={() => window.location.hash = '#/settings/inquiries'}
+                                                    >
+                                                        View All
+                                                    </Button>
+                                                </div>
+
+                                                {recentInquiries.length === 0 ? (
+                                                    <div className="p-4 bg-gray-50/50 rounded-2xl text-center border border-dashed border-gray-200">
+                                                        <p className="text-[10px] font-bold text-gray-400 italic">No new inquiries.</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        {recentInquiries.map((inq, idx) => (
+                                                            <div key={idx} className="p-3 bg-white rounded-2xl border border-gray-50 hover:border-rose-100 transition-all group shadow-sm">
+                                                                <div className="flex justify-between items-start mb-1">
+                                                                    <p className="text-xs font-bold text-gray-900 truncate flex-grow mr-2">{inq.client_name}</p>
+                                                                    <Badge className={`text-[8px] px-1 py-0 h-3.5 border-none font-black uppercase ${inq.status === 'PENDING' ? 'bg-yellow-50 text-yellow-600' : 'bg-blue-50 text-blue-600'}`}>
+                                                                        {inq.status}
+                                                                    </Badge>
+                                                                </div>
+                                                                <p className="text-[9px] text-gray-400 font-medium line-clamp-1">{inq.description || 'No details provided'}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         </CardContent>
                                     </Card>
                                 </TooltipTrigger>
                                 <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
-                                    <p className="text-xs">Summary of organizational expenditures across different time periods.</p>
+                                    <p className="text-xs">Summary of staff availability and key priorities that need attention today.</p>
                                 </TooltipContent>
                             </Tooltip>
                         </motion.div>
 
+
+                    </div>
+
+                    {/* Right Column: Workflow Pipeline & Recent Activity */}
+                    <div className="lg:col-span-2 space-y-8">
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <motion.div variants={item}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Card
+                                            className="border-none shadow-sm bg-gradient-to-br from-red-500 to-red-700 rounded-3xl overflow-hidden text-white relative cursor-pointer hover:shadow-xl hover:shadow-red-500/20 transition-all active:scale-[0.98] group"
+                                            onClick={() => window.location.hash = '#/settings/expenses'}
+                                        >
+                                            <div className="absolute top-0 right-0 p-8 opacity-10">
+                                                <Wallet className="w-24 h-24" />
+                                            </div>
+                                            <CardContent className="p-4 space-y-6 relative">
+                                                <div className="space-y-1">
+                                                    <h3 className="text-xl font-black tracking-tight">Expenditures</h3>
+                                                    <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Financial Outflow</p>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    {[
+                                                        { label: 'This Week', value: stats.expenditures.week },
+                                                        { label: 'This Month', value: stats.expenditures.month },
+                                                        { label: 'This Year', value: stats.expenditures.year },
+                                                    ].map((exp, idx) => (
+                                                        <div key={idx} className="space-y-2">
+                                                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                                                <span>{exp.label}</span>
+                                                                <span className="text-sm">₹{exp.value.toLocaleString()}</span>
+                                                            </div>
+                                                            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-white rounded-full transition-all duration-1000"
+                                                                    style={{
+                                                                        width: exp.label === 'This Year' ? '100%' :
+                                                                            exp.label === 'This Month' ? `${Math.min(100, (exp.value / (stats.expenditures.year || 1)) * 100)}%` :
+                                                                                `${Math.min(100, (exp.value / (stats.expenditures.month || 1)) * 100)}%`
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
+                                        <p className="text-xs">Summary of organizational expenditures across different time periods.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </motion.div>
+
+                            <motion.div variants={item}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Card
+                                            className="border-none shadow-sm bg-gradient-to-br from-blue-950 to-slate-800 rounded-3xl overflow-hidden text-white relative cursor-pointer hover:shadow-xl hover:shadow-blue-900/20 transition-all active:scale-[0.98] group"
+                                            onClick={() => window.location.hash = '#/settings/documents'}
+                                        >
+                                            <div className="absolute top-0 right-0 p-8 opacity-10">
+                                                <TrendingUp className="w-24 h-24" />
+                                            </div>
+                                            <CardContent className="p-4 space-y-6 relative">
+                                                <div className="space-y-1">
+                                                    <h3 className="text-xl font-black tracking-tight">Quotations</h3>
+                                                    <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Business Proposals</p>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    {[
+                                                        { label: 'This Week', value: stats.quotations.week },
+                                                        { label: 'This Month', value: stats.quotations.month },
+                                                        { label: 'This Year', value: stats.quotations.year },
+                                                    ].map((quote, idx) => (
+                                                        <div key={idx} className="space-y-2">
+                                                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                                                <span>{quote.label}</span>
+                                                                <span className="text-sm">₹{quote.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                                                            </div>
+                                                            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-white rounded-full transition-all duration-1000"
+                                                                    style={{
+                                                                        width: quote.label === 'This Year' ? '100%' :
+                                                                            quote.label === 'This Month' ? `${Math.min(100, (quote.value / (stats.quotations.year || 1)) * 100)}%` :
+                                                                                `${Math.min(100, (quote.value / (stats.quotations.month || 1)) * 100)}%`
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
+                                        <p className="text-xs">Summary of total quotation values issued across different time periods.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </motion.div>
+
+                            <motion.div variants={item}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Card
+                                            className="border-none shadow-sm bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-3xl overflow-hidden text-white relative cursor-pointer hover:shadow-xl hover:shadow-emerald-900/20 transition-all active:scale-[0.98] group"
+                                            onClick={() => window.location.hash = '#/settings/documents'}
+                                        >
+                                            <div className="absolute top-0 right-0 p-8 opacity-10">
+                                                <FileText className="w-24 h-24" />
+                                            </div>
+                                            <CardContent className="p-4 space-y-6 relative">
+                                                <div className="space-y-1">
+                                                    <h3 className="text-xl font-black tracking-tight">Invoices</h3>
+                                                    <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Revenue Realization</p>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    {[
+                                                        { label: 'This Week', value: stats.invoices.week },
+                                                        { label: 'This Month', value: stats.invoices.month },
+                                                        { label: 'This Year', value: stats.invoices.year },
+                                                    ].map((invoice, idx) => (
+                                                        <div key={idx} className="space-y-2">
+                                                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                                                <span>{invoice.label}</span>
+                                                                <span className="text-sm">₹{invoice.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                                                            </div>
+                                                            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-white rounded-full transition-all duration-1000"
+                                                                    style={{
+                                                                        width: invoice.label === 'This Year' ? '100%' :
+                                                                            invoice.label === 'This Month' ? `${Math.min(100, (invoice.value / (stats.invoices.year || 1)) * 100)}%` :
+                                                                                `${Math.min(100, (invoice.value / (stats.invoices.month || 1)) * 100)}%`
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
+                                        <p className="text-xs">Summary of total invoice values generated across different time periods.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </motion.div>
+                        </div>
+                        {/* Workflow Funnel / Pipeline */}
                         <motion.div variants={item}>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                <Card 
-                                    className="border-none shadow-sm bg-gradient-to-br from-blue-950 to-slate-800 rounded-3xl overflow-hidden text-white relative cursor-pointer hover:shadow-xl hover:shadow-blue-900/20 transition-all active:scale-[0.98] group"
-                                    onClick={() => window.location.hash = '#/settings/documents'}
-                                >
-                                        <div className="absolute top-0 right-0 p-8 opacity-10">
-                                            <TrendingUp className="w-24 h-24" />
-                                        </div>
-                                        <CardContent className="p-4 space-y-6 relative">
+                                    <Card
+                                        className="border-none shadow-sm bg-white rounded-3xl overflow-hidden cursor-pointer hover:shadow-md transition-all active:scale-[0.99]"
+                                    // onClick={() => window.location.hash = '#/settings/jobs'}
+                                    >
+                                        <CardHeader className="p-6 border-b border-gray-50 flex flex-row items-center justify-between">
                                             <div className="space-y-1">
-                                                <h3 className="text-xl font-black tracking-tight">Quotations</h3>
-                                                <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Business Proposals</p>
+                                                <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
+                                                    <Activity className="w-5 h-5 text-primary" /> Summary of Jobs
+                                                </CardTitle>
+                                                <CardDescription className="text-xs font-medium text-gray-400 uppercase tracking-widest">Jobs distributed by current state</CardDescription>
                                             </div>
-                                            <div className="space-y-4">
-                                                {[
-                                                    { label: 'This Week', value: stats.quotations.week },
-                                                    { label: 'This Month', value: stats.quotations.month },
-                                                    { label: 'This Year', value: stats.quotations.year },
-                                                ].map((quote, idx) => (
-                                                    <div key={idx} className="space-y-2">
-                                                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                                                            <span>{quote.label}</span>
-                                                            <span className="text-sm">₹{quote.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-                                                        </div>
-                                                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                                                            <div 
-                                                                className="h-full bg-white rounded-full transition-all duration-1000" 
-                                                                style={{ 
-                                                                    width: quote.label === 'This Year' ? '100%' : 
-                                                                           quote.label === 'This Month' ? `${Math.min(100, (quote.value / (stats.quotations.year || 1)) * 100)}%` :
-                                                                           `${Math.min(100, (quote.value / (stats.quotations.month || 1)) * 100)}%`
-                                                                }} 
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </TooltipTrigger>
-                                <TooltipContent side="right" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
-                                    <p className="text-xs">Summary of total quotation values issued across different time periods.</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </motion.div>
-                    </div>
-                    {/* Workflow Funnel / Pipeline */}
-                    <motion.div variants={item}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Card 
-                                    className="border-none shadow-sm bg-white rounded-3xl overflow-hidden cursor-pointer hover:shadow-md transition-all active:scale-[0.99]"
-                                    onClick={() => window.location.hash = '#/settings/jobs'}
-                                >
-                            <CardHeader className="p-6 border-b border-gray-50 flex flex-row items-center justify-between">
-                                <div className="space-y-1">
-                                    <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
-                                        <Activity className="w-5 h-5 text-primary" /> Summary of Jobs 
-                                    </CardTitle>
-                                    <CardDescription className="text-xs font-medium text-gray-400 uppercase tracking-widest">Jobs distributed by current state</CardDescription>
-                                </div>
-                                {/* <div className="flex items-center gap-1">
+                                            {/* <div className="flex items-center gap-1">
                                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Live</span>
                                 </div> */}
-                            </CardHeader>
-                            <CardContent className="p-6">
-                                <div className="flex flex-col gap-3">
-                                    {[
-                                        { state: WORKFLOW_STATES.JOB_CREATED, label: 'Inquiry/Quotation', color: 'bg-slate-100 text-slate-600' },
-                                        { state: WORKFLOW_STATES.MATERIAL_RECEIVED, label: 'Material Received', color: 'bg-indigo-100 text-indigo-600' },
-                                        { state: WORKFLOW_STATES.UNDER_TESTING, label: 'Testing Lab', color: 'bg-amber-100 text-amber-600' },
-                                        { state: WORKFLOW_STATES.UNDER_REVIEW, label: 'Quality Review', color: 'bg-rose-100 text-rose-600' },
-                                        { state: WORKFLOW_STATES.REPORT_SIGNED, label: 'Reports Released', color: 'bg-emerald-100 text-emerald-600' },
-                                    ].map((stage, idx) => {
-                                        const count = workflowCounts[stage.state] || 0;
-                                        const percentage = stats.totalJobs > 0 ? (count / stats.totalJobs) * 100 : 0;
-                                        
-                                        return (
-                                            <div key={idx} className="relative group">
-                                                <div className="flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition-all cursor-pointer relative z-10 border border-transparent hover:border-gray-100">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className={`w-10 h-10 rounded-xl ${stage.color} flex items-center justify-center font-black text-sm`}>
-                                                            {idx + 1}
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm font-bold text-gray-900">{stage.label}</p>
-                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{count} Active Case{count !== 1 ? 's' : ''}</p>
-                                                        </div>
-                                                    </div>
-                                                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary transition-all group-hover:translate-x-1" />
-                                                </div>
-                                                <div className="absolute left-14 right-14 bottom-0 h-px bg-gray-50 group-last:hidden" />
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </CardContent>
-                        </Card>
-                            </TooltipTrigger>
-                            <TooltipContent side="left" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
-                                <p className="text-xs">The current pipeline of active jobs distributed across all workflow stages.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </motion.div>
+                                        </CardHeader>
+                                        <CardContent className="p-6">
+                                            <div className="flex flex-col gap-3">
+                                                {[
+                                                    { state: WORKFLOW_STATES.JOB_CREATED, label: 'Jobs Created', color: 'bg-slate-100 text-slate-600' },
+                                                    { state: WORKFLOW_STATES.MATERIAL_RECEIVED, label: 'Material Received', color: 'bg-indigo-100 text-indigo-600' },
+                                                    { state: WORKFLOW_STATES.UNDER_TESTING, label: 'Under Testing', color: 'bg-amber-100 text-amber-600' },
+                                                    { state: WORKFLOW_STATES.TEST_DATA_UNDER_REVIEW, label: 'Test Data Review', color: 'bg-rose-100 text-rose-600' },
+                                                    { state: WORKFLOW_STATES.REPORT_SIGNED, label: 'Reports Released', color: 'bg-emerald-100 text-emerald-600' },
+                                                ].map((stage, idx) => {
+                                                    const count = workflowCounts[stage.state] || 0;
+                                                    const percentage = stats.totalJobs > 0 ? (count / stats.totalJobs) * 100 : 0;
 
-                    {/* Recent Activity Feed
+                                                    return (
+                                                        <div key={idx} className="relative group">
+                                                            <div
+                                                                className="flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition-all cursor-pointer relative z-10 border border-transparent hover:border-gray-100"
+                                                                onClick={(e) => { e.stopPropagation(); window.location.hash = `#/settings/jobs?status=${stage.state}`; }}
+                                                            >
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className={`w-10 h-10 rounded-xl ${stage.color} flex items-center justify-center font-black text-sm`}>
+                                                                        {idx + 1}
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-sm font-bold text-gray-900">{stage.label}</p>
+                                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{count} Active Case{count !== 1 ? 's' : ''}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary transition-all group-hover:translate-x-1" />
+                                                            </div>
+                                                            <div className="absolute left-14 right-14 bottom-0 h-px bg-gray-50 group-last:hidden" />
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
+                                    <p className="text-xs">The current pipeline of active jobs distributed across all workflow stages.</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </motion.div>
+
+                        {/* Recent Activity Feed
                     <motion.div variants={item}>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -774,8 +836,8 @@ const AdminDashboard = () => {
                             </TooltipContent>
                         </Tooltip>
                     </motion.div> */}
+                    </div>
                 </div>
-            </div>
             </motion.div>
         </TooltipProvider>
     );
