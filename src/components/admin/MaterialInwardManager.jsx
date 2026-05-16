@@ -110,7 +110,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
           material_samples(received_date)
         `);
 
-            if (isStandard() || user?.role === ROLES.MRO.slug) {
+            if (isStandard()) {
                 query = query.eq('created_by', user.id);
             }
 

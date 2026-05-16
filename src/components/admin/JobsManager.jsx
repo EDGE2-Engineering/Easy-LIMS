@@ -340,7 +340,7 @@ const JobsManager = ({ id }) => {
                 .select('*, clients(client_name, gstin), users:created_by(full_name)')
                 .order('created_at', { ascending: false });
 
-            if (!isAdmin()) {
+            if (!isAdmin() && user?.role !== ROLES.MRO.slug) {
                 let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
                 if (isNaN(userId)) userId = -1;
 
@@ -638,7 +638,7 @@ const JobsManager = ({ id }) => {
                             <p className="text-xs text-gray-500">Manage job details and track its progress in the laboratory workflow.</p>
                         </div>
                     </div>
-                    {!isAddingNew && canModify && (
+                    {!isAddingNew && canModify && isAdmin() && (
                         <Button
                             variant="ghost"
                             size="sm"
@@ -978,10 +978,10 @@ const JobsManager = ({ id }) => {
                     )}
                 </div>
 
-                {canModify && (
+                {canModify && isAdmin() && (
                     <div className="flex justify-end gap-3 pt-8 border-t">
-                        <Button variant="outline" className="h-12 px-8 rounded-xl" onClick={() => navigate('/settings/jobs')}>Cancel</Button>
-                        <Button className="h-12 px-8 rounded-xl bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20" onClick={handleSave} disabled={isSaving}>
+                        <Button variant="outline" className="h-10 p-2 rounded-lg" onClick={() => navigate('/settings/jobs')}>Cancel</Button>
+                        <Button className="h-10 p-2 rounded-lg bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20" onClick={handleSave} disabled={isSaving}>
                             {isSaving ? <Loader2 className="animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Job Details
                         </Button>
                     </div>
