@@ -89,7 +89,6 @@ export const VIEWS = {
     SETTINGS: 'Settings',
     APPROVALS: 'Approvals',
     CLIENT_PRICING: 'Client Pricing',
-    INQUIRIES: 'Inquiries',
     ORGANIZATION: 'Organization',
     ANALYST_DASHBOARD: 'Analyst Dashboard',
     ACCOUNTS_DASHBOARD: 'Accounts Dashboard',
@@ -127,7 +126,6 @@ export const NAV_ITEM_IDS = {
     ANALYST_DASHBOARD: 'analyst_dashboard',
     ACCOUNTS_DASHBOARD: 'accounts_dashboard',
     JOBS: 'jobs',
-    INQUIRIES: 'inquiries',
     DOCUMENTS: 'documents',
     EXPENSES: 'expenses',
     TECHNICIAN_DASHBOARD: 'technician_dashboard',
@@ -286,13 +284,11 @@ export const APP_CONFIG = {
             [ROLES.SUPER_ADMIN.slug]: [
                 NAV_ITEM_IDS.DASHBOARD,
                 NAV_ITEM_IDS.JOBS,
-                NAV_ITEM_IDS.INQUIRIES,
                 NAV_ITEM_IDS.DOCUMENTS,
             ],
             [ROLES.ADMIN.slug]: [
                 NAV_ITEM_IDS.DASHBOARD,
                 NAV_ITEM_IDS.JOBS,
-                NAV_ITEM_IDS.INQUIRIES,
                 NAV_ITEM_IDS.DOCUMENTS,
             ],
             [ROLES.ANALYST.slug]: [
