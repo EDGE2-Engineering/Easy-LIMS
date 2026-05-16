@@ -81,7 +81,6 @@ export const WORKFLOW_STATES = {
 export const VIEWS = {
     DASHBOARD: 'Dashboard',
     JOBS: 'Jobs',
-    MATERIAL_INWARD: 'Material Inward',
     TESTING: 'Testing',
     DOCUMENTS: 'Documents',
     EXPENSES: 'Expenses',
@@ -127,7 +126,6 @@ export const NAV_ITEM_IDS = {
     ACCOUNTS_DASHBOARD: 'accounts_dashboard',
     JOBS: 'jobs',
     INQUIRIES: 'inquiries',
-    MATERIAL_INWARD: 'material_inward',
     DOCUMENTS: 'documents',
     EXPENSES: 'expenses',
     TECHNICIAN_DASHBOARD: 'technician_dashboard',
@@ -285,14 +283,12 @@ export const APP_CONFIG = {
                 NAV_ITEM_IDS.DASHBOARD,
                 NAV_ITEM_IDS.JOBS,
                 NAV_ITEM_IDS.INQUIRIES,
-                // NAV_ITEM_IDS.MATERIAL_INWARD,
                 NAV_ITEM_IDS.DOCUMENTS,
             ],
             [ROLES.ADMIN.slug]: [
                 NAV_ITEM_IDS.DASHBOARD,
                 NAV_ITEM_IDS.JOBS,
                 NAV_ITEM_IDS.INQUIRIES,
-                // NAV_ITEM_IDS.MATERIAL_INWARD,
                 NAV_ITEM_IDS.DOCUMENTS,
             ],
             [ROLES.ANALYST.slug]: [
@@ -305,7 +301,6 @@ export const APP_CONFIG = {
             ],
             [ROLES.MRO.slug]: [
                 NAV_ITEM_IDS.JOBS,
-                NAV_ITEM_IDS.MATERIAL_INWARD,
                 NAV_ITEM_IDS.CLIENTS,
             ],
             [ROLES.ACCOUNTS.slug]: [
@@ -357,7 +352,7 @@ export const APP_CONFIG = {
         [ROLES.ADMIN.slug]: Object.values(VIEWS).filter(v => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.ACCOUNTS_DASHBOARD),
         [ROLES.ANALYST.slug]: [VIEWS.ANALYST_DASHBOARD, VIEWS.JOBS],
         [ROLES.TECHNICIAN.slug]: [VIEWS.TECHNICIAN_DASHBOARD, VIEWS.JOBS, VIEWS.TESTING],
-        [ROLES.MRO.slug]: [VIEWS.JOBS, VIEWS.MATERIAL_INWARD, VIEWS.SETTINGS],
+        [ROLES.MRO.slug]: [VIEWS.JOBS, VIEWS.SETTINGS],
         [ROLES.ACCOUNTS.slug]: [VIEWS.ACCOUNTS_DASHBOARD, VIEWS.DOCUMENTS, VIEWS.EXPENSES, VIEWS.SETTINGS],
         [ROLES.HUMAN_RESOURCE.slug]: [VIEWS.WORK_LOG, VIEWS.APPROVALS]
     }

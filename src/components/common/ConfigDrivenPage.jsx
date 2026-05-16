@@ -8,7 +8,6 @@ import { Loader2, ShieldAlert } from 'lucide-react';
 const AdminClientsManager = lazyWithRetry(() => import('@/components/admin/AdminClientsManager.jsx'));
 const AdminUsersManager = lazyWithRetry(() => import('@/components/admin/AdminUsersManager.jsx'));
 const DocumentsManager = lazyWithRetry(() => import('@/components/admin/DocumentsManager.jsx'));
-const MaterialInwardManager = lazyWithRetry(() => import('@/components/admin/MaterialInwardManager'));
 const JobsManager = lazyWithRetry(() => import('@/components/admin/JobsManager.jsx'));
 const AdminTestsManager = lazyWithRetry(() => import('@/components/admin/AdminTestsManager.jsx'));
 const AdminServicesManager = lazyWithRetry(() => import('@/components/admin/AdminServicesManager.jsx'));
@@ -33,7 +32,6 @@ const COMPONENT_MAP = {
   [VIEWS.TECHNICIAN_DASHBOARD]: TechnicianDashboard,
   [VIEWS.APPROVALS]: ApprovalsManager,
   [VIEWS.JOBS]: JobsManager,
-  [VIEWS.MATERIAL_INWARD]: MaterialInwardManager,
   [VIEWS.DOCUMENTS]: DocumentsManager,
   [VIEWS.EXPENSES]: ExpensesManager,
   [VIEWS.WORK_LOG]: LeavesManager,

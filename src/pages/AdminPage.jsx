@@ -38,8 +38,6 @@ const AdminPage = () => {
         expenses: VIEWS.EXPENSES,
         work_log: VIEWS.WORK_LOG,
         utilities: VIEWS.UTILITIES,
-        inward_register: VIEWS.MATERIAL_INWARD,
-        material_inward: VIEWS.MATERIAL_INWARD,
         testing: VIEWS.TESTING,
         documents: VIEWS.DOCUMENTS,
         approvals: VIEWS.APPROVALS,
@@ -63,7 +61,7 @@ const AdminPage = () => {
         if (user && !loading) {
             const currentView = URL_TO_VIEW[currentTab];
             if (currentView && !canView(currentView)) {
-                const orderedTabs = ['dashboard', 'analyst_dashboard', 'accounts_dashboard', 'technician_dashboard', 'jobs', 'inquiries', 'inward_register', 'testing', 'documents', 'organization'];
+                const orderedTabs = ['dashboard', 'analyst_dashboard', 'accounts_dashboard', 'technician_dashboard', 'jobs', 'inquiries', 'testing', 'documents', 'organization'];
                 const firstAllowed = orderedTabs.find(t => canView(URL_TO_VIEW[t]));
                 if (firstAllowed) {
                     navigate(`/settings/${firstAllowed}`, { replace: true });
