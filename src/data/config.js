@@ -94,7 +94,8 @@ export const VIEWS = {
     ACCOUNTS_DASHBOARD: 'Accounts Dashboard',
     TECHNICIAN_DASHBOARD: 'Technician Dashboard',
     MRO_DASHBOARD: 'MRO Dashboard',
-    HR_DASHBOARD: 'HR Dashboard'
+    HR_DASHBOARD: 'HR Dashboard',
+    INQUIRIES: 'Inquiries'
 };
 
 export const ACTIONS = {

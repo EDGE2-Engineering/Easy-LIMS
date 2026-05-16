@@ -48,6 +48,7 @@ const AdminDashboard = () => {
         },
         pendingLeaves: 0,
         pendingOtherApprovals: 0,
+        pendingInquiries: 0,
         leavesToday: [],
         upcomingLeaves: []
     });
@@ -153,6 +154,11 @@ const AdminDashboard = () => {
 
             // 5. Fetch Clients & Inquiries Stats
             const { count: clientsCount, error: clientErr } = await supabase.from('clients').select('*', { count: 'exact', head: true });
+            
+            const { count: inquiriesCount, error: inquiryErr } = await supabase
+                .from('inquiries')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'PENDING');
 
             // 6. Fetch Expenses for Year
             const now = new Date();
@@ -243,6 +249,7 @@ const AdminDashboard = () => {
                 invoices: invoiceMetrics,
                 pendingLeaves: pendingLeaveApprovalsCount,
                 pendingOtherApprovals: otherPendingApprovalsCount,
+                pendingInquiries: inquiriesCount || 0,
                 leavesToday: leavesToday,
                 upcomingLeaves: upcomingLeaves
             });
@@ -496,6 +503,14 @@ const AdminDashboard = () => {
                                                     >
                                                         <span className="text-xl font-black text-indigo-600 tracking-tight">{stats.pendingLeaves}</span>
                                                         <span className="text-[9px] font-black text-indigo-400 uppercase tracking-tight">Leave Requests</span>
+                                                    </div>
+
+                                                    <div
+                                                        className="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 flex flex-col gap-1 cursor-pointer hover:bg-purple-100/50 transition-colors"
+                                                        onClick={(e) => { e.stopPropagation(); window.location.hash = '#/settings/inquiries'; }}
+                                                    >
+                                                        <span className="text-xl font-black text-purple-600 tracking-tight">{stats.pendingInquiries}</span>
+                                                        <span className="text-[9px] font-black text-purple-400 uppercase tracking-tight">New Inquiries</span>
                                                     </div>
 
                                                 </div>

@@ -535,14 +535,14 @@ const DocumentsManager = () => {
       </div>
 
       {/* Pagination Controls - Top */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-2 rounded-lg shadow border border-gray-100">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-2 px-4 rounded-xl shadow-sm border border-gray-100">
         <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-600">Items per page:</span>
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">Items</span>
           <Select value={itemsPerPage.toString()} onValueChange={(value) => {
             setItemsPerPage(Number(value));
             setCurrentPage(1);
           }}>
-            <SelectTrigger className="w-24 h-9 text-xs bg-gray-50/50 border-gray-200 rounded-lg">
+            <SelectTrigger className="w-20 h-9 text-xs bg-gray-50/50 border-gray-200 rounded-lg">
               <SelectValue className="text-xs" />
             </SelectTrigger>
             <SelectContent>
@@ -552,9 +552,35 @@ const DocumentsManager = () => {
               <SelectItem value="100" className="text-xs">100</SelectItem>
             </SelectContent>
           </Select>
-          <span className="text-xs text-gray-600">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none border-l pl-3 ml-1">
             Showing {sortedDocuments.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, sortedDocuments.length)} of {sortedDocuments.length}
           </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest border-gray-200 bg-gray-50/50 rounded-lg disabled:opacity-50"
+          >
+            Prev
+          </Button>
+          <div className="bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+            <span className="text-[10px] font-black text-primary uppercase tracking-tighter">
+              Page {currentPage} / {totalPages || 1}
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages || totalPages === 0}
+            className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest border-gray-200 bg-gray-50/50 rounded-lg disabled:opacity-50"
+          >
+            Next
+          </Button>
         </div>
       </div>
 
@@ -695,34 +721,6 @@ const DocumentsManager = () => {
         </div>
       </div>
 
-      {/* Pagination Controls - Bottom */}
-      {totalPages > 1 && (
-        <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-lg shadow border border-gray-100">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="h-9 px-4 text-sm border-gray-200 bg-gray-50/50 rounded-lg disabled:opacity-50"
-            >
-              Previous
-            </Button>
-            <span className="text-sm text-gray-600 px-3">
-              Page {currentPage} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="h-9 px-4 text-sm border-gray-200 bg-gray-50/50 rounded-lg disabled:opacity-50"
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
 
       <AlertDialog open={deleteConfirmation.isOpen} onOpenChange={(isOpen) => !isOpen && setDeleteConfirmation({ isOpen: false, recordId: null, quoteNumber: '' })}>
         <AlertDialogContent>

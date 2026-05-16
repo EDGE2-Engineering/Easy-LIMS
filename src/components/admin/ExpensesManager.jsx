@@ -515,6 +515,56 @@ const ExpensesManager = () => {
                 )}
             </div>
 
+            {/* Pagination Controls - Top */}
+            <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-2 px-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">Items</span>
+                    <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                        setItemsPerPage(Number(value));
+                        setCurrentPage(1);
+                    }}>
+                        <SelectTrigger className="w-20 h-9 text-xs bg-gray-50/50 border-gray-200 rounded-lg">
+                            <SelectValue className="text-xs" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="10" className="text-xs">10</SelectItem>
+                            <SelectItem value="25" className="text-xs">25</SelectItem>
+                            <SelectItem value="50" className="text-xs">50</SelectItem>
+                            <SelectItem value="100" className="text-xs">100</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none border-l pl-3 ml-1">
+                        Showing {filteredExpenses.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, filteredExpenses.length)} of {filteredExpenses.length}
+                    </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest border-gray-200 bg-gray-50/50 rounded-lg disabled:opacity-50"
+                    >
+                        Prev
+                    </Button>
+                    <div className="bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                        <span className="text-[10px] font-black text-primary uppercase tracking-tighter">
+                            Page {currentPage} / {totalPages || 1}
+                        </span>
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages || totalPages === 0}
+                        className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest border-gray-200 bg-gray-50/50 rounded-lg disabled:opacity-50"
+                    >
+                        Next
+                    </Button>
+                </div>
+            </div>
+
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b">
@@ -578,33 +628,7 @@ const ExpensesManager = () => {
                 </table>
             </div>
 
-            {totalPages > 1 && (
-                <div className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                    <span className="text-sm text-gray-500 font-medium">
-                        Showing {startIndex + 1}-{Math.min(endIndex, filteredExpenses.length)} of {filteredExpenses.length}
-                    </span>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className="rounded-xl"
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
-                            className="rounded-xl"
-                        >
-                            Next
-                        </Button>
-                    </div>
-                </div>
-            )}
+            {/* Removed bottom pagination as it is now in the top settings panel */}
 
             <AlertDialog open={deleteConfirmation.isOpen} onOpenChange={(isOpen) => !isOpen && setDeleteConfirmation({ isOpen: false, expenseId: null, description: '' })}>
                 <AlertDialogContent className="rounded-2xl">

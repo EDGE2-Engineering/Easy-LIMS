@@ -25,6 +25,7 @@ const AdminClientPricingManager = lazyWithRetry(() => import('@/components/admin
 const AdminOrganizationSettings = lazyWithRetry(() => import('@/components/admin/AdminOrganizationSettings.jsx'));
 const MroDashboard = lazyWithRetry(() => import('@/components/admin/MroDashboard.jsx'));
 const HRDashboard = lazyWithRetry(() => import('@/components/admin/HRDashboard.jsx'));
+const InquiriesManager = lazyWithRetry(() => import('@/components/admin/InquiriesManager.jsx'));
 
 const COMPONENT_MAP = {
   [VIEWS.DASHBOARD]: AdminDashboard,
@@ -42,7 +43,8 @@ const COMPONENT_MAP = {
   [VIEWS.CLIENT_PRICING]: AdminClientPricingManager,
   [VIEWS.ORGANIZATION]: AdminOrganizationSettings,
   [VIEWS.TESTING]: lazyWithRetry(() => import('@/components/admin/TestingDashboard.jsx')),
-  [VIEWS.HR_DASHBOARD]: HRDashboard
+  [VIEWS.HR_DASHBOARD]: HRDashboard,
+  [VIEWS.INQUIRIES]: InquiriesManager
 };
 
 const ConfigDrivenPage = ({ viewName, subView, id }) => {
