@@ -584,112 +584,88 @@ const DocumentsManager = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-center text-xs py-2 px-4 font-semibold text-sm text-gray-600 pr-0">Document #</th>
-                <th className="text-center text-xs py-0 px-0 font-semibold text-sm text-gray-600 pr-8">Created On</th>
-                <th className="text-left text-xs py-0 px-0 font-semibold text-sm text-gray-600 pr-10">Client and Project Name</th>
-                <th className="text-left text-xs py-0 px-0 font-semibold text-sm text-gray-600 pr-10">Total Amount</th>
-                <th className="text-left text-xs py-0 px-0 font-semibold text-sm text-gray-600 pr-2">Created By</th>
-                <th className="text-center text-xs py-0 px-0 font-semibold text-sm text-gray-600">Document Type</th>
-                <th className="text-center text-xs py-3 px-2 font-semibold text-sm text-gray-600">Actions</th>
+                <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Document #</th>
+                <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Client and Project Name</th>
+                <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Total Amount</th>
+                <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Created On</th>
+                <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Created By</th>
+                <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Document Type</th>
+                <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Actions</th>
               </tr>
             </thead>
             <tbody>
               {paginatedDocuments.length === 0 ? (
                 <tr>
-                  <td colSpan="2" className="py-10 text-center text-gray-500">
+                  <td colSpan="7" className="py-10 text-center text-gray-500">
                     No documents found.
                   </td>
                 </tr>
               ) : (
                 paginatedDocuments.map((record) => (
-                  <tr key={record.id} className="border-b hover:bg-gray-50 transition-colors">
-                    {/* Document # + other details */}
-                    <td className="py-2 px-4 text-xs text-gray-600">
-                      <div className="font-semibold text-gray-900 flex items-center gap-2">
-                        <span className="font-semibold font-mono text-black text-md bg-gray-200 p-1 rounded">{record.quote_number}</span>
-                        {/* <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${record.document_type === 'Tax Invoice'
-                          ? 'bg-blue-100 text-blue-800'
-                          : record.document_type === 'Proforma Invoice'
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-green-100 text-green-800'
-                          }`}>
-                          {record.document_type}
-                        </span> */}
-                      </div>
-                      <div className="text-gray-600 text-xs mt-1 space-y-1">
-                        <div>
-                          {/* <span className="font-semibold text-gray-900 font-bold text-sm">Created on: </span>{' '}
-                           <span className="font-semibold text-blue-600 font-semibold text-sm"> {format(new Date(record.created_at), 'dd MMM yyyy')}</span> */}
-                          {/* <span className="mx-4"></span> */}
-                          {/* <span className="font-semibold text-gray-900 font-bold text-sm">Created By:</span>{' '}
-                          <span className="font-semibold text-blue-600 font-semibold text-sm"> {record.app_users?.full_name || '-'}</span> */}
-                        </div>
-                        <div>
-                          {/* <span className="font-semibold text-gray-900 font-bold text-sm">For Client:</span>{' '}
-                          <span className="font-semibold text-blue-600 font-semibold text-sm"> {record.client_name || '-'}</span> */}
-                        </div>
-                        <div className="font-semibold text-blue-900">
-                          {/* <span className="font-semibold text-gray-900 font-bold text-sm">Total Amount:</span> <span className="font-semibold text-blue-600 font-semibold text-sm"> <Rupee />{calculateRecordTotal(record).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> */}
-                        </div>
-                      </div>
+                  <tr key={record.id} className="border-b hover:bg-gray-50/50 transition-colors group">
+                    <td className="py-5 px-6">
+                      <span className="font-mono font-bold text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10">{record.quote_number}</span>
                     </td>
 
-                    <td className="justify-left items-center">
-                      <span className="text-black font-regular text-xs"> {format(new Date(record.created_at), 'dd MMM yyyy')}</span>
+                    <td className="py-5 px-6">
+                      <div className="font-bold text-gray-900">{record.clients?.client_name || '-'}</div>
+                      <div className="text-[10px] text-gray-400 mt-0.5 font-medium">{record.clients?.gstin ? `GSTIN: ${record.clients.gstin}` : ''}</div>
+                      {record.jobs?.project_name && <div className="text-xs text-gray-500 mt-1">{record.jobs.project_name}</div>}
                     </td>
 
-                    <td className="justify-left items-center">
-                      <div className="text-black font-bold text-xs">{record.clients?.client_name || '-'}</div>
-                      {record.jobs?.project_name && <div className="text-[10px] text-gray-700 font-medium mt-0.5">Project: {record.jobs.project_name}</div>}
-                      {record.clients?.gstin && <div className="text-[10px] text-gray-700 font-medium mt-0.5">GSTIN: {record.clients.gstin}</div>}
-                    </td>
-
-                    <td className="justify-left items-center">
-                      <span className="text-black font-regular text-xs"> <Rupee />{calculateRecordTotal(record).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <td className="py-5 px-6 text-right">
+                      <span className="font-bold text-gray-900 tabular-nums">
+                        <Rupee />{calculateRecordTotal(record).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </td>
 
-                    <td className="justify-left items-center">
-                      <span className="text-black font-regular text-xs"> {record.users?.full_name || '-'}
-                      </span>
+                    <td className="py-5 px-6 text-right">
+                      <div className="text-xs text-gray-500 mt-1">
+                        {format(new Date(record.created_at), 'dd MMM yyyy')}
+                      </div>
                     </td>
 
-                    <td className="text-center py-2 px-4">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${record.document_type === 'Tax Invoice'
-                        ? 'bg-blue-100 text-blue-800'
+                    <td className="py-5 px-6 text-right">
+                      <div className="text-xs text-gray-500 mt-1">
+                        {record.users?.full_name || '-'}
+                      </div>
+                    </td>
+
+                    <td className="py-5 px-6 text-center">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${record.document_type === 'Tax Invoice'
+                        ? 'bg-blue-50 text-blue-700 border-blue-100'
                         : record.document_type === 'Proforma Invoice'
-                          ? 'bg-purple-100 text-purple-800'
+                          ? 'bg-purple-50 text-purple-700 border-purple-100'
                           : record.document_type === 'Purchase Order'
-                            ? 'bg-orange-100 text-orange-800'
+                            ? 'bg-orange-50 text-orange-700 border-orange-100'
                             : record.document_type === 'Delivery Challan'
-                              ? 'bg-teal-100 text-teal-800'
-                              : 'bg-green-100 text-green-800'
+                              ? 'bg-teal-50 text-teal-700 border-teal-100'
+                              : 'bg-green-50 text-green-700 border-green-100'
                         }`}>
                         {record.document_type}
                       </span>
                     </td>
 
-                    {/* Actions */}
-                    <td className="py-1 px-1 text-right">
-                      <div className="flex justify-end space-x-2">
+                    <td className="py-5 px-6 text-center">
+                      <div className="flex justify-center gap-2">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-primary hover:text-primary-dark hover:bg-primary/10 px-0 text-blue-600 text-xs px-1"
+                              className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all text-blue-600"
                               onClick={() => handleOpen(record.id, record.quote_number)}
                             >
-                              <ExternalLink className="w-4 h-4 mr-1 text-blue-600" />
+                              <ExternalLink className="w-4 h-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                            <p className="text-xs">Open document in viewer</p>
+                            <p className="text-xs">Open Document</p>
                           </TooltipContent>
                         </Tooltip>
 
@@ -699,14 +675,14 @@ const DocumentsManager = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50 px-1"
+                                className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all"
                                 onClick={() => handleDeleteClick(record)}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                              <p className="text-xs">Permanently delete this document</p>
+                              <p className="text-xs">Delete Document</p>
                             </TooltipContent>
                           </Tooltip>
                         )}
@@ -716,7 +692,6 @@ const DocumentsManager = () => {
                 ))
               )}
             </tbody>
-
           </table>
         </div>
       </div>

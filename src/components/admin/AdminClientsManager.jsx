@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Edit, Trash2, Save, Search, Download, Upload, AlertCircle, Mail, Phone, SortAsc, SortDesc } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, Search, Download, Upload, AlertCircle, Mail, Phone, SortAsc, SortDesc, Filter, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useClients } from '@/contexts/ClientsContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,6 +56,7 @@ const AdminClientsManager = () => {
     const [sortOrder, setSortOrder] = React.useState('asc');
     const [filterCategory, setFilterCategory] = React.useState('all');
     const [filterStatus, setFilterStatus] = React.useState('all');
+    const [showFilters, setShowFilters] = React.useState(false);
 
     // 3. Ref Hooks
     const fileImportRef = React.useRef(null);
@@ -113,6 +114,7 @@ const AdminClientsManager = () => {
         setFilterCategory('all');
         setFilterStatus('all');
         setCurrentPage(1);
+        setShowFilters(false);
     };
 
     // Pagination calculations
@@ -506,31 +508,24 @@ const AdminClientsManager = () => {
                 {/* Filters and Actions Row */}
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Filter</span>
-                            <Select value={filterCategory} onValueChange={setFilterCategory}>
-                                <SelectTrigger className="w-40 h-10 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
-                                    <SelectValue placeholder="Category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Categories</SelectItem>
-                                    {CLIENT_CATEGORIES.map(cat => (
-                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            <Select value={filterStatus} onValueChange={setFilterStatus}>
-                                <SelectTrigger className="w-32 h-10 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
-                                    <SelectValue placeholder="Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant={showFilters ? "secondary" : "outline"}
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className={`h-10 px-4 rounded-xl transition-all border-gray-200 ${showFilters ? 'bg-primary/10 text-primary border-primary/20' : 'bg-gray-50/50'}`}
+                                >
+                                    <Filter className="w-4 h-4 mr-2" />
+                                    <span className="text-sm font-bold uppercase tracking-widest leading-none">Filters</span>
+                                    {(filterCategory !== 'all' || filterStatus !== 'all') && (
+                                        <Badge className="ml-2 bg-primary text-white scale-75">!</Badge>
+                                    )}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                <p className="text-xs">Show advanced filtering options</p>
+                            </TooltipContent>
+                        </Tooltip>
 
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Sort</span>
@@ -559,16 +554,6 @@ const AdminClientsManager = () => {
                                 </TooltipContent>
                             </Tooltip>
                         </div>
-
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={resetAll}
-                            disabled={!searchTerm && sortField === 'clientName' && sortOrder === 'asc' && filterCategory === 'all' && filterStatus === 'all'}
-                            className="text-gray-400 hover:text-red-500 h-10 text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2"
-                        >
-                            Reset
-                        </Button>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -597,6 +582,50 @@ const AdminClientsManager = () => {
                         </Button>
                     </div>
                 </div>
+
+                {/* Advanced Filters Panel */}
+                {showFilters && (
+                    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm animate-in slide-in-from-top-2 duration-200">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center">
+                                <Filter className="w-4 h-4 mr-2 text-primary" />
+                                Advanced Filters
+                            </h3>
+                            <Button variant="ghost" size="sm" onClick={resetAll} className="text-xs text-gray-400 hover:text-red-500 font-bold uppercase tracking-widest">
+                                <X className="w-3 h-3 mr-1" /> Reset All
+                            </Button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Category</Label>
+                                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                                    <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
+                                        <SelectValue placeholder="All Categories" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Categories</SelectItem>
+                                        {CLIENT_CATEGORIES.map(cat => (
+                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</Label>
+                                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                                    <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
+                                        <SelectValue placeholder="All Status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Status</SelectItem>
+                                        <SelectItem value="active">Active</SelectItem>
+                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Pagination Controls - Top */}
@@ -649,12 +678,16 @@ const AdminClientsManager = () => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow border border-gray-100 overflow-hidden">
-                <table className="w-full">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b">
                         <tr>
-                            <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Client Details</th>
-                            <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600">Actions</th>
+                            <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">ID</th>
+                            <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Client & Category</th>
+                            <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Address & GSTIN</th>
+                            <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Primary Contact</th>
+                            <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Status</th>
+                            <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -662,105 +695,92 @@ const AdminClientsManager = () => {
                             paginatedClients.map((client) => {
                                 const primaryContact = (client.contacts || []).find(c => c.is_primary) || client.contacts?.[0] || {};
                                 return (
-                                    <tr key={client.id} className="border-b hover:bg-gray-50 transition-colors">
+                                    <tr key={client.id} className="border-b hover:bg-gray-50/50 transition-colors group">
+                                        <td className="py-5 px-6">
+                                            <span className="font-mono font-bold text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10">{client.id}</span>
+                                        </td>
 
-                                        {/* Single content column */}
-                                        <td className="py-3 px-4">
-                                            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700">
-                                                <div className="flex items-center gap-2">
-                                                    <p className="font-semibold text-gray-900 text-base">
-                                                        {client.clientName}
-                                                    </p>
-                                                    <Badge variant="secondary" className="text-[10px] py-0 px-1 h-4 bg-blue-50 text-blue-600 border-blue-100 uppercase tracking-wider font-bold">
-                                                        {client.category || 'General'}
-                                                    </Badge>
-                                                    {client.status === false ? (
-                                                        <Badge className="text-[10px] py-0 px-1 h-4 bg-red-50 text-red-600 border-red-100 uppercase tracking-wider font-bold">Inactive</Badge>
-                                                    ) : (
-                                                        <Badge className="text-[10px] py-0 px-1 h-4 bg-green-50 text-green-600 border-green-100 uppercase tracking-wider font-bold">Active</Badge>
-                                                    )}
-                                                </div>
-                                                <div className="w-full"></div>
-                                                <p className="" title={client.clientAddress}>
-                                                    <span className="font-semibold text-gray-900">Address:</span>{' '}
-                                                    {client.clientAddress}
-                                                </p>
-                                                
-                                                <div className="w-full"></div>
-                                                <p className="flex items-center">
-                                                    <span className="font-semibold text-gray-900 mr-1">GSTIN:</span>
-                                                          {client.gstin?.trim() || '-'}
-                                                </p>
+                                        <td className="py-5 px-6">
+                                            <div className="font-bold text-gray-900">{client.clientName}</div>
+                                            <Badge variant="secondary" className="mt-1 text-[9px] py-0 px-1 h-4 bg-blue-50 text-blue-600 border-blue-100 uppercase tracking-wider font-bold">
+                                                {client.category || 'General'}
+                                            </Badge>
+                                        </td>
 
-                                                <div className="w-full"></div>
+                                        <td className="py-5 px-6">
+                                            <div className="text-xs text-gray-600" title={client.clientAddress}>
+                                                {client.clientAddress}
+                                            </div>
+                                            <div className="text-[10px] text-gray-400 mt-1 font-medium">
+                                                {client.gstin?.trim() ? `GSTIN: ${client.gstin}` : ''}
+                                            </div>
+                                        </td>
 
-                                                {primaryContact.contact_person && (
-                                                    <>
-                                                        <p className="flex items-center">
-                                                            <span className="font-semibold text-gray-900 mr-1">Primary Contact:</span>
-                                                            {primaryContact.contact_person}
-                                                        </p>
-                                                        <p className="flex items-center">
-                                                            <Mail className="w-4 h-4 mr-2 text-blue-500" />
-                                                            <span className="font-semibold text-gray-900 mr-1">Email:</span>
-                                                            {primaryContact.contact_email || '—'}
-                                                        </p>
-                                                        <p className="flex items-center">
-                                                            <Phone className="w-4 h-4 mr-2 text-green-500" />
-                                                            <span className="font-semibold text-gray-900 mr-1">Phone:</span>
-                                                            {primaryContact.contact_phone || '—'}
-                                                        </p>
-                                                        <div className="w-full"></div>
-                                                    </>
-                                                )}
-
-
-                                                {client.contacts && client.contacts.length > 1 && (
-                                                    <div className="w-full mt-1">
-                                                        <p className="text-xs text-gray-500">
-                                                            +{client.contacts.length - 1} more contact(s)
-                                                        </p>
+                                        <td className="py-5 px-6">
+                                            {primaryContact.contact_person ? (
+                                                <div className="space-y-1">
+                                                    <div className="font-bold text-gray-900 text-xs">{primaryContact.contact_person}</div>
+                                                    <div className="text-[10px] text-gray-500 flex items-center gap-1.5">
+                                                        <Mail className="w-3 h-3 text-blue-400" /> {primaryContact.contact_email || '—'}
                                                     </div>
-                                                )}
-                                            </div>
+                                                    <div className="text-[10px] text-gray-500 flex items-center gap-1.5">
+                                                        <Phone className="w-3 h-3 text-green-400" /> {primaryContact.contact_phone || '—'}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-300 font-bold">—</span>
+                                            )}
                                         </td>
 
-                                        {/* Actions column */}
-                                        <td className="py-1 px-1 text-right">
-                                            <div className="flex justify-end space-x-2">
+                                        <td className="py-5 px-6 text-center">
+                                            {client.status === false ? (
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap bg-red-50 text-red-700 border-red-100">
+                                                    Inactive
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap bg-green-50 text-green-700 border-green-100">
+                                                    Active
+                                                </span>
+                                            )}
+                                        </td>
+
+                                        <td className="py-5 px-6 text-center">
+                                            <div className="flex justify-center gap-2">
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Button variant="ghost" size="icon" onClick={() => handleEdit(client)}>
-                                                            <Edit className="w-4 h-4 text-gray-600" />
+                                                        <Button variant="ghost" size="sm" onClick={() => handleEdit(client)} className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all group-hover:bg-primary/5">
+                                                            <Edit className="w-4 h-4" />
                                                         </Button>
                                                     </TooltipTrigger>
                                                     <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                                        <p className="text-xs">Edit client profile</p>
+                                                        <p className="text-xs">Edit Client</p>
                                                     </TooltipContent>
                                                 </Tooltip>
 
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(client)}>
-                                                            <Trash2 className="w-4 h-4 text-red-500" />
+                                                        <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(client)} className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all group-hover:bg-red-50">
+                                                            <Trash2 className="w-4 h-4" />
                                                         </Button>
                                                     </TooltipTrigger>
                                                     <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                                        <p className="text-xs">Permanently delete this client</p>
+                                                        <p className="text-xs">Delete Client</p>
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </div>
                                         </td>
-
                                     </tr>
                                 );
                             })
                         ) : (
                             <tr>
-                                <td colSpan="2" className="py-8 text-center text-gray-500">
-                                    {searchTerm
-                                        ? 'No clients found matching your search.'
-                                        : 'No clients added yet.'}
+                                <td colSpan="6" className="py-12 text-center text-gray-500">
+                                    <div className="flex flex-col items-center justify-center gap-2">
+                                        <AlertCircle className="w-8 h-8 text-gray-200" />
+                                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+                                            {searchTerm ? 'No matching clients found' : 'No clients registered yet'}
+                                        </p>
+                                    </div>
                                 </td>
                             </tr>
                         )}
