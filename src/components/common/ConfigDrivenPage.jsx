@@ -23,7 +23,6 @@ const TechnicianDashboard = lazyWithRetry(() => import('@/components/admin/Techn
 const ApprovalsManager = lazyWithRetry(() => import('@/components/admin/ApprovalsManager.jsx'));
 const AdminClientPricingManager = lazyWithRetry(() => import('@/components/admin/AdminClientPricingManager.jsx'));
 const AdminOrganizationSettings = lazyWithRetry(() => import('@/components/admin/AdminOrganizationSettings.jsx'));
-const InquiriesManager = lazyWithRetry(() => import('@/components/admin/InquiriesManager.jsx'));
 const MroDashboard = lazyWithRetry(() => import('@/components/admin/MroDashboard.jsx'));
 const HRDashboard = lazyWithRetry(() => import('@/components/admin/HRDashboard.jsx'));
 
@@ -41,7 +40,6 @@ const COMPONENT_MAP = {
   [VIEWS.UTILITIES]: UtilitiesManager,
   [VIEWS.SETTINGS]: AdminSystemSettings,
   [VIEWS.CLIENT_PRICING]: AdminClientPricingManager,
-  [VIEWS.INQUIRIES]: InquiriesManager,
   [VIEWS.ORGANIZATION]: AdminOrganizationSettings,
   [VIEWS.TESTING]: lazyWithRetry(() => import('@/components/admin/TestingDashboard.jsx')),
   [VIEWS.HR_DASHBOARD]: HRDashboard
