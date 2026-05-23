@@ -168,7 +168,7 @@ if (window.navigation && window.self !== window.top) {
 const addTransformIndexHtml = {
 	name: 'add-transform-index-html',
 	transformIndexHtml(html) {
-		const siteName = getSiteContent().global?.siteName || "Easy Billing";
+		const siteName = getSiteContent().global?.siteName || "Easy LIMS";
 		html = html.replace(/<title>.*?<\/title>/, `<title>${siteName}</title>`);
 		const tags = [
 			{

@@ -20,6 +20,7 @@ import { useTermsAndConditions } from '@/contexts/TermsAndConditionsContext';
 import { useTechnicals } from '@/contexts/TechnicalsContext';
 import { useBankAccounts } from '@/contexts/BankAccountsContext';
 import Rupee from '@/components/Rupee';
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     Select,
     SelectContent,
@@ -179,6 +180,7 @@ const NewQuotationPage = () => {
     const [qty, setQty] = useState(1);
     const [documentType, setDocumentType] = useState(searchParams.get('type') || 'Quotation'); // 'Tax Invoice', 'Quotation', 'Proforma Invoice', 'Purchase Order', or 'Delivery Challan'
     const [discount, setDiscount] = useState(0);
+    const [discountShow, setDiscountShow] = useState(true);
     const [comboboxOpen, setComboboxOpen] = useState(false);
     const [searchValue, setSearchValue] = useState('');
     const [clientNameSelection, setClientNameSelection] = useState(''); // Predefined client or 'Other'
@@ -189,8 +191,9 @@ const NewQuotationPage = () => {
         quoteDetails,
         items,
         documentType,
-        discount
-    }), [quoteDetails, items, documentType, discount]);
+        discount,
+        discountShow
+    }), [quoteDetails, items, documentType, discount, discountShow]);
 
     // Compute aggregated T&C and Technicals from items, merging with legacy manually selected ones if present
     const derivedTcTypes = useMemo(() => {
@@ -235,6 +238,7 @@ const NewQuotationPage = () => {
         setQty(1);
         setDocumentType('Quotation');
         setDiscount(0);
+        setDiscountShow(true);
         setComboboxOpen(false);
         setSearchValue('');
         setClientNameSelection('');
@@ -248,7 +252,8 @@ const NewQuotationPage = () => {
             quoteDetails: defaultQuoteDetails,
             items: [],
             documentType: 'Quotation',
-            discount: 0
+            discount: 0,
+            discountShow: true
         };
         setLastSavedData(JSON.stringify(initialSnapshot));
 
@@ -314,7 +319,7 @@ const NewQuotationPage = () => {
                 
                 // Keep lastSavedData synchronized so auto-population doesn't mark doc as dirty
                 setLastSavedData(prevSaved => {
-                    if (!prevSaved) return JSON.stringify({ quoteDetails: updated, items, documentType, discount });
+                    if (!prevSaved) return JSON.stringify({ quoteDetails: updated, items, documentType, discount, discountShow });
                     try {
                         const parsed = JSON.parse(prevSaved);
                         if (JSON.stringify(parsed.quoteDetails) === JSON.stringify(prev)) {
@@ -328,7 +333,7 @@ const NewQuotationPage = () => {
                 return updated;
             });
         }
-    }, [user, quoteDetails.generatedBy, items, documentType, discount]);
+    }, [user, quoteDetails.generatedBy, items, documentType, discount, discountShow]);
 
 
     // Auto-select default bank account if not already set
@@ -401,6 +406,7 @@ const NewQuotationPage = () => {
                     const loadedItems = content.items || [];
                     const loadedDocType = data.document_type || 'Quotation';
                     const loadedDiscount = content.discount || 0;
+                    const loadedDiscountShow = content.discountShow !== undefined ? String(content.discountShow) === 'true' : true;
 
                     // Ensure quoteNumber is synced from the top-level column if it's missing or empty in JSON content
                     const finalQuoteNumber = loadedQuoteDetails.quoteNumber || data.quote_number;
@@ -413,6 +419,7 @@ const NewQuotationPage = () => {
                     setDocumentType(loadedDocType);
                     setLoadedDocumentType(loadedDocType);
                     setDiscount(loadedDiscount);
+                    setDiscountShow(loadedDiscountShow);
                     setSavedRecordId(data.id);
                     setDocumentCreatorId(data.created_by);
                     if (data.job_id) setLinkedJobId(data.job_id);
@@ -421,7 +428,8 @@ const NewQuotationPage = () => {
                         quoteDetails: loadedQuoteDetails,
                         items: loadedItems,
                         documentType: loadedDocType,
-                        discount: loadedDiscount
+                        discount: loadedDiscount,
+                        discountShow: loadedDiscountShow
                     };
                     setLastSavedData(JSON.stringify(snapshot));
 
@@ -497,7 +505,7 @@ const NewQuotationPage = () => {
                             
                             // Synchronize lastSavedData to avoid marking doc as dirty immediately on job load
                             setLastSavedData(prevSaved => {
-                                if (!prevSaved) return JSON.stringify({ quoteDetails: newDetails, items, documentType: docType, discount });
+                                if (!prevSaved) return JSON.stringify({ quoteDetails: newDetails, items, documentType: docType, discount, discountShow });
                                 try {
                                     const parsed = JSON.parse(prevSaved);
                                     if (JSON.stringify(parsed.quoteDetails) === JSON.stringify(prev)) {
@@ -628,7 +636,8 @@ const NewQuotationPage = () => {
                 content: {
                     quoteDetails: updatedQuoteDetails,
                     items,
-                    discount
+                    discount,
+                    discountShow
                 },
                 job_id: resolvedJobId,
                 created_by: userId,
@@ -673,7 +682,8 @@ const NewQuotationPage = () => {
                 quoteDetails: updatedQuoteDetails,
                 items,
                 documentType,
-                discount
+                discount,
+                discountShow
             };
             setLastSavedData(JSON.stringify(snapshot));
 
@@ -1186,7 +1196,6 @@ const NewQuotationPage = () => {
                                     )}
                                 </div>
                             </div>
-
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
                                     <Label>Date</Label>
@@ -1199,16 +1208,26 @@ const NewQuotationPage = () => {
                                     />
                                 </div>
                                 <div>
-                                    <Label>Discount (%)</Label>
+                                                                        <Label>Discount (%)</Label>
                                     <Input
-                                        type="number"
+                                        type="text"
                                         min="0"
                                         max="100"
                                         value={discount}
                                         onChange={e => setDiscount(Number(e.target.value))}
                                         placeholder="Enter discount %"
                                         disabled={isReadOnly}
+                                        className="w-full"
                                     />
+                                    <div className="flex items-center space-x-2 pt-2">
+                                        <Checkbox
+                                            id="discountShow"
+                                            checked={discountShow}
+                                            onCheckedChange={checked => setDiscountShow(!!checked)}
+                                            disabled={isReadOnly}
+                                        />
+                                        <Label htmlFor="discountShow" className="cursor-pointer select-none">Show Discount?</Label>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1886,7 +1905,7 @@ const NewQuotationPage = () => {
                                                                 <span>Subtotal</span>
                                                                 <span><Rupee />{calculateTotal().toLocaleString()}</span>
                                                             </div>
-                                                            {discount > 0 && (
+                                                            {discountShow && (
                                                                 <div className="flex justify-between text-green-600 text-xs">
                                                                     <span>Discount ({discount}%)</span>
                                                                     <span>- <Rupee />{(calculateTotal() * (discount / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
@@ -1924,10 +1943,13 @@ const NewQuotationPage = () => {
                                                                 <span className="font-medium">Amount in Words: Rupees </span>
                                                                 <span>{numberToWords((calculateTotal() * (1 - discount / 100)) * (1 + (taxTotalPercent / 100)))} /-</span>
                                                             </div>
+                                                            {discount > 0 && (
+                                                                <div className="mt-2 text-xs text-gray-600 italic">
+                                                                    <span className="font-medium">Note: Discount included in the above amount.</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
-
-
                                                 </>
                                             )}
 

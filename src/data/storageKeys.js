@@ -25,8 +25,8 @@ const LEGACY_MAPPING = {
     'services': STORAGE_KEYS.SERVICES,
     'sampling_data': STORAGE_KEYS.SAMPLING_DATA,
     // Content/Assets
-    'edge2Easy Billing_content': STORAGE_KEYS.CONTENT,
-    'edge2Easy Billing_images': STORAGE_KEYS.IMAGES,
+    'edge2EasyLIMS_content': STORAGE_KEYS.CONTENT,
+    'edge2EasyLIMS_images': STORAGE_KEYS.IMAGES,
     'site_images': STORAGE_KEYS.IMAGES, // Both old keys map to the same new key
     'newReportFormData': STORAGE_KEYS.REPORT_FORM,
 };
