@@ -147,6 +147,33 @@ export const SETTINGS_ITEM_IDS = {
     SYSTEM: 'system',
 };
 
+export const DOCUMENT_ITEM_TYPE_KEYS = {
+    FIELD_TESTS: 'service',
+    LAB_TESTS: 'test',
+    SAMPLING: 'sampling',
+};
+
+export const DOCUMENT_ITEM_TYPES = {
+    FIELD_TESTS: {
+        key: DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS,
+        label: 'Field Test',
+    },
+    LAB_TESTS: {
+        key: DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS,
+        label: 'Lab Test',
+    },
+    SAMPLING: {
+        key: DOCUMENT_ITEM_TYPE_KEYS.SAMPLING,
+        label: 'Sampling',
+    },
+};
+
+export const DOCUMENT_ITEM_TYPE_OPTIONS = Object.values(DOCUMENT_ITEM_TYPES);
+
+export const getDocumentItemTypeLabel = (key) => (
+    DOCUMENT_ITEM_TYPE_OPTIONS.find(itemType => itemType.key === key)?.label || key
+);
+
 
 export const APP_CONFIG = {
     workflow: {

@@ -47,7 +47,7 @@ import {
 import ReactSelect from 'react-select';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { format } from 'date-fns';
-import { getSiteContent, ROLES, WORKFLOW_STATES } from '@/data/config';
+import { DOCUMENT_ITEM_TYPE_KEYS, DOCUMENT_ITEM_TYPE_OPTIONS, getDocumentItemTypeLabel, getSiteContent, ROLES, WORKFLOW_STATES } from '@/data/config';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { sendTelegramNotification } from '@/lib/notifier';
@@ -175,7 +175,7 @@ const NewQuotationPage = () => {
 
     const [quoteDetails, setQuoteDetails] = useState(defaultQuoteDetails);
     const [items, setItems] = useState([]);
-    const [newItemType, setNewItemType] = useState('service'); // 'service' or 'test'
+    const [newItemType, setNewItemType] = useState(DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS);
     const [selectedItemId, setSelectedItemId] = useState('');
     const [qty, setQty] = useState(1);
     const [documentType, setDocumentType] = useState(searchParams.get('type') || 'Quotation'); // 'Tax Invoice', 'Quotation', 'Proforma Invoice', 'Purchase Order', or 'Delivery Challan'
@@ -233,7 +233,7 @@ const NewQuotationPage = () => {
     const handleReset = React.useCallback(() => {
         setQuoteDetails(defaultQuoteDetails);
         setItems([]);
-        setNewItemType('service');
+        setNewItemType(DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS);
         setSelectedItemId('');
         setQty(1);
         setDocumentType('Quotation');
@@ -757,18 +757,20 @@ const NewQuotationPage = () => {
 
     const getAppropiatePrice = (itemId, type, clientId) => {
         if (!clientId) {
-            if (type === 'service') {
+            if (type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
                 return services.find(s => s.id === itemId)?.price || 0;
+            } else if (type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
+                return samplingData.find(s => s.id === itemId)?.price || 0;
             } else {
                 return tests.find(t => t.id === itemId)?.price || 0;
             }
         }
 
-        if (type === 'service') {
+        if (type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
             const clientPrice = clientServicePrices.find(p => p.client_id === clientId && p.service_id === itemId);
             if (clientPrice) return clientPrice.price;
             return services.find(s => s.id === itemId)?.price || 0;
-        } else if (type === 'sampling') {
+        } else if (type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
             // For now, sampling doesn't have client-specific prices
             return samplingData.find(s => s.id === itemId)?.price || 0;
         } else {
@@ -825,14 +827,14 @@ const NewQuotationPage = () => {
         let price = 0;
         let unit = 'Nos';
 
-        if (newItemType === 'service') {
+        if (newItemType === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
             itemData = services.find(s => s.id === selectedItemId);
             if (itemData) {
                 description = itemData.serviceType;
                 price = itemData.price;
                 unit = itemData.unit || 'Nos';
             }
-        } else if (newItemType === 'sampling') {
+        } else if (newItemType === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
             itemData = samplingData.find(s => s.id === selectedItemId);
             if (itemData) {
                 description = `${itemData.serviceType} - ${Array.isArray(itemData.materials) ? itemData.materials.join(', ') : (itemData.materials || '')}`;
@@ -866,7 +868,7 @@ const NewQuotationPage = () => {
                 tcList: itemData.tcList || itemData.tc_list || [],
                 techList: itemData.techList || itemData.tech_list || [],
                 // Include new service fields if it's a service
-                ...(newItemType === 'service' && itemData ? {
+                ...(newItemType === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS && itemData ? {
                     methodOfSampling: itemData.methodOfSampling || itemData.method_of_sampling || 'NA',
                     numBHs: itemData.numBHs ?? itemData.num_bhs ?? 0,
                     measure: itemData.measure || 'NA'
@@ -1171,6 +1173,44 @@ const NewQuotationPage = () => {
 
     // Total pages calculation
     const totalPages = totalItemPages + tcPages.length + techPages.length;
+    const selectedDocumentItemType = DOCUMENT_ITEM_TYPE_OPTIONS.find(itemType => itemType.key === newItemType) || DOCUMENT_ITEM_TYPE_OPTIONS[0];
+    const documentItemTypeIcons = {
+        [DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS]: Drill,
+        [DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS]: TestTube,
+        [DOCUMENT_ITEM_TYPE_KEYS.SAMPLING]: SwatchBook,
+    };
+    const getSelectableItemOptions = () => {
+        if (newItemType === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
+            return services.map(s => ({ value: s.id, label: s.serviceType }));
+        }
+
+        if (newItemType === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
+            return samplingData.map(s => ({
+                value: s.id,
+                label: `${s.serviceType} - ${Array.isArray(s.materials) ? s.materials.join(', ') : (s.materials || '')}`
+            }));
+        }
+
+        return tests.map(t => ({
+            value: t.id,
+            label: `${t.testType} - ${Array.isArray(t.materials) ? t.materials.join(', ') : (t.materials || '')}`
+        }));
+    };
+    const getSelectedItemDisplayLabel = () => {
+        if (newItemType === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
+            return services.find(s => s.id === selectedItemId)?.serviceType || '';
+        }
+
+        if (newItemType === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
+            const item = samplingData.find(s => s.id === selectedItemId);
+            if (!item) return '';
+            return `${item.serviceType} - ${Array.isArray(item.materials) ? item.materials.join(', ') : (item.materials || '')}`;
+        }
+
+        const item = tests.find(t => t.id === selectedItemId);
+        if (!item) return '';
+        return `${item.testType} - ${Array.isArray(item.materials) ? item.materials.join(', ') : (item.materials || '')}`;
+    };
 
     return (
         <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
@@ -1616,69 +1656,36 @@ const NewQuotationPage = () => {
                             </h2>
                             <div className="space-y-4">
                                 <div className="grid grid-cols-3 gap-1">
-                                    <Button
-                                        variant={newItemType === 'service' ? 'default' : 'outline'}
-                                        onClick={() => { if (!isReadOnly) { setNewItemType('service'); setSelectedItemId(''); } }}
-                                        className={cn("w-full flex items-center gap-2 text-xs", isReadOnly && "opacity-50 cursor-not-allowed")}
-                                        disabled={isReadOnly}
-                                    >
-                                        <Drill className="w-2 h-2 hidden" /> Field Tests
-                                    </Button>
-                                    <Button
-                                        variant={newItemType === 'test' ? 'default' : 'outline'}
-                                        onClick={() => { if (!isReadOnly) { setNewItemType('test'); setSelectedItemId(''); } }}
-                                        className={cn("w-full flex items-center gap-2 text-xs", isReadOnly && "opacity-50 cursor-not-allowed")}
-                                        disabled={isReadOnly}
-                                    >
-                                        <TestTube className="w-2 h-2 hidden" /> Lab Tests
-                                    </Button>
-                                    <Button
-                                        variant={newItemType === 'sampling' ? 'default' : 'outline'}
-                                        onClick={() => { if (!isReadOnly) { setNewItemType('sampling'); setSelectedItemId(''); } }}
-                                        className={cn("w-full flex items-center gap-2 text-xs", isReadOnly && "opacity-50 cursor-not-allowed")}
-                                        disabled={isReadOnly}
-                                    >
-                                        <SwatchBook className="w-2 h-2 hidden" /> Sampling
-                                    </Button>
+                                    {DOCUMENT_ITEM_TYPE_OPTIONS.map(itemType => {
+                                        const ItemTypeIcon = documentItemTypeIcons[itemType.key];
+
+                                        return (
+                                            <Button
+                                                key={itemType.key}
+                                                variant={newItemType === itemType.key ? 'default' : 'outline'}
+                                                onClick={() => { if (!isReadOnly) { setNewItemType(itemType.key); setSelectedItemId(''); } }}
+                                                className={cn("w-full flex items-center gap-2 text-xs", isReadOnly && "opacity-50 cursor-not-allowed")}
+                                                disabled={isReadOnly}
+                                            >
+                                                <ItemTypeIcon className="w-2 h-2 hidden" /> {itemType.label}
+                                            </Button>
+                                        );
+                                    })}
                                 </div>
 
                                 <div>
-                                    <Label>Select {newItemType === 'service' ? 'Service' : (newItemType === 'sampling' ? 'Sampling Item' : 'Test')}</Label>
+                                    <Label>Select {selectedDocumentItemType.label}</Label>
                                     <ReactSelect
                                         className="mt-1"
                                         classNamePrefix="react-select"
                                         isDisabled={isReadOnly}
-                                        options={
-                                            newItemType === 'service'
-                                                ? services.map(s => ({ value: s.id, label: s.serviceType }))
-                                                : newItemType === 'sampling'
-                                                    ? samplingData.map(s => ({
-                                                        value: s.id,
-                                                        label: `${s.serviceType} - ${Array.isArray(s.materials) ? s.materials.join(', ') : (s.materials || '')}`
-                                                    }))
-                                                    : tests.map(t => ({
-                                                        value: t.id,
-                                                        label: `${t.testType} - ${Array.isArray(t.materials) ? t.materials.join(', ') : (t.materials || '')}`
-                                                    }))
-                                        }
+                                        options={getSelectableItemOptions()}
                                         value={selectedItemId ? {
                                             value: selectedItemId,
-                                            label: (() => {
-                                                if (newItemType === 'service') {
-                                                    return services.find(s => s.id === selectedItemId)?.serviceType || '';
-                                                } else if (newItemType === 'sampling') {
-                                                    const item = samplingData.find(s => s.id === selectedItemId);
-                                                    if (!item) return '';
-                                                    return `${item.serviceType} - ${Array.isArray(item.materials) ? item.materials.join(', ') : (item.materials || '')}`;
-                                                } else {
-                                                    const item = tests.find(t => t.id === selectedItemId);
-                                                    if (!item) return '';
-                                                    return `${item.testType} - ${Array.isArray(item.materials) ? item.materials.join(', ') : (item.materials || '')}`;
-                                                }
-                                            })()
+                                            label: getSelectedItemDisplayLabel()
                                         } : null}
                                         onChange={(option) => setSelectedItemId(option ? option.value : '')}
-                                        placeholder={`Search ${newItemType}s...`}
+                                        placeholder={`Search ${selectedDocumentItemType.label}...`}
                                         isSearchable
                                         isClearable
                                         styles={{
@@ -1869,8 +1876,8 @@ const NewQuotationPage = () => {
                                                                 <td className="py-3 px-1 text-gray-500 text-xs align-top border-r border-l border-gray-200">{slNo}.</td>
                                                                 <td className="py-2 px-1 text-gray-900 align-top border-r border-l border-gray-200">
                                                                     <p className="font-small text-xs">{item.description}</p>
-                                                                    <p className="text-xs text-gray-500 capitalize italic" style={{ fontSize: '10px' }}>{item.type}</p>
-                                                                    {item.type === 'service' && (
+                                                                    <p className="text-xs text-gray-500 capitalize italic" style={{ fontSize: '10px' }}>{getDocumentItemTypeLabel(item.type)}</p>
+                                                                    {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS && (
                                                                         (() => {
                                                                             const values = [
                                                                                 item.methodOfSampling && item.methodOfSampling !== 'NA'
