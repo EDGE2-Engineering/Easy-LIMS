@@ -719,7 +719,7 @@ const AdminDashboard = () => {
                                                                         {idx + 1}
                                                                     </div>
                                                                     <div>
-                                                                        <p className="text-sm font-bold text-gray-900">{stage.label}</p>
+                                                                        <p className="text-sm font-normal text-gray-900">{stage.label}</p>
                                                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{count} Active Case{count !== 1 ? 's' : ''}</p>
                                                                     </div>
                                                                 </div>

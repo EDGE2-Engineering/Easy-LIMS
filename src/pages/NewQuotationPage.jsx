@@ -29,6 +29,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
+import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 import {
     Popover,
     PopoverContent,
@@ -1384,28 +1385,7 @@ const NewQuotationPage = () => {
                                         isSearchable
                                         isClearable
                                         classNamePrefix="react-select"
-                                        styles={{
-                                            control: (base, state) => ({
-                                                ...base,
-                                                minHeight: '40px',
-                                                borderColor: state.isFocused ? '#6366f1' : '#e5e7eb',
-                                                borderRadius: '0.5rem',
-                                                backgroundColor: 'rgba(249,250,251,0.3)',
-                                                boxShadow: 'none',
-                                                opacity: isReadOnly ? 0.6 : 1,
-                                                cursor: isReadOnly ? 'not-allowed' : 'default',
-                                                '&:hover': { borderColor: '#6366f1' }
-                                            }),
-                                            option: (base, state) => ({
-                                                ...base,
-                                                backgroundColor: state.isSelected ? '#6366f1' : state.isFocused ? '#f3f4f6' : 'white',
-                                                color: state.isSelected ? 'white' : '#1f2937',
-                                                fontSize: '0.875rem'
-                                            }),
-                                            placeholder: (base) => ({ ...base, color: '#9ca3af', fontSize: '0.875rem' }),
-                                            singleValue: (base) => ({ ...base, fontSize: '0.875rem' }),
-                                            menu: (base) => ({ ...base, zIndex: 50 })
-                                        }}
+                                        styles={themedReactSelectStyles({ borderRadius: '0.75rem' })}
                                     />
 
                                     {clientNameSelection !== 'Other' && clientNameSelection !== '' && (() => {
@@ -1688,25 +1668,7 @@ const NewQuotationPage = () => {
                                         placeholder={`Search ${selectedDocumentItemType.label}...`}
                                         isSearchable
                                         isClearable
-                                        styles={{
-                                            control: (base) => ({
-                                                ...base,
-                                                borderColor: '#e5e7eb',
-                                                borderRadius: '0.75rem',
-                                                paddingTop: '2px',
-                                                paddingBottom: '2px',
-                                                boxShadow: 'none',
-                                                '&:hover': {
-                                                    borderColor: '#3b82f6'
-                                                }
-                                            }),
-                                            option: (base, state) => ({
-                                                ...base,
-                                                backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#f3f4f6' : 'white',
-                                                color: state.isSelected ? 'white' : '#1f2937',
-                                                fontSize: '0.875rem'
-                                            })
-                                        }}
+                                        styles={themedReactSelectStyles({ minHeight: '44px', borderRadius: '0.75rem' })}
                                     />
                                 </div>
 

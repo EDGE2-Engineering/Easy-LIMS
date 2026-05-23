@@ -30,6 +30,7 @@ import TechnicianAssignment from './TechnicianAssignment';
 import TestingManager from './TestingManager';
 import MaterialInwardManager from './MaterialInwardManager';
 import ReactSelect from 'react-select';
+import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 
 const JobsManager = ({ id }) => {
     const [records, setRecords] = useState([]);
@@ -820,13 +821,13 @@ const JobsManager = ({ id }) => {
 
                         {/* Linked Documents Summary */}
                         {canModify && linkedDocs.length > 0 && (
-                            <div className="p-2 bg-blue-50/30 rounded-xl border border-blue-100/50">
-                                <h4 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-4 flex items-center gap-2"><FileText className="w-3 h-3" /> Job Documents</h4>
+                            <div className="p-4 bg-white rounded-sm border border-gray-100 shadow-sm">
+                                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><FileText className="w-4 h-4" /> Job Documents</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                     {linkedDocs.map(doc => (
-                                        <div key={doc.id} className="p-3 bg-white rounded-xl border border-blue-50 flex items-center justify-between group hover:border-blue-300 transition-all cursor-pointer" onClick={() => navigate(`/doc/${doc.id}`)}>
-                                            <div className="space-y-0.5"><div className="text-[9px] font-bold text-blue-500">{doc.document_type}</div><div className="font-mono text-xs font-bold text-gray-700">{doc.quote_number}</div></div>
-                                            <ExternalLink className="w-3 h-3 text-blue-300 group-hover:text-blue-500" />
+                                        <div key={doc.id} className="p-3 bg-gray-50/50 rounded-xl border border-gray-100 flex items-center justify-between group hover:bg-gray-50 hover:border-primary/30 transition-all cursor-pointer" onClick={() => navigate(`/doc/${doc.id}`)}>
+                                            <div className="space-y-0.5"><div className="text-[9px] font-bold text-primary uppercase tracking-wider">{doc.document_type}</div><div className="font-mono text-xs font-bold text-gray-700">{doc.quote_number}</div></div>
+                                            <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-primary" />
                                         </div>
                                     ))}
                                 </div>
@@ -858,27 +859,7 @@ const JobsManager = ({ id }) => {
                                         isSearchable
                                         isClearable
                                         // isDisabled={!isAdmin()}
-                                        styles={{
-                                            control: (base) => ({
-                                                ...base,
-                                                minHeight: '40px',
-                                                height: '40px',
-                                                borderColor: '#e2e8f0',
-                                                borderRadius: '0.75rem',
-                                                paddingLeft: '8px',
-                                                boxShadow: 'none',
-                                                backgroundColor: 'white',
-                                                '&:hover': {
-                                                    borderColor: '#94a3b8'
-                                                }
-                                            }),
-                                            option: (base, state) => ({
-                                                ...base,
-                                                backgroundColor: state.isSelected ? '#0f172a' : state.isFocused ? '#f1f5f9' : 'white',
-                                                color: state.isSelected ? 'white' : '#1e293b',
-                                                fontSize: '0.75rem'
-                                            })
-                                        }}
+                                        styles={themedReactSelectStyles({ minHeight: '40px', borderRadius: '0.75rem', fontSize: '0.75rem' })}
                                     />
                                         : <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">{editingRecord.clients?.client_name || editingRecord.client_name || ''}</p>}
                                 </div>
