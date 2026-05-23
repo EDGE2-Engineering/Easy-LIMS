@@ -16,6 +16,7 @@ import { SamplingProvider } from '@/contexts/SamplingContext';
 import { ExpensesProvider } from '@/contexts/ExpensesContext';
 import { WorkflowProvider } from '@/contexts/WorkflowContext';
 import { BankAccountsProvider } from '@/contexts/BankAccountsContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { getSiteContent } from '@/data/config';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
@@ -95,6 +96,7 @@ function App() {
     <HelmetProvider>
       <DeviceRestriction>
         <AuthProvider>
+          <ThemeProvider>
           <ServicesProvider>
             <WorkflowProvider>
               <SamplingProvider>
@@ -114,7 +116,7 @@ function App() {
                                   <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
                                   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
                                 </Helmet>
-                                <div className="min-h-screen bg-[#F5F1ED]">
+                                <div className="min-h-screen bg-background text-foreground">
                                   <TooltipProvider>
                                     <RouterProvider
                                       router={router}
@@ -138,7 +140,8 @@ function App() {
               </TestsProvider>
             </SamplingProvider>
           </WorkflowProvider>
-        </ServicesProvider>
+          </ServicesProvider>
+          </ThemeProvider>
         </AuthProvider>
       </DeviceRestriction>
     </HelmetProvider >

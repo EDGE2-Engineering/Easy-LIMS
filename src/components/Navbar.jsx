@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Files, Briefcase, IndianRupee, Wallet, ClipboardCheck, Calculator, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness, CalendarOff, LayoutDashboard, CheckCircle2, Calendar, Loader2, Send, Building2, MessageSquare } from 'lucide-react';
+import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Files, Briefcase, IndianRupee, Wallet, ClipboardCheck, Calculator, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness, CalendarOff, LayoutDashboard, CheckCircle2, Calendar, Loader2, Send, Building2, MessageSquare, Moon, Sun } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSiteContent, VIEWS, ROLES, NAVBAR_ACTIONS, NAV_ITEM_IDS, SETTINGS_ITEM_IDS } from '@/data/config';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useToast } from '@/components/ui/use-toast';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
   const content = getSiteContent();
   const { canView, canShowNavbarAction, canShowNavItem, canShowSettingsItem } = usePermissions();
   const { toast } = useToast();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [settingsDropdownOpen, setSettingsDropdownOpen] = useState(false);
@@ -311,6 +313,14 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                       )}
 
                       <button
+                        onClick={toggleTheme}
+                        className="w-full flex items-center space-x-3 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-colors"
+                      >
+                        {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                        <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                      </button>
+
+                      <button
                         onClick={() => {
                           setDropdownOpen(false);
                           handleLogout();
@@ -411,6 +421,14 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                     <span>Apply for Leave</span>
                   </button>
                 )}
+
+                <button
+                  onClick={toggleTheme}
+                  className="w-full flex items-center space-x-3 p-4 rounded-2xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all"
+                >
+                  {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                  <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                </button>
 
                 <button
                   onClick={handleLogout}
