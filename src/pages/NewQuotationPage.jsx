@@ -906,6 +906,29 @@ const NewQuotationPage = () => {
         )));
     };
 
+    const handleUpdateItemQty = (rowId, qtyValue, editableElement) => {
+        const normalizedValue = String(qtyValue).replace(/,/g, '').trim();
+        const newQty = Number(normalizedValue);
+
+        if (!Number.isFinite(newQty)) {
+            const currentItem = items.find(item => item.id === rowId);
+            if (editableElement && currentItem) {
+                editableElement.textContent = currentItem.qty;
+            }
+            return;
+        }
+
+        setItems(prev => prev.map(item => (
+            item.id === rowId
+                ? {
+                    ...item,
+                    qty: newQty,
+                    total: Number(item.price || 0) * newQty
+                }
+                : item
+        )));
+    };
+
     const handleMoveItemUp = (index) => {
         if (index === 0) return; // Already at the top
         setItems(prev => {
@@ -1258,7 +1281,7 @@ const NewQuotationPage = () => {
                                 <FileText className="w-5 h-5 mr-2 text-primary" />
                                 Client Details
                             </h2> */}
-                            <div className="space-y-2 border-t pt-2">
+                            <div className="space-y-2 pt-2">
                                 <div>
                                     <Label>Client Name</Label>
                                     <ReactSelect
@@ -1884,7 +1907,17 @@ const NewQuotationPage = () => {
                                                                     }}
                                                                 >{item.price}</span></td>
                                                                 <td className="py-2 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">{item.unit}</td>
-                                                                <td className="py-2 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">{item.qty}</td>
+                                                                <td className="py-2 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200"><span
+                                                                    contentEditable={!isReadOnly}
+                                                                    suppressContentEditableWarning
+                                                                    onBlur={(e) => handleUpdateItemQty(item.id, e.currentTarget.textContent, e.currentTarget)}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') {
+                                                                            e.preventDefault();
+                                                                            e.currentTarget.blur();
+                                                                        }
+                                                                    }}
+                                                                >{item.qty}</span></td>
                                                                 <td className="py-2 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200"><Rupee />{item.total.toLocaleString()}</td>
                                                                 <td className="text-right print:hidden align-top">
                                                                     {!isReadOnly && (
