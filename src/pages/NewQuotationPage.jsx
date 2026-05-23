@@ -883,6 +883,29 @@ const NewQuotationPage = () => {
         setItems(prev => prev.filter(item => item.id !== rowId));
     };
 
+    const handleUpdateItemPrice = (rowId, priceValue, editableElement) => {
+        const normalizedValue = String(priceValue).replace(/,/g, '').trim();
+        const newPrice = Number(normalizedValue);
+
+        if (!Number.isFinite(newPrice)) {
+            const currentItem = items.find(item => item.id === rowId);
+            if (editableElement && currentItem) {
+                editableElement.textContent = currentItem.price;
+            }
+            return;
+        }
+
+        setItems(prev => prev.map(item => (
+            item.id === rowId
+                ? {
+                    ...item,
+                    price: newPrice,
+                    total: newPrice * Number(item.qty || 0)
+                }
+                : item
+        )));
+    };
+
     const handleMoveItemUp = (index) => {
         if (index === 0) return; // Already at the top
         setItems(prev => {
@@ -1849,7 +1872,17 @@ const NewQuotationPage = () => {
                                                                     )}
                                                                 </td>
                                                                 <td className="py-2 px-1 text-left text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">{item.hsnCode || '—'}</td>
-                                                                <td className="py-2 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200"><Rupee />{item.price}</td>
+                                                                <td className="py-2 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200"><Rupee /><span
+                                                                    contentEditable={!isReadOnly}
+                                                                    suppressContentEditableWarning
+                                                                    onBlur={(e) => handleUpdateItemPrice(item.id, e.currentTarget.textContent, e.currentTarget)}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') {
+                                                                            e.preventDefault();
+                                                                            e.currentTarget.blur();
+                                                                        }
+                                                                    }}
+                                                                >{item.price}</span></td>
                                                                 <td className="py-2 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">{item.unit}</td>
                                                                 <td className="py-2 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">{item.qty}</td>
                                                                 <td className="py-2 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200"><Rupee />{item.total.toLocaleString()}</td>
@@ -1905,7 +1938,7 @@ const NewQuotationPage = () => {
                                                                 <span>Subtotal</span>
                                                                 <span><Rupee />{calculateTotal().toLocaleString()}</span>
                                                             </div>
-                                                            {discountShow && (
+                                                            {discountShow && discount > 0 && (
                                                                 <div className="flex justify-between text-green-600 text-xs">
                                                                     <span>Discount ({discount}%)</span>
                                                                     <span>- <Rupee />{(calculateTotal() * (discount / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
