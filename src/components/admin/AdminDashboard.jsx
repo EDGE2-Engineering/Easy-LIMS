@@ -329,11 +329,11 @@ const AdminDashboard = () => {
                 {/* Quick Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     {[
-                        { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', trend: 'In Progress', path: '#/settings/jobs' },
-                        { label: 'Ongoing Testing', value: stats.ongoingTesting, icon: Activity, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', trend: 'Lab Operations', path: '#/settings/jobs?status=UNDER_TESTING' },
-                        { label: 'Pending Reports', value: stats.pendingReports, icon: FileText, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', trend: 'Awaiting Action', path: '#/settings/jobs' },
-                        { label: 'Awaiting Payment', value: stats.pendingPayments, icon: IndianRupee, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', trend: 'Documents', path: '#/settings/documents' },
-                        { label: 'Total Clients', value: stats.totalClients, icon: BriefcaseBusiness, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100', trend: 'Network', path: '#/settings/clients' },
+                        { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10', trend: 'In Progress', path: '#/settings/jobs' },
+                        { label: 'Ongoing Testing', value: stats.ongoingTesting, icon: Activity, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10', trend: 'Lab Operations', path: '#/settings/jobs?status=UNDER_TESTING' },
+                        { label: 'Pending Reports', value: stats.pendingReports, icon: FileText, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10', trend: 'Awaiting Action', path: '#/settings/jobs' },
+                        { label: 'Awaiting Payment', value: stats.pendingPayments, icon: IndianRupee, color: 'text-emerald-600', bg: 'bg-emerald-50', iconBg: 'bg-emerald-50', trend: 'Documents', path: '#/settings/documents' },
+                        { label: 'Total Clients', value: stats.totalClients, icon: BriefcaseBusiness, color: 'text-indigo-600', bg: 'bg-indigo-50', iconBg: 'bg-indigo-50', trend: 'Network', path: '#/settings/clients' },
                     ].map((stat, idx) => (
                         <motion.div key={idx} variants={item}>
                             <Tooltip>
@@ -345,7 +345,7 @@ const AdminDashboard = () => {
                                         <div className={`absolute top-0 right-0 w-16 h-16 ${stat.bg} rounded-bl-[64px] -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110 duration-500`} />
                                         <CardContent className="p-4 relative">
                                             <div className="flex items-center gap-3">
-                                                <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color} shrink-0`}>
+                                                <div className={`p-2.5 rounded-xl ${stat.iconBg} ${stat.color} shrink-0`}>
                                                     <stat.icon className="w-5 h-5" />
                                                 </div>
                                                 <div className="flex-grow min-w-0">
@@ -478,39 +478,39 @@ const AdminDashboard = () => {
                                                 </h4>
                                                 <div className="grid grid-cols-3 gap-3">
                                                     <div
-                                                        className="p-4 bg-orange-50/50 rounded-2xl border border-orange-100 flex items-center justify-between cursor-pointer hover:bg-orange-100/50 transition-colors group"
+                                                        className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 flex items-center justify-between cursor-pointer hover:bg-gray-50 hover:border-primary/30 transition-colors group"
                                                         onClick={(e) => { e.stopPropagation(); window.location.hash = '#/settings/approvals'; }}
                                                     >
                                                         <div className="flex flex-col gap-1">
-                                                            <span className="text-xl font-black text-orange-600 tracking-tight">{workflowCounts[WORKFLOW_STATES.TEST_DATA_UNDER_REVIEW] || 0}</span>
-                                                            <span className="text-[9px] font-black text-orange-400 uppercase tracking-tight">Job Reviews Pending</span>
+                                                            <span className="text-xl font-black text-primary tracking-tight">{workflowCounts[WORKFLOW_STATES.TEST_DATA_UNDER_REVIEW] || 0}</span>
+                                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-tight">Job Reviews Pending</span>
                                                         </div>
-                                                        <ChevronRight className="w-4 h-4 text-orange-300 group-hover:translate-x-1 transition-transform" />
+                                                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-1 transition-transform" />
                                                     </div>
 
                                                     <div
-                                                        className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex flex-col gap-1 cursor-pointer hover:bg-blue-100/50 transition-colors"
+                                                        className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 flex flex-col gap-1 cursor-pointer hover:bg-gray-50 hover:border-primary/30 transition-colors"
                                                         onClick={(e) => { e.stopPropagation(); window.location.hash = '#/settings/documents'; }}
                                                     >
-                                                        <span className="text-xl font-black text-blue-600 tracking-tight">{workflowCounts[WORKFLOW_STATES.REPORT_SIGNED] || 0}</span>
-                                                        <span className="text-[9px] font-black text-blue-400 uppercase tracking-tight">Ready to Invoice</span>
+                                                        <span className="text-xl font-black text-primary tracking-tight">{workflowCounts[WORKFLOW_STATES.REPORT_SIGNED] || 0}</span>
+                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-tight">Ready to Invoice</span>
                                                     </div>
 
 
                                                     <div
-                                                        className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex flex-col gap-1 cursor-pointer hover:bg-indigo-100/50 transition-colors"
+                                                        className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 flex flex-col gap-1 cursor-pointer hover:bg-gray-50 hover:border-primary/30 transition-colors"
                                                         onClick={(e) => { e.stopPropagation(); window.location.hash = '#/settings/approvals'; }}
                                                     >
-                                                        <span className="text-xl font-black text-indigo-600 tracking-tight">{stats.pendingLeaves}</span>
-                                                        <span className="text-[9px] font-black text-indigo-400 uppercase tracking-tight">Leave Requests</span>
+                                                        <span className="text-xl font-black text-primary tracking-tight">{stats.pendingLeaves}</span>
+                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-tight">Leave Requests</span>
                                                     </div>
 
                                                     <div
-                                                        className="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 flex flex-col gap-1 cursor-pointer hover:bg-purple-100/50 transition-colors"
+                                                        className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 flex flex-col gap-1 cursor-pointer hover:bg-gray-50 hover:border-primary/30 transition-colors"
                                                         onClick={(e) => { e.stopPropagation(); window.location.hash = '#/settings/inquiries'; }}
                                                     >
-                                                        <span className="text-xl font-black text-purple-600 tracking-tight">{stats.pendingInquiries}</span>
-                                                        <span className="text-[9px] font-black text-purple-400 uppercase tracking-tight">New Inquiries</span>
+                                                        <span className="text-xl font-black text-primary tracking-tight">{stats.pendingInquiries}</span>
+                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-tight">New Inquiries</span>
                                                     </div>
 
                                                 </div>

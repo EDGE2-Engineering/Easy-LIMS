@@ -164,10 +164,12 @@ const AdminClientPricingManager = () => {
             </div>
 
             {!selectedClientId ? (
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-8 text-center">
-                    <ShieldAlert className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-                    <h3 className="text-blue-900 font-semibold text-lg">No Client Selected</h3>
-                    <p className="text-blue-600">Please select a client from the dropdown above to manage their specific prices.</p>
+                <div className="bg-white border border-gray-200 rounded-xl p-8 text-center shadow-sm">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <ShieldAlert className="w-8 h-8 text-primary" />
+                    </div>
+                    <h3 className="text-gray-900 font-semibold text-lg">No Client Selected</h3>
+                    <p className="text-gray-500">Please select a client from the dropdown above to manage their specific prices.</p>
                 </div>
             ) : (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
