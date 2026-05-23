@@ -1622,7 +1622,7 @@ const NewQuotationPage = () => {
                                         className={cn("w-full flex items-center gap-2 text-xs", isReadOnly && "opacity-50 cursor-not-allowed")}
                                         disabled={isReadOnly}
                                     >
-                                        <Drill className="w-2 h-2" /> Field Tests
+                                        <Drill className="w-2 h-2 hidden" /> Field Tests
                                     </Button>
                                     <Button
                                         variant={newItemType === 'test' ? 'default' : 'outline'}
@@ -1630,7 +1630,7 @@ const NewQuotationPage = () => {
                                         className={cn("w-full flex items-center gap-2 text-xs", isReadOnly && "opacity-50 cursor-not-allowed")}
                                         disabled={isReadOnly}
                                     >
-                                        <TestTube className="w-2 h-2" /> Lab Tests
+                                        <TestTube className="w-2 h-2 hidden" /> Lab Tests
                                     </Button>
                                     <Button
                                         variant={newItemType === 'sampling' ? 'default' : 'outline'}
@@ -1638,7 +1638,7 @@ const NewQuotationPage = () => {
                                         className={cn("w-full flex items-center gap-2 text-xs", isReadOnly && "opacity-50 cursor-not-allowed")}
                                         disabled={isReadOnly}
                                     >
-                                        <SwatchBook className="w-2 h-2" /> Sampling
+                                        <SwatchBook className="w-2 h-2 hidden" /> Sampling
                                     </Button>
                                 </div>
 
