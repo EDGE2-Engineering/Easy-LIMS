@@ -227,11 +227,11 @@ const AdminSettingsManager = () => {
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between bg-blue-50 p-4 rounded-md text-blue-800 text-sm">
+                    <div className="flex items-center justify-between bg-primary/10 p-4 rounded-md border border-primary/20 text-sm">
                         <div>
-                            <span className="font-semibold">Total Tax:</span> {Number(localSettings.tax_cgst) + Number(localSettings.tax_sgst)}%
+                            <span className="font-semibold text-primary">Total Tax:</span> <span className="text-gray-700">{Number(localSettings.tax_cgst) + Number(localSettings.tax_sgst)}%</span>
                         </div>
-                        <div>
+                        <div className="text-gray-600">
                             Changes will apply to new invoices immediately.
                         </div>
                     </div>
@@ -417,9 +417,9 @@ const AdminSettingsManager = () => {
                     </div>
                     
                     {bankAccounts.length > 0 && (
-                        <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-100 mt-4">
-                            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                            <p className="text-xs text-amber-800 leading-relaxed">
+                        <div className="flex items-start gap-3 p-4 bg-primary/10 rounded-xl border border-primary/20 mt-4">
+                            <AlertCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                            <p className="text-xs text-gray-600 leading-relaxed">
                                 <strong>Note:</strong> Changes to bank accounts are saved instantly. 
                                 The default account will be automatically selected for new documents.
                             </p>
@@ -448,5 +448,4 @@ const AdminSettingsManager = () => {
 };
 
 export default AdminSettingsManager;
-
 

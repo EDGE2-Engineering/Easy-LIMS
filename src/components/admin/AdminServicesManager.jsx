@@ -33,6 +33,8 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import ReactSelect from 'react-select';
+import { DOCUMENT_ITEM_TYPES } from '@/data/config';
+import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 
 const AdminServicesManager = () => {
     const { services, updateService, addService, deleteService, setServices } = useServices();
@@ -383,17 +385,7 @@ const AdminServicesManager = () => {
                             onChange={(selectedOptions) => {
                                 handleChange('tcList', selectedOptions ? selectedOptions.map(option => option.value) : []);
                             }}
-                            styles={{
-                                control: (base) => ({
-                                    ...base,
-                                    minHeight: '40px',
-                                    borderRadius: '0.5rem',
-                                    borderColor: '#e5e7eb',
-                                    '&:hover': {
-                                        borderColor: '#6366f1' // primary color approx
-                                    }
-                                })
-                            }}
+                            styles={themedReactSelectStyles()}
                         />
                     </div>
 
@@ -415,17 +407,7 @@ const AdminServicesManager = () => {
                             onChange={(selectedOptions) => {
                                 handleChange('techList', selectedOptions ? selectedOptions.map(option => option.value) : []);
                             }}
-                            styles={{
-                                control: (base) => ({
-                                    ...base,
-                                    minHeight: '40px',
-                                    borderRadius: '0.5rem',
-                                    borderColor: '#e5e7eb',
-                                    '&:hover': {
-                                        borderColor: '#6366f1'
-                                    }
-                                })
-                            }}
+                            styles={themedReactSelectStyles()}
                         />
                     </div>
                 </div>
@@ -575,7 +557,7 @@ const AdminServicesManager = () => {
                 <table className="w-full">
                     <thead className="bg-gray-50 border-b">
                         <tr>
-                            <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Field Tests</th>
+                            <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">{DOCUMENT_ITEM_TYPES.FIELD_TESTS.label}</th>
                             <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600">Actions</th>
                         </tr>
                     </thead>
@@ -589,40 +571,40 @@ const AdminServicesManager = () => {
                                         </p>
                                         <div className="w-full"></div>
                                         <p>
-                                            <span className="font-semibold text-blue-900">Price:</span>{' '}
+                                            <span className="font-semibold text-primary">Price:</span>{' '}
                                             <Rupee />{service.price.toLocaleString()}
                                         </p>
 
                                         <p>
-                                            <span className="font-semibold text-blue-900">Unit:</span>{' '}
+                                            <span className="font-semibold text-primary">Unit:</span>{' '}
                                             {service.unit}
                                         </p>
 
                                         <p>
-                                            <span className="font-semibold text-blue-900">Method:</span>{' '}
+                                            <span className="font-semibold text-primary">Method:</span>{' '}
                                             {service.methodOfSampling || 'NA'}
                                         </p>
 
                                         <p>
-                                            <span className="font-semibold text-blue-900"># BHs:</span>{' '}
+                                            <span className="font-semibold text-primary"># BHs:</span>{' '}
                                             {service.numBHs ?? 0}
                                         </p>
 
                                         <p>
-                                            <span className="font-semibold text-blue-900">Measure:</span>{' '}
+                                            <span className="font-semibold text-primary">Measure:</span>{' '}
                                             {service.measure || 'NA'}
                                         </p>
 
                                         <p>
-                                            <span className="font-semibold text-blue-900">HSN Code:</span>{' '}
+                                            <span className="font-semibold text-primary">HSN Code:</span>{' '}
                                             {service.hsnCode || '-'}
                                         </p>
                                         <p>
-                                            <span className="font-semibold text-blue-900">Technicals:</span>{' '}
+                                            <span className="font-semibold text-primary">Technicals:</span>{' '}
                                             {Array.isArray(service.techList) && service.techList.length > 0 ? service.techList.join(', ') : '-'}
                                         </p>
                                         <p>
-                                            <span className="font-semibold text-blue-900">T&C:</span>{' '}
+                                            <span className="font-semibold text-primary">T&C:</span>{' '}
                                             {Array.isArray(service.tcList) && service.tcList.length > 0 ? service.tcList.join(', ') : '-'}
                                         </p>
                                     </div>

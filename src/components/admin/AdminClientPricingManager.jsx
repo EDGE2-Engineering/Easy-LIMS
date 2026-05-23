@@ -14,6 +14,7 @@ import { Search, Save, Trash2, ShieldAlert } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Rupee from '../Rupee';
 import { useToast } from '@/components/ui/use-toast';
+import { DOCUMENT_ITEM_TYPES } from '@/data/config';
 
 const AdminClientPricingManager = () => {
     const { clients } = useClients();
@@ -180,8 +181,8 @@ const AdminClientPricingManager = () => {
                                     Managing Prices for: <span className="text-primary">{selectedClient?.clientName}</span>
                                 </h2>
                                 <TabsList className="bg-white border border-gray-200">
-                                    <TabsTrigger value="services">Services</TabsTrigger>
-                                    <TabsTrigger value="tests">Tests</TabsTrigger>
+                                    <TabsTrigger value="services">{DOCUMENT_ITEM_TYPES.FIELD_TESTS.label}</TabsTrigger>
+                                    <TabsTrigger value="tests">{DOCUMENT_ITEM_TYPES.LAB_TESTS.label}</TabsTrigger>
                                 </TabsList>
                             </div>
                         </div>

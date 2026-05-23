@@ -97,8 +97,8 @@ const UtilitiesManager = () => {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="bg-gray-100/50 p-1 rounded-2xl border border-gray-100 flex self-start">
-                    <TabsTrigger value="wage_calculator" className="rounded-xl px-6 py-2 font-black text-xs data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">
+                <TabsList className="bg-muted/60 p-1 rounded-2xl border border-border flex self-start">
+                    <TabsTrigger value="wage_calculator" className="rounded-xl px-6 py-2 font-black text-xs text-muted-foreground hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all">
                         <Calculator className="w-3.5 h-3.5 mr-2" /> Wage Calculator
                     </TabsTrigger>
                 </TabsList>

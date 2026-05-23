@@ -33,6 +33,8 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import ReactSelect from 'react-select';
+import { DOCUMENT_ITEM_TYPES } from '@/data/config';
+import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 
 const AdminSamplingManager = () => {
     const { samplingData, updateSampling, addSampling, deleteSampling } = useSampling();
@@ -218,17 +220,7 @@ const AdminSamplingManager = () => {
                             placeholder="Select Materials..."
                             value={editingItem.materials?.map(m => ({ value: m, label: m })) || []}
                             onChange={(options) => handleChange('materials', options ? options.map(o => o.value) : [])}
-                            styles={{
-                                control: (base) => ({
-                                    ...base,
-                                    minHeight: '40px',
-                                    borderRadius: '0.5rem',
-                                    borderColor: '#e5e7eb',
-                                    '&:hover': {
-                                        borderColor: '#6366f1'
-                                    }
-                                })
-                            }}
+                            styles={themedReactSelectStyles()}
                         />
                     </div>
 
@@ -325,17 +317,7 @@ const AdminSamplingManager = () => {
                             placeholder="Select T&C..."
                             value={editingItem.tcList?.map(t => ({ value: t, label: t })) || []}
                             onChange={(options) => handleChange('tcList', options ? options.map(o => o.value) : [])}
-                            styles={{
-                                control: (base) => ({
-                                    ...base,
-                                    minHeight: '40px',
-                                    borderRadius: '0.5rem',
-                                    borderColor: '#e5e7eb',
-                                    '&:hover': {
-                                        borderColor: '#6366f1'
-                                    }
-                                })
-                            }}
+                            styles={themedReactSelectStyles()}
                         />
                     </div>
 
@@ -349,17 +331,7 @@ const AdminSamplingManager = () => {
                             placeholder="Select Technicals..."
                             value={editingItem.techList?.map(t => ({ value: t, label: t })) || []}
                             onChange={(options) => handleChange('techList', options ? options.map(o => o.value) : [])}
-                            styles={{
-                                control: (base) => ({
-                                    ...base,
-                                    minHeight: '40px',
-                                    borderRadius: '0.5rem',
-                                    borderColor: '#e5e7eb',
-                                    '&:hover': {
-                                        borderColor: '#6366f1'
-                                    }
-                                })
-                            }}
+                            styles={themedReactSelectStyles()}
                         />
                     </div>
                 </div>
@@ -461,7 +433,7 @@ const AdminSamplingManager = () => {
                     <table className="w-full">
                         <thead className="bg-gray-50 border-b">
                             <tr>
-                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Sampling Details</th>
+                                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">{DOCUMENT_ITEM_TYPES.SAMPLING.label}</th>
                                 <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600">Actions</th>
                             </tr>
                         </thead>
@@ -475,39 +447,39 @@ const AdminSamplingManager = () => {
                                             </p>
                                             <div className="w-full"></div>
                                             <p>
-                                                <span className="font-semibold text-blue-900">Materials:</span>{' '}
+                                                <span className="font-semibold text-primary">Materials:</span>{' '}
                                                 {Array.isArray(item.materials) ? item.materials.join(', ') : (item.materials || '-')}
                                             </p>
                                             <p>
-                                                <span className="font-semibold text-blue-900">Group:</span>{' '}
+                                                <span className="font-semibold text-primary">Group:</span>{' '}
                                                 {item.group || '-'}
                                             </p>
                                             <p>
-                                                <span className="font-semibold text-blue-900">Method:</span>{' '}
+                                                <span className="font-semibold text-primary">Method:</span>{' '}
                                                 {item.testMethodSpecification || '-'}
                                             </p>
                                             <p>
-                                                <span className="font-semibold text-blue-900">Price:</span>{' '}
+                                                <span className="font-semibold text-primary">Price:</span>{' '}
                                                 <Rupee />{item.price.toLocaleString()}
                                             </p>
                                             <p>
-                                                <span className="font-semibold text-blue-900">Unit:</span>{' '}
+                                                <span className="font-semibold text-primary">Unit:</span>{' '}
                                                 {item.unit || '-'}
                                             </p>
                                             <p>
-                                                <span className="font-semibold text-blue-900">Qty (Default):</span>{' '}
+                                                <span className="font-semibold text-primary">Qty (Default):</span>{' '}
                                                 {item.qty || '1'}
                                             </p>
                                             <p>
-                                                <span className="font-semibold text-blue-900">HSN Code:</span>{' '}
+                                                <span className="font-semibold text-primary">HSN Code:</span>{' '}
                                                 {item.hsnCode || '-'}
                                             </p>
                                             <p>
-                                                <span className="font-semibold text-blue-900">Technicals:</span>{' '}
+                                                <span className="font-semibold text-primary">Technicals:</span>{' '}
                                                 {Array.isArray(item.techList) && item.techList.length > 0 ? item.techList.join(', ') : '-'}
                                             </p>
                                             <p>
-                                                <span className="font-semibold text-blue-900">T&C:</span>{' '}
+                                                <span className="font-semibold text-primary">T&C:</span>{' '}
                                                 {Array.isArray(item.tcList) && item.tcList.length > 0 ? item.tcList.join(', ') : '-'}
                                             </p>
                                         </div>

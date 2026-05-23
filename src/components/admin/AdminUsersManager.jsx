@@ -313,7 +313,7 @@ const AdminUsersManager = () => {
                                 </td>
 
                                 <td className="p-4">
-                                    <Badge className="bg-primary-dark text-white uppercase text-[10px] font-bold px-2 py-0.5 shadow-sm">
+                                    <Badge className="bg-primary text-primary-foreground uppercase text-[10px] font-bold px-2 py-0.5 shadow-sm hover:bg-primary/90">
                                         {Object.values(ROLES).find(r => r.slug === u.role)?.label || u.role || 'N/A'}
                                     </Badge>
                                     {(() => {
@@ -322,7 +322,7 @@ const AdminUsersManager = () => {
                                         return deptNames.length > 0 ? (
                                             <div className="flex flex-wrap gap-1 mt-1">
                                                 {deptNames.map(name => (
-                                                    <Badge key={name} variant="secondary" className="capitalize text-[10px]" style={{ backgroundColor: '#e1bdffff' }}>
+                                                    <Badge key={name} variant="secondary" className="capitalize text-[10px] border border-border">
                                                         {name}
                                                     </Badge>
                                                 ))}
@@ -332,7 +332,7 @@ const AdminUsersManager = () => {
                                 </td>
 
                                 <td className="p-4">
-                                    <Badge className={u.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}>
+                                    <Badge className={u.is_active ? 'bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20' : 'bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20'}>
                                         {u.is_active ? 'Active' : 'Deactivated'}
                                     </Badge>
                                 </td>

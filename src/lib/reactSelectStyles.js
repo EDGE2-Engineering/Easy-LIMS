@@ -33,6 +33,24 @@ const themedReactSelectStyles = ({ minHeight = '40px', borderRadius = '0.75rem',
     color: 'hsl(var(--foreground))',
     fontSize,
   }),
+  multiValue: (base) => ({
+    ...base,
+    borderRadius: '0.375rem',
+    backgroundColor: 'hsl(var(--primary) / 0.12)',
+  }),
+  multiValueLabel: (base) => ({
+    ...base,
+    color: 'hsl(var(--foreground))',
+    fontSize,
+  }),
+  multiValueRemove: (base) => ({
+    ...base,
+    color: 'hsl(var(--muted-foreground))',
+    '&:hover': {
+      backgroundColor: 'hsl(var(--destructive) / 0.14)',
+      color: 'hsl(var(--destructive))',
+    },
+  }),
   menu: (base) => ({
     ...base,
     zIndex: 50,

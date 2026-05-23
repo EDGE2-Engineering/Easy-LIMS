@@ -184,17 +184,17 @@ const TestingManager = ({ initialJobId, onClose }) => {
             {visibleCategories.length > 0 ? (
         <Tabs defaultValue={visibleCategories[0]} className="w-full">
                             {hasMaterialsGap && (
-                                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 text-sm">
-                                    <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                                    <p className="text-amber-800">
-                                        <strong>Material types not set on samples.</strong>{' '}
+                                <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-xl flex items-start gap-3 text-sm">
+                                    <AlertCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                                    <p className="text-gray-600">
+                                        <strong className="text-primary">Material types not set on samples.</strong>{' '}
                                         Update the <em>Material Inward</em> entry to assign a Material Type to each sample — tabs below show all available test categories as a fallback.
                                     </p>
                                 </div>
                             )}
-                            <TabsList className="bg-white border rounded-xl p-1 mb-6 flex-wrap h-auto min-h-0 py-1">
+                            <TabsList className="bg-muted/60 border border-border rounded-xl p-1 mb-6 flex-wrap h-auto min-h-0 py-1">
                                 {visibleCategories.map(cat => (
-                                    <TabsTrigger key={cat} value={cat} className="px-6 py-2.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white">
+                                    <TabsTrigger key={cat} value={cat} className="px-6 py-2.5 rounded-lg text-muted-foreground hover:text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                                         {cat}
                                     </TabsTrigger>
                                 ))}
@@ -208,7 +208,7 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                     <TabsContent key={cat} value={cat} className="space-y-6 outline-none">
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                             {GEOTECH_NAMES.includes(cat) && (
-                                                <div className="fontbg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full md:col-span-2 lg:col-span-3">
+                                                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full md:col-span-2 lg:col-span-3">
                                                     <div>
                                                         <h4 className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
                                                             {/* <div className={`w-2 h-2 rounded-full ${Object.keys(testResults[cat]?.['GeotechData'] || {}).length > 0 ? 'bg-green-500' : 'bg-amber-400'}`} /> */}
@@ -530,16 +530,18 @@ const TestingManager = ({ initialJobId, onClose }) => {
                             })}
                         </Tabs>
                     ) : (
-                        <div className="bg-amber-50 border border-amber-100 p-8 rounded-xl text-center">
-                            <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-                            <h3 className="text-lg font-bold text-amber-900">No Authorized Test Streams</h3>
-                            <p className="text-amber-700 mt-2">You don't have the assigned capability to perform tests for this job's categories.</p>
+                        <div className="bg-white border border-gray-100 p-8 rounded-xl text-center shadow-sm">
+                            <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-primary/10 flex items-center justify-center">
+                                <AlertCircle className="w-8 h-8 text-primary" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">No Authorized Test Streams</h3>
+                            <p className="text-gray-500 mt-2">You don't have the assigned capability to perform tests for this job's categories.</p>
                         </div>
                     )}
 
             {/* Category Test Data Input Dialog */}
             <Dialog open={!!selectedCategory} onOpenChange={(open) => !open && setSelectedCategory(null)}>
-                <DialogContent className="max-w-[1100px] max-h-[90vh] overflow-hidden flex flex-col p-0 bg-white rounded-2xl shadow-2xl border-none">
+                <DialogContent className="max-w-[1100px] max-h-[90vh] overflow-hidden flex flex-col p-0 bg-white rounded-2xl shadow-2xl border border-gray-100">
                     <DialogHeader className="px-6 py-4 border-b bg-gray-50/50">
                         <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-800">
                             <FlaskConical className="w-5 h-5 text-primary" />
@@ -600,9 +602,9 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                             <div className="space-y-6">
                                                 {GEOTECH_NAMES.includes(selectedCategory) && entryMode === 'Manual' ? (
                                                     <div className="space-y-6">
-                                                        <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 flex items-center gap-3 mb-4">
-                                                            <AlertCircle className="w-4 h-4 text-amber-500" />
-                                                            <p className="text-xs text-amber-800">Entering manual geotechnical data for <strong>{selectedCategory}</strong>. This is typically used for Trial Pits or Manual Auger investigations.</p>
+                                                        <div className="bg-primary/10 p-4 rounded-xl border border-primary/20 flex items-center gap-3 mb-4">
+                                                            <AlertCircle className="w-4 h-4 text-primary" />
+                                                            <p className="text-xs text-gray-600">Entering manual geotechnical data for <strong className="text-primary">{selectedCategory}</strong>. This is typically used for Trial Pits or Manual Auger investigations.</p>
                                                         </div>
                                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                                             {MANUAL_GEOTECH_FIELDS.map(field => (
@@ -720,8 +722,8 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                 )}
                                 
                             </div>
-                            <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50/80 backdrop-blur-sm shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
-                                <Button variant="ghost" className="px-6 rounded-xl hover:bg-gray-200/50 font-medium text-gray-600" onClick={() => setSelectedCategory(null)} disabled={isSaving}>Cancel</Button>
+                            <div className="sticky bottom-0 z-10 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-white/95 backdrop-blur-sm shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
+                                <Button variant="ghost" className="px-6 rounded-xl hover:bg-gray-50 font-medium text-gray-600" onClick={() => setSelectedCategory(null)} disabled={isSaving}>Cancel</Button>
                                 <Button className="px-8 rounded-xl bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold" onClick={async () => { await handleSaveResults(selectedCategory); setSelectedCategory(null); }} disabled={isSaving}>
                                     {isSaving ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />} Save All Results
                                 </Button>

@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -844,7 +845,7 @@ const JobsManager = ({ id }) => {
                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Client Details</h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                <div className="space-y-2">
+                                <div className="space-y-2 md:col-span-2">
                                     <Label className="text-xs text-gray-700 font-semibold">Client</Label>
                                     {canModify ? <ReactSelect
                                         className="mt-1 text-xs"
@@ -863,11 +864,6 @@ const JobsManager = ({ id }) => {
                                     />
                                         : <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">{editingRecord.clients?.client_name || editingRecord.client_name || ''}</p>}
                                 </div>
-                                <div className="space-y-2">
-                                    <Label className="text-xs text-gray-700 font-semibold">Project Name</Label>
-                                    {!canModify && <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">{editingRecord.project_name || ''}</p>}
-                                    {canModify && <Input className="text-xs h-10 border-gray-200 rounded-xl bg-white" value={editingRecord.project_name || ''} onChange={e => setEditingRecord({ ...editingRecord, project_name: e.target.value })} />}
-                                </div>
                                 {!isAddingNew && editingRecord.work_order_id && (
                                     <div className="space-y-2">
                                         <Label className="text-xs text-gray-700 font-semibold">Work Order ID</Label>
@@ -880,6 +876,18 @@ const JobsManager = ({ id }) => {
                                         />)}
                                     </div>
                                 )}
+                                <div className="space-y-2 md:col-span-2 lg:col-span-3">
+                                    <Label className="text-xs text-gray-700 font-semibold">Project Name</Label>
+                                    {!canModify && <p className="text-xs min-h-20 flex items-start px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600 whitespace-pre-wrap">{editingRecord.project_name || ''}</p>}
+                                    {canModify && (
+                                        <Textarea
+                                            className="text-xs min-h-24 border-gray-200 rounded-xl bg-white"
+                                            value={editingRecord.project_name || ''}
+                                            onChange={e => setEditingRecord({ ...editingRecord, project_name: e.target.value })}
+                                            placeholder="Enter project name"
+                                        />
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1339,25 +1347,9 @@ const JobsManager = ({ id }) => {
                                     </div>
                                 </td>
                                 <td className="py-5 px-6 text-center">
-                                    {(() => {
-                                        const stateColor = workflow.states[r.status]?.color;
-                                        return stateColor ? (
-                                            <span
-                                                style={{
-                                                    backgroundColor: stateColor.bg,
-                                                    color: stateColor.text,
-                                                    borderColor: stateColor.border,
-                                                }}
-                                                className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap"
-                                            >
-                                                {getStatusLabel(r.status)}
-                                            </span>
-                                        ) : (
-                                            <Badge variant="secondary" className="bg-white border-gray-200 text-gray-700 shadow-sm">
-                                                {getStatusLabel(r.status)}
-                                            </Badge>
-                                        );
-                                    })()}
+                                    <Badge className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 shadow-sm uppercase text-[10px] font-black tracking-wide whitespace-nowrap">
+                                        {getStatusLabel(r.status)}
+                                    </Badge>
                                 </td>
                                 <td className="py-5 px-6 text-center">
                                     <div className="flex justify-center gap-2">
