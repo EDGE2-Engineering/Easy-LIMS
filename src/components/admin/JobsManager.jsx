@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AppDatePicker } from '@/components/ui/AppDatePicker';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
@@ -1181,8 +1182,7 @@ if (editingRecord) {
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">From Date</Label>
-                                <Input
-                                    type="date"
+                                <AppDatePicker
                                     value={filterDateStart}
                                     max={new Date().toISOString().split('T')[0]}
                                     onChange={(e) => {
@@ -1194,8 +1194,7 @@ if (editingRecord) {
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">To Date</Label>
-                                <Input
-                                    type="date"
+                                <AppDatePicker
                                     value={filterDateEnd}
                                     max={new Date().toISOString().split('T')[0]}
                                     onChange={(e) => {

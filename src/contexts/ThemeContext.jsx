@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { CustomProvider } from 'rsuite';
 
 const ThemeContext = createContext(null);
 const STORAGE_KEY = 'easy-lims-theme';
@@ -20,6 +21,8 @@ export const ThemeProvider = ({ children }) => {
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle('dark', theme === 'dark');
+    root.classList.toggle('rs-theme-dark', theme === 'dark');
+    root.classList.toggle('rs-theme-light', theme === 'light');
     root.style.colorScheme = theme;
     window.localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
@@ -33,7 +36,9 @@ export const ThemeProvider = ({ children }) => {
 
   return (
     <ThemeContext.Provider value={value}>
-      {children}
+      <CustomProvider theme={theme}>
+        {children}
+      </CustomProvider>
     </ThemeContext.Provider>
   );
 };

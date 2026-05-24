@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AppDatePicker } from '@/components/ui/AppDatePicker';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -683,8 +684,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-xs">Received Date</Label>
-                                        <Input
-                                            type="date"
+                                        <AppDatePicker
                                             className="h-9 text-sm"
                                             value={sample.received_date || ''}
                                             onChange={(e) => handleSampleChange(index, 'received_date', e.target.value)}
@@ -782,19 +782,18 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                             <div className="flex flex-col gap-3">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <div className="flex items-center gap-2 bg-gray-50/50 p-1 px-3 rounded-lg border border-gray-100 focus-within:border-primary/30 transition-colors">
-                                        <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
-                                        <Input
-                                            type="date"
-                                            className="w-auto min-w-[130px] h-9 text-sm border-none bg-transparent focus-visible:ring-0 cursor-pointer p-0"
+                                        <AppDatePicker
+                                            className="border-none w-auto min-w-[140px] text-sm bg-transparent cursor-pointer p-0"
                                             value={fromDate}
                                             onChange={(e) => setFromDate(e.target.value)}
+                                            placeholder="From Date"
                                         />
                                         <span className="text-gray-300 font-light px-1">to</span>
-                                        <Input
-                                            type="date"
-                                            className="w-auto min-w-[130px] h-9 text-sm border-none bg-transparent focus-visible:ring-0 cursor-pointer p-0"
+                                        <AppDatePicker
+                                            className="border-none w-auto min-w-[140px] text-sm bg-transparent cursor-pointer p-0"
                                             value={toDate}
                                             onChange={(e) => setToDate(e.target.value)}
+                                            placeholder="To Date"
                                         />
                                     </div>
                                 </div>

@@ -5,6 +5,7 @@ import { useExpenses } from '@/contexts/ExpensesContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AppDatePicker } from '@/components/ui/AppDatePicker';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
@@ -292,8 +293,7 @@ const ExpensesManager = () => {
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-sm font-semibold text-gray-700">Date</Label>
-                                <Input
-                                    type="date"
+                                <AppDatePicker
                                     value={editingExpense.date || ''}
                                     max={new Date().toISOString().split('T')[0]}
                                     onChange={(e) => setEditingExpense(prev => ({ ...prev, date: e.target.value }))}
@@ -472,8 +472,7 @@ const ExpensesManager = () => {
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-xs font-semibold text-gray-500 uppercase">From Date</Label>
-                                <Input
-                                    type="date"
+                                <AppDatePicker
                                     value={filterDateStart}
                                     max={new Date().toISOString().split('T')[0]}
                                     onChange={(e) => {
@@ -485,8 +484,7 @@ const ExpensesManager = () => {
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-xs font-semibold text-gray-500 uppercase">To Date</Label>
-                                <Input
-                                    type="date"
+                                <AppDatePicker
                                     value={filterDateEnd}
                                     max={new Date().toISOString().split('T')[0]}
                                     onChange={(e) => {

@@ -8,6 +8,7 @@ import { getNextDocNumber } from '@/utils/docUtils';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AppDatePicker } from '@/components/ui/AppDatePicker';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useServices } from '@/contexts/ServicesContext';
@@ -1286,9 +1287,7 @@ const NewQuotationPage = () => {
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
                                     <Label>Date</Label>
-                                    <Input
-                                        type="date"
-                                        // style={{ width: '100%', paddingInline: '17%' }}
+                                    <AppDatePicker
                                         value={quoteDetails.date}
                                         onChange={e => setQuoteDetails({ ...quoteDetails, date: e.target.value })}
                                         disabled={isReadOnly}
@@ -1574,8 +1573,7 @@ const NewQuotationPage = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <Label>Payment Received Date</Label>
-                                            <Input
-                                                type="date"
+                                            <AppDatePicker
                                                 value={quoteDetails.paymentDate || ''}
                                                 onChange={e => setQuoteDetails({ ...quoteDetails, paymentDate: e.target.value })}
                                                 disabled={isReadOnly}

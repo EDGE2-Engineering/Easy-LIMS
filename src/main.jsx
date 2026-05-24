@@ -2,6 +2,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from '@/App';
+import 'rsuite/dist/rsuite-no-reset.min.css';
 import '@/index.css';
 import { migrateStorageKeys } from '@/data/storageKeys';
 

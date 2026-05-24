@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AppDatePicker } from '@/components/ui/AppDatePicker';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -2257,10 +2258,9 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
 
                                             <div className="space-y-2">
                                                 <Label htmlFor="surveyDate" className={errors.surveyDate ? "text-red-500" : ""}>Survey Date</Label>
-                                                <Input
+                                                <AppDatePicker
                                                     id="surveyDate"
                                                     name="surveyDate"
-                                                    type="date"
                                                     value={formData.surveyDate}
                                                     onChange={(e) => {
                                                         handleChange(e);

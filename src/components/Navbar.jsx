@@ -21,6 +21,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { AppDatePicker } from "@/components/ui/AppDatePicker";
 
 const Navbar = ({ isDirty = false, isSaving = false }) => {
   const { user, logout, isAdmin } = useAuth();
@@ -488,22 +489,20 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Start Date</Label>
-                <input
-                  type="date"
+                <AppDatePicker
                   required
                   value={leaveRequest.startDate}
                   onChange={(e) => setLeaveRequest({ ...leaveRequest, startDate: e.target.value })}
-                  className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">End Date</Label>
-                <input
-                  type="date"
+                <AppDatePicker
                   required
                   value={leaveRequest.endDate}
                   onChange={(e) => setLeaveRequest({ ...leaveRequest, endDate: e.target.value })}
-                  className="w-full p-3 rounded-xl border border-gray-100 bg-gray-50 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                  className="w-full"
                 />
               </div>
             </div>

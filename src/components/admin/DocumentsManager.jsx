@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AppDatePicker } from '@/components/ui/AppDatePicker';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -431,8 +432,7 @@ const DocumentsManager = () => {
 
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">From Date</Label>
-                <Input
-                  type="date"
+                <AppDatePicker
                   value={fromDate}
                   onChange={(e) => {
                     setFromDate(e.target.value);
@@ -444,8 +444,7 @@ const DocumentsManager = () => {
 
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">To Date</Label>
-                <Input
-                  type="date"
+                <AppDatePicker
                   value={toDate}
                   onChange={(e) => {
                     setToDate(e.target.value);
