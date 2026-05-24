@@ -14,6 +14,7 @@ import engineerSign from '@/assets/engineer-sign.jpeg';
 
 import { X, Printer, FileText, BarChart2, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useReactToPrint } from 'react-to-print';
 
 
 const GrainSizeGraph = ({ data, bhName }) => {
@@ -129,56 +130,29 @@ const GrainSizeGraph = ({ data, bhName }) => {
 };
 
 const Page = ({ children, reportId, pageNumber, totalPages }) => (
-    <div
-        className="a4-page shadow-2xl print:shadow-none bg-white relative overflow-hidden"
-        style={{
-            width: '210mm',
-            height: '297mm',
-            padding: '10mm',
-            minHeight: '297mm',
-            boxSizing: 'border-box',
-            pageBreakAfter: 'always',
-            breakAfter: 'page'
-        }}
-    >
+    <div className="a4-container relative">
         {/* Watermark */}
         <div
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
-            style={{
-                transform: 'rotate(-55deg)',
-                zIndex: 0
-            }}
+            style={{ transform: 'rotate(-55deg)', zIndex: 0 }}
         >
-            <span
-                style={{
-                    fontSize: '42pt',
-                    fontWeight: 700,
-                    color: 'rgba(0,0,0,0.02)',
-                    whiteSpace: 'nowrap'
-                }}
-            >
+            <span style={{ fontSize: '42pt', fontWeight: 700, color: 'rgba(0,0,0,0.02)', whiteSpace: 'nowrap' }}>
                 EDGE2 Engineering Solutions India Pvt. Ltd.
             </span>
         </div>
 
-        <div className="border-[0.5pt] border-black h-[277mm] relative p-2 flex flex-col overflow z-10">
-            <div className="flex-grow overflow-hidden">
-                {children}
-            </div>
+        <div className="a4-page-content z-10">
+            {children}
+        </div>
 
-            {/* Page Footer */}
-            <div className="absolute bottom-[-25px] left-[5px] right-[5px]">
-                <div className="pt-2 text-gray-700 grid grid-cols-2 items-center">
-                    <p className="font-semibold text-[9pt] text-left">
-                        EDGE2 Engineering Solutions India Pvt. Ltd.
-                    </p>
-                    <p className="text-[8pt] text-right font-semibold">
-                        Report ID: {reportId || 'N/A'}
-                        <span className="px-4">|</span>
-                        Page {pageNumber} of {totalPages}
-                    </p>
-                </div>
-            </div>
+        {/* Page Footer */}
+        <div className="a4-page-footer">
+            <span className="font-semibold text-[9pt]">EDGE2 Engineering Solutions India Pvt. Ltd.</span>
+            <span className="text-[8pt] font-semibold">
+                Report ID: {reportId || 'N/A'}
+                <span className="px-4">|</span>
+                Page {pageNumber} of {totalPages}
+            </span>
         </div>
     </div>
 );
@@ -189,9 +163,11 @@ const Page = ({ children, reportId, pageNumber, totalPages }) => (
 const ReportPreview = ({ formData, onClose, onSave, isSaving }) => {
     if (!formData) return null;
 
-    const handlePrint = () => {
-        window.print();
-    };
+    const componentRef = React.useRef();
+    const handlePrint = useReactToPrint({
+        contentRef: componentRef,
+        documentTitle: `Report_${formData.reportId || 'Preview'}`,
+    });
 
     const getClientLogo = () => {
         if (formData.clientImage) return formData.clientImage;
@@ -280,7 +256,7 @@ const ReportPreview = ({ formData, onClose, onSave, isSaving }) => {
                     <p className="text-[11pt] text-[#29299a] mt-0 px-0 max-h-[45px] line-clamp-3">
                         {formData.siteAddress || '________________'}
                     </p>
-                    <p className="text-[16px] font-bold text-black mt-4 mb-4">Issued to</p>
+                    <p className="text-[16px] font-bold text-black mt-2 mb-2">Issued to</p>
 
                     <h2 className="text-[16px] font-bold text-[#29299a] px-2 max-h-[60px] line-clamp-2">
                         {formData.client || '________________'}
@@ -291,7 +267,7 @@ const ReportPreview = ({ formData, onClose, onSave, isSaving }) => {
                     </p>
                 </div>
 
-                <div className="mt-4 mb-8 flex-shrink-0 h-[2cm] w-[4cm] flex items-center justify-center">
+                <div className="mt-2 mb-4 flex-shrink-0 h-[1.8cm] w-[4cm] flex items-center justify-center">
                     {clientLogo && (
                         <img
                             src={clientLogo}
@@ -302,37 +278,37 @@ const ReportPreview = ({ formData, onClose, onSave, isSaving }) => {
                 </div>
 
                 {/* Report Details Table */}
-                <div className="w-full max-w-[15cm] mx-auto mb-12">
+                <div className="w-full max-w-[15cm] mx-auto mb-6">
                     <table className="w-full border-collapse text-[10pt]">
                         <tbody>
                             <tr className="border-b border-black/10">
-                                <td className="py-1.5 pr-4 font-bold w-[45%] text-right">Report ID:</td>
-                                <td className="py-1.5 pl-4 font-medium text-left">{formData.reportId || '________________'}</td>
+                                <td className="py-1 pr-4 font-bold w-[45%] text-right">Report ID:</td>
+                                <td className="py-1 pl-4 font-medium text-left">{formData.reportId || '________________'}</td>
                             </tr>
                             <tr className="border-b border-black/10">
-                                <td className="py-1.5 pr-4 font-bold text-right">Site ID:</td>
-                                <td className="py-1.5 pl-4 font-medium text-left">{formData.siteId || '________________'}</td>
+                                <td className="py-1 pr-4 font-bold text-right">Site ID:</td>
+                                <td className="py-1 pl-4 font-medium text-left">{formData.siteId || '________________'}</td>
                             </tr>
                             <tr className="border-b border-black/10">
-                                <td className="py-1.5 pr-4 font-bold text-right">Site Name:</td>
-                                <td className="py-1.5 pl-4 font-medium text-left line-clamp-3">{formData.siteName || '________________'}</td>
+                                <td className="py-1 pr-4 font-bold text-right">Site Name:</td>
+                                <td className="py-1 pl-4 font-medium text-left line-clamp-3">{formData.siteName || '________________'}</td>
                             </tr>
                             <tr className="border-b border-black/10">
-                                <td className="py-1.5 pr-4 font-bold text-right">Project Name:</td>
-                                <td className="py-1.5 pl-4 font-medium text-left line-clamp-2">{formData.projectDetails || '________________'}</td>
+                                <td className="py-1 pr-4 font-bold text-right">Project Name:</td>
+                                <td className="py-1 pl-4 font-medium text-left line-clamp-2">{formData.projectDetails || '________________'}</td>
                             </tr>
                             {formData.sbcDetails && formData.sbcDetails[0] && formData.sbcDetails[0]
                                 .filter(s => s.useForReport)
                                 .map((s, idx) => (
                                     <tr key={idx} className="border-b border-black/10">
-                                        <td className="py-1.5 pr-4 font-bold text-right">SBC Value {idx + 1}:</td>
-                                        <td className="py-1.5 pl-4 font-medium text-left">{s.sbcValue || '________________'}</td>
+                                        <td className="py-1 pr-4 font-bold text-right">SBC Value {idx + 1}:</td>
+                                        <td className="py-1 pl-4 font-medium text-left">{s.sbcValue || '________________'}</td>
                                     </tr>
                                 ))
                             }
                             <tr className="border-b border-black/10">
-                                <td className="py-1.5 pr-4 font-bold text-right">Ground Water Table:</td>
-                                <td className="py-1.5 pl-4 font-medium text-left">
+                                <td className="py-1 pr-4 font-bold text-right">Ground Water Table:</td>
+                                <td className="py-1 pl-4 font-medium text-left">
                                     {(() => {
                                         if (!formData.boreholeLogs || formData.boreholeLogs.length === 0) return 'Not Encountered';
 
@@ -347,12 +323,12 @@ const ReportPreview = ({ formData, onClose, onSave, isSaving }) => {
                                 </td>
                             </tr>
                             <tr className="border-b border-black/10">
-                                <td className="py-1.5 pr-4 font-bold text-right">Survey Date:</td>
-                                <td className="py-1.5 pl-4 font-medium text-left">{formData.surveyDate || '________________'}</td>
+                                <td className="py-1 pr-4 font-bold text-right">Survey Date:</td>
+                                <td className="py-1 pl-4 font-medium text-left">{formData.surveyDate || '________________'}</td>
                             </tr>
                             <tr>
-                                <td className="py-1.5 pr-4 font-bold text-right">Report Created On:</td>
-                                <td className="py-1.5 pl-4 font-medium text-left">{formData.reportCreatedOn}</td>
+                                <td className="py-1 pr-4 font-bold text-right">Report Created On:</td>
+                                <td className="py-1 pl-4 font-medium text-left">{formData.reportCreatedOn}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1541,104 +1517,20 @@ const ReportPreview = ({ formData, onClose, onSave, isSaving }) => {
                 </div>
 
                 {/* Preview Area */}
-                <div className="flex-1 overflow-auto bg-gray-100 p-8 print:p-0 print:bg-white print:overflow-visible print:block">
-                    <div className="flex flex-col items-center space-y-12 print:space-y-0 print:block">
-
-                        {pages.map((page, index) => (
-                            <div key={page.key || index} className="print:break-after-page">
-                                {React.cloneElement(page, {
+                <div className="flex-1 overflow-auto">
+                    <div className="a4-preview-wrapper">
+                        <div ref={componentRef} id="printable-quote-root">
+                            {pages.map((page, index) =>
+                                React.cloneElement(page, {
+                                    key: page.key || index,
                                     pageNumber: index + 1,
                                     totalPages: totalPages
-                                })}
-                            </div>
-                        ))}
-
-
+                                })
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <style>{`
-                @media screen {
-                    .a4-page {
-                        margin: 0 auto;
-                        box-sizing: border-box;
-                    }
-                }
-                @media print {
-                    body * {
-                        visibility: hidden !important;
-                    }
-                    #report-preview-modal, #report-preview-modal * {
-                        visibility: visible !important;
-                    }
-                    #report-preview-modal {
-                        position: absolute !important;
-                        left: 0 !important;
-                        top: 0 !important;
-                        width: 100% !important;
-                        height: auto !important;
-                        padding: 0 !important;
-                        margin: 0 !important;
-                        overflow: visible !important;
-                        background: white !important;
-                        display: block !important;
-                    }
-                    .bg-black\\/60 {
-                        background: transparent !important;
-                        backdrop-filter: none !important;
-                    }
-                    .bg-gray-100 {
-                        background: white !important;
-                    }
-                    .shadow-2xl {
-                        box-shadow: none !important;
-                    }
-                    .rounded-lg {
-                        border-radius: 0 !important;
-                    }
-                    .flex-1 {
-                        overflow: visible !important;
-                    }
-                    .a4-page {
-                        margin: 0 !important;
-                        padding: 10mm !important;
-                        width: 210mm !important;
-                        height: 297mm !important;
-                        box-sizing: border-box !important;
-                        page-break-after: always !important;
-                        break-after: page !important;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                        overflow: hidden !important;
-                    }
-                    .a4-page:last-child {
-                        page-break-after: auto !important;
-                    }
-                    .print\\:hidden {
-                        display: none !important;
-                    }
-                    /* Prevent content from breaking across pages */
-                    h1, h2, h3, h4, h5, h6 {
-                        page-break-after: avoid !important;
-                        break-after: avoid !important;
-                    }
-                    table, figure, img {
-                        page-break-inside: avoid !important;
-                        break-inside: avoid !important;
-                    }
-                    /* Prevent orphans and widows */
-                    p {
-                        orphans: 3;
-                        widows: 3;
-                    }
-                    /* Ensure headers don't get cut off */
-                    @page {
-                        size: A4;
-                        margin: 0;
-                    }
-                }
-            `}</style>
         </div>
     );
 };
