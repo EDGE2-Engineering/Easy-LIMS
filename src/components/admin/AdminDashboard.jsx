@@ -558,10 +558,11 @@ const AdminDashboard = () => {
                                                                 <span>{exp.label}</span>
                                                                 <span className="text-sm">₹{exp.value.toLocaleString()}</span>
                                                             </div>
-                                                            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                            <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
                                                                 <div
-                                                                    className="h-full bg-white rounded-full transition-all duration-1000"
+                                                                    className="h-full rounded-full transition-all duration-1000"
                                                                     style={{
+                                                                        backgroundColor: 'rgba(255,255,255,0.9)',
                                                                         width: exp.label === 'This Year' ? '100%' :
                                                                             exp.label === 'This Month' ? `${Math.min(100, (exp.value / (stats.expenditures.year || 1)) * 100)}%` :
                                                                                 `${Math.min(100, (exp.value / (stats.expenditures.month || 1)) * 100)}%`
@@ -606,10 +607,11 @@ const AdminDashboard = () => {
                                                                 <span>{quote.label}</span>
                                                                 <span className="text-sm">₹{quote.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
                                                             </div>
-                                                            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                            <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
                                                                 <div
-                                                                    className="h-full bg-white rounded-full transition-all duration-1000"
+                                                                    className="h-full rounded-full transition-all duration-1000"
                                                                     style={{
+                                                                        backgroundColor: 'rgba(255,255,255,0.9)',
                                                                         width: quote.label === 'This Year' ? '100%' :
                                                                             quote.label === 'This Month' ? `${Math.min(100, (quote.value / (stats.quotations.year || 1)) * 100)}%` :
                                                                                 `${Math.min(100, (quote.value / (stats.quotations.month || 1)) * 100)}%`
@@ -654,10 +656,11 @@ const AdminDashboard = () => {
                                                                 <span>{invoice.label}</span>
                                                                 <span className="text-sm">₹{invoice.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
                                                             </div>
-                                                            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                            <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
                                                                 <div
-                                                                    className="h-full bg-white rounded-full transition-all duration-1000"
+                                                                    className="h-full rounded-full transition-all duration-1000"
                                                                     style={{
+                                                                        backgroundColor: 'rgba(255,255,255,0.9)',
                                                                         width: invoice.label === 'This Year' ? '100%' :
                                                                             invoice.label === 'This Month' ? `${Math.min(100, (invoice.value / (stats.invoices.year || 1)) * 100)}%` :
                                                                                 `${Math.min(100, (invoice.value / (stats.invoices.month || 1)) * 100)}%`
