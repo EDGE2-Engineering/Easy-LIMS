@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Search, Plus, ArrowLeft, Save, Loader2, Package, ArrowRight, FileText, ExternalLink, CheckCircle2, Edit, UserPlus, Trash2, AlertCircle, SortAsc, SortDesc, Calendar, Filter, X, Download } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -33,6 +33,7 @@ import TestingManager from './TestingManager';
 import MaterialInwardManager from './MaterialInwardManager';
 import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 import ReactSelect from 'react-select';
+import ReportPreview from '@/components/ReportPreview';
 
 const JobsManager = ({ id }) => {
     const [records, setRecords] = useState([]);
@@ -56,6 +57,10 @@ const JobsManager = ({ id }) => {
     const [showingAuditLogs, setShowingAuditLogs] = useState(false);
     const [auditLogs, setAuditLogs] = useState([]);
     const [loadingLogs, setLoadingLogs] = useState(false);
+    const [showingReportPreview, setShowingReportPreview] = useState(false);
+    const [reportPreviewData, setReportPreviewData] = useState(null);
+    const [isSavingReport, setIsSavingReport] = useState(false);
+    const generateReportActionRef = useRef(null);
 
     // Advanced Filters State (from ExpensesManager)
     const [filterByCreator, setFilterByCreator] = useState('all');
@@ -417,6 +422,143 @@ const JobsManager = ({ id }) => {
         }
     };
 
+    const handleGenerateReport = async () => {
+        try {
+            // If a report already exists, just preview it
+            const existingReport = linkedDocs.find(d => d.document_type === 'Report');
+            if (existingReport && existingReport.content) {
+                setReportPreviewData(existingReport.content);
+                setShowingReportPreview(true);
+                return;
+            }
+
+            // Fetch geotechnical test data from job_tests table
+            const { data: testData } = await supabase
+                .from('job_tests')
+                .select('*')
+                .eq('job_id', editingRecord.id);
+
+            // Find GeotechData (Soil and Rock > Soil > Rock priority)
+            let geotechData = null;
+            for (const cat of ['Soil and Rock', 'Soil', 'Rock']) {
+                const entry = (testData || []).find(t => t.category === cat);
+                if (entry?.results?.GeotechData) {
+                    geotechData = entry.results.GeotechData;
+                    break;
+                }
+            }
+
+            const reportNumber = `RPT/${new Date().getFullYear()}/${String(editingRecord.id).padStart(3, '0')}`;
+
+            const defaultGeotechData = {
+                boreholeLogs: [[{ depth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]],
+                labTestResults: [[{ depth: '', bulkDensity: '', moistureContent: '', grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' }, atterbergLimits: { liquidLimit: '', plasticLimit: '', plasticityIndex: '' }, specificGravity: '', freeSwellIndex: '' }]],
+                sbcDetails: [[{ depth: '', footingDimension: '', useForReport: false, sbcValue: '' }]],
+                grainSizeAnalysis: [[{ depth: '', sieve1: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' }]],
+                subSoilProfile: [[{ depth: '', description: '' }]],
+                directShearResults: [[{ shearBoxSize: '', depthOfSample: '', cValue: '', phiValue: '', stressReadings: [{ normalStress: '', shearStress: '' }] }]],
+                chemicalAnalysis: [{ phValue: '', sulphates: '', chlorides: '', additionalKeys: [{ key: '', value: '' }] }],
+                pointLoadStrength: [],
+                pointLoadStrengthLump: [],
+                foundationRockFormations: [],
+            };
+
+            const formData = {
+                projectType: editingRecord.project_name || '',
+                reportId: reportNumber,
+                projectDetails: editingRecord.project_name || '',
+                client: editingRecord.clients?.client_name || '',
+                clientId: editingRecord.client_id || null,
+                clientAddress: editingRecord.clients?.client_address || '',
+                latitude: '',
+                longitude: '',
+                siteId: editingRecord.job_code || '',
+                anchorId: '',
+                siteName: editingRecord.project_name || '',
+                siteAddress: '',
+                surveyDate: new Date().toISOString().split('T')[0],
+                groundWaterTable: 'Not Encountered',
+                reportCreatedOn: new Date().toISOString().split('T')[0],
+                recommendations: '',
+                depthOfFoundation: '',
+                isCodes: [
+                    { key: 'Natural water content', value: 'IS:2720 - (Part 2) - 1973' },
+                    { key: 'Grain size analysis', value: 'IS:2720 - (Part 4) - 1985' },
+                    { key: 'Atterberg Limits', value: 'IS:2720 - (Part 5) - 1985' },
+                    { key: 'Field density', value: 'IS:2720 - (Part 10) - 1993' },
+                    { key: 'Specific Gravity', value: 'IS:2720 - (Part 3) - 1980' },
+                    { key: 'Standard penetration test (SPT)', value: 'IS:2131 - 1981' },
+                ],
+                surveyReport: [
+                    { key: 'Weather condition', value: '' },
+                    { key: 'Site Dimension', value: '' },
+                    { key: 'Ground or seepage water', value: '' },
+                ],
+                includeSurveyReportNote: false,
+                surveyReportNote: '',
+                conclusions: [
+                    { value: 'SPT values indicate that the soil strata up to a termination depth is [VALUE].' },
+                    { value: 'Ground water table [VALUE] at the time of investigation in the bore hole.' }
+                ],
+                recommendationTypes: { rock: false, soil: true },
+                sitePhotos: [],
+                ...(geotechData || defaultGeotechData),
+            };
+
+            setReportPreviewData(formData);
+            setShowingReportPreview(true);
+        } catch (err) {
+            console.error('Error generating report preview:', err);
+            toast({ title: 'Error', description: 'Failed to load report data.', variant: 'destructive' });
+        }
+    };
+
+    const handleSaveReport = async () => {
+        if (!generateReportActionRef.current) return;
+        setIsSavingReport(true);
+        try {
+            let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+            if (isNaN(userId) && user.username) {
+                const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
+                if (userData) userId = userData.id;
+            }
+
+            const existingReport = linkedDocs.find(d => d.document_type === 'Report');
+            const reportNumber = reportPreviewData?.reportId || `RPT/${new Date().getFullYear()}/${String(editingRecord.id).padStart(3, '0')}`;
+
+            const docPayload = {
+                document_type: 'Report',
+                job_id: editingRecord.id,
+                client_id: editingRecord.client_id || null,
+                quote_number: reportNumber,
+                content: reportPreviewData,
+                created_by: userId,
+                updated_at: new Date().toISOString(),
+            };
+
+            if (existingReport) {
+                const { error } = await supabase.from('documents').update(docPayload).eq('id', existingReport.id);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase.from('documents').insert([docPayload]);
+                if (error) throw error;
+            }
+
+            // Transition workflow → REPORT_GENERATED
+            await generateReportActionRef.current('GENERATE_REPORT');
+
+            toast({ title: 'Report Generated', description: 'The report has been saved and the job status updated.' });
+            setShowingReportPreview(false);
+            generateReportActionRef.current = null;
+            reloadEditingRecord();
+        } catch (err) {
+            console.error('Error saving report:', err);
+            toast({ title: 'Error', description: 'Failed to save report: ' + err.message, variant: 'destructive' });
+        } finally {
+            setIsSavingReport(false);
+        }
+    };
+
     const fetchAuditLogs = async (jobId) => {
         setLoadingLogs(true);
         try {
@@ -728,6 +870,11 @@ if (editingRecord) {
                                 if (actionId === 'RECEIVE_MATERIAL') { setShowingMaterialForm(true); return false; }
                                 if (actionId === 'ASSIGN_TECHNICIANS') { setShowingTechForm(true); return false; }
                                 if (actionId === 'START_TESTING') { setShowingTestingForm(true); }
+                                if (actionId === 'GENERATE_REPORT') {
+                                    generateReportActionRef.current = performAction;
+                                    await handleGenerateReport();
+                                    return false;
+                                }
                                 if (actionId === 'GENERATE_INVOICE') {
                                     const existingInvoice = linkedDocs.find(d => d.document_type === 'Tax Invoice');
                                     if (existingInvoice) {
@@ -851,13 +998,39 @@ if (editingRecord) {
                             </DialogContent>
                         </Dialog>
 
+                        {/* Report Preview Modal */}
+                        {showingReportPreview && reportPreviewData && (
+                            <ReportPreview
+                                formData={reportPreviewData}
+                                onClose={() => {
+                                    setShowingReportPreview(false);
+                                    if (!linkedDocs.find(d => d.document_type === 'Report')) {
+                                        generateReportActionRef.current = null;
+                                    }
+                                }}
+                                onSave={generateReportActionRef.current ? handleSaveReport : undefined}
+                                isSaving={isSavingReport}
+                            />
+                        )}
+
                         {/* Linked Documents Summary */}
                         {canModify && linkedDocs.length > 0 && (
                             <div className="p-4 bg-white rounded-sm border border-gray-100 shadow-sm">
                                 <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><FileText className="w-4 h-4" /> Job Documents</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                     {linkedDocs.map(doc => (
-                                        <div key={doc.id} className="p-3 bg-gray-50/50 rounded-xl border border-gray-100 flex items-center justify-between group hover:bg-gray-50 hover:border-primary/30 transition-all cursor-pointer" onClick={() => navigate(`/doc/${doc.id}`)}>
+                                        <div
+                                            key={doc.id}
+                                            className="p-3 bg-gray-50/50 rounded-xl border border-gray-100 flex items-center justify-between group hover:bg-gray-50 hover:border-primary/30 transition-all cursor-pointer"
+                                            onClick={() => {
+                                                if (doc.document_type === 'Report' && doc.content) {
+                                                    setReportPreviewData(doc.content);
+                                                    setShowingReportPreview(true);
+                                                } else {
+                                                    navigate(`/doc/${doc.id}`);
+                                                }
+                                            }}
+                                        >
                                             <div className="space-y-0.5"><div className="text-[9px] font-bold text-primary uppercase tracking-wider">{doc.document_type}</div><div className="font-mono text-xs font-bold text-gray-700">{doc.quote_number}</div></div>
                                             <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-primary" />
                                         </div>

@@ -12,7 +12,7 @@ import companySeal from '@/assets/company-seal.png';
 import engineerSeal from '@/assets/engineer-seal.jpeg';
 import engineerSign from '@/assets/engineer-sign.jpeg';
 
-import { X, Printer, FileText, BarChart2 } from 'lucide-react';
+import { X, Printer, FileText, BarChart2, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 
@@ -186,7 +186,7 @@ const Page = ({ children, reportId, pageNumber, totalPages }) => (
 
 
 
-const ReportPreview = ({ formData, onClose }) => {
+const ReportPreview = ({ formData, onClose, onSave, isSaving }) => {
     if (!formData) return null;
 
     const handlePrint = () => {
@@ -1514,14 +1514,25 @@ const ReportPreview = ({ formData, onClose }) => {
                         <div>
                             <h2 className="text-xl font-bold text-gray-800">Report Preview</h2>
                             <p className="text-xs text-gray-500 font-medium tracking-wide flex items-center">
-                                <span className="uppercase mr-2">This is a Preview of the Report to check for data correctness before generating the final report</span>
+                                <span className="mr-2">This is a Preview of the Report to check for data correctness before generating the final report</span>
                             </p>
                         </div>
                     </div>
                     <div className="flex items-center space-x-3">
+                        {onSave && (
+                            <Button
+                                size="sm"
+                                onClick={onSave}
+                                disabled={isSaving}
+                                className="flex items-center space-x-2 bg-primary hover:bg-primary/90 text-white shadow-sm shadow-primary/20"
+                            >
+                                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                <span className="text-xs">{isSaving ? 'Saving...' : 'Save & Generate'}</span>
+                            </Button>
+                        )}
                         <Button variant="outline" size="sm" onClick={handlePrint} className="flex items-center space-x-2 border-primary/20 hover:bg-primary/5">
                             <Printer className="w-4 h-4" />
-                            <span className="text-xs">Print / Save PDF</span>
+                            <span className="text-xs">View PDF</span>
                         </Button>
                         <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-red-50 hover:text-red-600 transition-colors">
                             <X className="w-5 h-5" />
