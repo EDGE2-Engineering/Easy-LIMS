@@ -483,7 +483,7 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                                     </div>
                                                 </div>
                                             )}
-                                            {testTypes.map(testName => {
+                                                                            {testTypes.map(testName => {
                                                 const testValues = testResults[cat]?.[testName]?.values || {};
                                                 const hasData = Object.keys(testValues).length > 0;
                                                 
@@ -515,7 +515,7 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                         <div className="flex justify-end pt-4">
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Button onClick={() => setSelectedCategory(cat)} className="bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20">
+                                                    <Button onClick={() => setSelectedCategory(cat)} className="bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 dark:text-white">
                                                         <Edit className="mr-2 h-4 w-4" />
                                                         Edit {cat} Test Data
                                                     </Button>
@@ -541,8 +541,8 @@ const TestingManager = ({ initialJobId, onClose }) => {
 
             {/* Category Test Data Input Dialog */}
             <Dialog open={!!selectedCategory} onOpenChange={(open) => !open && setSelectedCategory(null)}>
-                <DialogContent className="max-w-[1100px] max-h-[90vh] overflow-hidden flex flex-col p-0 bg-white rounded-2xl shadow-2xl border border-gray-100">
-                    <DialogHeader className="px-6 py-4 border-b bg-gray-50/50">
+                <DialogContent className="max-w-[1100px] max-h-[90vh] overflow-hidden flex flex-col p-0 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800">
+                    <DialogHeader className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
                         <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-800">
                             <FlaskConical className="w-5 h-5 text-primary" />
                             {selectedCategory} Test Data Entry
@@ -722,9 +722,9 @@ const TestingManager = ({ initialJobId, onClose }) => {
                                 )}
                                 
                             </div>
-                            <div className="sticky bottom-0 z-10 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-white/95 backdrop-blur-sm shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
-                                <Button variant="ghost" className="px-6 rounded-xl hover:bg-gray-50 font-medium text-gray-600" onClick={() => setSelectedCategory(null)} disabled={isSaving}>Cancel</Button>
-                                <Button className="px-8 rounded-xl bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold" onClick={async () => { await handleSaveResults(selectedCategory); setSelectedCategory(null); }} disabled={isSaving}>
+                            <div className="sticky bottom-0 z-10 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
+                                <Button variant="ghost" className="px-6 rounded-xl hover:bg-gray-50 font-medium text-gray-600 dark:text-white" onClick={() => setSelectedCategory(null)} disabled={isSaving}>Cancel</Button>
+                                <Button className="px-8 rounded-xl bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold dark:text-white" onClick={async () => { await handleSaveResults(selectedCategory); setSelectedCategory(null); }} disabled={isSaving}>
                                     {isSaving ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />} Save All Results
                                 </Button>
                             </div>

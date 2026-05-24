@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 
 const DocumentsManager = () => {
   const [documents, setDocuments] = useState([]);
@@ -484,49 +485,9 @@ const DocumentsManager = () => {
                   onChange={(option) => setFilterClient(option ? option.value : 'all')}
                   placeholder="Search Clients..."
                   isSearchable
-                  styles={{
-                    control: (base) => ({
-                      ...base,
-                      minHeight: '40px',
-                      height: '40px',
-                      borderColor: 'transparent',
-                      borderRadius: '0.75rem',
-                      backgroundColor: '#f9fafb', // gray-50
-                      boxShadow: 'none',
-                      fontSize: '0.875rem', // text-sm (14px)
-                      '&:hover': {
-                        borderColor: '#e2e8f0'
-                      }
-                    }),
-                    singleValue: (base) => ({
-                      ...base,
-                      color: '#111827', // gray-900
-                      fontWeight: '500'
-                    }),
-                    placeholder: (base) => ({
-                      ...base,
-                      color: '#9ca3af' // gray-400
-                    }),
-                    option: (base, state) => ({
-                      ...base,
-                      backgroundColor: state.isSelected ? '#f1f5f9' : state.isFocused ? '#f1f5f9' : 'white',
-                      color: state.isSelected ? '#0f172a' : '#1e293b',
-                      fontSize: '0.875rem', // text-sm
-                      fontWeight: state.isSelected ? '700' : '600',
-                      cursor: 'pointer',
-                      '&:active': {
-                        backgroundColor: '#e2e8f0'
-                      }
-                    }),
-                    menu: (base) => ({
-                      ...base,
-                      borderRadius: '1rem',
-                      overflow: 'hidden',
-                      boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                      border: '1px solid #f1f5f9',
-                      zIndex: 50
-                    })
-                  }}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
+                  styles={themedReactSelectStyles()}
                 />
               </div>
             </div>
@@ -638,14 +599,14 @@ const DocumentsManager = () => {
 
                     <td className="py-5 px-6 text-center">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${record.document_type === 'Tax Invoice'
-                        ? 'bg-blue-50 text-blue-700 border-blue-100'
+                        ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'
                         : record.document_type === 'Proforma Invoice'
-                          ? 'bg-purple-50 text-purple-700 border-purple-100'
+                          ? 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800'
                           : record.document_type === 'Purchase Order'
-                            ? 'bg-orange-50 text-orange-700 border-orange-100'
+                            ? 'bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800'
                             : record.document_type === 'Delivery Challan'
-                              ? 'bg-teal-50 text-teal-700 border-teal-100'
-                              : 'bg-green-50 text-green-700 border-green-100'
+                              ? 'bg-teal-50 text-teal-700 border-teal-100 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800'
+                              : 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
                         }`}>
                         {record.document_type}
                       </span>

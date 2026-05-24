@@ -30,8 +30,8 @@ import WorkflowPanel from '@/components/common/WorkflowPanel';
 import TechnicianAssignment from './TechnicianAssignment';
 import TestingManager from './TestingManager';
 import MaterialInwardManager from './MaterialInwardManager';
-import ReactSelect from 'react-select';
 import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
+import ReactSelect from 'react-select';
 
 const JobsManager = ({ id }) => {
     const [records, setRecords] = useState([]);
@@ -505,6 +505,10 @@ const JobsManager = ({ id }) => {
                 if (error) throw error;
             }
             toast({ title: "Success", description: "Job saved successfully" });
+            // If we were adding a new job, return to the jobs list
+            if (isAddingNew) {
+                navigate('/settings/jobs');
+            }
             setEditingRecord(null);
             fetchRecords();
         } catch (err) {
@@ -571,6 +575,27 @@ const JobsManager = ({ id }) => {
     };
 
     const getStatusLabel = (status) => workflow.states[status]?.label || status;
+    const getStatusBadgeClasses = (status) => {
+        switch(status) {
+            case WORKFLOW_STATES.JOB_CREATED: return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 hover:bg-gray-200';
+            case WORKFLOW_STATES.QUOTATION_SENT: return 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800 hover:bg-yellow-100';
+            case WORKFLOW_STATES.WORK_ORDER_RECEIVED: return 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800 hover:bg-orange-100';
+            case WORKFLOW_STATES.MATERIAL_RECEIVED: return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800 hover:bg-amber-100';
+            case WORKFLOW_STATES.TECHNICIANS_ASSIGNED: return 'bg-lime-50 text-lime-700 border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-800 hover:bg-lime-100';
+            case WORKFLOW_STATES.UNDER_TESTING: return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800 hover:bg-blue-100';
+            case WORKFLOW_STATES.TEST_DATA_UNDER_REVIEW: return 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800 hover:bg-indigo-100';
+            case WORKFLOW_STATES.DATA_VERIFIED: return 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800 hover:bg-violet-100';
+            case WORKFLOW_STATES.REPORT_GENERATED: return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800 hover:bg-purple-100';
+            case WORKFLOW_STATES.REPORT_UNDER_REVIEW: return 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-300 dark:border-fuchsia-800 hover:bg-fuchsia-100';
+            case WORKFLOW_STATES.REPORT_SIGNED: return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800 hover:bg-emerald-100';
+            case WORKFLOW_STATES.INVOICE_GENERATED: return 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800 hover:bg-teal-100';
+            case WORKFLOW_STATES.AWAITING_PAYMENT: return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800 hover:bg-rose-100';
+            case WORKFLOW_STATES.PAYMENT_RECEIVED: return 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800 hover:bg-green-100';
+            case WORKFLOW_STATES.REPORT_RELEASED: return 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800 hover:bg-cyan-100';
+            case WORKFLOW_STATES.JOB_COMPLETE: return 'bg-green-100 text-green-800 border-green-300 dark:bg-green-800/40 dark:text-green-400 dark:border-green-700 hover:bg-green-200';
+            default: return 'bg-primary/10 text-primary border-primary/20 dark:bg-primary/20 dark:text-primary-foreground dark:border-primary/30';
+        }
+    };
 
     const filteredRecords = useMemo(() => {
         let result = records.filter(r => {
@@ -646,12 +671,17 @@ const JobsManager = ({ id }) => {
         setDatePreset('custom');
     };
 
-    if (editingRecord) {
+if (editingRecord) {
         return (
             <div className="space-y-6 bg-white p-2 rounded-xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-right-4 duration-500">
                 <div className="flex justify-between items-center mb-8">
                     <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" onClick={() => navigate('/settings/jobs')} className="rounded-full bg-gray-50 hover:bg-primary/10 hover:text-primary transition-all">
+                        <Button variant="ghost" size="icon" onClick={() => {
+                                // Close the detail view and navigate back to job listing
+                                setEditingRecord(null);
+                                setIsAddingNew(false);
+                                navigate('/settings/jobs');
+                            }} className="rounded-full bg-gray-50 hover:bg-primary/10 hover:text-primary transition-all">
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                         <div>
@@ -988,8 +1018,13 @@ const JobsManager = ({ id }) => {
 
                 {canModify && (
                     <div className="flex justify-end gap-3 pt-8 border-t">
-                        <Button variant="outline" className="h-10 p-2 text-xs rounded-lg" onClick={() => navigate('/settings/jobs')}>Cancel</Button>
-                        <Button className="h-10 p-2 text-xs rounded-lg bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20" onClick={handleSave} disabled={isSaving}>
+                        <Button variant="outline" className="h-10 p-2 text-xs rounded-lg dark:text-white" onClick={() => {
+                            // Close the edit view without saving
+                            setEditingRecord(null);
+                            setIsAddingNew(false);
+                            navigate('/settings/jobs');
+                        }}>Cancel</Button>
+                        <Button className="h-10 p-2 text-xs rounded-lg bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 dark:text-white" onClick={handleSave} disabled={isSaving}>
                             {isSaving ? <Loader2 className="animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Job Details
                         </Button>
                     </div>
@@ -1184,66 +1219,32 @@ const JobsManager = ({ id }) => {
                                     </SelectContent>
                                 </Select>
                             </div>
+                            {/* Client Filter */}
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Client</Label>
-                                <ReactSelect
-                                    className="text-sm"
-                                    classNamePrefix="react-select"
-                                    options={[
-                                        { value: 'all', label: 'All Clients' },
-                                        ...clients.map(c => ({ value: String(c.id), label: c.client_name }))
-                                    ]}
-                                    value={filterByClient === 'all'
-                                        ? { value: 'all', label: 'All Clients' }
-                                        : { value: filterByClient, label: clients.find(c => String(c.id) === String(filterByClient))?.client_name }
-                                    }
-                                    onChange={(option) => setFilterByClient(option ? option.value : 'all')}
-                                    placeholder="Search Clients..."
-                                    isSearchable
-                                    styles={{
-                                        control: (base) => ({
-                                            ...base,
-                                            minHeight: '40px',
-                                            height: '40px',
-                                            borderColor: 'transparent',
-                                            borderRadius: '0.75rem',
-                                            backgroundColor: '#f9fafb', // gray-50
-                                            boxShadow: 'none',
-                                            fontSize: '0.875rem', // text-sm (14px)
-                                            '&:hover': {
-                                                borderColor: '#e2e8f0'
-                                            }
-                                        }),
-                                        singleValue: (base) => ({
-                                            ...base,
-                                            color: '#111827', // gray-900
-                                            fontWeight: '500'
-                                        }),
-                                        placeholder: (base) => ({
-                                            ...base,
-                                            color: '#9ca3af' // gray-400
-                                        }),
-                                        option: (base, state) => ({
-                                            ...base,
-                                            backgroundColor: state.isSelected ? '#f1f5f9' : state.isFocused ? '#f1f5f9' : 'white',
-                                            color: state.isSelected ? '#0f172a' : '#1e293b',
-                                            fontSize: '0.875rem', // text-sm
-                                            fontWeight: state.isSelected ? '700' : '600',
-                                            cursor: 'pointer',
-                                            '&:active': {
-                                                backgroundColor: '#e2e8f0'
-                                            }
-                                        }),
-                                        menu: (base) => ({
-                                            ...base,
-                                            borderRadius: '1rem',
-                                            overflow: 'hidden',
-                                            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                                            border: '1px solid #f1f5f9',
-                                            zIndex: 50
-                                        })
-                                    }}
-                                />
+                              <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Client</Label>
+                              <ReactSelect
+                                value={
+                                  filterByClient === 'all'
+                                    ? { value: 'all', label: 'All Clients' }
+                                    : {
+                                        value: filterByClient,
+                                        label: clients.find((c) => String(c.id) === filterByClient)?.client_name || filterByClient
+                                      }
+                                }
+                                onChange={(selectedOption) => setFilterByClient(selectedOption.value)}
+                                options={[
+                                  { value: 'all', label: 'All Clients' },
+                                  ...clients.map(c => ({ value: String(c.id), label: c.client_name }))
+                                ]}
+                                isSearchable
+                                isClearable={false}
+                                placeholder="All Clients"
+                                styles={themedReactSelectStyles()}
+                                className="text-sm w-full"
+                                classNamePrefix="react-select"
+                                menuPortalTarget={document.body}
+                                menuPosition={'fixed'}
+                              />
                             </div>
                         </div>
                     </div>
@@ -1347,7 +1348,7 @@ const JobsManager = ({ id }) => {
                                     </div>
                                 </td>
                                 <td className="py-5 px-6 text-center">
-                                    <Badge className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 shadow-sm uppercase text-[10px] font-black tracking-wide whitespace-nowrap">
+                                    <Badge className={`shadow-sm uppercase text-[10px] font-black tracking-wide whitespace-nowrap border ${getStatusBadgeClasses(r.status)}`}>
                                         {getStatusLabel(r.status)}
                                     </Badge>
                                 </td>

@@ -81,7 +81,7 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
                                     onClick={() => handleAction(action.id, action)}
                                     disabled={loading}
                                     size="sm"
-                                    className="transition-all hover:scale-105 text-xs px-2"
+                                    className="transition-all hover:scale-105 text-xs px-2 dark:text-white"
                                 >
                                     {action.label}
                                     <ChevronRight className="ml-1 h-4 w-4" />
