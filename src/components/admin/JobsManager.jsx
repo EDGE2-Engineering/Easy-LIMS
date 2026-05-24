@@ -774,7 +774,7 @@ if (editingRecord) {
                         <Dialog open={showingTestingForm} onOpenChange={setShowingTestingForm}>
                             <DialogContent className="max-w-[1200px] max-h-[90vh] overflow-y-auto">
                                 <DialogHeader><DialogTitle>Testing Data Entry</DialogTitle></DialogHeader>
-                                <TestingManager initialJobId={editingRecord.id} onClose={() => { setShowingTestingForm(false); reloadEditingRecord(); }} />
+                                <TestingManager initialJobId={editingRecord.id} onClose={() => { setShowingTestingForm(false); reloadEditingRecord(); }} onSave={reloadEditingRecord} />
                             </DialogContent>
                         </Dialog>
 
@@ -1010,7 +1010,7 @@ if (editingRecord) {
                             {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.UNDER_TESTING) && (
                                 <div className="bg-white rounded-2xl shadow-sm">
                                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2"><Package className="w-4 h-4" /> Testing Data</h3>
-                                    <TestingManager initialJobId={editingRecord.id} />
+                                    <TestingManager initialJobId={editingRecord.id} onSave={reloadEditingRecord} />
                                 </div>
                             )}
                         </>

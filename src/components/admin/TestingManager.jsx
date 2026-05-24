@@ -38,7 +38,7 @@ const MANUAL_GEOTECH_FIELDS = [
     { key: 'silt_clay', label: 'Silt & Clay (%)', type: 'number' },
 ];
 
-const TestingManager = ({ initialJobId, onClose }) => {
+const TestingManager = ({ initialJobId, onClose, onSave }) => {
     const [jobDetails, setJobDetails] = useState(null);
     const [samples, setSamples] = useState([]);
     const [testResults, setTestResults] = useState({}); // { category: { testName: { values: {}, remarks: "" } } }
@@ -143,7 +143,14 @@ const TestingManager = ({ initialJobId, onClose }) => {
 
             if (error) throw error;
             toast({ title: "Progress Saved", description: `Results for ${category} have been saved.` });
+            
+            // Refetch to sync state immediately with database
+            await fetchData();
+            
+            // Trigger parent callback to sync parent state
+            if (onSave) onSave();
         } catch (err) {
+            console.error(err);
             toast({ title: "Error", description: "Failed to save results", variant: "destructive" });
         } finally {
             setIsSaving(false);
@@ -180,9 +187,20 @@ const TestingManager = ({ initialJobId, onClose }) => {
         });
 
     return (
-        <div className="w-full animate-in fade-in duration-500">
+        <div className="w-full animate-in fade-in duration-500 space-y-4">
+            {onClose && (
+                <div className="flex items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-4">
+                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full bg-gray-50 dark:bg-gray-700 hover:bg-primary/10 hover:text-primary dark:text-white transition-all">
+                        <ArrowLeft className="w-5 h-5" />
+                    </Button>
+                    <div>
+                        <h2 className="text-sm font-bold text-gray-900 dark:text-white">Job: {jobDetails?.job_code}</h2>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Record and submit test results for this job.</p>
+                    </div>
+                </div>
+            )}
             {visibleCategories.length > 0 ? (
-        <Tabs defaultValue={visibleCategories[0]} className="w-full">
+                <Tabs defaultValue={visibleCategories[0]} className="w-full">
                             {hasMaterialsGap && (
                                 <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-xl flex items-start gap-3 text-sm">
                                     <AlertCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
