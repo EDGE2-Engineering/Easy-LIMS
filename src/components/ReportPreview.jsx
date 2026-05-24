@@ -302,37 +302,37 @@ const ReportPreview = ({ formData, onClose, onSave, isSaving }) => {
                 </div>
 
                 {/* Report Details Table */}
-                <div className="w-full max-w-[18cm] mx-auto mb-12">
+                <div className="w-full max-w-[15cm] mx-auto mb-12">
                     <table className="w-full border-collapse text-[10pt]">
                         <tbody>
                             <tr className="border-b border-black/10">
-                                <td className="py-1.5 pr-4 font-bold w-1/3 text-left">Report ID:</td>
-                                <td className="py-1.5 pl-4 border-black/20 font-medium text-left">{formData.reportId || '________________'}</td>
+                                <td className="py-1.5 pr-4 font-bold w-[45%] text-right">Report ID:</td>
+                                <td className="py-1.5 pl-4 font-medium text-left">{formData.reportId || '________________'}</td>
                             </tr>
                             <tr className="border-b border-black/10">
-                                <td className="py-1.5 pr-4 font-bold text-left">Site ID:</td>
-                                <td className="py-1.5 pl-4 border-black/20 font-medium text-left">{formData.siteId || '________________'}</td>
+                                <td className="py-1.5 pr-4 font-bold text-right">Site ID:</td>
+                                <td className="py-1.5 pl-4 font-medium text-left">{formData.siteId || '________________'}</td>
                             </tr>
                             <tr className="border-b border-black/10">
-                                <td className="py-1.5 pr-4 font-bold text-left">Site Name:</td>
-                                <td className="py-1.5 pl-4 border-black/20 font-medium text-left line-clamp-3">{formData.siteName || '________________'}</td>
+                                <td className="py-1.5 pr-4 font-bold text-right">Site Name:</td>
+                                <td className="py-1.5 pl-4 font-medium text-left line-clamp-3">{formData.siteName || '________________'}</td>
                             </tr>
                             <tr className="border-b border-black/10">
-                                <td className="py-1.5 pr-4 font-bold text-left">Project Name:</td>
-                                <td className="py-1.5 pl-4 border-black/20 font-medium text-left line-clamp-2">{formData.projectDetails || '________________'}</td>
+                                <td className="py-1.5 pr-4 font-bold text-right">Project Name:</td>
+                                <td className="py-1.5 pl-4 font-medium text-left line-clamp-2">{formData.projectDetails || '________________'}</td>
                             </tr>
                             {formData.sbcDetails && formData.sbcDetails[0] && formData.sbcDetails[0]
                                 .filter(s => s.useForReport)
                                 .map((s, idx) => (
                                     <tr key={idx} className="border-b border-black/10">
-                                        <td className="py-1.5 pr-4 font-bold text-left">SBC Value {idx + 1}:</td>
-                                        <td className="py-1.5 pl-4 border-black/20 font-medium text-left">{s.sbcValue || '________________'}</td>
+                                        <td className="py-1.5 pr-4 font-bold text-right">SBC Value {idx + 1}:</td>
+                                        <td className="py-1.5 pl-4 font-medium text-left">{s.sbcValue || '________________'}</td>
                                     </tr>
                                 ))
                             }
                             <tr className="border-b border-black/10">
-                                <td className="py-1.5 pr-4 font-bold text-left">Ground Water Table:</td>
-                                <td className="py-1.5 pl-4 border-black/20 font-medium text-left">
+                                <td className="py-1.5 pr-4 font-bold text-right">Ground Water Table:</td>
+                                <td className="py-1.5 pl-4 font-medium text-left">
                                     {(() => {
                                         if (!formData.boreholeLogs || formData.boreholeLogs.length === 0) return 'Not Encountered';
 
@@ -347,12 +347,12 @@ const ReportPreview = ({ formData, onClose, onSave, isSaving }) => {
                                 </td>
                             </tr>
                             <tr className="border-b border-black/10">
-                                <td className="py-1.5 pr-4 font-bold text-left">Survey Date:</td>
-                                <td className="py-1.5 pl-4 border-black/20 font-medium text-left">{formData.surveyDate || '________________'}</td>
+                                <td className="py-1.5 pr-4 font-bold text-right">Survey Date:</td>
+                                <td className="py-1.5 pl-4 font-medium text-left">{formData.surveyDate || '________________'}</td>
                             </tr>
                             <tr>
-                                <td className="py-1.5 pr-4 font-bold text-left">Report Created On:</td>
-                                <td className="py-1.5 pl-4 border-black/20 font-medium text-left">{formData.reportCreatedOn}</td>
+                                <td className="py-1.5 pr-4 font-bold text-right">Report Created On:</td>
+                                <td className="py-1.5 pl-4 font-medium text-left">{formData.reportCreatedOn}</td>
                             </tr>
                         </tbody>
                     </table>

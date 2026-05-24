@@ -184,36 +184,74 @@
   background-color: #101713;
 }
 
-.dark .a4-container {
+.dark .a4-container,
+.dark .a4-page {
   background: white !important;
   color: #111827 !important;
   border-color: #e1e4e8 !important;
 }
 
-.dark .a4-container .bg-white {
+.dark .a4-container .bg-white,
+.dark .a4-page .bg-white {
   background-color: white !important;
 }
 
+.dark .a4-container .bg-gray-50,
+.dark .a4-page .bg-gray-50 {
+  background-color: #f9fafb !important;
+}
+
+.dark .a4-container .bg-gray-100,
+.dark .a4-page .bg-gray-100 {
+  background-color: #f3f4f6 !important;
+}
+
+.dark .a4-container .bg-gray-200,
+.dark .a4-page .bg-gray-200 {
+  background-color: #e5e7eb !important;
+}
+
 .dark .a4-container .text-gray-900,
-.dark .a4-container .text-gray-800 {
+.dark .a4-container .text-gray-800,
+.dark .a4-page .text-gray-900,
+.dark .a4-page .text-gray-800 {
   color: #111827 !important;
 }
 
 .dark .a4-container .text-gray-700,
-.dark .a4-container .text-gray-600 {
+.dark .a4-container .text-gray-600,
+.dark .a4-page .text-gray-700,
+.dark .a4-page .text-gray-600 {
   color: #4b5563 !important;
 }
 
 .dark .a4-container .text-gray-500,
-.dark .a4-container .text-gray-400 {
+.dark .a4-container .text-gray-400,
+.dark .a4-page .text-gray-500,
+.dark .a4-page .text-gray-400 {
   color: #6b7280 !important;
+}
+
+.dark .a4-container .text-black,
+.dark .a4-page .text-black {
+  color: #000000 !important;
 }
 
 .dark .a4-container .border-gray-50,
 .dark .a4-container .border-gray-100,
 .dark .a4-container .border-gray-200,
-.dark .a4-container .border {
+.dark .a4-container .border,
+.dark .a4-page .border-gray-50,
+.dark .a4-page .border-gray-100,
+.dark .a4-page .border-gray-200,
+.dark .a4-page .border-gray-300,
+.dark .a4-page .border {
   border-color: #e5e7eb !important;
+}
+
+.dark .a4-container .border-black,
+.dark .a4-page .border-black {
+  border-color: #000000 !important;
 }
 
 /* A4 Sheet Standards & Print Styles */
