@@ -15,7 +15,18 @@ import engineerSign from '@/assets/engineer-sign.jpeg';
 import { X, Printer, FileText, BarChart2, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useReactToPrint } from 'react-to-print';
-
+// Footer component reused across pages
+const Footer = () => (
+  <div className="mt-4 text-center">
+    <p className="text-sm">
+      Shivaganga Arcade, B35/130, 6th Cross, 6th Block, Vishweshwaraiah Layout, Ullal Upanagar, Bengaluru, Karnataka - 560056
+    </p>
+    <div className="flex items-center justify-center space-x-2 mt-2">
+      <img src={iso9001} alt="ISO 9001:2015" className="w-[15mm] object-contain" />
+      <img src={iso45001} alt="ISO 45001:2018" className="w-[15mm] object-contain" />
+    </div>
+  </div>
+);
 
 const GrainSizeGraph = ({ data, bhName }) => {
     const chartRef = React.useRef(null);
@@ -147,12 +158,8 @@ const Page = ({ children, reportId, pageNumber, totalPages }) => (
 
         {/* Page Footer */}
         <div className="a4-page-footer">
-            <span className="font-semibold text-[9pt]">EDGE2 Engineering Solutions India Pvt. Ltd.</span>
-            <span className="text-[8pt] font-semibold">
-                Report ID: {reportId || 'N/A'}
-                <span className="px-4">|</span>
-                Page {pageNumber} of {totalPages}
-            </span>
+            <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
+            <span>Report ID: {reportId || 'N/A'} | Page {pageNumber || '1'} of {totalPages || '1'}</span>
         </div>
     </div>
 );
@@ -335,39 +342,7 @@ const ReportPreview = ({ formData, onClose, onSave, isSaving }) => {
                 </div>
 
                 {/* Footer Section */}
-                <div className="w-full mt-auto">
-                    <div className="flex flex-col items-center mb-2">
-                        <p className="text-[15px] font-bold text-gray-800 mb-2">Report Issued By</p>
-                        <img src={logo} alt="EDGE2 Logo" className="w-[10mm] object-contain mb-1" />
-                        <h3 className="text-[11pt] font-bold text-black">EDGE2 Engineering Solutions India Pvt. Ltd.</h3>
-                        <p className="text-[10pt] text-black mt-1">
-                            Geo-technical Investigation • Material Testing • Structural Health & Stability <br />
-                            NDT • Restoration & Rehabilitation • PMC & QA
-                        </p>
-                        <div className="text-[9pt] text-black mt-1 space-y-0.5">
-                            <p>Website: www.edge2.in</p>
-                            <p>📞 +91 98809 73810 / 080 5005 6086</p>
-                            <p>Email: info@edge2.in | reports@edge2.in</p>
-                            <p>PAN: AACCE1702A | GSTIN: 29AACCE1702A1ZD</p>
-                        </div>
-                    </div>
-
-                    <hr className="border-black/50 my-2" />
-
-                    <div className="grid grid-cols-[3fr_1fr] gap-4 text-left">
-                        <div className="text-[13px]">
-                            <p><span className="text-[#800000] text-sm">Registered Office and Laboratory:</span><br />
-                                EDGE2 Engineering Solutions India Pvt. Ltd.<br />
-                                ISO 9001:2015 Certified<br />
-                                (Certificate No: IN12701A)<br />
-                                Shivaganga Arcade, B35/130, 6th Cross, 6th Block, Vishweshwaraiah Layout, Ullal Upanagar, Bengaluru, Karnataka - 560056</p>
-                        </div>
-                        <div className="flex items-center justify-center space-x-2">
-                            <img src={iso9001} alt="ISO 9001:2015" className="w-[15mm] object-contain" />
-                            <img src={iso45001} alt="ISO 45001:2018" className="w-[15mm] object-contain" />
-                        </div>
-                    </div>
-                </div>
+                                                    <Footer />
             </div>
         </Page>
     );
@@ -1479,8 +1454,8 @@ const ReportPreview = ({ formData, onClose, onSave, isSaving }) => {
     const totalPages = pages.length;
 
     return (
-        <div id="report-preview-modal" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:p-0 print:bg-white overflow-hidden print:block print:relative print:inset-auto print:z-auto">
-            <div className="bg-white w-full max-w-5xl h-[95vh] rounded-lg shadow-2xl flex flex-col print:h-auto print:rounded-none print:shadow-none print:max-w-none print:block print:overflow-visible">
+        <div id="report-preview-modal" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-hidden print:static print:block print:p-0 print:bg-white print:z-auto print:inset-auto">
+            <div className="bg-white w-full max-w-5xl h-[95vh] rounded-lg shadow-2xl flex flex-col print:static print:block print:h-auto print:w-auto print:max-w-none print:rounded-none print:shadow-none print:overflow-visible">
                 {/* Header/Controls */}
                 <div className="flex items-center justify-between p-4 border-b print:hidden bg-white rounded-t-lg">
                     <div className="flex items-center space-x-2">
@@ -1517,8 +1492,8 @@ const ReportPreview = ({ formData, onClose, onSave, isSaving }) => {
                 </div>
 
                 {/* Preview Area */}
-                <div className="flex-1 overflow-auto">
-                    <div className="a4-preview-wrapper">
+                <div className="flex-1 overflow-auto bg-gray-100 p-8 flex justify-center print:p-0 print:bg-white print:overflow-visible">
+                    <div className="a4-preview-wrapper rounded-xl border border-gray-100 min-h-[600px] print-container shadow-inner print:border-none print:shadow-none print:p-0">
                         <div ref={componentRef} id="printable-quote-root">
                             {pages.map((page, index) =>
                                 React.cloneElement(page, {

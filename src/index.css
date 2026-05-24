@@ -310,6 +310,7 @@
     /* Remove max-height in preview to show all content */
     max-height: none;
     overflow: visible;
+    padding-bottom: 4mm !important;
   }
 }
 
@@ -361,15 +362,16 @@
     max-height: 280mm !important;
 
     padding: 10mm;
-    padding-bottom: 0;
-    /* Remove padding bottom, let footer sit at bottom */
+    padding-bottom: 4mm !important;
+    /* Maintain identical 4mm padding-bottom for perfect screen/print parity */
 
     page-break-after: always;
     page-break-inside: avoid;
     break-inside: avoid;
 
-    /* Return to Block layout for predictability */
-    display: block !important;
+    /* Use flexbox layout in print to guarantee perfect screen-to-print rendering parity */
+    display: flex !important;
+    flex-direction: column !important;
 
     float: none;
     overflow: hidden !important;
@@ -418,7 +420,10 @@
   }
 
   .a4-page-content {
-    display: block;
+    flex: 1 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
     overflow: hidden !important;
   }
 }
@@ -440,10 +445,20 @@
 @media print {
   .a4-page-footer {
     position: absolute !important;
-    bottom: 0 !important;
-    left: 10mm;
-    right: 10mm;
-    width: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    color: #6b7280;
+    flex-shrink: 0;
+    height: auto;
+    width: 100% !important;
+    margin: 0;
   }
 }
 
