@@ -1814,17 +1814,27 @@ const NewQuotationPage = () => {
                                             )}
 
                                             {/* Table */}
-                                            <table className="w-full table-fixed mb-8 mt-2">
+                                            <table className="quote-items-table w-full table-fixed mb-8 mt-2">
+                                                <colgroup>
+                                                    <col style={{ width: '3%' }} />
+                                                    <col style={{ width: '30%' }} />
+                                                    <col style={{ width: '6%' }} />
+                                                    <col style={{ width: '6%' }} />
+                                                    <col style={{ width: '4%' }} />
+                                                    <col style={{ width: '3%' }} />
+                                                    <col style={{ width: '6%' }} />
+                                                    <col style={{ width: '7%' }} />
+                                                </colgroup>
                                                 <thead>
                                                     <tr>
-                                                        <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs w-5">Sl No.</th>
+                                                        <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">Sl No.</th>
                                                         <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">Description</th>
-                                                        <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs w-1">HSN/SAC</th>
-                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs w-12">Price Per Unit</th>
-                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs w-12">Unit</th>
-                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs w-2">Qty</th>
-                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs w-15">Total</th>
-                                                        <th className="w-10 print:hidden"></th>
+                                                        <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">HSN / SAC</th>
+                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">Price Per Unit</th>
+                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">Unit</th>
+                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">Qty</th>
+                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">Total</th>
+                                                        <th className="print:hidden"></th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -1890,7 +1900,7 @@ const NewQuotationPage = () => {
                                                                 <td className="py-2 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200"><Rupee />{item.total.toLocaleString()}</td>
                                                                 <td className="text-right print:hidden align-top">
                                                                     {!isReadOnly && (
-                                                                        <div className="flex items-center justify-end gap-1">
+                                                                        <div className="flex items-center justify-end gap-0">
                                                                             <button
                                                                                 onClick={() => handleMoveItemUp(slNo - 1)}
                                                                                 disabled={slNo === 1}
@@ -1922,7 +1932,7 @@ const NewQuotationPage = () => {
                                                     })}
                                                     {page.items.length === 0 && (
                                                         <tr>
-                                                            <td colSpan="5" className="py-8 text-center text-gray-400 italic">
+                                                            <td colSpan="8" className="py-8 text-center text-gray-400 italic">
                                                                 No items added yet.
                                                             </td>
                                                         </tr>

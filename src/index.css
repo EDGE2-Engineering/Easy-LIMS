@@ -380,8 +380,19 @@
     table-layout: fixed !important;
   }
 
+  /* Quotation line items: explicit colgroup widths; drop actions col in print */
+  .quote-items-table col:nth-child(8) {
+    width: 0 !important;
+  }
+
   .a4-container th,
   .a4-container td {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .quote-items-table th,
+  .quote-items-table td {
     overflow-wrap: anywhere;
     word-break: break-word;
   }

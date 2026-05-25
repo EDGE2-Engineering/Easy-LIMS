@@ -83,6 +83,10 @@ export const A4_PRINT_PAGE_STYLE = `
     table-layout: fixed !important;
   }
 
+  .quote-items-table col:nth-child(8) {
+    width: 0 !important;
+  }
+
   .a4-container th,
   .a4-container td {
     overflow-wrap: anywhere !important;
