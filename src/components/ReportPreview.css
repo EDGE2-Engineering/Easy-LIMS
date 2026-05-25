@@ -21,6 +21,18 @@
   }
 }
 
+@media print {
+  .content-page-header img {
+    /* width: 72px !important; */
+    height: 20px !important;
+    /* min-width: 72px !important; */
+    /* max-width: 72px !important; */
+    min-height: 20px !important;
+    max-height: 20px !important;
+    object-fit: contain !important;
+  }
+}
+
 .report-preview-modal {
   display: flex;
   flex-direction: column;

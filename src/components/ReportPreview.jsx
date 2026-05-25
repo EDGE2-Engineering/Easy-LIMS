@@ -121,9 +121,50 @@ const Edge2Stamp = () => (
 );
 
 const ContentPageHeader = () => (
-  <div className="flex items-center gap-3 border-b-2 border-blue-900 justify-center pt-4 pb-2 mb-4 w-full mt-[-15px] relative z-20">
-    <img src={LOGO_SRC} alt="EDGE2 Logo" className="h-5 object-contain" />
-    <h3 className="text-sm font-black text-blue-950 uppercase tracking-wider">
+  <div
+    className="content-page-header"
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "10px",
+      borderBottom: "2px solid #1e3a8a",
+      paddingTop: "16px",
+      paddingBottom: "8px",
+      marginBottom: "16px",
+      width: "100%",
+      marginTop: "-15px",
+      position: "relative",
+      zIndex: 20,
+    }}
+  >
+    <img
+      src={LOGO_SRC}
+      alt="EDGE2 Logo"
+      // width={72}
+      height={20}
+      style={{
+        // width: "72px",
+        height: "20px",
+        // minWidth: "72px",
+        // maxWidth: "72px",
+        // minHeight: "20px",
+        // maxHeight: "20px",
+        objectFit: "contain",
+        display: "block",
+      }}
+    />
+
+    <h3
+      style={{
+        fontSize: "14px",
+        fontWeight: 900,
+        letterSpacing: "1px",
+        textTransform: "uppercase",
+        color: "#172554",
+        margin: 0,
+      }}
+    >
       Edge2 Engineering Solutions India Private Limited
     </h3>
   </div>
@@ -251,7 +292,7 @@ const ProjectDetailsBlock = ({ data }) => {
 };
 
 const KvTableBlock = ({ title, rows }) => (
-  <div className="mb-4">
+  <div className="mb-4 hidden">
     <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">
       {title}
     </h3>
@@ -519,8 +560,8 @@ const ReportPreview = forwardRef(function ReportPreview(
     const finalPages = [coverPage, tocPage, ...shiftedPages];
 
     const tocSections = [];
-    tocSections.push({ title: 'Cover Page', pageNumber: 1 });
-    tocSections.push({ title: 'Table of Contents', pageNumber: 2 });
+    // tocSections.push({ title: 'Cover Page', pageNumber: 1 });
+    // tocSections.push({ title: 'Table of Contents', pageNumber: 2 });
     tocSections.push({ title: 'Project Details & IS Codes', pageNumber: 3 });
 
     const seenTitles = new Set(['Cover Page', 'Table of Contents', 'Project Details & IS Codes']);
