@@ -366,6 +366,13 @@ export const buildReportPages = (formData) => {
     });
   }
 
+  pages.push({
+    isFirstPage: false,
+    isContinuation: false,
+    sectionTitle: 'Geotechnical Exploration',
+    blocks: [{ type: 'geotechnical-exploration', data }],
+  });
+
   addKvSectionPages(pages, 'Survey Report', data.surveyReport);
   if (data.surveyReportNote) {
     addTextBlockPage(pages, 'Survey Report Note', data.surveyReportNote);

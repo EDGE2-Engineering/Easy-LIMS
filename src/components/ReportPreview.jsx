@@ -309,6 +309,109 @@ const GeotechnicalExplorationBlock = ({ data }) => {
       <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
         4.0 GEOTECHNICAL EXPLORATION
       </h3>
+
+      <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
+        4.1 Field Investigation
+      </h3>
+      <p className="text-xs text-gray-800 leading-relaxed mb-2">
+        Geotechnical investigation was conducted to obtain subsurface stratification in the “The
+        Construction Residential Building (G+3) at Site No.201, Residential Layout, “Northern Boulevard”
+        ,
+        Sy No.323 & 324, at Aluru Duddanahalli Village, Kundana Hobli, Devanahalli Taluk, Bangalore.
+        and to collect soil, rock and ground water samples for laboratory testing to arrive at geotechnical
+        design parameters.
+      </p>
+      <p className="text-xs text-gray-800 leading-relaxed mb-2">
+        Erecting and setting up of boring rig: at each borehole location, as per the Client’s location plan,
+        Manual auger system is shifted, assembled and erected.
+      </p>
+      <p className="text-xs text-gray-800 leading-relaxed mb-2">
+        <b>In –Situ Tests in Overburden</b>: Standard Penetration Tests are conducted in overburden. Disturbed
+        soil samples are collected through split spoon sampler of SPT to determine the index properties
+        from laboratory tests.
+      </p>
+      <p className="text-xs text-gray-800 leading-relaxed mb-2">
+        <b>Standard Penetration Test</b>: SPT was conducted 1 m below ground level and was carried out at
+        intervals of 1.5 m and at any change of material. Standard split spoon sampler attached to lower end
+        of drill rods was driven in the boreholes by means of standard hammer of 63.50 kg falling freely
+        from a height of 75 cm. The sampler was driven 45 cm as per specifications and number of blows
+        required for each 15 cm penetration was recorded. The number of blows for the first 15 cm
+        penetration was not considered as it is taken as seating drive. The number of blows for next 30 cm
+        penetration was designated as SPT ‘N’ value. Wherever the total penetration was less than 45 cm,
+        the number of blows & the depth penetrated is incorporated in respective bore logs.
+        Disturbed Soil samples obtained from standard split spoon sampler were collected in polythene bags
+        of suitable size. These samples were properly sealed, labelled, recorded and carefully transported
+        to laboratory for testing. Based on SPT N values soil is classified for its denseness/consistency.
+      </p>  
+      
+      <p className="text-xs text-gray-800 leading-relaxed mb-2">
+        <b>Drilling in Rock</b>: Once the hard stratum or rock surface was met, the size of the bore hole was
+        reduced to NX size (76mm). The hard stratum or top of the rock surface was confirmed, either by
+        the refusal from standard penetration test N value or due to resistance during the drilling operation.
+        In this hard stratum, further work was carried out by using NX double core barrel with Diamond
+        studded drill bits. The work was done as per IS: 6926-1973. The maximum length of the drill (run)
+        was maintained as 1.50m or 1.0m. At the end of each run the drill rod string with core barrel was
+        extracted from the bore hole and core was recovered from the core barrel. Recovered rock cores
+        were numbered and labelled serially and carefully transferred into good quality, sturdy, wooden
+        core boxes and preserved. The core recovery percentage was recorded. Core Recovery percentage
+        = (C.R. % = (Length of Core / Length of run) x 100). Rock Quality Designation (RQD) was also
+        recorded. Rock Quality Designation (RQD) = (Total Length of core pieces of 100mm & above in
+        Length / length of run) x 100). Core recovery percentage and RQD were computed for every drilled
+        run based on the length of cores retrieved.
+        <br />
+        <b>Water Level Observation:</b> The depth of ground water table (G.W.T) was checked/ measured in all
+        two bore holes. Ground water table was not found in any of the bore holes during the boring activity.
+      </p>  
+
+      <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">4.2 Laboratory Investigation</h3>
+      <p className="text-xs text-gray-800 leading-relaxed mb-2">
+        Collected soil/rock samples were transported to laboratory for further testing.
+      </p>
+      <p className="text-xs text-gray-800 leading-relaxed mb-2">
+        Following laboratory tests were performed on collected samples:
+      </p>  
+<table border="1" cellpadding="8" cellspacing="0" className="w-full text-xs border-collapse border border-gray-200 table-fixed">
+  <thead>
+    <tr>
+      <th className="py-1 border border-gray-200 px-1">Sl. No.</th>
+      <th className="py-1 border border-gray-200 px-1">Test</th>
+      <th className="py-1 border border-gray-200 px-1">Referenced IS Code</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td colSpan="3" className="border border-gray-200 px-1 py-1 text-center font-semibold uppercase break-words"><strong>Soil</strong></td>
+    </tr>
+    <tr>
+      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">1</td>
+      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">Water Content (WC)</td>
+      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">IS 2720-Part 2-1973</td>
+    </tr>
+    <tr>
+      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">2</td>
+      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">Specific Gravity (G)</td>
+      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">IS 2720 (Part 3/Sec 1): 1980</td>
+    </tr>
+    <tr>
+      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">3</td>
+      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">Grain Size Analysis (GSA)</td>
+      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">IS 2720-Part 4-1985</td>
+    </tr>
+    <tr>
+      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">4</td>
+      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">
+        Atterberg Limits:
+        <ul>
+          <li>Liquid Limit (LL)</li>
+          <li>Plastic Limit (PL)</li>
+        </ul>
+      </td>
+      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words">IS 2720-Part 5-1985</td>
+    </tr>
+  </tbody>
+</table>
+  <p className="text-xs text-gray-800 w-full ">*All test results have been compiled and are presented in the Annexure-II of this report.</p>
+
     </div>
   );
 };
@@ -591,6 +694,7 @@ const ReportPreview = forwardRef(function ReportPreview(
     const seenTitles = new Set(['Cover Page', 'Table of Contents', 'Project Details & IS Codes']);
 
     shiftedPages.slice(1).forEach((page) => {
+
       let title = page.sectionTitle;
       if (!title && page.blocks && page.blocks.length > 0) {
         const firstBlock = page.blocks[0];
