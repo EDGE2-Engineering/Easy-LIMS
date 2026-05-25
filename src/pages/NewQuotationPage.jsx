@@ -53,6 +53,7 @@ import { DOCUMENT_ITEM_TYPE_KEYS, DOCUMENT_ITEM_TYPE_OPTIONS, getDocumentItemTyp
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { sendTelegramNotification } from '@/lib/notifier';
+import { A4_PRINT_PAGE_STYLE } from '@/utils/a4PrintStyles';
 
 
 // Helper function to convert number to words (Indian numbering system)
@@ -786,6 +787,7 @@ const NewQuotationPage = () => {
     const handlePrint = useReactToPrint({
         contentRef: componentRef,
         documentTitle: `${documentType}_${quoteDetails.quoteNumber}`,
+        pageStyle: A4_PRINT_PAGE_STYLE,
     });
 
     const triggerPrint = async () => {
@@ -1719,8 +1721,8 @@ const NewQuotationPage = () => {
                                             {/* Header - only on first page */}
                                             {page.isFirstPage && (
                                                 <>
-                                                    <div className="flex justify-between items-start border-b pb-4 mb-2">
-                                                        <div className="w-[30%]">
+                                                    <div className="flex justify-between items-start gap-2 border-b pb-4 mb-2 min-w-0 max-w-full overflow-hidden">
+                                                        <div className="w-[30%] min-w-0 shrink">
                                                             <h3 className="text-lg font-bold text-gray-900 tracking-tight">
                                                                 {documentType.toUpperCase()}
                                                             </h3>
@@ -1732,8 +1734,8 @@ const NewQuotationPage = () => {
                                                             </p>
                                                         </div>
 
-                                                        <div className="w-[70%] flex items-center gap-4 text-right">
-                                                            <div className="text-right">
+                                                        <div className="w-[70%] min-w-0 shrink flex items-center gap-2 text-right">
+                                                            <div className="text-right min-w-0 flex-1">
                                                                 <h2 className="font-bold text-lg">
                                                                     EDGE2 Engineering Solutions India Pvt. Ltd.
                                                                 </h2>
@@ -1758,7 +1760,7 @@ const NewQuotationPage = () => {
                                                             <img
                                                                 src={`${import.meta.env.BASE_URL}edge2-logo.png`}
                                                                 alt="EDGE2 Logo"
-                                                                className="w-20 h-20 object-contain"
+                                                                className="w-16 h-16 object-contain flex-shrink-0"
                                                             />
                                                         </div>
                                                     </div>
@@ -1812,17 +1814,27 @@ const NewQuotationPage = () => {
                                             )}
 
                                             {/* Table */}
-                                            <table className="w-full mb-8 mt-2">
+                                            <table className="quote-items-table w-full table-fixed mb-8 mt-2">
+                                                <colgroup>
+                                                    <col style={{ width: '3%' }} />
+                                                    <col style={{ width: '30%' }} />
+                                                    <col style={{ width: '6%' }} />
+                                                    <col style={{ width: '6%' }} />
+                                                    <col style={{ width: '4%' }} />
+                                                    <col style={{ width: '3%' }} />
+                                                    <col style={{ width: '6%' }} />
+                                                    <col style={{ width: '7%' }} />
+                                                </colgroup>
                                                 <thead>
                                                     <tr>
-                                                        <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs w-5">Sl No.</th>
+                                                        <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">Sl No.</th>
                                                         <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">Description</th>
-                                                        <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs w-1">HSN/SAC</th>
-                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs w-12">Price Per Unit</th>
-                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs w-12">Unit</th>
-                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs w-2">Qty</th>
-                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs w-15">Total</th>
-                                                        <th className="w-10 print:hidden"></th>
+                                                        <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">HSN / SAC</th>
+                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">Price Per Unit</th>
+                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">Unit</th>
+                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">Qty</th>
+                                                        <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">Total</th>
+                                                        <th className="print:hidden"></th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -1888,7 +1900,7 @@ const NewQuotationPage = () => {
                                                                 <td className="py-2 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200"><Rupee />{item.total.toLocaleString()}</td>
                                                                 <td className="text-right print:hidden align-top">
                                                                     {!isReadOnly && (
-                                                                        <div className="flex items-center justify-end gap-1">
+                                                                        <div className="flex items-center justify-end gap-0">
                                                                             <button
                                                                                 onClick={() => handleMoveItemUp(slNo - 1)}
                                                                                 disabled={slNo === 1}
@@ -1920,7 +1932,7 @@ const NewQuotationPage = () => {
                                                     })}
                                                     {page.items.length === 0 && (
                                                         <tr>
-                                                            <td colSpan="5" className="py-8 text-center text-gray-400 italic">
+                                                            <td colSpan="8" className="py-8 text-center text-gray-400 italic">
                                                                 No items added yet.
                                                             </td>
                                                         </tr>

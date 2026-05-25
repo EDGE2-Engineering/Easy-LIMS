@@ -1,0 +1,103 @@
+/* Global styles for report preview popup (not CSS modules) */
+
+.report-preview-overlay {
+  position: fixed;
+  inset: 0;
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+  animation: report-preview-fade-in 0.2s ease-out;
+}
+
+@keyframes report-preview-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.report-preview-modal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: calc(210mm + 4rem);
+  max-height: 92vh;
+  border-radius: 1rem;
+  overflow: hidden;
+  animation: report-preview-slide-in 0.25s ease-out;
+}
+
+@keyframes report-preview-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.report-preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  flex-shrink: 0;
+}
+
+.report-preview-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  min-height: 0;
+  margin: 0;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.report-preview-scroll .a4-container {
+  margin-bottom: 3rem;
+}
+
+.report-preview-scroll .a4-container:last-child {
+  margin-bottom: 2rem;
+}
+
+body.report-preview-open {
+  overflow: hidden;
+}
+
+@media print {
+  .report-preview-overlay {
+    background: transparent;
+    backdrop-filter: none;
+    padding: 0;
+    position: static;
+    display: block;
+    z-index: auto;
+  }
+
+  .report-preview-modal,
+  .report-preview-toolbar,
+  .no-print {
+    display: none !important;
+  }
+
+  .report-preview-scroll {
+    overflow: visible;
+    padding: 0;
+    background: transparent;
+  }
+
+  body.report-preview-open {
+    overflow: visible;
+  }
+}
