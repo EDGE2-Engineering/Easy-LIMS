@@ -341,7 +341,7 @@ const ReportPreview = forwardRef(function ReportPreview(
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handlePrint}>
               <Printer className="w-4 h-4 mr-2" />
-              Print / PDF
+              Print PDF
             </Button>
             {onSave && (
               <Button size="sm" onClick={onSave} disabled={isSaving}>

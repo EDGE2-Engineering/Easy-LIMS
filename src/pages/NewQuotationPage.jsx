@@ -1241,7 +1241,7 @@ const NewQuotationPage = () => {
                             </Button>
                         )}
                         <Button onClick={triggerPrint} className="bg-blue-800 hover:bg-blue-900 text-white">
-                            <Printer className="w-4 h-4 mr-2" /> Print / PDF
+                            <Printer className="w-4 h-4 mr-2" /> Print PDF
                         </Button>
                     </div>
                 </div>
