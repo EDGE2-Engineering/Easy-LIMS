@@ -182,16 +182,9 @@ const ProjectDetailsBlock = ({ data }) => {
     }
   };
 
-  const getBoreholeMaxDepth = (bh) => {
-    if (!Array.isArray(bh) || bh.length === 0) return '10.0';
-    const lastRow = bh[bh.length - 1];
-    const depthStr = lastRow.depth || '';
-    if (depthStr.includes('-')) {
-      const parts = depthStr.split('-');
-      const val = parts[parts.length - 1].trim();
-      return parseFloat(val) ? val : '10.0';
-    }
-    return parseFloat(depthStr) ? depthStr : '10.0';
+  const getBoreholeMaxDepth = (bh, idx) => {
+    console.log(data)
+    return data.maxDepths?.[idx] ?? '-';
   };
 
   const numBoreholes = data.boreholeLogs?.length || 1;
@@ -249,8 +242,8 @@ const ProjectDetailsBlock = ({ data }) => {
                     {data.projectName || data.projectDetails || 'Project Site'}
                   </td>
                 ) : null}
-                <td className="border border-gray-400 px-1 py-1 text-gray-800">100.000</td>
-                <td className="border border-gray-400 px-1 py-1 text-gray-800">{getBoreholeMaxDepth(bh)}</td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">100.0</td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">{getBoreholeMaxDepth(bh, idx)}</td>
                 <td className="border border-gray-400 px-1 py-1 text-gray-800">{data.latitude || '-'}</td>
                 <td className="border border-gray-400 px-1 py-1 text-gray-800">{data.longitude || '-'}</td>
                 <td className="border border-gray-400 px-1 py-1 text-gray-800">{safeFormatDate(data.surveyDate)}</td>
@@ -283,10 +276,39 @@ const ProjectDetailsBlock = ({ data }) => {
           <li className="leading-relaxed pl-1">
             Conducting standard penetration test at 1.0/1.5 m depth intervals.
           </li>
+          <li className="leading-relaxed pl-1">
+            Collecting disturbed and undisturbed soil samples wherever possible.
+          </li>
+          <li className="leading-relaxed pl-1">
+            Observation of the water table, location coordinates.
+          </li>
+          <li className="leading-relaxed pl-1">
+            To ascertain the sub-soil strata and ground topography.
+          </li>
+          <li className="leading-relaxed pl-1">
+            Carry out laboratory testing on collected samples.
+          </li>
+          <li className="leading-relaxed pl-1">
+            To arrive at safe bearing capacity.
+          </li>
+          <li className="leading-relaxed pl-1">
+            To recommend any risks mitigations for foundation system.
+          </li>
         </ul>
       </div>
 
       <Edge2Stamp />
+    </div>
+  );
+};
+
+const GeotechnicalExplorationBlock = ({ data }) => {
+  const numBoreholes = data.boreholeLogs?.length || 0;
+  return (
+    <div className="mb-6">
+      <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
+        4.0 GEOTECHNICAL EXPLORATION
+      </h3>
     </div>
   );
 };
@@ -491,6 +513,8 @@ const renderBlock = (block, index) => {
   switch (block.type) {
     case 'project-details':
       return <ProjectDetailsBlock key={index} data={block.data} />;
+    case 'geotechnical-exploration':
+      return <GeotechnicalExplorationBlock key={index} data={block.data} />;
     case 'kv-table':
       return <KvTableBlock key={index} title={block.title} rows={block.rows} />;
     case 'data-table':

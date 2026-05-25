@@ -102,6 +102,7 @@ export const normalizeReportData = (formData) => ({
     ? formData.surveyReportNote?.trim()
     : '',
   boreholeLogs: formData.boreholeLogs || [],
+  maxDepths: formData.maxDepths || [],
   labTestResults: formData.labTestResults || [],
   grainSizeAnalysis: formData.grainSizeAnalysis || [],
   sbcDetails: formData.sbcDetails || [],

@@ -424,15 +424,7 @@ const JobsManager = ({ id }) => {
 
     const handleGenerateReport = async () => {
         try {
-            // If a report already exists, just preview it
-            const existingReport = linkedDocs.find(d => d.document_type === 'Report');
-            if (existingReport && existingReport.content) {
-                setReportPreviewData(existingReport.content);
-                setShowingReportPreview(true);
-                return;
-            }
-
-            // Fetch geotechnical test data from job_tests table
+            // Fetch geotechnical test data from job_tests table (always fresh)
             const { data: testData } = await supabase
                 .from('job_tests')
                 .select('*')
@@ -447,11 +439,14 @@ const JobsManager = ({ id }) => {
                     break;
                 }
             }
+            console.log('[handleGenerateReport] testData categories:', (testData || []).map(t => t.category));
+            console.log('[handleGenerateReport] geotechData maxDepths:', geotechData?.maxDepths);
 
             const reportNumber = `RPT/${new Date().getFullYear()}/${String(editingRecord.id).padStart(3, '0')}`;
 
             const defaultGeotechData = {
                 boreholeLogs: [[{ depth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]],
+                maxDepths: [],
                 labTestResults: [[{ depth: '', bulkDensity: '', moistureContent: '', grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' }, atterbergLimits: { liquidLimit: '', plasticLimit: '', plasticityIndex: '' }, specificGravity: '', freeSwellIndex: '' }]],
                 sbcDetails: [[{ depth: '', footingDimension: '', useForReport: false, sbcValue: '' }]],
                 grainSizeAnalysis: [[{ depth: '', sieve1: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' }]],
@@ -463,26 +458,30 @@ const JobsManager = ({ id }) => {
                 foundationRockFormations: [],
             };
 
+            // If a report already exists, preserve its user-edited fields but refresh geotech data
+            const existingReport = linkedDocs.find(d => d.document_type === 'Report');
+            const existingContent = existingReport?.content || {};
+
             const formData = {
                 projectType: editingRecord.project_name || '',
                 projectName: editingRecord.project_name || '',
-                reportId: reportNumber,
+                reportId: existingContent.reportId || reportNumber,
                 projectDetails: editingRecord.project_name || '',
                 client: editingRecord.clients?.client_name || '',
                 clientId: editingRecord.client_id || null,
                 clientAddress: editingRecord.clients?.client_address || '',
-                latitude: '',
-                longitude: '',
+                latitude: existingContent.latitude || '',
+                longitude: existingContent.longitude || '',
                 siteId: editingRecord.job_code || '',
-                anchorId: '',
+                anchorId: existingContent.anchorId || '',
                 siteName: editingRecord.project_name || '',
                 siteAddress: editingRecord.site_address || editingRecord.project_address || '',
-                surveyDate: new Date().toISOString().split('T')[0],
-                groundWaterTable: 'Not Encountered',
-                reportCreatedOn: new Date().toISOString().split('T')[0],
-                recommendations: '',
-                depthOfFoundation: '',
-                isCodes: [
+                surveyDate: existingContent.surveyDate || new Date().toISOString().split('T')[0],
+                groundWaterTable: existingContent.groundWaterTable || 'Not Encountered',
+                reportCreatedOn: existingContent.reportCreatedOn || new Date().toISOString().split('T')[0],
+                recommendations: existingContent.recommendations || '',
+                depthOfFoundation: existingContent.depthOfFoundation || '',
+                isCodes: existingContent.isCodes || [
                     { key: 'Natural water content', value: 'IS:2720 - (Part 2) - 1973' },
                     { key: 'Grain size analysis', value: 'IS:2720 - (Part 4) - 1985' },
                     { key: 'Atterberg Limits', value: 'IS:2720 - (Part 5) - 1985' },
@@ -493,21 +492,22 @@ const JobsManager = ({ id }) => {
                     { key: 'Free Swell Index', value: 'IS:2720 - (Part 40) - 1977' },
                     { key: 'Chemical Analysis', value: 'IS:2720 - (Part 26) - 1987 & (Part 27) - 1977' },
                 ],
-                surveyReport: [
+                surveyReport: existingContent.surveyReport || [
                     { key: 'Weather condition', value: '' },
                     { key: 'Site Dimension', value: '' },
                     { key: 'Ground or seepage water', value: '' },
                 ],
-                includeSurveyReportNote: false,
-                surveyReportNote: '',
-                conclusions: [
+                includeSurveyReportNote: existingContent.includeSurveyReportNote || false,
+                surveyReportNote: existingContent.surveyReportNote || '',
+                conclusions: existingContent.conclusions || [
                     { value: 'SPT values indicate that the soil strata up to a termination depth is [VALUE].' },
                     { value: 'The [VALUE] present in the soil strata is found to be [VALUE] in nature.' },
                     { value: 'Ground water table [VALUE] at the time of investigation in the bore hole.' }
                 ],
-                recommendationTypes: { rock: false, soil: true },
-                sitePhotos: [],
-                ...(geotechData || defaultGeotechData),
+                recommendationTypes: existingContent.recommendationTypes || { rock: false, soil: true },
+                sitePhotos: existingContent.sitePhotos || [],
+                // Always use fresh geotech data from job_tests
+                ...(geotechData ? { ...geotechData, maxDepths: geotechData.maxDepths || [] } : defaultGeotechData),
             };
 
             setReportPreviewData(formData);

@@ -81,7 +81,6 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                 .eq('job_id', initialJobId);
             const flatSamples = inwards ? inwards.flatMap(i => i.material_samples || []) : [];
             setSamples(flatSamples);
-            console.log('[TestingManager] samples:', flatSamples);
             if (inError) console.error('Inward fetch error:', inError);
 
             // Fetch Existing Test Data
@@ -115,6 +114,8 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                 const { data: userData } = await supabase.from('users').select('id').eq('username', user.username).maybeSingle();
                 if (userData) userId = userData.id;
             }
+
+            console.log('[handleSaveResults] maxDepths at save time:', testResults[category]?.GeotechData?.maxDepths);
 
             // Check if record exists
             const { data: existing } = await supabase.from('job_tests')
@@ -238,12 +239,17 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                             <div className="space-y-8 mt-4">
                                                                 {(() => {
                                                                     const geotechData = testResults[cat]?.['GeotechData'] || {};
-                                                                    const { boreholeLogs = [], labTestResults = [], sbcDetails = [], grainSizeAnalysis = [] } = geotechData;
+                                                                    const { boreholeLogs = [], maxDepths = [], labTestResults = [], sbcDetails = [], grainSizeAnalysis = [] } = geotechData;
+                                                                    const processedBoreholeLogs = boreholeLogs.map((bh, idx) => {
+                                                                        const newBh = [...bh];
+                                                                        newBh.maxDepth = maxDepths[idx] || bh.maxDepth || '';
+                                                                        return newBh;
+                                                                    });
                                                                     
                                                                     return (
                                                                         <>
                                                                             {/* Borehole Logs Table */}
-                                                                            {boreholeLogs.some(bh => bh.length > 0) && (
+                                                                            {processedBoreholeLogs.some(bh => bh.length > 0) && (
                                                                                 <div className="space-y-3">
                                                                                     <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                                                                         <FlaskConical className="w-3 h-3 text-primary" /> Borehole Logs
@@ -253,6 +259,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                             <thead className="bg-gray-50 border-b">
                                                                                                 <tr>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">BH</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Max Depth of Exploration (m)</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Depth (m)</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Sampling</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Soil Type</th>
@@ -263,6 +270,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                 {boreholeLogs.map((bh, bhIdx) => bh.map((d, dIdx) => (
                                                                                                     <tr key={`bh-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
                                                                                                         <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
+                                                                                                        <td className="p-3 font-mono text-gray-500">{maxDepths[bhIdx] || '-'}</td>
                                                                                                         <td className="p-3 text-gray-900 font-medium">{d.depth || '-'}</td>
                                                                                                         <td className="p-3"><Badge variant="outline" className="text-[9px] font-bold py-0 h-4 bg-gray-50">{d.natureOfSampling || '-'}</Badge></td>
                                                                                                         <td className="p-3 text-gray-600 max-w-[200px] truncate" title={d.soilType}>{d.soilType || '-'}</td>
@@ -604,13 +612,16 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                 </h3>
                                                 <GeotechTestForm 
                                                     value={testResults[selectedCategory]?.['GeotechData'] || {}}
-                                                    onChange={(val) => setTestResults(prev => ({ 
-                                                        ...prev, 
-                                                        [selectedCategory]: {
-                                                            ...(prev[selectedCategory] || {}),
-                                                            'GeotechData': val
-                                                        }
-                                                    }))}
+                                                    onChange={(val) => {
+                                                        console.log('[GeotechTestForm onChange] maxDepths:', val?.maxDepths);
+                                                        setTestResults(prev => ({
+                                                            ...prev,
+                                                            [selectedCategory]: {
+                                                                ...(prev[selectedCategory] || {}),
+                                                                'GeotechData': val
+                                                            }
+                                                        }));
+                                                    }}
                                                 />
                                             </div>
                                         )}

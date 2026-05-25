@@ -37,8 +37,12 @@ export default function GeotechTestForm({ value, onChange }) {
     const [showSoilSuggestions, setShowSoilSuggestions] = useState(false);
 
     // Ensure all required properties exist with defaults if value is empty
+    const initialBoreholeLogs = value?.boreholeLogs || [[{ depth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]];
+    const initialMaxDepths = value?.maxDepths || [];
+
     const formData = {
-        boreholeLogs: value?.boreholeLogs || [[{ depth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]],
+        boreholeLogs: initialBoreholeLogs,
+        maxDepths: initialMaxDepths,
         labTestResults: value?.labTestResults || [[{ depth: '', bulkDensity: '', moistureContent: '', grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' }, atterbergLimits: { liquidLimit: '', plasticLimit: '', plasticityIndex: '' }, specificGravity: '', freeSwellIndex: '' }]],
         chemicalAnalysis: value?.chemicalAnalysis || [{ phValue: '', sulphates: '', chlorides: '', additionalKeys: [{ key: '', value: '' }] }],
         grainSizeAnalysis: value?.grainSizeAnalysis || [[{ depth: '', sieve1: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' }]],
@@ -83,10 +87,18 @@ export default function GeotechTestForm({ value, onChange }) {
         setFormData({ ...formData, boreholeLogs: newLogs });
     };
 
+    const handleMaxDepthChange = (boreholeIndex, val) => {
+        const parsed = val === '' ? '' : parseInt(val, 10);
+        const newMaxDepths = [...(formData.maxDepths || [])];
+        newMaxDepths[boreholeIndex] = parsed;
+        setFormData({ ...formData, maxDepths: newMaxDepths });
+    };
+
     const addBorehole = () => {
         setFormData({
             ...formData,
             boreholeLogs: [...formData.boreholeLogs, [{ depth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]],
+            maxDepths: [...(formData.maxDepths || []), ''],
             sbcDetails: [...formData.sbcDetails, [{ depth: '', sbcValue: '' }]],
             labTestResults: [...formData.labTestResults, [{ depth: '', bulkDensity: '', moistureContent: '', grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' }, atterbergLimits: { liquidLimit: '', plasticLimit: '', plasticityIndex: '' }, specificGravity: '', freeSwellIndex: '' }]],
             grainSizeAnalysis: [...formData.grainSizeAnalysis, [{ depth: '', sieve1: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' }]]
@@ -96,6 +108,8 @@ export default function GeotechTestForm({ value, onChange }) {
     const removeBorehole = (index) => {
         const newLogs = [...formData.boreholeLogs];
         newLogs.splice(index, 1);
+        const newMaxDepths = [...(formData.maxDepths || [])];
+        newMaxDepths.splice(index, 1);
         const newSbc = [...formData.sbcDetails];
         newSbc.splice(index, 1);
         const newLab = [...formData.labTestResults];
@@ -105,6 +119,7 @@ export default function GeotechTestForm({ value, onChange }) {
         setFormData({ 
             ...formData, 
             boreholeLogs: newLogs, 
+            maxDepths: newMaxDepths,
             sbcDetails: newSbc, 
             labTestResults: newLab, 
             grainSizeAnalysis: newSieve 
@@ -221,6 +236,22 @@ export default function GeotechTestForm({ value, onChange }) {
                                 <div key={boreholeIndex} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                                     <div className="flex justify-between items-center mb-4">
                                         <h4 className="text-sm font-bold text-gray-800">BH - {boreholeIndex + 1}</h4>
+                                        <div className="flex flex-col gap-1">
+                                            <Label className="text-left text-xs">
+                                                Maximum Depth of Exploration (m)
+                                            </Label>
+                                            <Input
+                                                className="h-8 text-xs w-full"
+                                                placeholder="Max Exploration Depth"
+                                                type="number"
+                                                step="1"
+                                                min="0"
+                                                value={formData.maxDepths?.[boreholeIndex] ?? ''}
+                                                onChange={(e) =>
+                                                    handleMaxDepthChange(boreholeIndex, e.target.value)
+                                                }
+                                            />
+                                        </div>
                                         {formData.boreholeLogs.length > 1 && (
                                             <Button type="button" variant="destructive" size="sm" onClick={() => removeBorehole(boreholeIndex)} className="bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60" title="Remove this entire borehole and its associated data">
                                                 <Trash2 className="w-4 h-4 mr-2" /> Remove Borehole

@@ -289,6 +289,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
                 soil: true
             },
             sitePhotos: [],
+            maxDepths: [''],
             boreholeLogs: [
                 [{
                     depth: '',
@@ -535,6 +536,12 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
                 sbc: (150 + Math.floor(Math.random() * 150)).toFixed(0)
             }))
         );
+
+        // Populate Max Depths
+        data.maxDepths = data.boreholeLogs.map(bh => {
+            const lastRow = bh[bh.length - 1];
+            return lastRow.depth;
+        });
 
         // Populate Lab Test Results
         data.labTestResults = data.boreholeLogs.map(bh =>
@@ -913,6 +920,17 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
         }
     };
 
+    const handleMaxDepthChange = (levelIndex, value) => {
+        setFormData(prev => {
+            const newMaxDepths = [...(prev.maxDepths || [])];
+            newMaxDepths[levelIndex] = value;
+            return {
+                ...prev,
+                maxDepths: newMaxDepths
+            };
+        });
+    };
+
     const addLevel = () => {
         setFormData(prev => ({
             ...prev,
@@ -932,7 +950,8 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
                 coreRecovery: '',
                 rqd: '',
                 sbc: ''
-            }]]
+            }]],
+            maxDepths: [...(prev.maxDepths || []), '']
         }));
     };
 
@@ -941,7 +960,8 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
             const newLogs = formData.boreholeLogs.filter((_, i) => i !== levelIndex);
             setFormData(prev => ({
                 ...prev,
-                boreholeLogs: newLogs
+                boreholeLogs: newLogs,
+                maxDepths: (prev.maxDepths || []).filter((_, i) => i !== levelIndex)
             }));
         }
     };
@@ -2619,17 +2639,32 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
                                                 <div key={levelIndex} className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
                                                     <div className="flex justify-between items-center mb-4">
                                                         <h4 className="text-md font-semibold text-gray-700">Borehole Log - Level {levelIndex + 1}</h4>
-                                                        {formData.boreholeLogs.length > 1 && (
-                                                            <Button
-                                                                type="button"
-                                                                variant="destructive"
-                                                                size="sm"
-                                                                onClick={() => removeLevel(levelIndex)}
-                                                                className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
-                                                            >
-                                                                <Trash2 className="w-4 h-4 mr-2" /> Remove Level
-                                                            </Button>
-                                                        )}
+                                                        <div className="flex items-end gap-4">
+                                                            <div className="flex flex-col gap-1 text-left">
+                                                                <Label className="text-left text-xs text-gray-600 font-semibold">
+                                                                    Maximum Depth of Exploration (m)
+                                                                </Label>
+                                                                <Input
+                                                                    className="h-8 text-xs w-36"
+                                                                    placeholder="Max Depth"
+                                                                    type="number"
+                                                                    step="0.1"
+                                                                    value={formData.maxDepths?.[levelIndex] || ''}
+                                                                    onChange={(e) => handleMaxDepthChange(levelIndex, e.target.value)}
+                                                                />
+                                                            </div>
+                                                            {formData.boreholeLogs.length > 1 && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="destructive"
+                                                                    size="sm"
+                                                                    onClick={() => removeLevel(levelIndex)}
+                                                                    className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 h-8"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4 mr-2" /> Remove Level
+                                                                </Button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <div className="overflow-x-auto border border-gray-200 rounded-lg bg-white mb-4">
                                                         <table className="w-full text-sm text-left">
