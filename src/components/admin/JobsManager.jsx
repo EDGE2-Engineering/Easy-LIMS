@@ -180,7 +180,7 @@ const JobsManager = ({ id }) => {
             }
             if (!userId || isNaN(userId)) return;
 
-            const { data, error } = await supabase.from('jobs').select('*, clients(client_name, gstin)').eq('id', jobId).maybeSingle();
+            const { data, error } = await supabase.from('jobs').select('*, clients(client_name, client_address, gstin)').eq('id', jobId).maybeSingle();
             if (error) throw error;
 
             if (data) {
@@ -349,7 +349,7 @@ const JobsManager = ({ id }) => {
         try {
             let query = supabase
                 .from('jobs')
-                .select('*, clients(client_name, gstin), users:created_by(full_name)')
+                .select('*, clients(client_name, client_address, gstin), users:created_by(full_name)')
                 .order('created_at', { ascending: false });
 
             if (!isAdmin() && user?.role !== ROLES.MRO.slug) {
@@ -407,7 +407,7 @@ const JobsManager = ({ id }) => {
         if (!editingRecord?.id) return;
         const jobId = editingRecord.id;
         try {
-            const { data, error } = await supabase.from('jobs').select('*, clients(client_name, gstin)').eq('id', jobId).maybeSingle();
+            const { data, error } = await supabase.from('jobs').select('*, clients(client_name, client_address, gstin)').eq('id', jobId).maybeSingle();
             if (error) throw error;
             if (data) {
                 setEditingRecord({ ...data });
@@ -465,6 +465,7 @@ const JobsManager = ({ id }) => {
 
             const formData = {
                 projectType: editingRecord.project_name || '',
+                projectName: editingRecord.project_name || '',
                 reportId: reportNumber,
                 projectDetails: editingRecord.project_name || '',
                 client: editingRecord.clients?.client_name || '',
@@ -475,7 +476,7 @@ const JobsManager = ({ id }) => {
                 siteId: editingRecord.job_code || '',
                 anchorId: '',
                 siteName: editingRecord.project_name || '',
-                siteAddress: '',
+                siteAddress: editingRecord.site_address || editingRecord.project_address || '',
                 surveyDate: new Date().toISOString().split('T')[0],
                 groundWaterTable: 'Not Encountered',
                 reportCreatedOn: new Date().toISOString().split('T')[0],
@@ -488,6 +489,9 @@ const JobsManager = ({ id }) => {
                     { key: 'Field density', value: 'IS:2720 - (Part 10) - 1993' },
                     { key: 'Specific Gravity', value: 'IS:2720 - (Part 3) - 1980' },
                     { key: 'Standard penetration test (SPT)', value: 'IS:2131 - 1981' },
+                    { key: 'Shear strength parameters', value: 'IS:2720 - (Part 13) - 1986' },
+                    { key: 'Free Swell Index', value: 'IS:2720 - (Part 40) - 1977' },
+                    { key: 'Chemical Analysis', value: 'IS:2720 - (Part 26) - 1987 & (Part 27) - 1977' },
                 ],
                 surveyReport: [
                     { key: 'Weather condition', value: '' },
@@ -498,6 +502,7 @@ const JobsManager = ({ id }) => {
                 surveyReportNote: '',
                 conclusions: [
                     { value: 'SPT values indicate that the soil strata up to a termination depth is [VALUE].' },
+                    { value: 'The [VALUE] present in the soil strata is found to be [VALUE] in nature.' },
                     { value: 'Ground water table [VALUE] at the time of investigation in the bore hole.' }
                 ],
                 recommendationTypes: { rock: false, soil: true },
@@ -998,21 +1003,6 @@ if (editingRecord) {
                             </DialogContent>
                         </Dialog>
 
-                        {/* Report Preview Modal */}
-                        {showingReportPreview && reportPreviewData && (
-                            <ReportPreview
-                                formData={reportPreviewData}
-                                onClose={() => {
-                                    setShowingReportPreview(false);
-                                    if (!linkedDocs.find(d => d.document_type === 'Report')) {
-                                        generateReportActionRef.current = null;
-                                    }
-                                }}
-                                onSave={generateReportActionRef.current ? handleSaveReport : undefined}
-                                isSaving={isSavingReport}
-                            />
-                        )}
-
                         {/* Linked Documents Summary */}
                         {canModify && linkedDocs.length > 0 && (
                             <div className="p-4 bg-white rounded-sm border border-gray-100 shadow-sm">
@@ -1202,6 +1192,20 @@ if (editingRecord) {
                             {isSaving ? <Loader2 className="animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Job Details
                         </Button>
                     </div>
+                )}
+
+                {showingReportPreview && reportPreviewData && (
+                    <ReportPreview
+                        formData={reportPreviewData}
+                        onClose={() => {
+                            setShowingReportPreview(false);
+                            if (!linkedDocs.find(d => d.document_type === 'Report')) {
+                                generateReportActionRef.current = null;
+                            }
+                        }}
+                        onSave={generateReportActionRef.current ? handleSaveReport : undefined}
+                        isSaving={isSavingReport}
+                    />
                 )}
             </div>
         );

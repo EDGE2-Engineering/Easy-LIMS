@@ -334,7 +334,8 @@
   }
 
   /* Key fix: Hide everything except the print root */
-  #printable-quote-root {
+  #printable-quote-root,
+  #printable-report-root {
     visibility: visible;
     position: absolute;
     left: 0;
@@ -347,7 +348,8 @@
   }
 
   /* Ensure children are visible */
-  #printable-quote-root * {
+  #printable-quote-root *,
+  #printable-report-root * {
     visibility: visible;
   }
 
