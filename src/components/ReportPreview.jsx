@@ -520,9 +520,10 @@ const BoreholeLogTableBlock = ({ block }) => {
           ) : (
             logs.map((row, idx) => {
               const prevDepth = idx === 0 ? '0.0' : (logs[idx - 1]?.depth ?? '-');
+              const isDS = row.natureOfSampling === 'DS';
               const spt2n = Number(row.spt2);
               const spt3n = Number(row.spt3);
-              const nValue = row.natureOfSampling === 'SPT' && !isNaN(spt2n) && !isNaN(spt3n)
+              const nValue = !isDS && row.natureOfSampling === 'SPT' && !isNaN(spt2n) && !isNaN(spt3n)
                 ? spt2n + spt3n
                 : '-';
               return (
@@ -532,9 +533,9 @@ const BoreholeLogTableBlock = ({ block }) => {
                   <td className="border border-gray-400 px-1 py-0.5">{row.natureOfSampling || '-'}</td>
                   <td className="border border-gray-400 px-1 py-0.5">{prevDepth}</td>
                   <td className="border border-gray-400 px-1 py-0.5">{row.depth || '-'}</td>
-                  <td className="border border-gray-400 px-1 py-0.5">{row.spt1 || '-'}</td>
-                  <td className="border border-gray-400 px-1 py-0.5">{row.spt2 || '-'}</td>
-                  <td className="border border-gray-400 px-1 py-0.5">{row.spt3 || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-0.5">{isDS ? '-' : (row.spt1 ?? '-')}</td>
+                  <td className="border border-gray-400 px-1 py-0.5">{isDS ? '-' : (row.spt2 ?? '-')}</td>
+                  <td className="border border-gray-400 px-1 py-0.5">{isDS ? '-' : (row.spt3 ?? '-')}</td>
                   <td className="border border-gray-400 px-1 py-0.5 font-semibold">{nValue}</td>
                   <td className="border border-gray-400 px-1 py-0.5">{row.coreRecovery || '-'}</td>
                   <td className="border border-gray-400 px-1 py-0.5">{row.rqd || '-'}</td>
@@ -852,9 +853,9 @@ const ReportPreview = forwardRef(function ReportPreview(
     const tocSections = [];
     // tocSections.push({ title: 'Cover Page', pageNumber: 1 });
     // tocSections.push({ title: 'Table of Contents', pageNumber: 2 });
-    tocSections.push({ title: 'Project Details & IS Codes', pageNumber: 3 });
+    tocSections.push({ title: 'Project Details', pageNumber: 3 });
 
-    const seenTitles = new Set(['Cover Page', 'Table of Contents', 'Project Details & IS Codes']);
+    const seenTitles = new Set(['Cover Page', 'Table of Contents', 'Project Details']);
 
     shiftedPages.slice(1).forEach((page) => {
 
