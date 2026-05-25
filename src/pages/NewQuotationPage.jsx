@@ -53,6 +53,7 @@ import { DOCUMENT_ITEM_TYPE_KEYS, DOCUMENT_ITEM_TYPE_OPTIONS, getDocumentItemTyp
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { sendTelegramNotification } from '@/lib/notifier';
+import { A4_PRINT_PAGE_STYLE } from '@/utils/a4PrintStyles';
 
 
 // Helper function to convert number to words (Indian numbering system)
@@ -786,6 +787,7 @@ const NewQuotationPage = () => {
     const handlePrint = useReactToPrint({
         contentRef: componentRef,
         documentTitle: `${documentType}_${quoteDetails.quoteNumber}`,
+        pageStyle: A4_PRINT_PAGE_STYLE,
     });
 
     const triggerPrint = async () => {
@@ -1719,8 +1721,8 @@ const NewQuotationPage = () => {
                                             {/* Header - only on first page */}
                                             {page.isFirstPage && (
                                                 <>
-                                                    <div className="flex justify-between items-start border-b pb-4 mb-2">
-                                                        <div className="w-[30%]">
+                                                    <div className="flex justify-between items-start gap-2 border-b pb-4 mb-2 min-w-0 max-w-full overflow-hidden">
+                                                        <div className="w-[30%] min-w-0 shrink">
                                                             <h3 className="text-lg font-bold text-gray-900 tracking-tight">
                                                                 {documentType.toUpperCase()}
                                                             </h3>
@@ -1732,8 +1734,8 @@ const NewQuotationPage = () => {
                                                             </p>
                                                         </div>
 
-                                                        <div className="w-[70%] flex items-center gap-4 text-right">
-                                                            <div className="text-right">
+                                                        <div className="w-[70%] min-w-0 shrink flex items-center gap-2 text-right">
+                                                            <div className="text-right min-w-0 flex-1">
                                                                 <h2 className="font-bold text-lg">
                                                                     EDGE2 Engineering Solutions India Pvt. Ltd.
                                                                 </h2>
@@ -1758,7 +1760,7 @@ const NewQuotationPage = () => {
                                                             <img
                                                                 src={`${import.meta.env.BASE_URL}edge2-logo.png`}
                                                                 alt="EDGE2 Logo"
-                                                                className="w-20 h-20 object-contain"
+                                                                className="w-16 h-16 object-contain flex-shrink-0"
                                                             />
                                                         </div>
                                                     </div>
@@ -1812,7 +1814,7 @@ const NewQuotationPage = () => {
                                             )}
 
                                             {/* Table */}
-                                            <table className="w-full mb-8 mt-2">
+                                            <table className="w-full table-fixed mb-8 mt-2">
                                                 <thead>
                                                     <tr>
                                                         <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs w-5">Sl No.</th>

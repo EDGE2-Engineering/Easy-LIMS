@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { X, Printer } from 'lucide-react';
 import { buildReportPages, formatDisplayValue } from '@/utils/reportPreviewUtils';
+import { A4_PRINT_PAGE_STYLE } from '@/utils/a4PrintStyles';
 import './ReportPreview.css';
 
 const COMPANY_NAME = 'EDGE2 Engineering Solutions India Pvt. Ltd.';
@@ -35,8 +36,8 @@ const ReportWatermark = () => (
 );
 
 const ReportFullHeader = ({ reportId, reportDate }) => (
-  <div className="flex justify-between items-start border-b border-gray-200 pb-4 mb-2">
-    <div className="w-[30%]">
+  <div className="flex justify-between items-start gap-2 border-b border-gray-200 pb-4 mb-2 min-w-0 max-w-full overflow-hidden">
+    <div className="w-[30%] min-w-0 shrink">
       <h3 className="text-lg font-bold text-gray-900 tracking-tight">
         GEOTECHNICAL REPORT
       </h3>
@@ -50,8 +51,8 @@ const ReportFullHeader = ({ reportId, reportDate }) => (
           : format(new Date(), 'dd MMM yyyy')}
       </p>
     </div>
-    <div className="w-[70%] flex items-center gap-4 text-right">
-      <div className="text-right">
+    <div className="w-[70%] min-w-0 shrink flex items-center gap-2 text-right">
+      <div className="text-right min-w-0 flex-1">
         <h2 className="font-bold text-lg text-gray-900">{COMPANY_NAME}</h2>
         <p className="text-gray-600 text-xs">
           Shivaganga Arcade, B35/130, 6th Cross, 6th Block,
@@ -76,7 +77,7 @@ const ReportFullHeader = ({ reportId, reportDate }) => (
           </span>
         </p>
       </div>
-      <img src={LOGO_SRC} alt="EDGE2 Logo" className="w-20 h-20 object-contain flex-shrink-0" />
+      <img src={LOGO_SRC} alt="EDGE2 Logo" className="w-16 h-16 object-contain flex-shrink-0" />
     </div>
   </div>
 );
@@ -294,6 +295,7 @@ const ReportPreview = forwardRef(function ReportPreview(
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: reportId || 'Geotechnical-Report',
+    pageStyle: A4_PRINT_PAGE_STYLE,
   });
 
   useImperativeHandle(ref, () => ({ print: handlePrint }));
@@ -366,7 +368,7 @@ const ReportPreview = forwardRef(function ReportPreview(
                   )}
                   {page.blocks.map((block, i) => renderBlock(block, i))}
                 </div>
-                <div className="a4-page-footer relative z-[1]">
+                <div className="a4-page-footer">
                   <span>{COMPANY_NAME}</span>
                   <span>
                     Report {reportId ? `#${reportId}` : '#Pending'} | Page{' '}
