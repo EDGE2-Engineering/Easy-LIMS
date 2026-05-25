@@ -160,6 +160,15 @@ fun JobItem(job: Job, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+
+            if (!job.projectAddress.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = job.projectAddress,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -175,6 +184,7 @@ fun JobItem(job: Job, onClick: () -> Unit) {
 @Composable
 fun JobDialog(job: Job?, onDismiss: () -> Unit, onSave: (Job) -> Unit) {
     var projectName by remember { mutableStateOf(job?.projectName ?: "") }
+    var location by remember { mutableStateOf(job?.projectAddress ?: "") }
     var status by remember { mutableStateOf(job?.status ?: "JOB_CREATED") }
 
     val statuses = listOf("JOB_CREATED", "UNDER_TESTING", "TESTING_COMPLETE", "JOB_COMPLETE")
@@ -188,6 +198,12 @@ fun JobDialog(job: Job?, onDismiss: () -> Unit, onSave: (Job) -> Unit) {
                     value = projectName,
                     onValueChange = { projectName = it },
                     label = { Text("Project Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = location,
+                    onValueChange = { location = it },
+                    label = { Text("Location") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 
@@ -217,6 +233,7 @@ fun JobDialog(job: Job?, onDismiss: () -> Unit, onSave: (Job) -> Unit) {
                                 jobId = job?.jobId,
                                 clientId = job?.clientId,
                                 projectName = projectName,
+                                projectAddress = location.ifBlank { null },
                                 status = status,
                                 createdAt = job?.createdAt,
                                 updatedAt = null, // Will be set by Supabase

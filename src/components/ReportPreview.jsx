@@ -244,8 +244,8 @@ const ProjectDetailsBlock = ({ data }) => {
                 ) : null}
                 <td className="border border-gray-400 px-1 py-1 text-gray-800">100.0</td>
                 <td className="border border-gray-400 px-1 py-1 text-gray-800">{getBoreholeMaxDepth(bh, idx)}</td>
-                <td className="border border-gray-400 px-1 py-1 text-gray-800">{data.latitude || '-'}</td>
-                <td className="border border-gray-400 px-1 py-1 text-gray-800">{data.longitude || '-'}</td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">{(data.latitudes && data.latitudes[idx] != null && data.latitudes[idx] !== '') ? data.latitudes[idx] : (data.latitude || '-')}</td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">{(data.longitudes && data.longitudes[idx] != null && data.longitudes[idx] !== '') ? data.longitudes[idx] : (data.longitude || '-')}</td>
                 <td className="border border-gray-400 px-1 py-1 text-gray-800">{safeFormatDate(data.surveyDate)}</td>
                 <td className="border border-gray-400 px-1 py-1 text-gray-800">{safeFormatDate(data.surveyDate)}</td>
               </tr>
@@ -412,6 +412,167 @@ const GeotechnicalExplorationBlock = ({ data }) => {
 </table>
   <p className="text-xs text-gray-800 w-full ">*All test results have been compiled and are presented in the Annexure-II of this report.</p>
 
+    </div>
+  );
+};
+
+
+const BoreholeLogTableBlock = ({ block }) => {
+  const {
+    boreholeNumber,
+    logs = [],
+    maxDepth,
+    latitude,
+    longitude,
+    surveyDate,
+    projectName,
+    location,
+  } = block;
+
+  const bhLabel = `BH-${String(boreholeNumber).padStart(2, '0')}`;
+
+  const safeDate = (dateStr) => {
+    if (!dateStr) return 'NA';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return format(d, 'dd-MM-yyyy');
+    } catch {
+      return dateStr;
+    }
+  };
+
+  return (
+    <div className="text-[9px] leading-tight">
+      <div className="text-center font-bold text-[11px] uppercase tracking-wide border border-gray-400 py-0 mb-0 bg-[#fcf8f2]">
+        BORE LOG DATA SHEET
+      </div>
+
+      <table className="w-full border-collapse border border-gray-400 text-[9px]">
+        <tbody>
+          <tr>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold w-[18%]">Location:</td>
+            <td className="border border-gray-400 px-1 py-0.5 w-[32%]">{location || 'NA'}</td>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold w-[20%]">Method of Boring:</td>
+            <td className="border border-gray-400 px-1 py-0.5 w-[30%]">Manual-Augering / Rotary</td>
+          </tr>
+          <tr>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold">Borehole No:</td>
+            <td className="border border-gray-400 px-1 py-0.5 font-semibold">{bhLabel}</td>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold">Borehole Dia.:</td>
+            <td className="border border-gray-400 px-1 py-0.5">150mm / NX</td>
+          </tr>
+          <tr>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold">Type of Structure:</td>
+            <td className="border border-gray-400 px-1 py-0.5">{projectName || 'NA'}</td>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold">Start Date:</td>
+            <td className="border border-gray-400 px-1 py-0.5">{safeDate(surveyDate)}</td>
+          </tr>
+          <tr>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold">Termination Depth (m):</td>
+            <td className="border border-gray-400 px-1 py-0.5">{maxDepth || 'NA'}</td>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold">Completion Date:</td>
+            <td className="border border-gray-400 px-1 py-0.5">{safeDate(surveyDate)}</td>
+          </tr>
+          <tr>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold">Ground R.L (m):</td>
+            <td className="border border-gray-400 px-1 py-0.5">100.000</td>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold">Latitude (°):</td>
+            <td className="border border-gray-400 px-1 py-0.5">{latitude || 'NA'}</td>
+          </tr>
+          <tr>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold">G.W.T (m):</td>
+            <td className="border border-gray-400 px-1 py-0.5">Not Encountered</td>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold">Longitude (°):</td>
+            <td className="border border-gray-400 px-1 py-0.5">{longitude || 'NA'}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table className="w-full border-collapse border border-gray-400 text-[9px] mt-0">
+        <thead>
+          <tr className="bg-[#fcf8f2] text-center">
+            <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'4%'}}>S.No.</th>
+            <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'18%'}}>Strata Description</th>
+            <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'7%'}}>Sample Type</th>
+            <th className="border border-gray-400 px-1 py-1" colSpan="2" style={{width:'12%'}}>Depth of Drilling (m)</th>
+            <th className="border border-gray-400 px-1 py-1" colSpan="3" style={{width:'18%'}}>SPT (No. of Blows)</th>
+            <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'8%'}}>N-Value (IS-2131)</th>
+            <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'6%'}}>CR (%)</th>
+            <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'6%'}}>RQD (%)</th>
+            <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'13%'}}>Remarks</th>
+          </tr>
+          <tr className="bg-[#fcf8f2] text-center">
+            <th className="border border-gray-400 px-1 py-0.5">From</th>
+            <th className="border border-gray-400 px-1 py-0.5">To</th>
+            <th className="border border-gray-400 px-1 py-0.5">0–15 cm</th>
+            <th className="border border-gray-400 px-1 py-0.5">15–30 cm</th>
+            <th className="border border-gray-400 px-1 py-0.5">30–45 cm</th>
+          </tr>
+        </thead>
+        <tbody>
+          {logs.length === 0 ? (
+            <tr>
+              <td colSpan="12" className="border border-gray-400 px-2 py-2 text-center text-gray-400 italic">
+                No borehole data recorded.
+              </td>
+            </tr>
+          ) : (
+            logs.map((row, idx) => {
+              const prevDepth = idx === 0 ? '0.0' : (logs[idx - 1]?.depth ?? '-');
+              const spt2n = Number(row.spt2);
+              const spt3n = Number(row.spt3);
+              const nValue = row.natureOfSampling === 'SPT' && !isNaN(spt2n) && !isNaN(spt3n)
+                ? spt2n + spt3n
+                : '-';
+              return (
+                <tr key={idx} className="text-center">
+                  <td className="border border-gray-400 px-1 py-0.5">{idx + 1}</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-left">{row.soilType || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-0.5">{row.natureOfSampling || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-0.5">{prevDepth}</td>
+                  <td className="border border-gray-400 px-1 py-0.5">{row.depth || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-0.5">{row.spt1 || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-0.5">{row.spt2 || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-0.5">{row.spt3 || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-0.5 font-semibold">{nValue}</td>
+                  <td className="border border-gray-400 px-1 py-0.5">{row.coreRecovery || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-0.5">{row.rqd || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-left">{row.waterTable ? 'GWT observed' : ''}</td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+
+      <table className="w-full border-collapse border border-gray-400 text-[8px] mt-0">
+        <tbody>
+          <tr>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold" colSpan="2">Description:</td>
+            <td className="border border-gray-400 px-1 py-0.5">SPT – Standard Penetration Test</td>
+            <td className="border border-gray-400 px-1 py-0.5">CR – Core Recovery</td>
+            <td className="border border-gray-400 px-1 py-0.5">Ground R.L – Ground Reduced Level</td>
+            <td className="border border-gray-400 px-1 py-0.5">WS – Washed Sample</td>
+          </tr>
+          <tr>
+            <td className="border border-gray-400 px-1 py-0.5" colSpan="2"></td>
+            <td className="border border-gray-400 px-1 py-0.5">DS – Disturbed Sample</td>
+            <td className="border border-gray-400 px-1 py-0.5">RQD – Rock Quality Designation</td>
+            <td className="border border-gray-400 px-1 py-0.5">G.W.T – Ground Water Level</td>
+            <td className="border border-gray-400 px-1 py-0.5">NA – Not Available</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table className="w-full border-collapse border border-gray-400 text-[9px] mt-0">
+        <tbody>
+          <tr>
+            <td className="border border-gray-400 px-2 py-2 w-1/2">Site Engineer's Signature: _______________</td>
+            <td className="border border-gray-400 px-2 py-2 text-right">Client's Signature: _______________</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 };
@@ -614,6 +775,8 @@ const CoverPageBlock = ({ data }) => {
 
 const renderBlock = (block, index) => {
   switch (block.type) {
+    case 'borehole-log-sheet':
+      return <BoreholeLogTableBlock key={index} block={block} />;
     case 'project-details':
       return <ProjectDetailsBlock key={index} data={block.data} />;
     case 'geotechnical-exploration':

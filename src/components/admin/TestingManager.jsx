@@ -239,7 +239,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                             <div className="space-y-8 mt-4">
                                                                 {(() => {
                                                                     const geotechData = testResults[cat]?.['GeotechData'] || {};
-                                                                    const { boreholeLogs = [], maxDepths = [], labTestResults = [], sbcDetails = [], grainSizeAnalysis = [] } = geotechData;
+                                                                    const { boreholeLogs = [], maxDepths = [], latitudes = [], longitudes = [], labTestResults = [], sbcDetails = [], grainSizeAnalysis = [] } = geotechData;
                                                                     const processedBoreholeLogs = boreholeLogs.map((bh, idx) => {
                                                                         const newBh = [...bh];
                                                                         newBh.maxDepth = maxDepths[idx] || bh.maxDepth || '';
@@ -260,6 +260,8 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                 <tr>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">BH</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Max Depth of Exploration (m)</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Latitude</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Longitude</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Depth (m)</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Sampling</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Soil Type</th>
@@ -271,6 +273,8 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                     <tr key={`bh-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
                                                                                                         <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
                                                                                                         <td className="p-3 font-mono text-gray-500">{maxDepths[bhIdx] || '-'}</td>
+                                                                                                        <td className="p-3 font-mono text-gray-500">{latitudes[bhIdx] || '-'}</td>
+                                                                                                        <td className="p-3 font-mono text-gray-500">{longitudes[bhIdx] || '-'}</td>
                                                                                                         <td className="p-3 text-gray-900 font-medium">{d.depth || '-'}</td>
                                                                                                         <td className="p-3"><Badge variant="outline" className="text-[9px] font-bold py-0 h-4 bg-gray-50">{d.natureOfSampling || '-'}</Badge></td>
                                                                                                         <td className="p-3 text-gray-600 max-w-[200px] truncate" title={d.soilType}>{d.soilType || '-'}</td>

@@ -12,6 +12,8 @@ data class Job(
     val clientId: String? = null,
     @SerialName("project_name")
     val projectName: String? = null,
+    @SerialName("project_address")
+    val projectAddress: String? = null,
     val status: String = "JOB_CREATED",
     @SerialName("created_at")
     val createdAt: String? = null,

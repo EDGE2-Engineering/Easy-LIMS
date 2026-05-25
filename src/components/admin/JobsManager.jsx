@@ -447,6 +447,8 @@ const JobsManager = ({ id }) => {
             const defaultGeotechData = {
                 boreholeLogs: [[{ depth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]],
                 maxDepths: [],
+                latitudes: [],
+                longitudes: [],
                 labTestResults: [[{ depth: '', bulkDensity: '', moistureContent: '', grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' }, atterbergLimits: { liquidLimit: '', plasticLimit: '', plasticityIndex: '' }, specificGravity: '', freeSwellIndex: '' }]],
                 sbcDetails: [[{ depth: '', footingDimension: '', useForReport: false, sbcValue: '' }]],
                 grainSizeAnalysis: [[{ depth: '', sieve1: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' }]],
@@ -465,6 +467,7 @@ const JobsManager = ({ id }) => {
             const formData = {
                 projectType: editingRecord.project_name || '',
                 projectName: editingRecord.project_name || '',
+                location: editingRecord.project_address || existingContent.location || '',
                 reportId: existingContent.reportId || reportNumber,
                 projectDetails: editingRecord.project_name || '',
                 client: editingRecord.clients?.client_name || '',
@@ -507,7 +510,12 @@ const JobsManager = ({ id }) => {
                 recommendationTypes: existingContent.recommendationTypes || { rock: false, soil: true },
                 sitePhotos: existingContent.sitePhotos || [],
                 // Always use fresh geotech data from job_tests
-                ...(geotechData ? { ...geotechData, maxDepths: geotechData.maxDepths || [] } : defaultGeotechData),
+                ...(geotechData ? {
+                    ...geotechData,
+                    maxDepths: geotechData.maxDepths?.length ? geotechData.maxDepths : (existingContent.maxDepths || []),
+                    latitudes: geotechData.latitudes?.length ? geotechData.latitudes : (existingContent.latitudes || []),
+                    longitudes: geotechData.longitudes?.length ? geotechData.longitudes : (existingContent.longitudes || []),
+                } : defaultGeotechData),
             };
 
             setReportPreviewData(formData);
@@ -611,6 +619,7 @@ const JobsManager = ({ id }) => {
             const payload = {
                 client_id: clientId,
                 project_name: editingRecord.project_name || '',
+                project_address: editingRecord.project_address || null,
                 work_order_id: editingRecord.work_order_id || null,
                 status: editingRecord.status,
                 updated_at: new Date().toISOString()
@@ -1079,6 +1088,18 @@ if (editingRecord) {
                                             value={editingRecord.project_name || ''}
                                             onChange={e => setEditingRecord({ ...editingRecord, project_name: e.target.value })}
                                             placeholder="Enter project name"
+                                        />
+                                    )}
+                                </div>
+                                <div className="space-y-2 md:col-span-2 lg:col-span-3">
+                                    <Label className="text-xs text-gray-700 font-semibold">Location</Label>
+                                    {!canModify && <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">{editingRecord.project_address || ''}</p>}
+                                    {canModify && (
+                                        <Input
+                                            className="text-xs h-10 border-gray-200 rounded-xl bg-white"
+                                            value={editingRecord.project_address || ''}
+                                            onChange={e => setEditingRecord({ ...editingRecord, project_address: e.target.value })}
+                                            placeholder="Enter project location"
                                         />
                                     )}
                                 </div>

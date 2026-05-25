@@ -103,6 +103,8 @@ export const normalizeReportData = (formData) => ({
     : '',
   boreholeLogs: formData.boreholeLogs || [],
   maxDepths: formData.maxDepths || [],
+  latitudes: formData.latitudes || [],
+  longitudes: formData.longitudes || [],
   labTestResults: formData.labTestResults || [],
   grainSizeAnalysis: formData.grainSizeAnalysis || [],
   sbcDetails: formData.sbcDetails || [],
@@ -371,6 +373,27 @@ export const buildReportPages = (formData) => {
     isContinuation: false,
     sectionTitle: 'Geotechnical Exploration',
     blocks: [{ type: 'geotechnical-exploration', data }],
+  });
+
+  // One Bore Log Data Sheet page per borehole
+  data.boreholeLogs.forEach((levelLogs, i) => {
+    pages.push({
+      isFirstPage: false,
+      isContinuation: false,
+      sectionTitle: `Bore Log Data Sheet – BH-${String(i + 1).padStart(2, '0')}`,
+      blocks: [{
+        type: 'borehole-log-sheet',
+        boreholeIndex: i,
+        boreholeNumber: i + 1,
+        logs: levelLogs,
+        maxDepth: data.maxDepths?.[i] ?? '',
+        latitude: data.latitudes?.[i] ?? '',
+        longitude: data.longitudes?.[i] ?? '',
+        surveyDate: data.surveyDate || '',
+        projectName: data.projectName || data.projectDetails || '',
+        location: data.siteAddress || data.siteName || '',
+      }],
+    });
   });
 
   addKvSectionPages(pages, 'Survey Report', data.surveyReport);
