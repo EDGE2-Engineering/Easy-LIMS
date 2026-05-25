@@ -10,7 +10,7 @@ import { useReactToPrint } from 'react-to-print';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { X, Printer } from 'lucide-react';
-import { buildReportPages, formatDisplayValue } from '@/utils/reportPreviewUtils';
+import { buildReportPages, formatDisplayValue, formatKey } from '@/utils/reportPreviewUtils';
 import { A4_PRINT_PAGE_STYLE } from '@/utils/a4PrintStyles';
 import './ReportPreview.css';
 
@@ -90,59 +90,165 @@ const ReportContinuedHeader = ({ title }) => (
   </div>
 );
 
-const ProjectDetailsBlock = ({ data }) => (
-  <div className="mb-4">
-    <div className="grid grid-cols-2 gap-6 mb-2 text-sm py-0 border-b border-gray-200 pb-3">
-      <div className="space-y-1">
-        <h3 className="text-gray-500 font-semibold uppercase tracking-wide border-b border-gray-100 pb-1 mb-2 text-xs">
-          Client
-        </h3>
-        <p className="font-bold text-gray-900 text-xs">{data.client || '-'}</p>
-        <p className="text-gray-600 whitespace-pre-wrap text-xs">{data.clientAddress || '-'}</p>
-      </div>
-      <div className="space-y-1 border-l border-gray-200 pl-4">
-        <h3 className="text-gray-500 font-semibold uppercase tracking-wide border-b border-gray-100 pb-1 mb-2 text-xs">
-          Project / Site
-        </h3>
-        <p className="font-bold text-gray-900 text-xs">{data.projectName || '-'}</p>
-        <p className="text-gray-600 text-xs">
-          <span className="font-semibold">Site ID:</span> {data.siteId || '-'}
-        </p>
-        <p className="text-gray-600 text-xs">
-          <span className="font-semibold">Site Name:</span> {data.siteName || '-'}
-        </p>
-        <p className="text-gray-600 whitespace-pre-wrap text-xs">{data.siteAddress || '-'}</p>
-      </div>
-    </div>
-    <div className="grid grid-cols-3 gap-4 text-xs text-gray-600">
-      <p>
-        <span className="font-semibold text-gray-700">Survey Date:</span>{' '}
-        {data.surveyDate
-          ? format(new Date(data.surveyDate), 'dd MMM yyyy')
-          : '-'}
-      </p>
-      <p>
-        <span className="font-semibold text-gray-700">Ground Water:</span>{' '}
-        {data.groundWaterTable || '-'}
-      </p>
-      <p>
-        <span className="font-semibold text-gray-700">Coordinates:</span>{' '}
-        {[data.latitude, data.longitude].filter(Boolean).join(', ') || '-'}
-      </p>
-      {data.anchorId && (
-        <p>
-          <span className="font-semibold text-gray-700">Anchor ID:</span> {data.anchorId}
-        </p>
-      )}
-      {data.depthOfFoundation && (
-        <p>
-          <span className="font-semibold text-gray-700">Depth of Foundation:</span>{' '}
-          {data.depthOfFoundation}
-        </p>
-      )}
-    </div>
+const Edge2Stamp = () => (
+  <div className="absolute bottom-4 right-4 pointer-events-none opacity-80" style={{ transform: 'rotate(-5deg)', zIndex: 10 }}>
+    <svg width="100" height="100" viewBox="0 0 100 100" className="text-blue-700/80">
+      <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="3 1" />
+      <circle cx="50" cy="50" r="34" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path id="stamp-text-path-1" d="M 12 50 A 38 38 0 0 1 88 50" fill="none" />
+      <path id="stamp-text-path-2" d="M 88 50 A 38 38 0 0 1 12 50" fill="none" />
+      
+      <text fontFamily="monospace" fontSize="6.5" fontWeight="bold" fill="currentColor">
+        <textPath href="#stamp-text-path-1" startOffset="50%" textAnchor="middle">
+          EDGE2 ENGINEERING SOLUTIONS
+        </textPath>
+      </text>
+      <text fontFamily="monospace" fontSize="6.5" fontWeight="bold" fill="currentColor">
+        <textPath href="#stamp-text-path-2" startOffset="50%" textAnchor="middle">
+          INDIA PRIVATE LIMITED
+        </textPath>
+      </text>
+      
+      <circle cx="50" cy="50" r="2" fill="currentColor" />
+      <text x="50" y="47" fontFamily="monospace" fontSize="6" fontWeight="bold" textAnchor="middle" fill="currentColor">
+        BANGALORE
+      </text>
+      <text x="50" y="57" fontFamily="monospace" fontSize="6.5" fontWeight="bold" textAnchor="middle" fill="currentColor">
+        560056
+      </text>
+    </svg>
   </div>
 );
+
+const ContentPageHeader = () => (
+  <div className="flex items-center gap-3 border-b-2 border-blue-900 justify-center pt-4 pb-2 mb-4 w-full mt-[-15px] relative z-20">
+    <img src={LOGO_SRC} alt="EDGE2 Logo" className="h-5 object-contain" />
+    <h3 className="text-sm font-black text-blue-950 uppercase tracking-wider">
+      Edge2 Engineering Solutions India Private Limited
+    </h3>
+  </div>
+);
+
+const ProjectDetailsBlock = ({ data }) => {
+  const safeFormatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return format(d, 'dd-MM-yy');
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  const getBoreholeMaxDepth = (bh) => {
+    if (!Array.isArray(bh) || bh.length === 0) return '10.0';
+    const lastRow = bh[bh.length - 1];
+    const depthStr = lastRow.depth || '';
+    if (depthStr.includes('-')) {
+      const parts = depthStr.split('-');
+      const val = parts[parts.length - 1].trim();
+      return parseFloat(val) ? val : '10.0';
+    }
+    return parseFloat(depthStr) ? depthStr : '10.0';
+  };
+
+  const numBoreholes = data.boreholeLogs?.length || 1;
+
+  return (
+    <div className="relative pb-24 text-left">
+      {/* 1.0 INTRODUCTION */}
+      <div className="mb-6">
+        <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
+          1.0 INTRODUCTION
+        </h3>
+        <p className="text-xs text-gray-800 leading-relaxed text-justify">
+          M/s. <strong className="text-gray-900">{data.client || 'Client Name'}</strong> entrusted Geotechnical investigation work to M/s. <strong className="text-gray-900">Edge2 Engineering Solutions India Private Limited</strong> for the proposed Geotechnical Investigation for &ldquo;<strong className="text-gray-900">{data.projectName || data.projectDetails || 'Proposed Construction'}</strong>&rdquo; at the site <strong className="text-gray-900">{data.siteAddress || data.location || 'Site Location'}</strong>. The purpose of this investigation is to determine the surface conditions, subsurface conditions, groundwater table levels and collect representative soil/rock and water samples for testing of physical and mechanical properties. Based on this field and laboratory test results, the properties of soil available at site are concluded. This report includes all relevant field and laboratory test data, as well as the conclusions derived from their analysis.
+        </p>
+      </div>
+
+      {/* 2.0 SITE DETAILS */}
+      <div className="mb-6">
+        <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
+          2.0 SITE DETAILS
+        </h3>
+        <p className="text-xs text-gray-800 leading-relaxed mb-3">
+          The site information observed during the investigation are summarized below for reference.
+        </p>
+        <h4 className="text-xs font-bold text-blue-800 mb-2">
+          2.1 Details of Boreholes:
+        </h4>
+        
+        <table className="w-full text-[10px] border-collapse border border-gray-400 text-center">
+          <thead>
+            <tr className="bg-[#fcf8f2] border-b border-gray-400">
+              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[5%]" rowSpan="2">S. No</th>
+              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[10%]" rowSpan="2">Borehole No.</th>
+              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[25%]" rowSpan="2">Type of Structure/ Location</th>
+              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[12%]" rowSpan="2">*Ground R.L (m)</th>
+              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[15%]" rowSpan="2">Max. Depth of Exploration (m)</th>
+              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 w-[20%]" colSpan="2">Co-ordinates</th>
+              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[10%]" rowSpan="2">Start Date</th>
+              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[10%]" rowSpan="2">Completion Date</th>
+            </tr>
+            <tr className="bg-[#fcf8f2] border-b border-gray-400">
+              <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900">Latitude (°)</th>
+              <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900">Longitude (°)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(data.boreholeLogs || []).map((bh, idx) => (
+              <tr key={idx} className="border-b border-gray-300">
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">{idx + 1}</td>
+                <td className="border border-gray-400 px-1 py-1 font-semibold text-gray-900">
+                  BH-{String(idx + 1).padStart(2, '0')}
+                </td>
+                {idx === 0 ? (
+                  <td className="border border-gray-400 px-2 py-1 text-gray-800 text-xs align-middle" rowSpan={numBoreholes}>
+                    {data.projectName || data.projectDetails || 'Project Site'}
+                  </td>
+                ) : null}
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">100.000</td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">{getBoreholeMaxDepth(bh)}</td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">{data.latitude || '-'}</td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">{data.longitude || '-'}</td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">{safeFormatDate(data.surveyDate)}</td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">{safeFormatDate(data.surveyDate)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="text-[9px] text-gray-500 mt-1 italic">*Ground R.L values are assumed as 100.000m</p>
+      </div>
+
+      {/* 3.0 SCOPE OF PRESENT WORK */}
+      <div className="mb-6">
+        <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
+          3.0 SCOPE OF PRESENT WORK
+        </h3>
+        <p className="text-xs text-gray-800 leading-relaxed mb-2">
+          As per client requirement, {numBoreholes} No's of boreholes were proposed for soil investigation.
+        </p>
+        <p className="text-xs text-gray-800 leading-relaxed mb-2">
+          To achieve the above objectives, the scope includes the following:
+        </p>
+        <ul className="list-disc list-inside space-y-1.5 text-xs text-gray-800 pl-2">
+          <li className="leading-relaxed pl-1">
+            Mobilization of equipment to site and demobilization of the same on completion of work.
+          </li>
+          <li className="leading-relaxed pl-1">
+            Drilling {numBoreholes} no. of boreholes as per client requirement.
+          </li>
+          <li className="leading-relaxed pl-1">
+            Conducting standard penetration test at 1.0/1.5 m depth intervals.
+          </li>
+        </ul>
+      </div>
+
+      <Edge2Stamp />
+    </div>
+  );
+};
 
 const KvTableBlock = ({ title, rows }) => (
   <div className="mb-4">
@@ -250,6 +356,96 @@ const PhotosBlock = ({ title, photos }) => (
   </div>
 );
 
+const TocBlock = ({ title, sections }) => (
+  <div className="mb-6 w-full">
+    <h3 className="text-base font-bold text-gray-900 border-b border-gray-200 pb-2 mb-6 uppercase tracking-wider">
+      {title}
+    </h3>
+    <div className="space-y-4 pr-2">
+      {sections.map((sec, i) => (
+        <div key={i} className="flex items-baseline justify-between text-xs">
+          <span className="font-semibold text-gray-800 bg-white pr-2 z-10 relative">
+            {sec.title}
+          </span>
+          <span className="flex-1 border-b border-dotted border-gray-300 mx-2 relative top-[-4px]"></span>
+          <span className="font-bold text-gray-900 bg-white pl-2 z-10 relative">
+            Page {sec.pageNumber}
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const CoverPageBlock = ({ data }) => {
+  const safeFormatDate = (dateStr) => {
+    if (!dateStr) return format(new Date(), 'dd MMM yyyy');
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return format(d, 'dd MMM yyyy');
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  return (
+    <div className="flex flex-col justify-between h-full w-full py-0 text-center">
+      <div className="flex-1 flex flex-col items-center py-20">
+        <h1 className="text-2xl font-bold text-blue-900 tracking-wide mb-4">
+          Geotechnical Investigation Report
+        </h1>
+        <div className="text-center my-0 text-xs font-semibold text-gray-700">
+          Report No: {data.reportId || 'EDGE2/2026/Pending'}
+        </div>
+        <p className="text-sm font-medium py-4 text-gray-500 mb-4">At</p>
+        <p className="text-sm font-medium py-4 text-gray-500 mb-4">{data.location || 'Location'}</p>
+        <p className="text-sm font-medium py-4 text-gray-500 mb-4">For</p>
+        <h2 className="text-base font-bold text-gray-900 px-6 max-w-xl leading-relaxed text-center">
+          {data.projectName || data.projectDetails || 'Project Details / Proposed Construction'}
+        </h2>
+        
+        <div className="my-10 w-24 border-b border-gray-300"></div>
+
+        <p className="text-sm font-semibold text-gray-500 mb-3">Submitted to</p>
+        <h3 className="text-base font-bold text-blue-900 mb-2">
+          {data.client || 'Client Name'}
+        </h3>
+        <p className="text-xs font-semibold text-blue-800 italic">
+          Technical Draft Report – {safeFormatDate(data.reportCreatedOn)}
+        </p>
+      </div>
+
+      <div className="border-t border-gray-200 pt-6 flex flex-col items-center">
+        <p className="text-xs font-semibold text-gray-500 mb-2">Report by:</p>
+        <img src={LOGO_SRC} alt="EDGE2 Logo" className="w-32 h-32 object-contain mb-2" />
+        <h4 className="font-bold text-md text-gray-900 uppercase tracking-wider mb-3">
+          Edge2 Engineering Solutions India Pvt. Ltd.
+        </h4>
+        
+        <div className="w-full text-[10px] text-gray-600 space-y-1 max-w-2xl mx-auto">
+          <p className="font-bold text-blue-900 border-b border-gray-100 pb-0.5 mb-1 text-center">
+            Our Services:
+          </p>
+          <p className="leading-relaxed px-4 text-center">
+            Geo-Technical Investigation, Construction & Highway Material Testing Laboratory, Structural Health Assessment / Stability, Non-Destructive Testing (NDT), Restoration & Rehabilitation, Project Management Consultancy & Third-Party Inspection.
+          </p>
+          <p className="text-gray-500 pt-1 text-center">
+            <span className="font-bold">Address:</span> "Shivaganga Arcade", B35/130, 6th Cross, 6th Block, Vishweshwaraiah Layout, Ullal Upanagar, Bangalore - 560056
+          </p>
+          <p className="flex justify-center gap-4 text-gray-500">
+            <span><span className="font-bold">Email ID:</span> <a style={{color: "#0000EE"}} href="mailto:info@edge2.in" target="_blank" rel="noopener noreferrer">info@edge2.in</a></span>
+            <span><span className="font-bold">Website:</span> <a style={{color: "#0000EE"}} href="https://www.edge2.in" target="_blank" rel="noopener noreferrer">www.edge2.in</a></span>
+          </p>
+          <p className="font-semibold text-gray-600 text-center">
+            Contact No: <a style={{color: "#0000EE"}} href="tel:+919448377127">9448377127</a> / <a style={{color: "#0000EE"}} href="tel:+9109880973810">9880973810</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const renderBlock = (block, index) => {
   switch (block.type) {
     case 'project-details':
@@ -272,6 +468,8 @@ const renderBlock = (block, index) => {
       return <ListBlock key={index} title={block.title} items={block.items} />;
     case 'photos':
       return <PhotosBlock key={index} title={block.title} photos={block.photos} />;
+    case 'toc':
+      return <TocBlock key={index} title={block.title} sections={block.sections} />;
     default:
       return null;
   }
@@ -283,10 +481,77 @@ const ReportPreview = forwardRef(function ReportPreview(
 ) {
   const printRef = useRef(null);
 
-  const pages = useMemo(
-    () => (formData ? buildReportPages(formData) : []),
-    [formData]
-  );
+  const pages = useMemo(() => {
+    if (!formData) return [];
+    const basePages = buildReportPages(formData);
+    if (basePages.length === 0) return [];
+
+    const coverPage = {
+      isCoverPage: true,
+      pageNumber: 1,
+      isFirstPage: false,
+      isContinuation: false,
+      sectionTitle: null,
+      blocks: [],
+    };
+
+    const tocPage = {
+      isCoverPage: false,
+      isFirstPage: false,
+      isContinuation: false,
+      sectionTitle: 'Table of Contents',
+      blocks: [
+        {
+          type: 'toc',
+          title: 'Table of Contents',
+          sections: [],
+        },
+      ],
+      pageNumber: 2,
+    };
+
+    const shiftedPages = basePages.map((p, idx) => ({
+      ...p,
+      pageNumber: idx + 3,
+      isFirstPage: idx === 0,
+    }));
+
+    const finalPages = [coverPage, tocPage, ...shiftedPages];
+
+    const tocSections = [];
+    tocSections.push({ title: 'Cover Page', pageNumber: 1 });
+    tocSections.push({ title: 'Table of Contents', pageNumber: 2 });
+    tocSections.push({ title: 'Project Details & IS Codes', pageNumber: 3 });
+
+    const seenTitles = new Set(['Cover Page', 'Table of Contents', 'Project Details & IS Codes']);
+
+    shiftedPages.slice(1).forEach((page) => {
+      let title = page.sectionTitle;
+      if (!title && page.blocks && page.blocks.length > 0) {
+        const firstBlock = page.blocks[0];
+        title = firstBlock.title || formatKey(firstBlock.type);
+      }
+
+      if (title) {
+        const cleanTitle = title.replace(/\s*\(Continued\)\s*/gi, '').trim();
+        if (cleanTitle && !seenTitles.has(cleanTitle)) {
+          seenTitles.add(cleanTitle);
+          tocSections.push({
+            title: cleanTitle,
+            pageNumber: page.pageNumber,
+          });
+        }
+      }
+    });
+
+    tocPage.blocks[0].sections = tocSections;
+
+    const total = finalPages.length;
+    return finalPages.map((p) => ({
+      ...p,
+      totalPages: total,
+    }));
+  }, [formData]);
 
   const totalPages = pages.length;
   const reportId = formData?.reportId || '';
@@ -356,27 +621,39 @@ const ReportPreview = forwardRef(function ReportPreview(
 
         <div className="a4-preview-wrapper report-preview-scroll rounded-xl border border-border">
           <div ref={printRef} id="printable-report-root">
-            {pages.map((page) => (
-              <div key={page.pageNumber} className="a4-container">
-                <ReportWatermark />
-                <div className="a4-page-content relative z-[1]">
-                  {page.isFirstPage && (
-                    <ReportFullHeader reportId={reportId} reportDate={reportDate} />
-                  )}
-                  {!page.isFirstPage && page.sectionTitle && (
-                    <ReportContinuedHeader title={page.sectionTitle} />
-                  )}
-                  {page.blocks.map((block, i) => renderBlock(block, i))}
+            {pages.map((page) => {
+              if (page.isCoverPage) {
+                return (
+                  <div key={page.pageNumber} className="a4-container bg-white relative flex flex-col justify-between">
+                    <ReportWatermark />
+                    <div className="a4-page-content relative z-[1] flex-1 flex flex-col justify-between h-full">
+                      <CoverPageBlock data={formData} />
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div key={page.pageNumber} className="a4-container">
+                  <ReportWatermark />
+                  <div className="a4-page-content relative z-[1]">
+                    <ContentPageHeader />
+                    {page.isContinuation && page.sectionTitle && (
+                      <div className="text-right text-[10px] text-gray-500 italic mt-[-8px] mb-2">
+                        {page.sectionTitle}
+                      </div>
+                    )}
+                    {page.blocks.map((block, i) => renderBlock(block, i))}
+                  </div>
+                  <div className="a4-page-footer">
+                    <span>{COMPANY_NAME}</span>
+                    <span>
+                      Report {reportId ? `#${reportId}` : '#Pending'} | Page{' '}
+                      {page.pageNumber} of {totalPages}
+                    </span>
+                  </div>
                 </div>
-                <div className="a4-page-footer">
-                  <span>{COMPANY_NAME}</span>
-                  <span>
-                    Report {reportId ? `#${reportId}` : '#Pending'} | Page{' '}
-                    {page.pageNumber} of {totalPages}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
