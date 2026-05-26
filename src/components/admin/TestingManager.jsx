@@ -176,12 +176,14 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
     const hasMaterialsGap = samples.length > 0 && sampleCategories.length === 0;
     const allCategories = [...new Set([...sampleCategories, ...dataCats])];
 
+    const isAnalyst = user?.role === ROLES.ANALYST.slug;
     const isSoilTech = user?.role === ROLES.TECHNICIAN.slug && user?.departments?.includes('Soil Investigation');
 
-    // Admin sees all; Technicians see only authorized or already-recorded categories
-    const visibleCategories = isAdmin()
+    // Admin and Test Engineers see all categories; Technicians see only authorized or already-recorded categories
+    const visibleCategories = (isAdmin() || isAnalyst)
         ? allCategories
         : allCategories.filter(c => {
+            if (user?.role !== ROLES.TECHNICIAN.slug) return false;
             if (techCapabilities.includes(c) || dataCats.includes(c)) return true;
             if (isSoilTech && GEOTECH_NAMES.includes(c)) return true;
             return false;
@@ -545,7 +547,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                         <div className="flex justify-end pt-4">
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Button onClick={() => setSelectedCategory(cat)} className="bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 dark:text-white">
+                                                    <Button onClick={() => setSelectedCategory(cat)} className="bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 dark:text-white py-0 px-2 rounded-md my-4 mx-4">
                                                         <Edit className="mr-2 h-4 w-4" />
                                                         Edit {cat} Test Data
                                                     </Button>
@@ -755,8 +757,8 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                 )}
                                 
                             </div>
-                            <div className="sticky bottom-0 z-10 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
-                                <Button variant="ghost" className="px-6 rounded-xl hover:bg-gray-50 font-medium text-gray-600 dark:text-white" onClick={() => setSelectedCategory(null)} disabled={isSaving}>Cancel</Button>
+                            <div className="sticky bottom-0 z-10 flex justify-end gap-3 px-6 py-4 border-t border-border bg-background/95 backdrop-blur-sm shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
+                                <Button variant="ghost" className="px-6 rounded-xl hover:bg-muted font-medium text-muted-foreground" onClick={() => setSelectedCategory(null)} disabled={isSaving}>Cancel</Button>
                                 <Button className="px-8 rounded-xl bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold dark:text-white" onClick={async () => { await handleSaveResults(selectedCategory); setSelectedCategory(null); }} disabled={isSaving}>
                                     {isSaving ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />} Save All Results
                                 </Button>
