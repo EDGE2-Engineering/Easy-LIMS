@@ -450,8 +450,8 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
             <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-2">
               <LogOut className="w-8 h-8 text-red-500" />
             </div>
-            <DialogTitle className="text-2xl font-black text-center text-gray-900 tracking-tight">Confirm Logout</DialogTitle>
-            <DialogDescription className="text-center font-medium text-gray-500 text-lg">
+            <DialogTitle className="text-md font-black text-center text-gray-900 tracking-tight">Confirm Logout</DialogTitle>
+            <DialogDescription className="text-center font-medium text-gray-500 text-sm">
               Are you sure you want to sign out? You will need to log back in to access your dashboard.
             </DialogDescription>
           </DialogHeader>

@@ -144,6 +144,7 @@ const JobsManager = ({ id }) => {
     const navigate = useNavigate();
     const { user, isAdmin, loading: authLoading } = useAuth();
     const canModify = isAdmin() || user?.role === ROLES.MRO.slug;
+    const isAnalyst = user?.role === ROLES.ANALYST.slug;
     const { workflow } = useWorkflowConfig();
 
     const [editingRecord, setEditingRecord] = useState(null);
@@ -927,7 +928,7 @@ if (editingRecord) {
 
                         <Dialog open={showingTechForm} onOpenChange={setShowingTechForm}>
                             <DialogContent className="max-w-[1000px] max-h-[90vh] overflow-y-auto">
-                                <DialogHeader><DialogTitle>Assign Technicians</DialogTitle></DialogHeader>
+                                <DialogHeader><DialogTitle>Assign Technician</DialogTitle></DialogHeader>
                                 <TechnicianAssignment jobId={editingRecord.id} onComplete={() => { setShowingTechForm(false); reloadEditingRecord(); }} />
                             </DialogContent>
                         </Dialog>
@@ -1013,30 +1014,36 @@ if (editingRecord) {
                         </Dialog>
 
                         {/* Linked Documents Summary */}
-                        {canModify && linkedDocs.length > 0 && (
-                            <div className="p-4 bg-white rounded-sm border border-gray-100 shadow-sm">
-                                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><FileText className="w-4 h-4" /> Job Documents</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    {linkedDocs.map(doc => (
-                                        <div
-                                            key={doc.id}
-                                            className="p-3 bg-gray-50/50 rounded-xl border border-gray-100 flex items-center justify-between group hover:bg-gray-50 hover:border-primary/30 transition-all cursor-pointer"
-                                            onClick={() => {
-                                                if (doc.document_type === 'Report' && doc.content) {
-                                                    setReportPreviewData(doc.content);
-                                                    setShowingReportPreview(true);
-                                                } else {
-                                                    navigate(`/doc/${doc.id}`);
-                                                }
-                                            }}
-                                        >
-                                            <div className="space-y-0.5"><div className="text-[9px] font-bold text-primary uppercase tracking-wider">{doc.document_type}</div><div className="font-mono text-xs font-bold text-gray-700">{doc.quote_number}</div></div>
-                                            <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-primary" />
-                                        </div>
-                                    ))}
+                        {(canModify || isAnalyst) && linkedDocs.length > 0 && (() => {
+                            const visibleDocs = canModify
+                                ? linkedDocs
+                                : linkedDocs.filter(d => d.document_type === 'Report');
+                            if (visibleDocs.length === 0) return null;
+                            return (
+                                <div className="p-4 bg-white rounded-sm border border-gray-100 shadow-sm">
+                                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><FileText className="w-4 h-4" /> Job Documents</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        {visibleDocs.map(doc => (
+                                            <div
+                                                key={doc.id}
+                                                className="p-3 bg-gray-50/50 rounded-xl border border-gray-100 flex items-center justify-between group hover:bg-gray-50 hover:border-primary/30 transition-all cursor-pointer"
+                                                onClick={() => {
+                                                    if (doc.document_type === 'Report' && doc.content) {
+                                                        setReportPreviewData(doc.content);
+                                                        setShowingReportPreview(true);
+                                                    } else {
+                                                        navigate(`/doc/${doc.id}`);
+                                                    }
+                                                }}
+                                            >
+                                                <div className="space-y-0.5"><div className="text-[9px] font-bold text-primary uppercase tracking-wider">{doc.document_type}</div><div className="font-mono text-xs font-bold text-gray-700">{doc.quote_number}</div></div>
+                                                <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-primary" />
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            );
+                        })()}
                     </div>
                 )}
 
@@ -1173,7 +1180,7 @@ if (editingRecord) {
 
                             {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.TECHNICIANS_ASSIGNED) && (
                                 <div className="bg-white rounded-2xl shadow-sm">
-                                    {canModify && (
+                                    {(canModify || user?.role === ROLES.MRO.slug) && (
                                         <div className="flex justify-between items-center mb-6">
                                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><UserPlus className="w-4 h-4" /> Technician Assignments</h3>
                                             <Button variant="outline" size="sm" onClick={() => setShowingTechForm(true)} className="h-8 text-xs"><Edit className="w-3 h-3 mr-1" /> Edit Assignments</Button>
@@ -1183,7 +1190,7 @@ if (editingRecord) {
                                         <table className="w-full text-left text-xs">
                                             <thead className="bg-gray-50 border-b"><tr><th className="p-3">Assigned Technician</th></tr></thead>
                                             <tbody className="divide-y">{techAssignments.map((a, i) => (<tr key={i}><td className="p-3 font-bold text-gray-700">{a.full_name || a.username}</td></tr>))}
-                                                {techAssignments.length === 0 && <tr><td className="p-3 text-gray-500 italic">No technicians assigned yet.</td></tr>}
+                                                {techAssignments.length === 0 && <tr><td className="p-3 text-gray-500 italic">No technician assigned yet.</td></tr>}
                                             </tbody>
                                         </table>
                                     </div>

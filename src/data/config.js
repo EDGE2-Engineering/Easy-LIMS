@@ -102,7 +102,7 @@ export const ACTIONS = {
     SEND_QUOTATION: { name: 'SEND_QUOTATION', label: 'Create Quotation', description: 'Generate a formal quotation for the client based on requested tests.' },
     RECEIVE_WORK_ORDER: { name: 'RECEIVE_WORK_ORDER', label: 'Receive Work Order', description: 'Log the client\'s confirmed work order into the system.' },
     RECEIVE_MATERIAL: { name: 'RECEIVE_MATERIAL', label: 'Receive Material', description: 'Record the arrival of samples and perform material inwarding.' },
-    ASSIGN_TECHNICIANS: { name: 'ASSIGN_TECHNICIANS', label: 'Assign Technicians', description: 'Assign specific lab personnel to perform the required tests.' },
+    ASSIGN_TECHNICIANS: { name: 'ASSIGN_TECHNICIANS', label: 'Assign Technician', description: 'Assign specific lab personnel to perform the required tests.' },
     START_TESTING: { name: 'START_TESTING', label: 'Start Testing', description: 'Initiate the laboratory testing process for the assigned samples.' },
     COMPLETE_TESTING_AND_SUBMIT_FOR_REVIEW: { name: 'COMPLETE_TESTING_AND_SUBMIT_FOR_REVIEW', label: 'Complete Testing & Submit for Review', description: 'Finish all tests, enter results, and submit them for administrative review.' },
     APPROVE_TEST_RESULTS: { name: 'APPROVE_TEST_RESULTS', label: 'Approve Test Results', description: 'Verify and approve the laboratory test data for accuracy.' },
@@ -203,11 +203,11 @@ export const APP_CONFIG = {
                 label: 'Material Received',
                 color: { bg: '#fef3c7', text: '#78350f', border: '#f59e0b' },
                 actions: [
-                    { id: ACTIONS.ASSIGN_TECHNICIANS.name, label: ACTIONS.ASSIGN_TECHNICIANS.label, description: ACTIONS.ASSIGN_TECHNICIANS.description, targetState: WORKFLOW_STATES.TECHNICIANS_ASSIGNED, roles: [ROLES.ADMIN.slug] }
+                    { id: ACTIONS.ASSIGN_TECHNICIANS.name, label: ACTIONS.ASSIGN_TECHNICIANS.label, description: ACTIONS.ASSIGN_TECHNICIANS.description, targetState: WORKFLOW_STATES.TECHNICIANS_ASSIGNED, roles: [ROLES.ADMIN.slug, ROLES.MRO.slug] }
                 ]
             },
             [WORKFLOW_STATES.TECHNICIANS_ASSIGNED]: {
-                label: 'Technicians Assigned',
+                label: 'Technician Assigned',
                 color: { bg: '#fef9c3', text: '#713f12', border: '#fde047' },
                 actions: [
                     { id: ACTIONS.START_TESTING.name, label: ACTIONS.START_TESTING.label, description: ACTIONS.START_TESTING.description, targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.TECHNICIAN.slug, ROLES.ADMIN.slug, ROLES.ANALYST.slug] }
@@ -224,22 +224,22 @@ export const APP_CONFIG = {
                 label: 'Under Review',
                 color: { bg: '#f5f3ff', text: '#6d28d9', border: '#c4b5fd' },
                 actions: [
-                    { id: ACTIONS.APPROVE_TEST_RESULTS.name, label: ACTIONS.APPROVE_TEST_RESULTS.label, description: ACTIONS.APPROVE_TEST_RESULTS.description, targetState: WORKFLOW_STATES.DATA_VERIFIED, roles: [ROLES.ADMIN.slug] },
-                    { id: ACTIONS.REJECT_TEST_RESULTS.name, label: ACTIONS.REJECT_TEST_RESULTS.label, description: ACTIONS.REJECT_TEST_RESULTS.description, targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.ADMIN.slug] }
+                    { id: ACTIONS.APPROVE_TEST_RESULTS.name, label: ACTIONS.APPROVE_TEST_RESULTS.label, description: ACTIONS.APPROVE_TEST_RESULTS.description, targetState: WORKFLOW_STATES.DATA_VERIFIED, roles: [ROLES.ADMIN.slug, ROLES.ANALYST.slug] },
+                    { id: ACTIONS.REJECT_TEST_RESULTS.name, label: ACTIONS.REJECT_TEST_RESULTS.label, description: ACTIONS.REJECT_TEST_RESULTS.description, targetState: WORKFLOW_STATES.UNDER_TESTING, roles: [ROLES.ADMIN.slug, ROLES.ANALYST.slug] }
                 ]
             },
             [WORKFLOW_STATES.DATA_VERIFIED]: {
                 label: 'Data Verified',
                 color: { bg: '#ede9fe', text: '#5b21b6', border: '#a78bfa' },
                 actions: [
-                    { id: ACTIONS.GENERATE_REPORT.name, label: ACTIONS.GENERATE_REPORT.label, description: ACTIONS.GENERATE_REPORT.description, targetState: WORKFLOW_STATES.REPORT_GENERATED, roles: [ROLES.ADMIN.slug, ROLES.MRO.slug] }
+                    { id: ACTIONS.GENERATE_REPORT.name, label: ACTIONS.GENERATE_REPORT.label, description: ACTIONS.GENERATE_REPORT.description, targetState: WORKFLOW_STATES.REPORT_GENERATED, roles: [ROLES.ADMIN.slug, ROLES.ANALYST.slug] }
                 ]
             },
             [WORKFLOW_STATES.REPORT_GENERATED]: {
                 label: 'Report Generated',
                 color: { bg: '#fdf4ff', text: '#7e22ce', border: '#d8b4fe' },
                 actions: [
-                    { id: ACTIONS.SUBMIT_REPORT_REVIEW.name, label: ACTIONS.SUBMIT_REPORT_REVIEW.label, description: ACTIONS.SUBMIT_REPORT_REVIEW.description, targetState: WORKFLOW_STATES.REPORT_UNDER_REVIEW, roles: [ROLES.ADMIN.slug, ROLES.MRO.slug] }
+                    { id: ACTIONS.SUBMIT_REPORT_REVIEW.name, label: ACTIONS.SUBMIT_REPORT_REVIEW.label, description: ACTIONS.SUBMIT_REPORT_REVIEW.description, targetState: WORKFLOW_STATES.REPORT_UNDER_REVIEW, roles: [ROLES.ADMIN.slug] }
                 ]
             },
             [WORKFLOW_STATES.REPORT_UNDER_REVIEW]: {

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, UserMinus, UserCheck, Search, UsersRound, Filter, X } from 'lucide-react';
+import { Plus, Pencil, UserMinus, UserCheck, Search, UsersRound, Filter, X, Eye, EyeOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
@@ -25,7 +25,8 @@ const AdminUsersManager = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [filterRole, setFilterRole] = useState('all');
-    const [filterStatus, setFilterStatus] = useState('all');
+    const [filterStatus, setFilterStatus] = useState('active');
+    const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
         username: '',
         password: '',
@@ -71,10 +72,10 @@ const AdminUsersManager = () => {
     const resetFilters = () => {
         setSearchTerm('');
         setFilterRole('all');
-        setFilterStatus('all');
+        setFilterStatus('active');
     };
 
-    const hasActiveFilters = filterRole !== 'all' || filterStatus !== 'all';
+    const hasActiveFilters = filterRole !== 'all' || filterStatus !== 'active';
 
     const handleNewUser = () => {
         setEditingUser(null);
@@ -366,85 +367,110 @@ const AdminUsersManager = () => {
             </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-2xl">
                     <DialogHeader><DialogTitle>{editingUser ? 'Edit User' : 'Add User'}</DialogTitle></DialogHeader>
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="grid gap-2">
-                            <Label>Username</Label>
-                            <Input 
-                                value={formData.username} 
-                                onChange={e => setFormData({ ...formData, username: e.target.value })} 
-                                required 
-                                className={/[A-Z]/.test(formData.username) ? 'border-red-500 focus:ring-red-500' : ''}
-                            />
-                            <p className="text-[10px] text-gray-400 font-medium italic">Usernames must be in all small case (e.g. john.doe)</p>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Password</Label>
-                            <Input value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} required />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Full Name</Label>
-                            <Input value={formData.full_name} onChange={e => setFormData({ ...formData, full_name: e.target.value })} />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Employee ID</Label>
-                            <Input
-                                value={formData.employee_id}
-                                onChange={e => setFormData({ ...formData, employee_id: e.target.value })}
-                                placeholder="e.g. EMP-001"
-                                className="font-mono"
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Role</Label>
-                            <Select value={formData.role} onValueChange={v => setFormData({ ...formData, role: v })}>
-                                <SelectTrigger className="h-auto py-2"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    {Object.entries(ROLES)
-                                        .filter(([key]) => key !== 'SUPER_ADMIN')
-                                        .map(([key, role]) => (
-                                            <SelectItem key={role.slug} value={role.slug} className="py-2">
-                                                <div className="flex flex-col gap-0.5 text-left">
-                                                    <span className="font-bold text-xs">{role.label}</span>
-                                                    <span className="text-[10px] text-gray-500 leading-tight whitespace-normal max-w-[280px]">
-                                                        {role.description}
-                                                    </span>
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {formData.role === ROLES.TECHNICIAN.slug && (
-                            <div className="space-y-3 border-t pt-4">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-primary font-bold">Departments</Label>
-                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Select one or more</span>
-                                </div>
-                                <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                                    {DEPARTMENTS.length > 0 ? (
-                                        DEPARTMENTS.map(dept => (
-                                            <div key={dept.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                                                <Checkbox
-                                                    id={`dept-${dept.id}`}
-                                                    checked={formData.departments.includes(dept.id)}
-                                                    onCheckedChange={() => handleDepartmentToggle(dept.id)}
-                                                    className="rounded-md"
-                                                />
-                                                <Label htmlFor={`dept-${dept.id}`} className="text-xs font-medium cursor-pointer flex-grow">{dept.name}</Label>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p className="text-xs text-gray-400 italic">No departments configured.</p>
-                                    )}
-                                </div>
+                        {/* Row 1: Username + Password */}
+                        <div className="grid grid-cols-2 gap-4 items-start">
+                            <div className="grid gap-2">
+                                <Label>Username</Label>
+                                <Input
+                                    value={formData.username}
+                                    onChange={e => setFormData({ ...formData, username: e.target.value })}
+                                    required
+                                    className={/[A-Z]/.test(formData.username) ? 'border-red-500 focus:ring-red-500' : ''}
+                                />
+                                <p className="text-[10px] text-gray-400 font-medium italic">Must be all lowercase (e.g. john.doe)</p>
                             </div>
-                        )}
+                            <div className="grid gap-2">
+                                <Label>Password</Label>
+                                <div className="relative">
+                                    <Input
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={formData.password}
+                                        onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                        required
+                                        className="pr-10"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(v => !v)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        tabIndex={-1}
+                                    >
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-gray-400 font-medium italic invisible">placeholder</p>
+                            </div>
+                        </div>
 
+                        {/* Row 2: Employee ID + Full Name */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label>Employee ID</Label>
+                                <Input
+                                    value={formData.employee_id}
+                                    onChange={e => setFormData({ ...formData, employee_id: e.target.value })}
+                                    placeholder="e.g. EMP-001"
+                                    className="font-mono"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Full Name</Label>
+                                <Input value={formData.full_name} onChange={e => setFormData({ ...formData, full_name: e.target.value })} />
+                            </div>
+                        </div>
 
+                        {/* Row 3: Role + Departments (side by side when technician) */}
+                        <div className={`grid gap-4 items-start ${formData.role === ROLES.TECHNICIAN.slug ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                            <div className="flex flex-col gap-2">
+                                <Label className="pb-1">Role</Label>
+                                <Select value={formData.role} onValueChange={v => setFormData({ ...formData, role: v })}>
+                                    <SelectTrigger className="h-auto py-2"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {Object.entries(ROLES)
+                                            .filter(([key]) => key !== 'SUPER_ADMIN')
+                                            .map(([key, role]) => (
+                                                <SelectItem key={role.slug} value={role.slug} className="py-2">
+                                                    <div className="flex flex-col gap-0.5 text-left">
+                                                        <span className="font-bold text-xs">{role.label}</span>
+                                                        <span className="text-[10px] text-gray-500 leading-tight whitespace-normal max-w-[280px]">
+                                                            {role.description}
+                                                        </span>
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
+                            {formData.role === ROLES.TECHNICIAN.slug && (
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-primary font-bold">Departments</Label>
+                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Select one or more</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-1 h-[104px] overflow-y-auto pr-1 custom-scrollbar border rounded-lg p-2">
+                                        {DEPARTMENTS.length > 0 ? (
+                                            DEPARTMENTS.map(dept => (
+                                                <div key={dept.id} className="flex items-center space-x-3 p-1.5 rounded-lg hover:bg-gray-50 transition-colors">
+                                                    <Checkbox
+                                                        id={`dept-${dept.id}`}
+                                                        checked={formData.departments.includes(dept.id)}
+                                                        onCheckedChange={() => handleDepartmentToggle(dept.id)}
+                                                        className="rounded-md"
+                                                    />
+                                                    <Label htmlFor={`dept-${dept.id}`} className="text-xs font-medium cursor-pointer flex-grow">{dept.name}</Label>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-xs text-gray-400 italic">No departments configured.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         <DialogFooter><Button type="submit">Save User</Button></DialogFooter>
                     </form>

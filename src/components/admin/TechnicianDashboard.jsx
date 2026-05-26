@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
     LayoutDashboard, Briefcase, Calendar, 
-    CheckCircle2, Clock, Activity, Target, Zap, Beaker
+    CheckCircle2, Clock, Activity, Target, Zap, Beaker, ChevronRight
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { WORKFLOW_STATES, APP_CONFIG } from '@/data/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
@@ -136,25 +136,36 @@ const TechnicianDashboard = () => {
                 {/* Quick Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[
-                        { label: 'Assigned Active Jobs', value: activeJobsCount, icon: Briefcase, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10' },
-                        { label: 'Currently Under Testing', value: testingJobsCount, icon: Beaker, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10' },
-                        { label: 'Pending Leave Requests', value: pendingRequests, icon: Calendar, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10' },
+                        { label: 'Assigned Active Jobs', value: activeJobsCount, icon: Briefcase, path: '#/settings/jobs', tooltip: 'View all your assigned jobs' },
+                        { label: 'Currently Under Testing', value: testingJobsCount, icon: Beaker, path: '#/settings/jobs?status=UNDER_TESTING', tooltip: 'View jobs currently under testing' },
+                        { label: 'Pending Leave Requests', value: pendingRequests, icon: Calendar, path: null, tooltip: 'Your pending leave requests' },
                     ].map((stat, idx) => (
                         <motion.div key={idx} variants={item}>
-                            <Card className={`border-none shadow-sm ${stat.bg}/30 relative overflow-hidden group`}>
-                                <div className={`absolute top-0 right-0 w-16 h-16 ${stat.bg} rounded-bl-[64px] -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110 duration-500`} />
-                                <CardContent className="p-4 relative">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2.5 rounded-xl ${stat.iconBg} ${stat.color} shrink-0`}>
-                                            <stat.icon className="w-5 h-5" />
-                                        </div>
-                                        <div className="flex-grow min-w-0">
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{stat.label}</p>
-                                            <h3 className="text-2xl font-black text-gray-900 tracking-tight leading-none">{stat.value}</h3>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Card
+                                        className={`border-none shadow-sm bg-gray-50/30 relative overflow-hidden group ${stat.path ? 'cursor-pointer hover:shadow-md active:scale-95' : ''} transition-all`}
+                                        onClick={() => stat.path && (window.location.hash = stat.path)}
+                                    >
+                                        <div className="absolute top-0 right-0 w-16 h-16 bg-gray-50 rounded-bl-[64px] -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110 duration-500" />
+                                        <CardContent className="p-4 relative">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
+                                                    <stat.icon className="w-5 h-5" />
+                                                </div>
+                                                <div className="flex-grow min-w-0">
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{stat.label}</p>
+                                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight leading-none">{stat.value}</h3>
+                                                </div>
+                                                {stat.path && <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors shrink-0" />}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">{stat.tooltip}</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </motion.div>
                     ))}
                 </div>
@@ -176,15 +187,20 @@ const TechnicianDashboard = () => {
                                         </div>
                                     ) : (
                                         assignedJobs.map((job) => (
-                                            <div key={job.id} className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center group">
+                                            <div
+                                                key={job.id}
+                                                className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center group cursor-pointer"
+                                                onClick={() => { window.location.hash = `/settings/jobs/${job.id}`; }}
+                                            >
                                                 <div>
                                                     <p className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">{job.job_code || job.job_id}</p>
                                                     <p className="text-xs text-gray-500 font-medium">{job.clients?.client_name}</p>
                                                 </div>
-                                                <div className="text-right">
+                                                <div className="flex items-center gap-2">
                                                     <Badge className="bg-primary/10 text-primary border-none shadow-none text-[10px] font-black uppercase">
                                                         {getStateLabel(job.status)}
                                                     </Badge>
+                                                    <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-primary transition-colors" />
                                                 </div>
                                             </div>
                                         ))
