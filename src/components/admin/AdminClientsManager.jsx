@@ -695,7 +695,7 @@ const AdminClientsManager = () => {
                             paginatedClients.map((client) => {
                                 const primaryContact = (client.contacts || []).find(c => c.is_primary) || client.contacts?.[0] || {};
                                 return (
-                                    <tr key={client.id} className="border-b hover:bg-gray-50/50 transition-colors group">
+                                    <tr key={client.id} className="border-b hover:bg-gray-50/50 transition-colors">
                                         <td className="py-5 px-6">
                                             <span className="font-mono font-bold text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10">{client.id}</span>
                                         </td>
@@ -748,7 +748,7 @@ const AdminClientsManager = () => {
                                             <div className="flex justify-center gap-2">
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Button variant="ghost" size="sm" onClick={() => handleEdit(client)} className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all group-hover:bg-primary/5">
+                                                        <Button variant="ghost" size="sm" onClick={() => handleEdit(client)} className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all">
                                                             <Edit className="w-4 h-4" />
                                                         </Button>
                                                     </TooltipTrigger>
@@ -759,7 +759,7 @@ const AdminClientsManager = () => {
 
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(client)} className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all group-hover:bg-red-50">
+                                                        <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(client)} className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all">
                                                             <Trash2 className="w-4 h-4" />
                                                         </Button>
                                                     </TooltipTrigger>
