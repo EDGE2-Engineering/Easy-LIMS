@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { DatePicker } from 'rsuite';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +33,8 @@ const AppDatePicker = React.forwardRef(({
   name,
   ...props
 }, ref) => {
+  const wrapperRef = useRef(null);
+
   const dateValue = useMemo(() => {
     if (!value) return null;
     if (value instanceof Date) return value;
@@ -62,13 +64,13 @@ const AppDatePicker = React.forwardRef(({
     // RSuite DatePicker uses appearance="subtle" so its toggle is
     // completely borderless/shadowless — we only need it for the calendar popup.
     <div
+      ref={wrapperRef}
       className={cn(
         'app-datepicker-root relative',
         // Identical base classes to SelectTrigger in select.jsx:
         'flex h-10 w-full items-center rounded-md border border-input bg-background',
         'ring-offset-background',
         'focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
-        'overflow-hidden',
         disabled && 'cursor-not-allowed opacity-50',
         className
       )}
@@ -86,6 +88,10 @@ const AppDatePicker = React.forwardRef(({
         cleanable
         oneTap
         placement="autoVerticalStart"
+        // Portal the calendar into the wrapper div so it stays inside
+        // Radix Dialog's focus trap — without this, Radix blocks all
+        // pointer events on the rsuite popup since it's outside the dialog DOM.
+        container={() => wrapperRef.current || document.body}
         id={id}
         name={name}
         style={{ width: '100%', height: '100%' }}

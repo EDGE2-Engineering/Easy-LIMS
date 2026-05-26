@@ -570,6 +570,7 @@
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  overflow: visible !important;
 }
 
 /* Subtle toggle button — strip any residual styles */
@@ -631,6 +632,11 @@
 }
 
 /* ---- Calendar popup panel ---- */
+
+/* Wrapper must not clip the portaled calendar popup */
+.app-datepicker-root {
+  overflow: visible !important;
+}
 
 .rs-picker-menu {
   z-index: 9999 !important;

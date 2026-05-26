@@ -685,7 +685,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                                     <div className="space-y-1">
                                         <Label className="text-xs">Received Date</Label>
                                         <AppDatePicker
-                                            className="h-9 text-sm"
+                                            className="h-10 text-sm bg-gray-50 border-transparent rounded-xl"
                                             value={sample.received_date || ''}
                                             onChange={(e) => handleSampleChange(index, 'received_date', e.target.value)}
                                         />
