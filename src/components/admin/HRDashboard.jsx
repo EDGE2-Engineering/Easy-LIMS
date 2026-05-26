@@ -125,16 +125,16 @@ const HRDashboard = () => {
                 {/* Quick Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[
-                        { label: 'Active Employees', value: stats.totalEmployees, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-                        { label: 'Pending Approvals', value: stats.pendingApprovalsCount, icon: CheckCircle2, color: 'text-orange-600', bg: 'bg-orange-50' },
-                        { label: 'My Pending Leaves', value: stats.myPendingLeaves, icon: Calendar, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                        { label: 'Active Employees', value: stats.totalEmployees, icon: Users, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10' },
+                        { label: 'Pending Approvals', value: stats.pendingApprovalsCount, icon: CheckCircle2, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10' },
+                        { label: 'My Pending Leaves', value: stats.myPendingLeaves, icon: Calendar, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10' },
                     ].map((stat, idx) => (
                         <motion.div key={idx} variants={item}>
                             <Card className={`border-none shadow-sm ${stat.bg}/30 relative overflow-hidden group`}>
                                 <div className={`absolute top-0 right-0 w-16 h-16 ${stat.bg} rounded-bl-[64px] -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110 duration-500`} />
                                 <CardContent className="p-4 relative">
                                     <div className="flex items-center gap-3">
-                                        <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color} shrink-0`}>
+                                        <div className={`p-2.5 rounded-xl ${stat.iconBg} ${stat.color} shrink-0`}>
                                             <stat.icon className="w-5 h-5" />
                                         </div>
                                         <div className="flex-grow min-w-0">

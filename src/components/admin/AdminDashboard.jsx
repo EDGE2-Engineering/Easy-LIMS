@@ -332,8 +332,8 @@ const AdminDashboard = () => {
                         { label: 'Active Jobs', value: stats.activeJobs, icon: Briefcase, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10', trend: 'In Progress', path: '#/settings/jobs' },
                         { label: 'Ongoing Testing', value: stats.ongoingTesting, icon: Activity, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10', trend: 'Lab Operations', path: '#/settings/jobs?status=UNDER_TESTING' },
                         { label: 'Pending Reports', value: stats.pendingReports, icon: FileText, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10', trend: 'Awaiting Action', path: '#/settings/jobs' },
-                        { label: 'Awaiting Payment', value: stats.pendingPayments, icon: IndianRupee, color: 'text-emerald-600', bg: 'bg-emerald-50', iconBg: 'bg-emerald-50', trend: 'Documents', path: '#/settings/documents' },
-                        { label: 'Total Clients', value: stats.totalClients, icon: BriefcaseBusiness, color: 'text-indigo-600', bg: 'bg-indigo-50', iconBg: 'bg-indigo-50', trend: 'Network', path: '#/settings/clients' },
+                        { label: 'Awaiting Payment', value: stats.pendingPayments, icon: IndianRupee, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10', trend: 'Documents', path: '#/settings/documents' },
+                        { label: 'Total Clients', value: stats.totalClients, icon: BriefcaseBusiness, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10', trend: 'Network', path: '#/settings/clients' },
                     ].map((stat, idx) => (
                         <motion.div key={idx} variants={item}>
                             <Tooltip>

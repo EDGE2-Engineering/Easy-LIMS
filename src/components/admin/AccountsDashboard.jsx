@@ -145,7 +145,7 @@ const AccountsDashboard = () => {
                             <div className="p-2 bg-primary/10 rounded-xl">
                                 <LayoutDashboard className="w-8 h-8 text-primary" />
                             </div>
-                            Accounts Overview
+                            Accounts Dashboard
                         </h1>
                         <p className="text-gray-500 font-medium mt-1">Welcome back, <span className="text-primary font-bold">{user?.fullName || user?.username}</span>.</p>
                     </div>
@@ -157,17 +157,17 @@ const AccountsDashboard = () => {
                 {/* Quick Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {[
-                        { label: 'Quotations Created', value: stats.totalQuotations, icon: FileClock, color: 'text-blue-600', bg: 'bg-blue-50' },
-                        { label: 'Invoices Generated', value: stats.totalInvoices, icon: FileCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                        { label: 'Total Billed (My Invoices)', value: `₹${stats.totalBilled.toLocaleString()}`, icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                        { label: 'Pending Leave Requests', value: leaveRequests.filter(r => r.status === 'PENDING').length, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-50' },
+                        { label: 'Quotations Created', value: stats.totalQuotations, icon: FileClock, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10' },
+                        { label: 'Invoices Generated', value: stats.totalInvoices, icon: FileCheck, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10' },
+                        { label: 'Total Billed (My Invoices)', value: `₹${stats.totalBilled.toLocaleString()}`, icon: TrendingUp, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10' },
+                        { label: 'Pending Leave Requests', value: leaveRequests.filter(r => r.status === 'PENDING').length, icon: Calendar, color: 'text-primary', bg: 'bg-gray-50 dark:bg-gray-100', iconBg: 'bg-primary/10' },
                     ].map((stat, idx) => (
                         <motion.div key={idx} variants={item}>
                             <Card className={`border-none shadow-sm ${stat.bg}/30 relative overflow-hidden group`}>
                                 <div className={`absolute top-0 right-0 w-16 h-16 ${stat.bg} rounded-bl-[64px] -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110 duration-500`} />
                                 <CardContent className="p-4 relative">
                                     <div className="flex items-center gap-3">
-                                        <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color} shrink-0`}>
+                                        <div className={`p-2.5 rounded-xl ${stat.iconBg} ${stat.color} shrink-0`}>
                                             <stat.icon className="w-5 h-5" />
                                         </div>
                                         <div className="flex-grow min-w-0">
