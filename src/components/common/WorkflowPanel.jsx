@@ -104,13 +104,13 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
                         return (
                             <div key={stateKey} className="flex items-center flex-shrink-0">
                                 <div className={`flex flex-col items-center ${isCurrent ? 'opacity-100 scale-110' : 'opacity-40'} transition-all`}>
-                                    <div className={`p-0 rounded-full ${isPast ? 'bg-green-500 text-white' : isCurrent ? 'bg-primary text-white shadow-lg' : 'bg-muted text-muted-foreground'}`}>
+                                    <div className={`p-0 rounded-full ${isPast ? 'workflow-state-done' : isCurrent ? 'workflow-state-active' : 'workflow-state-inactive'}`}>
                                         {isPast ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
                                     </div>
                                     <span className={`text-[10px] mt-1 font-semibold ${isCurrent ? 'text-primary' : ''}`}>{state.label}</span>
                                 </div>
                                 {idx < Object.keys(workflow.states).length - 1 && (
-                                    <ChevronRight className={`h-4 w-4 mx-1 -mt-4 ${isPast ? 'text-green-500' : 'text-muted-foreground'}`} />
+                                    <ChevronRight className={`h-4 w-4 mx-1 -mt-4 ${isPast ? 'text-green-600' : 'text-muted-foreground'}`} />
                                 )}
                             </div>
                         );
