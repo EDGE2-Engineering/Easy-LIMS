@@ -832,7 +832,7 @@ const JobsManager = ({ id }) => {
 if (editingRecord) {
         return (
             <div className="space-y-6 bg-white p-2 rounded-xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-right-4 duration-500">
-                <div className="flex justify-between items-center mb-8">
+                <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-4">
                         <Button variant="ghost" size="icon" onClick={() => {
                                 // Close the detail view and navigate back to job listing
@@ -865,7 +865,7 @@ if (editingRecord) {
 
                 {!isAddingNew && (
                     <div className="mb-2 space-y-2">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Workflow Actions</h3>
+                        {/* <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Workflow Actions</h3> */}
                         <WorkflowPanel
                             jobId={editingRecord.id}
                             currentStatus={editingRecord.status}

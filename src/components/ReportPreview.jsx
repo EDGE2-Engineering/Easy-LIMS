@@ -491,6 +491,9 @@ const SubProfileAnalysisTableBlock = ({ block }) => {
   );
 };
 
+const ParticleSizeDistributionCurveBlock = ({ block }) => {
+}
+
 const BoreholeLogTableBlock = ({ block }) => {
   const {
     boreholeNumber,

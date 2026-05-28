@@ -51,8 +51,8 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
         <TooltipProvider delayDuration={200}>
             <Card className="mb-2 border-l-4 border-l-primary shadow-sm bg-background/50 backdrop-blur-sm">
             <CardHeader className="space-y-0 p-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                    Current Status: <span className="text-primary font-bold">{currentStateConfig?.label || currentStatus}</span>
+                <CardTitle className="text-sm font-medium text-muted-foreground tracking-wider">
+                    Current Job Status: <span className="text-primary font-bold">{currentStateConfig?.label || currentStatus}</span>
                 </CardTitle>
                 <div className="flex gap-2">
                     {canGoBack && isAdmin() && (
