@@ -61,6 +61,8 @@ const JobsManager = ({ id }) => {
     const [reportPreviewData, setReportPreviewData] = useState(null);
     const [isSavingReport, setIsSavingReport] = useState(false);
     const generateReportActionRef = useRef(null);
+    // Increment to force child components (e.g. inline TestingManager) to remount and re-fetch
+    const [jobDetailRefreshKey, setJobDetailRefreshKey] = useState(0);
 
     // Advanced Filters State (from ExpensesManager)
     const [filterByCreator, setFilterByCreator] = useState('all');
@@ -317,18 +319,19 @@ const JobsManager = ({ id }) => {
                 .from('material_inward_register')
                 .select('id')
                 .eq('job_id', jobId)
-                .order('created_at', { ascending: false })
-                .limit(1);
+                .order('created_at', { ascending: false });
 
             if (inwardRecords && inwardRecords.length > 0) {
-                const inward = inwardRecords[0];
+                const inwardIds = inwardRecords.map(r => r.id);
                 const { data: samples, error } = await supabase
                     .from('material_samples')
                     .select('*, users!material_samples_received_by_fkey(full_name), collection_centers!material_samples_collection_center_id_fkey(name)')
-                    .eq('inward_id', inward.id);
+                    .in('inward_id', inwardIds);
 
                 if (error) throw error;
                 setJobSamples(samples || []);
+            } else {
+                setJobSamples([]);
             }
         } catch (err) {
             console.error('Error fetching samples:', err);
@@ -418,6 +421,8 @@ const JobsManager = ({ id }) => {
             fetchJobAssignments(jobId);
             fetchJobDocs(jobId);
             fetchRecords();
+            // Bump the refresh key so inline child components (TestingManager, etc.) remount and re-fetch
+            setJobDetailRefreshKey(k => k + 1);
         } catch (error) {
             console.error("Failed to reload record:", error);
         }
@@ -1236,7 +1241,7 @@ if (editingRecord) {
                             {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.UNDER_TESTING) && (
                                 <div className="bg-white rounded-2xl bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
                                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2"><Package className="w-4 h-4" /> Testing Data</h3>
-                                    <TestingManager initialJobId={editingRecord.id} onSave={reloadEditingRecord} />
+                                    <TestingManager key={jobDetailRefreshKey} initialJobId={editingRecord.id} onSave={reloadEditingRecord} />
                                 </div>
                             )}
                         </>

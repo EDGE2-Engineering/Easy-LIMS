@@ -221,7 +221,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                     </p>
                                 </div>
                             )}
-                            <TabsList className="bg-transparent border-b border-border rounded-none p-0 mb-2 flex-wrap h-auto min-h-0 gap-0 justify-start w-full">
+                            <TabsList className="bg-transparent border-b border-border rounded-none p-0 mb-0 flex-wrap h-auto min-h-0 gap-0 justify-start w-full">
                                 {visibleCategories.map(cat => (
                                     <TabsTrigger
                                         key={cat}
@@ -229,7 +229,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                         className="relative px-4 py-2.5 rounded-none bg-transparent shadow-none text-sm font-medium text-muted-foreground hover:text-foreground transition-colors
                                             data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary
                                             after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-0.5 after:bg-primary after:scale-x-0 after:transition-transform after:duration-200
-                                            data-[state=active]:after:scale-x-100"
+                                            data-[state=active]:after:scale-x-100 mt-0"
                                     >
                                         {cat}
                                     </TabsTrigger>
@@ -241,7 +241,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                 const dataTestTypes = Object.keys(testResults[cat] || {}).filter(k => k !== 'GeotechData' && k !== 'ManualData');
                                 const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
                                 return (
-                                    <TabsContent key={cat} value={cat} className="space-y-6 outline-none">
+                                    <TabsContent key={cat} value={cat} className="space-y-6 outline-none mt-0">
                                         {!GEOTECH_NAMES.includes(cat) && (
                                             <div className="flex items-center justify-between">
                                                 <h4 className="text-sm font-bold text-gray-800">{cat} Test Data</h4>
@@ -258,11 +258,11 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                 </Tooltip>
                                             </div>
                                         )}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
                                             {GEOTECH_NAMES.includes(cat) && (
-                                                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full md:col-span-2 lg:col-span-3">
+                                                <div className="bg-white p-6 rounded-none border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full md:col-span-2 lg:col-span-3">
                                                     <div>
-                                                        <div className="flex items-center justify-between mb-2">
+                                                        <div className="flex items-center justify-between mb-0">
                                                             <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2">
                                                                 Geotechnical Data
                                                             </h4>
