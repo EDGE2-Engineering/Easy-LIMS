@@ -221,9 +221,16 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                     </p>
                                 </div>
                             )}
-                            <TabsList className="bg-muted/60 border border-border rounded-xl p-1 mb-2 flex-wrap h-auto min-h-0 py-1">
+                            <TabsList className="bg-transparent border-b border-border rounded-none p-0 mb-2 flex-wrap h-auto min-h-0 gap-0 justify-start w-full">
                                 {visibleCategories.map(cat => (
-                                    <TabsTrigger key={cat} value={cat} className="px-2 py-1 rounded-lg text-muted-foreground hover:text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                    <TabsTrigger
+                                        key={cat}
+                                        value={cat}
+                                        className="relative px-4 py-2.5 rounded-none bg-transparent shadow-none text-sm font-medium text-muted-foreground hover:text-foreground transition-colors
+                                            data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary
+                                            after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-0.5 after:bg-primary after:scale-x-0 after:transition-transform after:duration-200
+                                            data-[state=active]:after:scale-x-100"
+                                    >
                                         {cat}
                                     </TabsTrigger>
                                 ))}
