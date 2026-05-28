@@ -13,6 +13,7 @@ import { X, Printer } from 'lucide-react';
 import { buildReportPages, formatDisplayValue, formatKey } from '@/utils/reportPreviewUtils';
 import { A4_PRINT_PAGE_STYLE } from '@/utils/a4PrintStyles';
 import './ReportPreview.css';
+import Chart from 'chart.js/auto';
 
 const COMPANY_NAME = 'EDGE2 Engineering Solutions India Pvt. Ltd.';
 const LOGO_SRC = `${import.meta.env.BASE_URL}edge2-logo.png`;
@@ -492,7 +493,132 @@ const SubProfileAnalysisTableBlock = ({ block }) => {
 };
 
 const ParticleSizeDistributionCurveBlock = ({ block }) => {
-}
+  const chartRef = useRef(null);
+  const chartInstance = useRef(null);
+
+  useEffect(() => {
+    if (chartInstance.current) {
+      chartInstance.current.destroy();
+    }
+    
+    if (!chartRef.current) return;
+
+    const ctx = chartRef.current.getContext('2d');
+
+    const grainSizeAnalysis = block.data?.grainSizeAnalysis || [];
+    
+    const SIEVES = [
+      { key: 'sieve0', size: 10 },
+      { key: 'sieve1', size: 4.75 },
+      { key: 'sieve2', size: 2.36 },
+      { key: 'sieve1b', size: 2 },
+      { key: 'sieve3', size: 1.18 },
+      { key: 'sieve4', size: 0.6 },
+      { key: 'sieve5', size: 0.425 },
+      { key: 'sieve6', size: 0.3 },
+      { key: 'sieve7', size: 0.15 },
+      { key: 'sieve8', size: 0.075 },
+    ];
+
+    const colors = ['#ff6f00', '#006687', '#00701a', '#00a3e0', '#b10dc9', '#2ecc40', '#ff4136', '#ff851b', '#7fdbff', '#f012be'];
+    const pointStyles = ['rect', 'diamond', 'triangle', 'crossRot', 'cross', 'line', 'circle', 'star', 'rectRounded', 'rectRot'];
+
+    const datasets = [];
+    let colorIndex = 0;
+
+    grainSizeAnalysis.forEach((bh, bhIdx) => {
+      bh.forEach((d) => {
+        const dataPoints = [];
+        
+        // Add default starting points for visual consistency with original graph if desired, 
+        // or just let it start at 10mm.
+        dataPoints.push({x: 100, y: 100}); 
+        dataPoints.push({x: 50, y: 100}); 
+        dataPoints.push({x: 20, y: 100}); 
+        
+        SIEVES.forEach(({ key, size }) => {
+          if (d[key] !== undefined && d[key] !== '') {
+            dataPoints.push({ x: size, y: Number(d[key]) });
+          }
+        });
+
+        // Skip if no data
+        if (dataPoints.length <= 3) return;
+
+        datasets.push({
+          label: `BH-${bhIdx + 1} (${d.depth || 'Unknown'} m)`,
+          data: dataPoints,
+          borderColor: colors[colorIndex % colors.length],
+          backgroundColor: colors[colorIndex % colors.length],
+          pointStyle: pointStyles[colorIndex % pointStyles.length],
+        });
+        colorIndex++;
+      });
+    });
+
+    chartInstance.current = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    type: 'logarithmic',
+                    reverse: true,
+                    title: { display: true, text: 'PARTICLE SIZE ( MM )', font: { weight: 'bold' } },
+                    min: 0.001,
+                    max: 100,
+                    grid: { color: '#ccc' },
+                    ticks: {
+                        callback: function(value) {
+                            if ([100, 10, 1, 0.1, 0.01, 0.001].includes(value)) {
+                                return value;
+                            }
+                            return null;
+                        }
+                    },
+                    afterBuildTicks: function(scale) {
+                        scale.ticks = [100, 10, 1, 0.1, 0.01, 0.001].map(v => ({value: v}));
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    title: { display: true, text: 'PERCENTAGE FINER THAN', font: { weight: 'bold' } },
+                    min: 0,
+                    max: 100,
+                    ticks: { stepSize: 10 },
+                    grid: { color: '#ccc' }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { usePointStyle: true, boxWidth: 10, font: { weight: 'bold' } }
+                }
+            }
+        }
+    });
+
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+      }
+    };
+  }, []);
+
+  return (
+    <div className="mb-6">
+      <h2 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">
+        Particle Size Distribution Curve
+      </h2>
+      <div className="w-[85%] max-w-[1000px] mx-auto bg-white p-5 rounded-lg shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
+        <canvas ref={chartRef}></canvas>
+      </div>
+    </div>
+  );
+};
 
 const BoreholeLogTableBlock = ({ block }) => {
   const {
@@ -864,6 +990,8 @@ const renderBlock = (block, index) => {
       return <BoreholeLogTableBlock key={index} block={block} />;
     case 'sub-profile-analysis':
       return <SubProfileAnalysisTableBlock key={index} block={block} />;
+    case 'particle-size-distribution-curve':
+      return <ParticleSizeDistributionCurveBlock key={index} block={block} />;
     case 'project-details':
       return <ProjectDetailsBlock key={index} data={block.data} />;
     case 'geotechnical-exploration':

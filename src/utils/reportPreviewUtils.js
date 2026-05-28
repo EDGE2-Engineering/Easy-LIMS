@@ -453,6 +453,13 @@ export const buildReportPages = (formData) => {
     );
   });
 
+  pages.push({
+    isFirstPage: false,
+    isContinuation: false,
+    sectionTitle: 'Particle Size Distribution Curve',
+    blocks: [{ type: 'particle-size-distribution-curve', data }],
+  });
+
   data.sbcDetails.forEach((levelRows, i) => {
     const filtered = levelRows.filter(
       (r) => rowHasData(r) && (r.useForReport !== false)
