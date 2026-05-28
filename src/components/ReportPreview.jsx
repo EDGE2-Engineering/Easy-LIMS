@@ -427,7 +427,14 @@ const BoreholeLogTableBlock = ({ block }) => {
     surveyDate,
     projectName,
     location,
+    methodOfBoring,
   } = block;
+
+  const METHOD_LABELS = {
+    Drilling: 'Rotary Drilling',
+    Manual: 'Manual Auger',
+  };
+  const methodLabel = METHOD_LABELS[methodOfBoring] || methodOfBoring || 'Rotary Drilling';
 
   const bhLabel = `BH-${String(boreholeNumber).padStart(2, '0')}`;
 
@@ -454,7 +461,7 @@ const BoreholeLogTableBlock = ({ block }) => {
             <td className="border border-gray-400 px-1 py-0.5 font-bold w-[18%]">Location:</td>
             <td className="border border-gray-400 px-1 py-0.5 w-[32%]">{location || 'NA'}</td>
             <td className="border border-gray-400 px-1 py-0.5 font-bold w-[20%]">Method of Boring:</td>
-            <td className="border border-gray-400 px-1 py-0.5 w-[30%]">Manual-Augering / Rotary</td>
+            <td className="border border-gray-400 px-1 py-0.5 w-[30%]">{methodLabel}</td>
           </tr>
           <tr>
             <td className="border border-gray-400 px-1 py-0.5 font-bold">Borehole No:</td>

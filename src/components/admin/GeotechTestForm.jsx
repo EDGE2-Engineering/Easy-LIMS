@@ -13,22 +13,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.jsx";
 import { ArrowDownFromLine, Layers, LandPlot, Trash2, Plus, FlaskConical, TestTube } from 'lucide-react';
-
-const soilTypes = [
-    'Filled-up Soil', 'Brownish Gravelly Soil', 'Grayish Gravelly Soil', 'Open Rock',
-    'Brownish Silty Sand (SM)', 'Brownish Silt (ML)', 'Grayish Silt (ML)',
-    'Light Yellowish Silt (ML)', 'Grayish Silty Sand (SM)', 'Grayish Silty Gravels (GM)',
-    'Brownish Silty Gravel (GM)', 'Grayish Clayey Gravel (GC)', 'Brownish Clayey Gravel (GC)',
-    'Poorly Graded Gravel (GP)', 'Poorly Graded Sand (SP)', 'Brownish Clayey Sand (SC)',
-    'Grayish Clayey Sand (SC)', 'Brownish Clay of Low Plasticity (CL)',
-    'Grayish Clay of Low Plasticity (CL)', 'Grayish Clay of High Plasticity (CH)',
-    'Black Clay of High Plasticity (CH)', 'Soft Disintegrated Weathered Rock',
-    'Weathered Rock', 'Lateritic Rock', 'Laterite Hard Gravels', 'Rock Pebbles/Hard Morum',
-    'Basalt Rock', 'Fractured Basalt Rock', 'Hard Rock', 'Medium Hard Rock',
-    'Reddish Gravelly Soil', 'Reddish Silty Sand (SM)', 'Reddish Silty Gravel (GM)',
-    'Reddish Silt (ML)', 'Reddish Clayey Gravel (GC)', 'Reddish Clayey Sand (SC)',
-    'Reddish Clay of Low Plasticity (CL)', 'Others'
-];
+import { soilTypes } from '@/data/soilTypes';
 
 export default function GeotechTestForm({ value, onChange }) {
     const [activeTab, setActiveTab] = useState('borehole');
@@ -47,7 +32,7 @@ export default function GeotechTestForm({ value, onChange }) {
         longitudes: value?.longitudes || [],
         labTestResults: value?.labTestResults || [[{ depth: '', bulkDensity: '', moistureContent: '', grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' }, atterbergLimits: { liquidLimit: '', plasticLimit: '', plasticityIndex: '' }, specificGravity: '', freeSwellIndex: '' }]],
         chemicalAnalysis: value?.chemicalAnalysis || [{ phValue: '', sulphates: '', chlorides: '', additionalKeys: [{ key: '', value: '' }] }],
-        grainSizeAnalysis: value?.grainSizeAnalysis || [[{ depth: '', sieve1: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' }]],
+        grainSizeAnalysis: value?.grainSizeAnalysis || [[{ depth: '', sieve0: '', sieve1: '', sieve1b: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' }]],
         sbcDetails: value?.sbcDetails || [[{ depth: '', footingDimension: '', useForReport: false, sbcValue: '' }]],
         subSoilProfile: value?.subSoilProfile || [[{ depth: '', description: '' }]],
         directShearResults: value?.directShearResults || [[{ shearBoxSize: '', depthOfSample: '', cValue: '', phiValue: '', stressReadings: [{ normalStress: '', shearStress: '' }] }]],
@@ -117,7 +102,7 @@ export default function GeotechTestForm({ value, onChange }) {
             longitudes: [...(formData.longitudes || []), ''],
             sbcDetails: [...formData.sbcDetails, [{ depth: '', sbcValue: '' }]],
             labTestResults: [...formData.labTestResults, [{ depth: '', bulkDensity: '', moistureContent: '', grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' }, atterbergLimits: { liquidLimit: '', plasticLimit: '', plasticityIndex: '' }, specificGravity: '', freeSwellIndex: '' }]],
-            grainSizeAnalysis: [...formData.grainSizeAnalysis, [{ depth: '', sieve1: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' }]]
+            grainSizeAnalysis: [...formData.grainSizeAnalysis, [{ depth: '', sieve0: '', sieve1: '', sieve1b: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' }]]
         });
     };
 
@@ -220,7 +205,7 @@ export default function GeotechTestForm({ value, onChange }) {
 
     const addGrainSizeDepth = (boreholeIndex) => {
         const newAnalysis = [...formData.grainSizeAnalysis];
-        newAnalysis[boreholeIndex].push({ depth: '', sieve1: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' });
+        newAnalysis[boreholeIndex].push({ depth: '', sieve0: '', sieve1: '', sieve1b: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' });
         setFormData({ ...formData, grainSizeAnalysis: newAnalysis });
     };
 
@@ -319,7 +304,7 @@ export default function GeotechTestForm({ value, onChange }) {
                                                             <Select value={depthData.natureOfSampling} onValueChange={(v) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'natureOfSampling', v)}>
                                                                 <SelectTrigger className="h-8" title="Nature of Sampling (CR: Core Recovery, DS: Disturbed, UDS: Undisturbed, SPT: Split Spoon)"><SelectValue placeholder="Select" /></SelectTrigger>
                                                                 <SelectContent>
-                                                                    <SelectItem value="CR">CR</SelectItem>
+                                                                    <SelectItem value="Core">Core</SelectItem>
                                                                     <SelectItem value="DS">DS</SelectItem>
                                                                     <SelectItem value="UDS">UDS</SelectItem>
                                                                     <SelectItem value="SPT">SPT</SelectItem>
@@ -457,11 +442,13 @@ export default function GeotechTestForm({ value, onChange }) {
                                         <h4 className="text-sm font-bold text-gray-800">Sieve Analysis - BH {boreholeIndex + 1}</h4>
                                     </div>
                                     <div className="border rounded-lg bg-white mb-4 overflow-x-auto">
-                                        <table className="w-full text-sm text-left border-collapse min-w-[1000px]">
+                                        <table className="w-full text-sm text-left border-collapse min-w-[1200px]">
                                             <thead className="text-[11px] text-gray-500 uppercase bg-gray-50/50 border-b">
                                                 <tr>
                                                     <th className="px-3 py-2 font-bold w-20">Depth</th>
+                                                    <th className="px-2 py-2 font-bold text-center">10mm</th>
                                                     <th className="px-2 py-2 font-bold text-center">4.75mm</th>
+                                                    <th className="px-2 py-2 font-bold text-center">2mm</th>
                                                     <th className="px-2 py-2 font-bold text-center">2.36mm</th>
                                                     <th className="px-2 py-2 font-bold text-center">1.18mm</th>
                                                     <th className="px-2 py-2 font-bold text-center">0.60mm</th>
@@ -479,9 +466,9 @@ export default function GeotechTestForm({ value, onChange }) {
                                                         <td className="px-2 py-2">
                                                             <Input value={depthData.depth} onChange={(e) => handleGrainSizeChange(boreholeIndex, depthIndex, 'depth', e.target.value)} className="h-8 w-16" title="Depth (m)" />
                                                         </td>
-                                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                                                            <td key={num} className="px-1 py-2">
-                                                                <Input value={depthData[`sieve${num}`]} onChange={(e) => handleGrainSizeChange(boreholeIndex, depthIndex, `sieve${num}`, e.target.value)} className="h-8 text-center" placeholder="%" title="Percentage passing (%)" />
+                                                        {['sieve0', 'sieve1', 'sieve1b', 'sieve2', 'sieve3', 'sieve4', 'sieve5', 'sieve6', 'sieve7', 'sieve8', 'sieve9'].map(key => (
+                                                            <td key={key} className="px-1 py-2">
+                                                                <Input value={depthData[key] ?? ''} onChange={(e) => handleGrainSizeChange(boreholeIndex, depthIndex, key, e.target.value)} className="h-8 text-center" placeholder="%" title="Percentage passing (%)" />
                                                             </td>
                                                         ))}
                                                         <td className="px-2 py-2">

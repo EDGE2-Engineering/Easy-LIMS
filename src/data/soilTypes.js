@@ -1,0 +1,22 @@
+export const soilTypes = [
+    'Filled-up Soil', 'Brownish Gravelly Soil', 'Grayish Gravelly Soil', 'Open Rock',
+    'Brownish Silty Sand (SM)', 'Brownish Silt (ML)', 'Grayish Silt (ML)',
+    'Light Yellowish Silt (ML)', 'Grayish Silty Sand (SM)', 'Grayish Silty Gravels (GM)',
+    'Brownish Silty Gravel (GM)', 'Grayish Clayey Gravel (GC)', 'Brownish Clayey Gravel (GC)',
+    'Poorly Graded Gravel (GP)', 'Poorly Graded Sand (SP)', 'Brownish Clayey Sand (SC)',
+    'Grayish Clayey Sand (SC)', 'Brownish Clay of Low Plasticity (CL)',
+    'Grayish Clay of Low Plasticity (CL)', 'Grayish Clay of High Plasticity (CH)',
+    'Black Clay of High Plasticity (CH)', 'Soft Disintegrated Weathered Rock',
+    'Weathered Rock', 'Lateritic Rock', 'Laterite Hard Gravels', 'Rock Pebbles/Hard Morum',
+    'Basalt Rock', 'Fractured Basalt Rock', 'Hard Rock', 'Medium Hard Rock',
+    'Reddish Gravelly Soil', 'Reddish Silty Sand (SM)', 'Reddish Silty Gravel (GM)',
+    'Reddish Silt (ML)', 'Reddish Clayey Gravel (GC)', 'Reddish Clayey Sand (SC)',
+    'Reddish Clay of Low Plasticity (CL)', 
+    'Top soil',
+    'Murrum soil',
+    'Sandy clay',
+    'Silty clay',
+    'Organic clay',
+    'Inorganic clay',
+    'Others'
+];

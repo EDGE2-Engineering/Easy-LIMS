@@ -66,8 +66,8 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
         }
     }, [selectedCategory]);
 
-    const fetchData = async () => {
-        setLoading(true);
+    const fetchData = async ({ silent = false } = {}) => {
+        if (!silent) setLoading(true);
         try {
             // Fetch Job
             const { data: job, error: jobError } = await supabase.from('jobs').select('*, clients(client_name)').eq('id', initialJobId).single();
@@ -101,7 +101,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
             console.error(error);
             toast({ title: "Error", description: "Failed to load data", variant: "destructive" });
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     };
 
@@ -127,7 +127,16 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
             const recordData = {
                 job_id: initialJobId,
                 category,
-                results: testResults[category] || {},
+                results: {
+                    ...testResults[category] || {},
+                    // Stamp the entry mode so the report knows the method of boring
+                    ...(testResults[category]?.GeotechData !== undefined && {
+                        GeotechData: {
+                            ...testResults[category].GeotechData,
+                            methodOfBoring: entryMode,
+                        }
+                    }),
+                },
                 status: 'IN_PROGRESS',
                 assigned_technician_id: userId || null,
                 updated_at: new Date().toISOString()
@@ -145,14 +154,15 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
             if (error) throw error;
             toast({ title: "Progress Saved", description: `Results for ${category} have been saved.` });
             
-            // Refetch to sync state immediately with database
-            await fetchData();
+            // Refetch silently to sync state without showing the loading spinner
+            await fetchData({ silent: true });
             
             // Trigger parent callback to sync parent state
             if (onSave) onSave();
         } catch (err) {
             console.error(err);
             toast({ title: "Error", description: "Failed to save results", variant: "destructive" });
+            return false;
         } finally {
             setIsSaving(false);
         }
@@ -330,7 +340,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                     <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                                                                         <Package className="w-3 h-3 text-purple-500" /> SBC Details
                                                                                     </h5>
-                                                                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden max-w-md">
+                                                                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden w-full">
                                                                                         <table className="w-full text-left text-[11px]">
                                                                                             <thead className="bg-gray-50 border-b">
                                                                                                 <tr>
@@ -394,8 +404,20 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                 <tr>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">BH</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Depth</th>
-                                                                                                    {[4.75, 2.36, 1.18, 0.60, 0.425, 0.30, 0.15, 0.075, 'Pan'].map(size => (
-                                                                                                        <th key={size} className="p-2 font-bold text-gray-400 text-center text-[9px] uppercase">{size}</th>
+                                                                                                    {[
+                                                                                                        { key: 'sieve0',  label: '10mm'    },
+                                                                                                        { key: 'sieve1',  label: '4.75mm'  },
+                                                                                                        { key: 'sieve1b', label: '2mm'     },
+                                                                                                        { key: 'sieve2',  label: '2.36mm'  },
+                                                                                                        { key: 'sieve3',  label: '1.18mm'  },
+                                                                                                        { key: 'sieve4',  label: '0.60mm'  },
+                                                                                                        { key: 'sieve5',  label: '0.425mm' },
+                                                                                                        { key: 'sieve6',  label: '0.30mm'  },
+                                                                                                        { key: 'sieve7',  label: '0.15mm'  },
+                                                                                                        { key: 'sieve8',  label: '0.075mm' },
+                                                                                                        { key: 'sieve9',  label: 'Pan'     },
+                                                                                                    ].map(({ key, label }) => (
+                                                                                                        <th key={key} className="p-2 font-bold text-gray-400 text-center text-[9px] uppercase">{label}</th>
                                                                                                     ))}
                                                                                                 </tr>
                                                                                             </thead>
@@ -404,8 +426,8 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                     <tr key={`sieve-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
                                                                                                         <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
                                                                                                         <td className="p-3 text-gray-900 font-medium">{d.depth || '-'}</td>
-                                                                                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                                                                                                            <td key={num} className="p-2 text-center text-gray-500 font-mono">{d[`sieve${num}`] || '-'}</td>
+                                                                                                        {['sieve0', 'sieve1', 'sieve1b', 'sieve2', 'sieve3', 'sieve4', 'sieve5', 'sieve6', 'sieve7', 'sieve8', 'sieve9'].map(key => (
+                                                                                                            <td key={key} className="p-2 text-center text-gray-500 font-mono">{d[key] ?? '-'}</td>
                                                                                                         ))}
                                                                                                     </tr>
                                                                                                 )))}
@@ -420,7 +442,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                     <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                                                                         <FlaskConical className="w-3 h-3 text-rose-500" /> Chemical Analysis
                                                                                     </h5>
-                                                                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden max-w-2xl">
+                                                                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden w-full">
                                                                                         <table className="w-full text-left text-[11px]">
                                                                                             <thead className="bg-gray-50 border-b">
                                                                                                 <tr>
@@ -453,7 +475,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                     <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                                                                         <Beaker className="w-3 h-3 text-indigo-500" /> Direct Shear Results
                                                                                     </h5>
-                                                                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden max-w-2xl">
+                                                                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden w-full">
                                                                                         <table className="w-full text-left text-[11px]">
                                                                                             <thead className="bg-gray-50 border-b">
                                                                                                 <tr>
@@ -759,7 +781,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                             </div>
                             <div className="sticky bottom-0 z-10 flex justify-end gap-3 px-6 py-4 border-t border-border bg-background/95 backdrop-blur-sm shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
                                 <Button variant="ghost" className="px-6 rounded-xl hover:bg-muted font-medium text-muted-foreground" onClick={() => setSelectedCategory(null)} disabled={isSaving}>Cancel</Button>
-                                <Button className="px-8 rounded-xl bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold dark:text-white" onClick={async () => { await handleSaveResults(selectedCategory); setSelectedCategory(null); }} disabled={isSaving}>
+                                <Button className="px-8 rounded-xl bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold dark:text-white" onClick={async () => { const ok = await handleSaveResults(selectedCategory); if (ok !== false) setSelectedCategory(null); }} disabled={isSaving}>
                                     {isSaving ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />} Save All Results
                                 </Button>
                             </div>

@@ -392,6 +392,7 @@ export const buildReportPages = (formData) => {
         surveyDate: data.surveyDate || '',
         projectName: data.projectName || data.projectDetails || '',
         location: data.siteAddress || data.siteName || '',
+        methodOfBoring: data.methodOfBoring || '',
       }],
     });
   });
