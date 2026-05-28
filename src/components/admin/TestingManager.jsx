@@ -306,7 +306,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">SPT (15/30/45)</th>
                                                                                                 </tr>
                                                                                             </thead>
-                                                                                            <tbody className="divide-y divide-gray-50">
+                                                                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                                                                                                 {boreholeLogs.map((bh, bhIdx) => bh.map((d, dIdx) => (
                                                                                                     <tr key={`bh-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
                                                                                                         <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
@@ -343,7 +343,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">SG/FSI</th>
                                                                                                 </tr>
                                                                                             </thead>
-                                                                                            <tbody className="divide-y divide-gray-50">
+                                                                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                                                                                                 {labTestResults.map((bh, bhIdx) => bh.map((d, dIdx) => (
                                                                                                     <tr key={`lab-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
                                                                                                         <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
@@ -375,7 +375,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">SBC Value (t/m²)</th>
                                                                                                 </tr>
                                                                                             </thead>
-                                                                                            <tbody className="divide-y divide-gray-50">
+                                                                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                                                                                                 {sbcDetails.map((bh, bhIdx) => bh.map((d, dIdx) => (
                                                                                                     <tr key={`sbc-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
                                                                                                         <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
@@ -404,7 +404,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Description</th>
                                                                                                 </tr>
                                                                                             </thead>
-                                                                                            <tbody className="divide-y divide-gray-50">
+                                                                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                                                                                                 {geotechData.subSoilProfile.map((bh, bhIdx) => bh.map((d, dIdx) => (
                                                                                                     <tr key={`profile-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
                                                                                                         <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
@@ -447,7 +447,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                     ))}
                                                                                                 </tr>
                                                                                             </thead>
-                                                                                            <tbody className="divide-y divide-gray-50">
+                                                                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                                                                                                 {grainSizeAnalysis.map((bh, bhIdx) => bh.map((d, dIdx) => (
                                                                                                     <tr key={`sieve-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
                                                                                                         <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
@@ -478,7 +478,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Other Parameters</th>
                                                                                                 </tr>
                                                                                             </thead>
-                                                                                            <tbody className="divide-y divide-gray-50">
+                                                                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                                                                                                 {geotechData.chemicalAnalysis.map((d, idx) => (
                                                                                                     <tr key={`chem-${idx}`} className="hover:bg-gray-50/30 transition-colors">
                                                                                                         <td className="p-3 text-gray-900 font-medium">{d.phValue || '-'}</td>
@@ -512,7 +512,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">phi Value</th>
                                                                                                 </tr>
                                                                                             </thead>
-                                                                                            <tbody className="divide-y divide-gray-50">
+                                                                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                                                                                                 {geotechData.directShearResults.map((bh, bhIdx) => bh.map((d, dIdx) => (
                                                                                                     <tr key={`shear-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
                                                                                                         <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>

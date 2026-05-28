@@ -955,42 +955,42 @@ if (editingRecord) {
                                             <p className="text-xs font-medium uppercase tracking-widest">Loading Logs...</p>
                                         </div>
                                     ) : auditLogs.length > 0 ? (
-                                        <div className="rounded-xl border border-gray-100 overflow-hidden shadow-sm">
-                                            <table className="w-full text-left text-xs">
+                                        <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
+                                            <table className="w-full text-left text-[11px]">
                                                 <thead className="bg-gray-50 border-b">
                                                     <tr>
-                                                        <th className="p-4 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Date & Time</th>
-                                                        <th className="p-4 font-bold text-gray-400 uppercase tracking-widest text-[9px]">User</th>
-                                                        {/* <th className="p-4 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Action</th> */}
-                                                        <th className="p-4 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Transition</th>
-                                                        <th className="p-4 font-bold text-gray-400 uppercase tracking-widest text-[9px]">Remarks</th>
+                                                        <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Date & Time</th>
+                                                        <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">User</th>
+                                                        {/* <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Action</th> */}
+                                                        <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Transition</th>
+                                                        <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Remarks</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-gray-50">
+                                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                                                     {auditLogs.map((log) => (
-                                                        <tr key={log.id} className="hover:bg-blue-50/30 transition-colors">
-                                                            <td className="p-4 font-medium text-gray-600 whitespace-nowrap">
+                                                        <tr key={log.id} className="hover:bg-gray-50/30 transition-colors">
+                                                            <td className="p-3 font-medium text-gray-600 whitespace-nowrap">
                                                                 {new Date(log.created_at).toLocaleString('en-IN', {
                                                                     dateStyle: 'medium',
                                                                     timeStyle: 'short'
                                                                 })}
                                                             </td>
-                                                            <td className="p-4">
+                                                            <td className="p-3">
                                                                 <div className="font-bold text-gray-900">{log.users?.full_name || log.users?.username || '-'}</div>
                                                             </td>
-                                                            {/* <td className="p-4">
+                                                            {/* <td className="p-3">
                                                                 <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] font-bold uppercase">
                                                                     {ACTIONS[log.action_id]?.label || log.action_id}
                                                                 </Badge>
                                                             </td> */}
-                                                            <td className="p-4">
+                                                            <td className="p-3">
                                                                 <div className="flex items-center gap-2 text-[10px]">
                                                                     <span className="text-gray-600">{getStatusLabel(log.from_state)}</span>
                                                                     <ArrowRight className="w-3 h-3 text-blue-600" />
                                                                     <span className="font-bold text-primary">{getStatusLabel(log.to_state)}</span>
                                                                 </div>
                                                             </td>
-                                                            <td className="p-4 text-gray-500 italic">
+                                                            <td className="p-3 text-gray-500 italic">
                                                                 {log.remarks || '-'}
                                                             </td>
                                                         </tr>
@@ -1127,20 +1127,20 @@ if (editingRecord) {
                                             </Button>
                                         }
                                     </div>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-xs">
+                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
+                                        <table className="w-full text-left text-[11px]">
                                             <thead className="bg-gray-50 border-b">
                                                 <tr>
-                                                    <th className="p-3">Description</th>
-                                                    <th className="p-3 text-center">Qty</th>
-                                                    <th className="p-3 text-center">Unit</th>
-                                                    <th className="p-3 text-right">Unit Price</th>
-                                                    <th className="p-3 text-right">Total</th>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Description</th>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-center">Qty</th>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-center">Unit</th>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">Unit Price</th>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">Total</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y">
+                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                                                 {(linkedDocs.find(d => d.document_type === 'Quotation')?.content?.items || []).map((item, idx) => (
-                                                    <tr key={idx}>
+                                                    <tr key={idx} className="hover:bg-gray-50/30 transition-colors">
                                                         <td className="p-3 text-gray-700 font-medium">{item.description}</td>
                                                         <td className="p-3 text-center text-gray-500">{item.qty}</td>
                                                         <td className="p-3 text-center text-gray-500">{item.unit}</td>
@@ -1169,10 +1169,32 @@ if (editingRecord) {
                                             <Button variant="outline" size="sm" onClick={() => setShowingMaterialForm(true)} className="h-8 text-xs"><Edit className="w-3 h-3 mr-1" /> Edit Entries</Button>
                                         )}
                                     </div>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-xs">
-                                            <thead className="bg-gray-50 border-b"><tr><th className="p-3">Code</th><th className="p-3">Material Type</th><th className="p-3">Description</th><th className="p-3 text-center">Qty</th><th className="p-3 text-right">Date</th><th className="p-3 text-right">Collected By</th><th className="p-3 text-right">Collected At</th></tr></thead>
-                                            <tbody className="divide-y">{jobSamples.map((s, i) => (<tr key={i}><td className="p-3 font-bold">{s.sample_code}</td><td className="p-3 text-gray-500">{MATERIALS.find(m => m.id === s.material_type)?.name || s.material_type || '-'}</td><td className="p-3 text-gray-500">{s.sample_description}</td><td className="p-3 text-center">{s.quantity}</td><td className="p-3 text-right text-gray-400">{s.received_date}</td><td className="p-3 text-right text-gray-400">{s.users?.full_name || '-'}</td><td className="p-3 text-right text-gray-400">{s.collection_centers?.name || '-'}</td></tr>))}</tbody>
+                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
+                                        <table className="w-full text-left text-[11px]">
+                                            <thead className="bg-gray-50 border-b">
+                                                <tr>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Code</th>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Material Type</th>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Description</th>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-center">Qty</th>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">Date</th>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">Collected By</th>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">Collected At</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                                {jobSamples.map((s, i) => (
+                                                    <tr key={i} className="hover:bg-gray-50/30 transition-colors">
+                                                        <td className="p-3 font-bold text-gray-900">{s.sample_code}</td>
+                                                        <td className="p-3 text-gray-500">{MATERIALS.find(m => m.id === s.material_type)?.name || s.material_type || '-'}</td>
+                                                        <td className="p-3 text-gray-500">{s.sample_description}</td>
+                                                        <td className="p-3 text-center text-gray-500">{s.quantity}</td>
+                                                        <td className="p-3 text-right text-gray-400">{s.received_date}</td>
+                                                        <td className="p-3 text-right text-gray-400">{s.users?.full_name || '-'}</td>
+                                                        <td className="p-3 text-right text-gray-400">{s.collection_centers?.name || '-'}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
                                         </table>
                                     </div>
                                 </div>
@@ -1186,11 +1208,24 @@ if (editingRecord) {
                                             <Button variant="outline" size="sm" onClick={() => setShowingTechForm(true)} className="h-8 text-xs"><Edit className="w-3 h-3 mr-1" /> Edit Assignments</Button>
                                         </div>
                                     )}
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-xs">
-                                            <thead className="bg-gray-50 border-b"><tr><th className="p-3">Assigned Technician</th></tr></thead>
-                                            <tbody className="divide-y">{techAssignments.map((a, i) => (<tr key={i}><td className="p-3 font-bold text-gray-700">{a.full_name || a.username}</td></tr>))}
-                                                {techAssignments.length === 0 && <tr><td className="p-3 text-gray-500 italic">No technician assigned yet.</td></tr>}
+                                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
+                                        <table className="w-full text-left text-[11px]">
+                                            <thead className="bg-gray-50 border-b">
+                                                <tr>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Assigned Technician</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                                {techAssignments.map((a, i) => (
+                                                    <tr key={i} className="hover:bg-gray-50/30 transition-colors">
+                                                        <td className="p-3 font-bold text-gray-900">{a.full_name || a.username}</td>
+                                                    </tr>
+                                                ))}
+                                                {techAssignments.length === 0 && (
+                                                    <tr>
+                                                        <td className="p-3 text-gray-500 italic">No technician assigned yet.</td>
+                                                    </tr>
+                                                )}
                                             </tbody>
                                         </table>
                                     </div>
