@@ -223,7 +223,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                             )}
                             <TabsList className="bg-muted/60 border border-border rounded-xl p-1 mb-2 flex-wrap h-auto min-h-0 py-1">
                                 {visibleCategories.map(cat => (
-                                    <TabsTrigger key={cat} value={cat} className="px-2 py-2 rounded-lg text-muted-foreground hover:text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                    <TabsTrigger key={cat} value={cat} className="px-2 py-1 rounded-lg text-muted-foreground hover:text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                                         {cat}
                                     </TabsTrigger>
                                 ))}
