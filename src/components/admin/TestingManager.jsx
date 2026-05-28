@@ -235,14 +235,42 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                 const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
                                 return (
                                     <TabsContent key={cat} value={cat} className="space-y-6 outline-none">
+                                        {!GEOTECH_NAMES.includes(cat) && (
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="text-sm font-bold text-gray-800">{cat} Test Data</h4>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="outline" size="sm" onClick={() => setSelectedCategory(cat)} className="h-8 text-xs">
+                                                            <Edit className="w-3 h-3 mr-1" />
+                                                            Edit {cat} Test Data
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                        <p className="text-xs">Open data entry form for {cat}</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
+                                        )}
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                             {GEOTECH_NAMES.includes(cat) && (
                                                 <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full md:col-span-2 lg:col-span-3">
                                                     <div>
-                                                        <h4 className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
-                                                            {/* <div className={`w-2 h-2 rounded-full ${Object.keys(testResults[cat]?.['GeotechData'] || {}).length > 0 ? 'bg-green-500' : 'bg-amber-400'}`} /> */}
-                                                            Geotechnical Data
-                                                        </h4>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                                                Geotechnical Data
+                                                            </h4>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Button variant="outline" size="sm" onClick={() => setSelectedCategory(cat)} className="h-8 text-xs">
+                                                                        <Edit className="w-3 h-3 mr-1" />
+                                                                        Edit {cat} Test Data
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                                                    <p className="text-xs">Open data entry form for {cat}</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </div>
                                                         {!testResults[cat]?.['GeotechData'] || Object.keys(testResults[cat]?.['GeotechData'] || {}).length === 0 ? (
                                                             <p className="text-xs text-gray-500 mb-4">Pending geotechnical input</p>
                                                         ) : (
@@ -564,19 +592,6 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                             })}
                                         </div>
 
-                                        <div className="flex justify-end pt-0">
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button onClick={() => setSelectedCategory(cat)} className="bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 dark:text-white py-0 px-2 rounded-md my-0 mx-4">
-                                                        <Edit className="mr-2 h-4 w-4" />
-                                                        Edit {cat} Test Data
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                                    <p className="text-xs">Open data entry form for {cat}</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div>
                                     </TabsContent>
                                 );
                             })}
