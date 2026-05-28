@@ -221,9 +221,9 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                     </p>
                                 </div>
                             )}
-                            <TabsList className="bg-muted/60 border border-border rounded-xl p-1 mb-6 flex-wrap h-auto min-h-0 py-1">
+                            <TabsList className="bg-muted/60 border border-border rounded-xl p-1 mb-2 flex-wrap h-auto min-h-0 py-1">
                                 {visibleCategories.map(cat => (
-                                    <TabsTrigger key={cat} value={cat} className="px-6 py-2.5 rounded-lg text-muted-foreground hover:text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                    <TabsTrigger key={cat} value={cat} className="px-2 py-2 rounded-lg text-muted-foreground hover:text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                                         {cat}
                                     </TabsTrigger>
                                 ))}
@@ -514,7 +514,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                             
                                             {/* Manual Geotech Data Card */}
                                             {testResults[cat]?.['ManualData'] && Object.keys(testResults[cat]?.['ManualData']).length > 0 && (
-                                                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full md:col-span-1 lg:col-span-1">
+                                                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full md:col-span-1 lg:col-span-1 hidden">
                                                     <div>
                                                         <h4 className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
                                                             <div className="w-2 h-2 rounded-full bg-blue-500" />
@@ -564,10 +564,10 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                             })}
                                         </div>
 
-                                        <div className="flex justify-end pt-4">
+                                        <div className="flex justify-end pt-0">
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Button onClick={() => setSelectedCategory(cat)} className="bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 dark:text-white py-0 px-2 rounded-md my-4 mx-4">
+                                                    <Button onClick={() => setSelectedCategory(cat)} className="bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 dark:text-white py-0 px-2 rounded-md my-0 mx-4">
                                                         <Edit className="mr-2 h-4 w-4" />
                                                         Edit {cat} Test Data
                                                     </Button>

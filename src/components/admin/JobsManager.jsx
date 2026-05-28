@@ -1118,9 +1118,9 @@ if (editingRecord) {
                         <>
                             {/* Quotation Summary */}
                             {linkedDocs.find(d => d.document_type === 'Quotation') && (
-                                <div className="bg-white rounded-2xl shadow-sm">
+                                <div className="bg-white rounded-2xl shadow-sm bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
                                     <div className="flex justify-between items-center mb-6">
-                                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><FileText className="w-4 h-4" /> Quotation Summary</h3>
+                                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 "><FileText className="w-4 h-4" /> Quotation Summary</h3>
                                         {
                                             canModify && <Button variant="ghost" size="sm" onClick={() => navigate(`/doc/${linkedDocs.find(d => d.document_type === 'Quotation').id}`)} className="h-8 text-xs text-primary hover:bg-primary/5">
                                                 <ExternalLink className="w-3 h-3 mr-1" /> View Full Document
@@ -1162,7 +1162,7 @@ if (editingRecord) {
 
                             {/* Materials Summary */}
                             {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.MATERIAL_RECEIVED) && (
-                                <div className="bg-white rounded-2xl shadow-sm">
+                                <div className="bg-white rounded-2xl shadow-sm bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><Package className="w-4 h-4" /> Material Inward Details</h3>
                                         {canModify && (
@@ -1179,7 +1179,7 @@ if (editingRecord) {
                             )}
 
                             {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.TECHNICIANS_ASSIGNED) && (
-                                <div className="bg-white rounded-2xl shadow-sm">
+                                <div className="bg-white rounded-2xl shadow-sm bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
                                     {(canModify || user?.role === ROLES.MRO.slug) && (
                                         <div className="flex justify-between items-center mb-6">
                                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><UserPlus className="w-4 h-4" /> Technician Assignments</h3>
@@ -1199,7 +1199,7 @@ if (editingRecord) {
 
                             {/* Testing Data */}
                             {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.UNDER_TESTING) && (
-                                <div className="bg-white rounded-2xl shadow-sm">
+                                <div className="bg-white rounded-2xl bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
                                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2"><Package className="w-4 h-4" /> Testing Data</h3>
                                     <TestingManager initialJobId={editingRecord.id} onSave={reloadEditingRecord} />
                                 </div>
