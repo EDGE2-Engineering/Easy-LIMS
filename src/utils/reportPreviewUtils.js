@@ -376,6 +376,22 @@ export const buildReportPages = (formData) => {
     blocks: [{ type: 'geotechnical-exploration', data }],
   });
 
+  // One Sub-Soil Profile page per borehole (before Bore Log Data Sheets)
+  data.boreholeLogs.forEach((levelLogs, i) => {
+    pages.push({
+      isFirstPage: false,
+      isContinuation: false,
+      sectionTitle: `Sub-Soil Profile – BH-${String(i + 1).padStart(2, '0')}`,
+      blocks: [{
+        type: 'sub-profile-analysis',
+        boreholeIndex: i,
+        boreholeNumber: i + 1,
+        logs: levelLogs,
+        location: data.siteAddress || data.siteName || '',
+      }],
+    });
+  });
+
   // One Bore Log Data Sheet page per borehole
   data.boreholeLogs.forEach((levelLogs, i) => {
     pages.push({

@@ -416,6 +416,80 @@ const GeotechnicalExplorationBlock = ({ data }) => {
   );
 };
 
+const SubProfileAnalysisTableBlock = ({ block }) => {
+  const { boreholeNumber, logs = [], location } = block;
+  const bhLabel = `BH-${String(boreholeNumber).padStart(2, '0')}`;
+
+  return (
+    <div className="text-[9px] leading-tight">
+      <div className="text-center font-bold text-[11px] uppercase tracking-wide border border-gray-400 py-1 mb-0 bg-[#fcf8f2]">
+        Sub-Soil Profile and Classification
+      </div>
+      <table className="w-full border-collapse border border-gray-400 text-[9px] text-center">
+        <thead>
+          <tr className="bg-[#fbc49c]">
+            <th colSpan="4" className="border border-gray-400 px-2 py-1.5 font-bold text-gray-900 text-left">
+              Borehole No: {bhLabel}
+            </th>
+            <th colSpan="4" className="border border-gray-400 px-2 py-1.5 font-bold text-gray-900 text-left">
+              Location: {location || 'NA'}
+            </th>
+          </tr>
+          <tr className="bg-[#fbc49c]">
+            <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '5%' }}>S. No</th>
+            <th colSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900" style={{ width: '16%' }}>Depth (m)</th>
+            <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '14%' }}>Layer Thickness (m)</th>
+            <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '35%' }}>Strata Description</th>
+            <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '10%' }}>N Value</th>
+            <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '10%' }}>CR%</th>
+            <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '10%' }}>RQD%</th>
+          </tr>
+          <tr className="bg-[#fbc49c]">
+            <th className="border border-gray-400 px-1 py-0.5 font-bold text-gray-900">From</th>
+            <th className="border border-gray-400 px-1 py-0.5 font-bold text-gray-900">To</th>
+          </tr>
+        </thead>
+        <tbody>
+          {logs.length === 0 ? (
+            <tr>
+              <td colSpan="8" className="border border-gray-400 px-2 py-3 text-center text-gray-400 italic">
+                No sub-soil profile data recorded.
+              </td>
+            </tr>
+          ) : (
+            logs.map((row, idx) => {
+              const fromDepth = idx === 0 ? '0.0' : (logs[idx - 1]?.depth ?? '-');
+              const toDepth = row.depth || '-';
+              const fromNum = parseFloat(fromDepth);
+              const toNum = parseFloat(toDepth);
+              const thickness = (!isNaN(fromNum) && !isNaN(toNum))
+                ? (toNum - fromNum).toFixed(1)
+                : '-';
+              const isDS = row.natureOfSampling === 'DS';
+              const spt2n = Number(row.spt2);
+              const spt3n = Number(row.spt3);
+              const nValue = !isDS && row.natureOfSampling === 'SPT' && !isNaN(spt2n) && !isNaN(spt3n)
+                ? spt2n + spt3n
+                : '-';
+              return (
+                <tr key={idx} className="border-b border-gray-300">
+                  <td className="border border-gray-400 px-1 py-1">{idx + 1}</td>
+                  <td className="border border-gray-400 px-1 py-1">{fromDepth}</td>
+                  <td className="border border-gray-400 px-1 py-1">{toDepth}</td>
+                  <td className="border border-gray-400 px-1 py-1">{thickness}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">{row.soilType || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-1">{nValue}</td>
+                  <td className="border border-gray-400 px-1 py-1">{row.coreRecovery || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-1">{row.rqd || '-'}</td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
 const BoreholeLogTableBlock = ({ block }) => {
   const {
@@ -785,6 +859,8 @@ const renderBlock = (block, index) => {
   switch (block.type) {
     case 'borehole-log-sheet':
       return <BoreholeLogTableBlock key={index} block={block} />;
+    case 'sub-profile-analysis':
+      return <SubProfileAnalysisTableBlock key={index} block={block} />;
     case 'project-details':
       return <ProjectDetailsBlock key={index} data={block.data} />;
     case 'geotechnical-exploration':
