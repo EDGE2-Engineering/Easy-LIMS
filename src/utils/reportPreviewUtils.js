@@ -428,7 +428,6 @@ export const buildReportPages = (formData) => {
       boreholeCell
     );
   });
-
   data.labTestResults.forEach((levelRows, i) => {
     addTableSectionPages(
       pages,
@@ -484,7 +483,6 @@ export const buildReportPages = (formData) => {
       (row, col) => formatDisplayValue(row[col.key])
     );
   });
-
   data.directShearResults.forEach((levelRows, i) => {
     addTableSectionPages(
       pages,

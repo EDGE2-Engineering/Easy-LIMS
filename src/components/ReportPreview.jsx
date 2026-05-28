@@ -613,7 +613,7 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
       <h2 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">
         Particle Size Distribution Curve
       </h2>
-      <div className="w-[85%] max-w-[1000px] mx-auto bg-white p-5 rounded-lg shadow-[0_4px_8px_rgba(0,0,0,0.1)]">
+      <div className="w-[85%] max-w-[1000px] mx-auto bg-white p-5 rounded-lg">
         <canvas ref={chartRef}></canvas>
       </div>
     </div>
@@ -789,7 +789,7 @@ const BoreholeLogTableBlock = ({ block }) => {
 };
 
 const KvTableBlock = ({ title, rows }) => (
-  <div className="mb-4 hidden">
+  <div className="mb-4">
     <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">
       {title}
     </h3>
