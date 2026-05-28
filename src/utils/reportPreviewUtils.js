@@ -105,6 +105,7 @@ export const normalizeReportData = (formData) => ({
   maxDepths: formData.maxDepths || [],
   latitudes: formData.latitudes || [],
   longitudes: formData.longitudes || [],
+  methodOfBoring: formData.methodOfBoring || '',
   labTestResults: formData.labTestResults || [],
   grainSizeAnalysis: formData.grainSizeAnalysis || [],
   sbcDetails: formData.sbcDetails || [],

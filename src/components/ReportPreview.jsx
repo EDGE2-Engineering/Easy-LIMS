@@ -434,7 +434,7 @@ const BoreholeLogTableBlock = ({ block }) => {
     Drilling: 'Rotary Drilling',
     Manual: 'Manual Auger',
   };
-  const methodLabel = METHOD_LABELS[methodOfBoring] || methodOfBoring || 'Rotary Drilling';
+  const methodLabel = methodOfBoring || '-';
 
   const bhLabel = `BH-${String(boreholeNumber).padStart(2, '0')}`;
 

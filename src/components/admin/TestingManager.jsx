@@ -56,13 +56,11 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
         if (initialJobId) fetchData();
     }, [initialJobId]);
 
+    // Restore saved entryMode from GeotechData when opening a geotech category dialog
     useEffect(() => {
-        if (selectedCategory) {
-            if (GEOTECH_NAMES.includes(selectedCategory)) {
-                setEntryMode('Drilling');
-            } else {
-                setEntryMode('Manual');
-            }
+        if (selectedCategory && GEOTECH_NAMES.includes(selectedCategory)) {
+            const saved = testResults[selectedCategory]?.GeotechData?.methodOfBoring;
+            if (saved) setEntryMode(saved);
         }
     }, [selectedCategory]);
 
@@ -620,12 +618,12 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
     </SelectTrigger>
 
     <SelectContent>
-      <SelectItem className="text-xs py-1 min-h-0" value="Manual">
-        Manual
+      <SelectItem className="text-xs py-1 min-h-0" value="Manual Augering">
+        Manual Augering
       </SelectItem>
 
-      <SelectItem className="text-xs py-1 min-h-0" value="Drilling">
-        Drilling
+      <SelectItem className="text-xs py-1 min-h-0" value="Rotary Drilling">
+        Rotary Drilling
       </SelectItem>
     </SelectContent>
   </Select>
@@ -633,7 +631,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                         )}
 
                                         {/* Drilling Form (Geotech Only) */}
-                                        {GEOTECH_NAMES.includes(selectedCategory) && entryMode === 'Drilling' && (
+                                        {GEOTECH_NAMES.includes(selectedCategory) && (
                                             <div className="space-y-4 rounded-xl border border-gray-100 p-4 bg-white shadow-sm mb-4">
                                                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 mb-2">
                                                     Geotechnical Inputs
@@ -654,59 +652,10 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                             </div>
                                         )}
 
-                                        {/* Manual Form (Regular Tests or Geotech in Manual Mode) */}
-                                        {((!GEOTECH_NAMES.includes(selectedCategory)) || entryMode === 'Manual') && (
+                                        {/* Regular Tests (non-geotech categories only) */}
+                                        {!GEOTECH_NAMES.includes(selectedCategory) && (
                                             <div className="space-y-6">
-                                                {GEOTECH_NAMES.includes(selectedCategory) && entryMode === 'Manual' ? (
-                                                    <div className="space-y-6">
-                                                        <div className="bg-primary/10 p-4 rounded-xl border border-primary/20 flex items-center gap-3 mb-4">
-                                                            <AlertCircle className="w-4 h-4 text-primary" />
-                                                            <p className="text-xs text-gray-600">Entering manual geotechnical data for <strong className="text-primary">{selectedCategory}</strong>. This is typically used for Trial Pits or Manual Auger investigations.</p>
-                                                        </div>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                            {MANUAL_GEOTECH_FIELDS.map(field => (
-                                                                <div key={field.key} className={`p-4 rounded-xl border border-gray-100 bg-white shadow-sm space-y-2 ${field.type === 'textarea' ? 'col-span-full' : ''}`}>
-                                                                    <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{field.label}</Label>
-                                                                    {field.type === 'textarea' ? (
-                                                                        <textarea 
-                                                                            value={testResults[selectedCategory]?.['ManualData']?.[field.key] || ''}
-                                                                            onChange={(e) => setTestResults(prev => ({
-                                                                                ...prev,
-                                                                                [selectedCategory]: {
-                                                                                    ...(prev[selectedCategory] || {}),
-                                                                                    'ManualData': {
-                                                                                        ...(prev[selectedCategory]?.['ManualData'] || {}),
-                                                                                        [field.key]: e.target.value
-                                                                                    }
-                                                                                }
-                                                                            }))}
-                                                                            className="w-full min-h-[80px] p-2 text-sm border rounded-lg focus:ring-1 focus:ring-primary outline-none transition-all"
-                                                                            placeholder={`Enter ${field.label.toLowerCase()}...`}
-                                                                        />
-                                                                    ) : (
-                                                                        <Input 
-                                                                            type={field.type}
-                                                                            value={testResults[selectedCategory]?.['ManualData']?.[field.key] || ''}
-                                                                            onChange={(e) => setTestResults(prev => ({
-                                                                                ...prev,
-                                                                                [selectedCategory]: {
-                                                                                    ...(prev[selectedCategory] || {}),
-                                                                                    'ManualData': {
-                                                                                        ...(prev[selectedCategory]?.['ManualData'] || {}),
-                                                                                        [field.key]: e.target.value
-                                                                                    }
-                                                                                }
-                                                                            }))}
-                                                                            placeholder={`--`}
-                                                                            className="h-9"
-                                                                        />
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                         {(() => {
                                                             const assignedTestTypes = (jobDetails.test_types || {})[selectedCategory] || [];
                                                             const dataTestTypes = Object.keys(testResults[selectedCategory] || {}).filter(k => k !== 'GeotechData' && k !== 'ManualData');
@@ -771,8 +720,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                 </div>
                                                             ));
                                                         })()}
-                                                    </div>
-                                                )}
+                                                </div>
                                             </div>
                                         )}
                                     </div>
