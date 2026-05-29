@@ -395,6 +395,7 @@ export const buildReportPages = (formData) => {
         boreholeNumber: i + 1,
         logs: levelLogs,
         location: data.siteAddress || data.siteName || '',
+        methodOfBoring: data.methodOfBoring || '',
       }],
     });
   });

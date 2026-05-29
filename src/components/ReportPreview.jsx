@@ -418,7 +418,7 @@ const GeotechnicalExplorationBlock = ({ data }) => {
 };
 
 const SubProfileAnalysisTableBlock = ({ block }) => {
-  const { boreholeNumber, logs = [], location } = block;
+  const { boreholeNumber, logs = [], location, methodOfBoring } = block;
   const bhLabel = `BH-${String(boreholeNumber).padStart(2, '0')}`;
 
   return (
@@ -469,9 +469,16 @@ const SubProfileAnalysisTableBlock = ({ block }) => {
               const isDS = row.natureOfSampling === 'DS';
               const spt2n = Number(row.spt2);
               const spt3n = Number(row.spt3);
-              const nValue = !isDS && row.natureOfSampling === 'SPT' && !isNaN(spt2n) && !isNaN(spt3n)
+              const rawN = !isDS && row.natureOfSampling === 'SPT' && !isNaN(spt2n) && !isNaN(spt3n)
                 ? spt2n + spt3n
-                : '-';
+                : null;
+              const isRotary = methodOfBoring === 'Rotary Drilling';
+              const nValueLimit = isRotary ? 100 : 50;
+              const nValue = rawN === null
+                ? '-'
+                : rawN > nValueLimit
+                  ? `>${nValueLimit}`
+                  : rawN;
               return (
                 <tr key={idx} className="border-b border-gray-300">
                   <td className="border border-gray-400 px-1 py-1">{idx + 1}</td>
@@ -733,9 +740,16 @@ const BoreholeLogTableBlock = ({ block }) => {
               const isDS = row.natureOfSampling === 'DS';
               const spt2n = Number(row.spt2);
               const spt3n = Number(row.spt3);
-              const nValue = !isDS && row.natureOfSampling === 'SPT' && !isNaN(spt2n) && !isNaN(spt3n)
+              const rawN = !isDS && row.natureOfSampling === 'SPT' && !isNaN(spt2n) && !isNaN(spt3n)
                 ? spt2n + spt3n
-                : '-';
+                : null;
+              const isRotary = methodOfBoring === 'Rotary Drilling';
+              const nValueLimit = isRotary ? 100 : 50;
+              const nValue = rawN === null
+                ? '-'
+                : rawN > nValueLimit
+                  ? `>${nValueLimit}`
+                  : rawN;
               return (
                 <tr key={idx} className="text-center">
                   <td className="border border-gray-400 px-1 py-0.5">{idx + 1}</td>
