@@ -4,7 +4,11 @@ import React, {
   useImperativeHandle,
   useMemo,
   useEffect,
+  useState,
+  Suspense,
 } from 'react';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { OrbitControls, Html, Text } from '@react-three/drei';
 import { createPortal } from 'react-dom';
 import { useReactToPrint } from 'react-to-print';
 import { format } from 'date-fns';
@@ -1003,33 +1007,18 @@ const CoverPageBlock = ({ data }) => {
 // Topographic 3D Surface Plot (Plotly.js loaded on-demand via CDN)
 // ---------------------------------------------------------------------------
 
-const PLOTLY_CDN = 'https://cdn.plot.ly/plotly-2.35.2.min.js';
-
-function usePlotly() {
-  const [ready, setReady] = React.useState(() => typeof window !== 'undefined' && !!window.Plotly);
-
-  useEffect(() => {
-    if (window.Plotly) { setReady(true); return; }
-    if (document.querySelector(`script[src="${PLOTLY_CDN}"]`)) {
-      // Script already injected but not yet loaded — wait for it
-      const existing = document.querySelector(`script[src="${PLOTLY_CDN}"]`);
-      const onLoad = () => setReady(true);
-      existing.addEventListener('load', onLoad);
-      return () => existing.removeEventListener('load', onLoad);
-    }
-    const script = document.createElement('script');
-    script.src = PLOTLY_CDN;
-    script.async = true;
-    script.onload = () => setReady(true);
-    document.head.appendChild(script);
-  }, []);
-
-  return ready;
-}
-
 // ---------------------------------------------------------------------------
-// Soil type → color index mapping (used for surface colorscale)
+// 3D Borehole Stratigraphy — @react-three/fiber implementation
 // ---------------------------------------------------------------------------
+
+// Soil type → consistent hex color
+const SOIL_COLOR_PALETTE = [
+  '#c8a96e', '#a0785a', '#d4b483', '#8fbc8f', '#6b8e6b',
+  '#b5a642', '#9e7b5a', '#7a6652', '#c0c0c0', '#808080',
+  '#505050', '#4a4a8a', '#d2691e', '#cd853f', '#f4a460', '#deb887',
+];
+
+// Soil type → color index mapping (kept for legacy compat)
 const SOIL_COLORSCALE = [
   [0.00, '#f5e6c8'], [0.07, '#c8a96e'], [0.14, '#a0785a'],
   [0.21, '#d4b483'], [0.28, '#8fbc8f'], [0.35, '#6b8e6b'],
@@ -1039,337 +1028,203 @@ const SOIL_COLORSCALE = [
 ];
 
 /**
- * Build a continuous surface plot from borehole data — Mt Bruno style.
- *
- * Grid:
- *   X axis  = borehole index (BH-01 … BH-N), evenly spaced
- *   Y axis  = depth boundary index (0 = ground, 1 = first recorded depth, …)
- *   Z[y][x] = actual depth value at that boundary for that borehole
- *
- * Because boreholes may have different numbers of readings, we align by
- * boundary index and interpolate missing values so the surface is continuous.
- *
- * A second surface is added for each unique soil type boundary, coloured by
- * the soil type that occupies the layer below it.
+ * Build per-borehole layer data from boreholeLogs for Three.js rendering.
  */
-function buildSurfaceData(boreholeLogs, maxDepths, latitudes, longitudes) {
-  const numBH = boreholeLogs.length;
-  if (numBH === 0) return { traces: [], bhLabels: [], soilLegend: [] };
-
-  // --- collect all unique soil types for color mapping ---
-  const allSoilTypes = [];
-  boreholeLogs.forEach((logs) => {
-    (logs || []).forEach((row) => {
-      if (row.soilType && !allSoilTypes.includes(row.soilType)) {
-        allSoilTypes.push(row.soilType);
-      }
-    });
+function prepareBoreholesData(boreholeLogs, maxDepths, latitudes, longitudes, soilColorMap) {
+  const positions = boreholeLogs.map((_, i) => {
+    const lat = parseFloat(latitudes?.[i]);
+    const lon = parseFloat(longitudes?.[i]);
+    return { x: !isNaN(lon) ? lon : i * 10, y: !isNaN(lat) ? lat : 0 };
   });
-  const soilColorIndex = (soilType) => {
-    const idx = allSoilTypes.indexOf(soilType);
-    return idx === -1 ? 0 : idx / Math.max(allSoilTypes.length - 1, 1);
-  };
+  const xs = positions.map((p) => p.x);
+  const ys = positions.map((p) => p.y);
+  const xMin = Math.min(...xs), xMax = Math.max(...xs);
+  const yMin = Math.min(...ys), yMax = Math.max(...ys);
+  const span = Math.max(xMax - xMin, yMax - yMin, 1);
 
-  // --- per-borehole: build sorted list of (depth, soilType) boundaries ---
-  // Always start from 0 (ground surface)
-  const bhBoundaries = boreholeLogs.map((logs, i) => {
+  return boreholeLogs.map((logs, i) => {
+    const bhLabel = `BH-${String(i + 1).padStart(2, '0')}`;
+    const nx = boreholeLogs.length === 1 ? 0 : ((positions[i].x - xMin) / span) * (boreholeLogs.length - 1) * 8;
+    const ny = boreholeLogs.length === 1 ? 0 : ((positions[i].y - yMin) / span) * (boreholeLogs.length - 1) * 8;
     const valid = (logs || [])
       .filter((r) => r.depth && !isNaN(parseFloat(r.depth)))
       .sort((a, b) => parseFloat(a.depth) - parseFloat(b.depth));
     const maxD = parseFloat(maxDepths?.[i]) || (valid.length ? parseFloat(valid[valid.length - 1].depth) : 1);
-    const boundaries = [{ depth: 0, soilType: valid[0]?.soilType || 'Unknown' }];
-    valid.forEach((row) => {
-      boundaries.push({ depth: parseFloat(row.depth), soilType: row.soilType || 'Unknown' });
-    });
-    // ensure max depth is included
-    if (boundaries[boundaries.length - 1].depth < maxD - 0.01) {
-      boundaries.push({ depth: maxD, soilType: boundaries[boundaries.length - 1].soilType });
-    }
-    return boundaries;
-  });
-
-  // --- align to a common set of boundary indices ---
-  // Use the maximum number of boundaries across all boreholes
-  const maxBoundaries = Math.max(...bhBoundaries.map((b) => b.length));
-
-  // Build Z matrix: z[boundaryIdx][bhIdx] = depth at that boundary
-  // Build C matrix: c[boundaryIdx][bhIdx] = soil color value (0–1)
-  const zMatrix = [];
-  const cMatrix = [];
-  const soilMatrix = []; // for hover text
-
-  for (let bi = 0; bi < maxBoundaries; bi++) {
-    const zRow = [];
-    const cRow = [];
-    const sRow = [];
-    for (let bh = 0; bh < numBH; bh++) {
-      const boundaries = bhBoundaries[bh];
-      let depth, soilType;
-      if (bi < boundaries.length) {
-        depth = boundaries[bi].depth;
-        soilType = boundaries[bi].soilType;
-      } else {
-        // extend with last known boundary
-        depth = boundaries[boundaries.length - 1].depth;
-        soilType = boundaries[boundaries.length - 1].soilType;
+    const layers = valid.map((row, idx) => {
+      const top = idx === 0 ? 0 : parseFloat(valid[idx - 1].depth);
+      const bottom = parseFloat(row.depth);
+      const soilType = row.soilType || 'Unknown';
+      if (!soilColorMap.has(soilType)) {
+        soilColorMap.set(soilType, SOIL_COLOR_PALETTE[soilColorMap.size % SOIL_COLOR_PALETTE.length]);
       }
-      zRow.push(depth);
-      cRow.push(soilColorIndex(soilType));
-      sRow.push(soilType);
+      return { top, bottom, soilType, color: soilColorMap.get(soilType),
+        spt: [row.spt1, row.spt2, row.spt3].filter(Boolean).join('/') || '-',
+        nature: row.natureOfSampling || '-' };
+    });
+    if (layers.length && layers[layers.length - 1].bottom < maxD - 0.01) {
+      const last = layers[layers.length - 1];
+      layers.push({ top: last.bottom, bottom: maxD, soilType: last.soilType, color: last.color, spt: '-', nature: '-' });
     }
-    zMatrix.push(zRow);
-    cMatrix.push(cRow);
-    soilMatrix.push(sRow);
-  }
+    return { bhLabel, x: nx, y: ny, layers, maxDepth: maxD };
+  });
+}
+// ── Three.js sub-components ──────────────────────────────────────────────────
 
-  const bhLabels = boreholeLogs.map((_, i) => `BH-${String(i + 1).padStart(2, '0')}`);
-  const yLabels = Array.from({ length: maxBoundaries }, (_, i) => i === 0 ? 'Ground (0 m)' : `Boundary ${i}`);
-
-  // Build hover text matrix
-  const hoverText = zMatrix.map((zRow, bi) =>
-    zRow.map((z, bhi) => `<b>${bhLabels[bhi]}</b><br>Depth: <b>${z.toFixed(1)} m</b><br>Soil: ${soilMatrix[bi][bhi]}`)
+function BoreholeLayer({ top, bottom, color, bhLabel, soilType, spt, nature, depthIdx }) {
+  const height = Math.max(bottom - top, 0.01);
+  const yCenter = -(top + height / 2);
+  const [hovered, setHovered] = React.useState(false);
+  return (
+    <mesh position={[0, yCenter, 0]}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
+      onPointerOut={() => setHovered(false)}>
+      <cylinderGeometry args={[0.4, 0.4, height, 16]} />
+      <meshStandardMaterial color={hovered ? '#ffffff' : color} opacity={hovered ? 0.7 : 1} transparent />
+      {hovered && (
+        <Html distanceFactor={20} style={{ pointerEvents: 'none' }}>
+          <div style={{ background: 'rgba(15,23,42,0.92)', color: '#fff', padding: '5px 8px', borderRadius: 4, fontSize: 10, whiteSpace: 'nowrap', lineHeight: 1.5, border: '1px solid rgba(255,255,255,0.15)' }}>
+            <strong>{bhLabel}-D{depthIdx + 1}</strong><br />
+            Depth: {top.toFixed(1)} – {bottom.toFixed(1)} m<br />
+            Soil: {soilType}<br />
+            Sample: {nature} | SPT: {spt}
+          </div>
+        </Html>
+      )}
+    </mesh>
   );
-
-  const traces = [];
-
-  // --- Main surface: Z = depth, color = soil type ---
-  traces.push({
-    type: 'surface',
-    z: zMatrix,
-    x: bhLabels,
-    y: yLabels,
-    surfacecolor: cMatrix,
-    colorscale: SOIL_COLORSCALE,
-    showscale: true,
-    colorbar: {
-      title: { text: 'Soil Type', side: 'right', font: { size: 9 } },
-      tickvals: allSoilTypes.map((_, i) => i / Math.max(allSoilTypes.length - 1, 1)),
-      ticktext: allSoilTypes,
-      tickfont: { size: 7 },
-      len: 0.85,
-      thickness: 14,
-      x: 1.02,
-    },
-    text: hoverText,
-    hovertemplate: '%{text}<extra></extra>',
-    contours: {
-      z: { show: true, usecolormap: true, highlightcolor: '#ffffff', project: { z: true }, width: 2 },
-    },
-    opacity: 0.92,
-    name: 'Stratigraphy Surface',
-    showlegend: false,
-  });
-
-  // --- Per-borehole: vertical line + labeled depth point markers ---
-  bhLabels.forEach((label, bhi) => {
-    const boundaries = bhBoundaries[bhi];
-    const maxD = boundaries[boundaries.length - 1].depth;
-    const y0 = yLabels[0]; // fixed Y — keeps line vertical
-
-    // Vertical shaft line (ground → max depth, same X and Y)
-    traces.push({
-      type: 'scatter3d',
-      mode: 'lines',
-      x: [label, label],
-      y: [y0, y0],
-      z: [0, maxD],
-      line: { color: '#1e1e1e', width: 2 },
-      showlegend: false,
-      hoverinfo: 'skip',
-      name: label,
-    });
-
-    // Ground-surface collar marker with BH label
-    traces.push({
-      type: 'scatter3d',
-      mode: 'markers+text',
-      x: [label],
-      y: [y0],
-      z: [0],
-      text: [label],
-      textposition: 'top center',
-      textfont: { size: 9, color: '#172554', family: 'Arial, sans-serif' },
-      marker: { size: 6, color: '#172554', symbol: 'circle' },
-      showlegend: false,
-      hovertemplate: `<b>${label}</b><br>Ground surface (0.0 m)<extra></extra>`,
-      name: `${label} collar`,
-    });
-
-    // One marker per recorded depth reading (skip the ground-surface boundary at index 0)
-    const depthPoints = boundaries.slice(1); // index 0 is always depth=0 (ground)
-    depthPoints.forEach((b, di) => {
-      const pointLabel = `${label}-D${di + 1}`;
-      traces.push({
-        type: 'scatter3d',
-        mode: 'markers+text',
-        x: [label],
-        y: [y0],
-        z: [b.depth],
-        text: [`D${di + 1}`],
-        textposition: 'middle right',
-        textfont: { size: 8, color: '#7c3aed', family: 'Arial, sans-serif' },
-        marker: {
-          size: 7,
-          color: '#7c3aed',
-          symbol: 'diamond',
-          line: { color: '#ffffff', width: 1 },
-        },
-        showlegend: false,
-        name: pointLabel,
-        hovertemplate:
-          `<b>${pointLabel}</b><br>` +
-          `Depth: <b>${b.depth.toFixed(2)} m</b><br>` +
-          `Soil: ${b.soilType}<extra></extra>`,
-      });
-    });
-  });
-
-  const soilLegend = allSoilTypes.map((s, i) => ({
-    soilType: s,
-    color: `hsl(${Math.round(soilColorIndex(s) * 300)}, 50%, 45%)`,
-  }));
-
-  return { traces, bhLabels, soilLegend };
 }
 
-function buildBoreholeTraces() { return { traces: [] }; } // kept for compat
-function buildSurfaceMatrix() { return { z: [], x: [], y: [], hoverText: [] }; } // kept for compat
+function DepthMarker({ depth, bhLabel, depthIdx, soilType }) {
+  const [hovered, setHovered] = React.useState(false);
+  return (
+    <group position={[0, -depth, 0]}>
+      <mesh onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }} onPointerOut={() => setHovered(false)}>
+        <sphereGeometry args={[0.22, 12, 12]} />
+        <meshStandardMaterial color={hovered ? '#facc15' : '#7c3aed'} />
+      </mesh>
+      <Text position={[0.7, 0, 0]} fontSize={0.35} color="#172554" anchorX="left" anchorY="middle">
+        {`D${depthIdx + 1}`}
+      </Text>
+      {hovered && (
+        <Html distanceFactor={20} style={{ pointerEvents: 'none' }}>
+          <div style={{ background: 'rgba(15,23,42,0.92)', color: '#fff', padding: '5px 8px', borderRadius: 4, fontSize: 10, whiteSpace: 'nowrap', lineHeight: 1.5, border: '1px solid rgba(255,255,255,0.15)' }}>
+            <strong>{bhLabel}-D{depthIdx + 1}</strong><br />
+            Depth: <strong>{depth.toFixed(2)} m</strong><br />
+            Soil: {soilType}
+          </div>
+        </Html>
+      )}
+    </group>
+  );
+}
+
+function Borehole3D({ bhLabel, x, y, layers, maxDepth }) {
+  return (
+    <group position={[x, 0, y]}>
+      {layers.map((layer, i) => (
+        <BoreholeLayer key={i} {...layer} bhLabel={bhLabel} depthIdx={i} />
+      ))}
+      {layers.map((layer, i) => (
+        <DepthMarker key={i} depth={layer.bottom} bhLabel={bhLabel} depthIdx={i} soilType={layer.soilType} />
+      ))}
+      <mesh position={[0, 0.1, 0]}>
+        <cylinderGeometry args={[0.55, 0.55, 0.2, 16]} />
+        <meshStandardMaterial color="#172554" />
+      </mesh>
+      <Text position={[0, 1.2, 0]} fontSize={0.5} color="#172554" anchorX="center" anchorY="bottom">
+        {bhLabel}
+      </Text>
+    </group>
+  );
+}
+
+function SnapshotCapture({ onCapture }) {
+  const { gl, scene, camera } = useThree();
+  const done = useRef(false);
+  useFrame(() => {
+    if (done.current) return;
+    done.current = true;
+    requestAnimationFrame(() => {
+      gl.render(scene, camera);
+      try { onCapture(gl.domElement.toDataURL('image/png')); } catch (_) {}
+    });
+  });
+  return null;
+}
+
+function BoreholeScene({ boreholes, globalMaxDepth, onSnapshot }) {
+  const camDist = Math.max(globalMaxDepth * 0.9, 20);
+  return (
+    <Canvas gl={{ preserveDrawingBuffer: true }} camera={{ position: [camDist, camDist * 0.6, camDist], fov: 45 }}
+      style={{ width: '100%', height: '100%', background: '#f0f4f8' }}>
+      <ambientLight intensity={0.7} />
+      <directionalLight position={[20, 40, 30]} intensity={0.9} />
+      <directionalLight position={[-20, 20, -10]} intensity={0.3} />
+      <Suspense fallback={null}>
+        {boreholes.map((bh, i) => <Borehole3D key={i} {...bh} />)}
+      </Suspense>
+      <gridHelper args={[Math.max(boreholes.length * 14, 30), 10, '#94a3b8', '#cbd5e1']} />
+      <OrbitControls enablePan enableZoom enableRotate />
+      {onSnapshot && <SnapshotCapture onCapture={onSnapshot} />}
+    </Canvas>
+  );
+}
 
 const Topographic3DSurfacePlotBlock = ({ block }) => {
-  const plotlyReady = usePlotly();
-  const containerRef = useRef(null);
-  const plotRef = useRef(null);
-  const [printImageUrl, setPrintImageUrl] = React.useState(null);
+  const [printImageUrl, setPrintImageUrl] = useState(null);
+  const soilColorMapRef = useRef(new Map());
 
   const { boreholeLogs = [], maxDepths = [], latitudes = [], longitudes = [], projectName = '' } = block.data || {};
 
-  useEffect(() => {
-    if (!plotlyReady || !containerRef.current || !boreholeLogs.length) return;
+  const boreholes = useMemo(() => {
+    soilColorMapRef.current = new Map();
+    return prepareBoreholesData(boreholeLogs, maxDepths, latitudes, longitudes, soilColorMapRef.current);
+  }, [boreholeLogs, maxDepths, latitudes, longitudes]);
 
-    const Plotly = window.Plotly;
-    const { traces, soilLegend } = buildSurfaceData(boreholeLogs, maxDepths, latitudes, longitudes);
-    if (!traces.length) return;
+  const globalMaxDepth = useMemo(() => Math.max(...boreholes.map((b) => b.maxDepth), 1), [boreholes]);
 
-    const allMaxDepths = boreholeLogs.map((logs, i) => {
-      const md = parseFloat(maxDepths?.[i]);
-      if (!isNaN(md)) return md;
-      const depths = (logs || []).map((r) => parseFloat(r.depth)).filter((d) => !isNaN(d));
-      return depths.length ? Math.max(...depths) : 0;
-    });
-    const globalMaxDepth = Math.max(...allMaxDepths, 1);
-
-    const layout = {
-      title: {
-        text: `Sub-Surface Stratigraphy – 3D Borehole Profile${projectName ? '<br><sub>' + projectName + '</sub>' : ''}`,
-        font: { size: 12, color: '#172554', family: 'Arial, sans-serif' },
-        x: 0.5, xanchor: 'center',
-      },
-      autosize: false, width: 700, height: 500,
-      margin: { l: 65, r: 50, b: 65, t: 90 },
-      scene: {
-        xaxis: {
-          title: { text: 'Borehole', font: { size: 10 } },
-          tickfont: { size: 9 }, gridcolor: '#d1d5db',
-        },
-        yaxis: {
-          title: { text: 'Depth Boundary', font: { size: 10 } },
-          tickfont: { size: 9 }, gridcolor: '#d1d5db',
-        },
-        zaxis: {
-          title: { text: 'Depth (m)', font: { size: 10 } },
-          tickfont: { size: 9 },
-          // 0 at top = ground surface, deeper values go down
-          range: [globalMaxDepth * 1.1, 0],
-          ticksuffix: ' m',
-          gridcolor: '#d1d5db',
-        },
-        camera: { eye: { x: 1.5, y: -1.5, z: 1.2 } },
-        bgcolor: '#f8fafc',
-        aspectmode: 'manual',
-        aspectratio: { x: 1.2, y: 1.2, z: 1.0 },
-      },
-      paper_bgcolor: '#ffffff',
-      font: { family: 'Arial, sans-serif', size: 9 },
-      showlegend: false,
-    };
-
-    Plotly.newPlot(containerRef.current, traces, layout, { displayModeBar: false, staticPlot: false })
-      .then((gd) => {
-        plotRef.current = gd;
-        return Plotly.toImage(gd, { format: 'png', width: 1400, height: 1000, scale: 2 });
-      })
-      .then((dataUrl) => setPrintImageUrl(dataUrl))
-      .catch(() => {});
-
-    return () => {
-      if (plotRef.current && window.Plotly) { window.Plotly.purge(plotRef.current); plotRef.current = null; }
-    };
-  }, [plotlyReady, boreholeLogs, maxDepths, latitudes, longitudes, projectName]);
+  const soilLegend = useMemo(() => {
+    const seen = new Map();
+    boreholes.forEach((bh) => bh.layers.forEach((l) => { if (!seen.has(l.soilType)) seen.set(l.soilType, l.color); }));
+    return Array.from(seen.entries()).map(([type, color]) => ({ type, color }));
+  }, [boreholes]);
 
   const summaryRows = boreholeLogs.map((logs, i) => ({
     bh: `BH-${String(i + 1).padStart(2, '0')}`,
     maxDepth: maxDepths[i] || (logs.length ? logs[logs.length - 1]?.depth : '-') || '-',
-    lat: latitudes[i] || '-',
-    lon: longitudes[i] || '-',
+    lat: latitudes[i] || '-', lon: longitudes[i] || '-',
     layers: (logs || []).filter((r) => r.depth).length,
   }));
 
-  // Collect unique soil types for the legend swatch table
-  const soilTypes = [];
-  boreholeLogs.forEach((logs) => {
-    (logs || []).forEach((row) => {
-      if (row.soilType && !soilTypes.find((s) => s.type === row.soilType)) {
-        const idx = soilTypes.length;
-        const pct = idx / Math.max(SOIL_COLORSCALE.length - 1, 1);
-        // pick nearest colorscale stop
-        const stop = SOIL_COLORSCALE.reduce((prev, cur) =>
-          Math.abs(cur[0] - (idx / Math.max(15, 1))) < Math.abs(prev[0] - (idx / Math.max(15, 1))) ? cur : prev
-        );
-        soilTypes.push({ type: row.soilType, color: stop[1] });
-      }
-    });
-  });
+  if (!boreholes.length) return null;
 
   return (
     <div className="mb-4">
-      <h2 className="text-sm font-bold text-blue-800 uppercase tracking-wide pb-1 mb-3">
+      <h2 className="text-sm font-bold text-blue-800 uppercase tracking-wide pb-1 mb-2">
         Sub-Surface Stratigraphy – 3D Borehole Profile
       </h2>
+      {projectName && <p className="text-[9px] text-gray-500 mb-2 italic">{projectName}</p>}
 
-      {/* ── Screen: live interactive Plotly surface chart ── */}
-      {!plotlyReady ? (
-        <div className="screen-only flex items-center justify-center h-48 bg-gray-50 border border-gray-200 rounded text-xs text-gray-500">
-          Loading 3D surface plot…
-        </div>
-      ) : (
-        <div
-          ref={containerRef}
-          className="screen-only rounded border border-gray-200 bg-white"
-          style={{ width: '100%', height: '500px' }}
-        />
-      )}
+      {/* Screen: live Three.js canvas */}
+      <div className="screen-only rounded border border-gray-200 bg-[#f0f4f8]" style={{ width: '100%', height: '480px' }}>
+        <Suspense fallback={<div className="flex items-center justify-center h-full text-xs text-gray-400">Loading 3D scene…</div>}>
+          <BoreholeScene boreholes={boreholes} globalMaxDepth={globalMaxDepth} onSnapshot={(url) => setPrintImageUrl(url)} />
+        </Suspense>
+      </div>
 
-      {/* ── Print: static PNG snapshot ── */}
+      {/* Print: static PNG snapshot */}
       {printImageUrl ? (
-        <img
-          src={printImageUrl}
-          alt="Sub-Surface Stratigraphy 3D Borehole Profile"
-          className="print-only"
-          style={{ width: '100%', height: 'auto', display: 'none' }}
-        />
+        <img src={printImageUrl} alt="Sub-Surface Stratigraphy 3D Borehole Profile" className="print-only" style={{ width: '100%', height: 'auto', display: 'none' }} />
       ) : (
-        <div
-          className="print-only"
-          style={{ display: 'none', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '4px', textAlign: 'center', fontSize: '10px', color: '#6b7280' }}
-        >
-          3D Surface Plot — open report preview to generate chart image before printing.
+        <div className="print-only" style={{ display: 'none', padding: '8px', border: '1px solid #e5e7eb', borderRadius: 4, textAlign: 'center', fontSize: 10, color: '#6b7280' }}>
+          3D Borehole Profile — open report preview to generate chart image before printing.
         </div>
       )}
 
-      {/* Soil type legend swatches */}
-      {soilTypes.length > 0 && (
+      {/* Soil legend */}
+      {soilLegend.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-          {soilTypes.map((s, i) => (
+          {soilLegend.map((s, i) => (
             <div key={i} className="flex items-center gap-1 text-[8px] text-gray-700">
               <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: s.color, border: '1px solid #ccc', flexShrink: 0 }} />
               {s.type}
@@ -1378,12 +1233,10 @@ const Topographic3DSurfacePlotBlock = ({ block }) => {
         </div>
       )}
 
-      {/* Borehole summary table */}
+      {/* Summary table */}
       {summaryRows.length > 0 && (
         <div className="mt-3">
-          <p className="text-[9px] font-semibold text-gray-700 mb-1 uppercase tracking-wide">
-            Borehole Summary
-          </p>
+          <p className="text-[9px] font-semibold text-gray-700 mb-1 uppercase tracking-wide">Borehole Summary</p>
           <table className="w-full text-[9px] border-collapse border border-gray-300">
             <thead className="bg-[#fcf8f2]">
               <tr>
@@ -1407,7 +1260,7 @@ const Topographic3DSurfacePlotBlock = ({ block }) => {
             </tbody>
           </table>
           <p className="text-[8px] text-gray-400 mt-1 italic">
-            * Z-axis: 0 m = ground surface, increasing downward. Surface colour represents soil/rock type at each depth boundary. Contour lines show equal-depth horizons across boreholes.
+            * Depth increases downward from ground surface (0 m). Cylinder colours = soil/rock type. Purple spheres = recorded depth boundaries (D1, D2…). Hover for details. Drag to rotate, scroll to zoom.
           </p>
         </div>
       )}
