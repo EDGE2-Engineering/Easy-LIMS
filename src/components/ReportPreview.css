@@ -1,5 +1,23 @@
 /* Global styles for report preview popup (not CSS modules) */
 
+/* ── Print / screen visibility helpers ── */
+/* Used by Topographic3DSurfacePlotBlock to swap the live Plotly div
+   for a static PNG <img> when printing. */
+.screen-only {
+  display: block; /* visible on screen */
+}
+.print-only {
+  display: none !important; /* hidden on screen */
+}
+@media print {
+  .screen-only {
+    display: none !important; /* hide live chart when printing */
+  }
+  .print-only {
+    display: block !important; /* show PNG snapshot when printing */
+  }
+}
+
 .report-preview-overlay {
   position: fixed;
   inset: 0;

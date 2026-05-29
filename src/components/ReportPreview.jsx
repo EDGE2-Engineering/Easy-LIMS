@@ -999,6 +999,287 @@ const CoverPageBlock = ({ data }) => {
   );
 };
 
+// ---------------------------------------------------------------------------
+// Topographic 3D Surface Plot (Plotly.js loaded on-demand via CDN)
+// ---------------------------------------------------------------------------
+
+const PLOTLY_CDN = 'https://cdn.plot.ly/plotly-2.35.2.min.js';
+
+function usePlotly() {
+  const [ready, setReady] = React.useState(() => typeof window !== 'undefined' && !!window.Plotly);
+
+  useEffect(() => {
+    if (window.Plotly) { setReady(true); return; }
+    if (document.querySelector(`script[src="${PLOTLY_CDN}"]`)) {
+      // Script already injected but not yet loaded — wait for it
+      const existing = document.querySelector(`script[src="${PLOTLY_CDN}"]`);
+      const onLoad = () => setReady(true);
+      existing.addEventListener('load', onLoad);
+      return () => existing.removeEventListener('load', onLoad);
+    }
+    const script = document.createElement('script');
+    script.src = PLOTLY_CDN;
+    script.async = true;
+    script.onload = () => setReady(true);
+    document.head.appendChild(script);
+  }, []);
+
+  return ready;
+}
+
+/**
+ * Build a Z-matrix (rows = depth layers, cols = boreholes) from borehole logs.
+ * Z values are the negative of depth so that deeper strata appear lower on the surface.
+ * Missing values are interpolated from neighbours.
+ */
+function buildSurfaceMatrix(boreholeLogs) {
+  // Collect all unique depth values across all boreholes, sorted ascending
+  const allDepthsSet = new Set();
+  boreholeLogs.forEach((logs) => {
+    (logs || []).forEach((row) => {
+      const d = parseFloat(row.depth);
+      if (!isNaN(d)) allDepthsSet.add(d);
+    });
+  });
+  const allDepths = Array.from(allDepthsSet).sort((a, b) => a - b);
+  if (allDepths.length === 0) return { z: [], x: [], y: [] };
+
+  const numBH = boreholeLogs.length;
+  const numDepths = allDepths.length;
+
+  // z[depthIdx][bhIdx] = -depth (negative so deeper = lower elevation)
+  const z = allDepths.map((depth) =>
+    boreholeLogs.map((logs) => {
+      const match = (logs || []).find((row) => parseFloat(row.depth) === depth);
+      return match ? -depth : null;
+    })
+  );
+
+  // Fill nulls: for each column (borehole), interpolate between known values
+  for (let col = 0; col < numBH; col++) {
+    for (let row = 0; row < numDepths; row++) {
+      if (z[row][col] === null) {
+        // Find nearest non-null above and below
+        let above = null, below = null;
+        for (let r2 = row - 1; r2 >= 0; r2--) {
+          if (z[r2][col] !== null) { above = { r: r2, v: z[r2][col] }; break; }
+        }
+        for (let r2 = row + 1; r2 < numDepths; r2++) {
+          if (z[r2][col] !== null) { below = { r: r2, v: z[r2][col] }; break; }
+        }
+        if (above && below) {
+          const t = (row - above.r) / (below.r - above.r);
+          z[row][col] = above.v + t * (below.v - above.v);
+        } else if (above) {
+          z[row][col] = above.v;
+        } else if (below) {
+          z[row][col] = below.v;
+        } else {
+          z[row][col] = -allDepths[row];
+        }
+      }
+    }
+  }
+
+  const x = boreholeLogs.map((_, i) => `BH-${String(i + 1).padStart(2, '0')}`);
+  const y = allDepths.map((d) => `${d} m`);
+  return { z, x, y };
+}
+
+const Topographic3DSurfacePlotBlock = ({ block }) => {
+  const plotlyReady = usePlotly();
+  const containerRef = useRef(null);
+  const plotRef = useRef(null);
+  // PNG snapshot used for printing — regular DOM img tags survive react-to-print
+  const [printImageUrl, setPrintImageUrl] = React.useState(null);
+
+  const { boreholeLogs = [], maxDepths = [], latitudes = [], longitudes = [], projectName = '' } = block.data || {};
+
+  useEffect(() => {
+    if (!plotlyReady || !containerRef.current) return;
+
+    const { z, x, y } = buildSurfaceMatrix(boreholeLogs);
+    if (!z.length) return;
+
+    const Plotly = window.Plotly;
+
+    const surfaceTrace = {
+      type: 'surface',
+      z,
+      x,
+      y,
+      colorscale: 'Earth',
+      showscale: true,
+      colorbar: {
+        title: { text: 'Depth (m)', side: 'right', font: { size: 10 } },
+        tickvals: z.flat().filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b),
+        ticktext: z.flat().filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b).map((v) => `${Math.abs(v).toFixed(1)} m`),
+        len: 0.7,
+        thickness: 12,
+      },
+      hovertemplate: '<b>%{x}</b><br>Layer: %{y}<br>Depth: %{customdata} m<extra></extra>',
+      customdata: z.map((row) => row.map((v) => Math.abs(v).toFixed(1))),
+      contours: {
+        z: { show: true, usecolormap: true, highlightcolor: '#42f462', project: { z: true } },
+      },
+      opacity: 0.92,
+    };
+
+    const collarTrace = {
+      type: 'scatter3d',
+      mode: 'markers+text',
+      x,
+      y: Array(x.length).fill(y[0]),
+      z: Array(x.length).fill(0),
+      text: x,
+      textposition: 'top center',
+      textfont: { size: 9, color: '#1e3a8a' },
+      marker: { size: 5, color: '#1e3a8a', symbol: 'circle' },
+      name: 'Borehole Collars',
+      hovertemplate: '<b>%{text}</b><br>Max Depth: %{customdata}<extra></extra>',
+      customdata: x.map((_, i) => maxDepths[i] ? `${maxDepths[i]} m` : 'N/A'),
+    };
+
+    const layout = {
+      title: {
+        text: `Topographic Sub-Surface Profile${projectName ? '<br><sub>' + projectName + '</sub>' : ''}`,
+        font: { size: 13, color: '#172554', family: 'Arial, sans-serif' },
+        x: 0.5,
+        xanchor: 'center',
+      },
+      autosize: false,
+      width: 700,
+      height: 460,
+      margin: { l: 10, r: 10, b: 10, t: 60 },
+      scene: {
+        xaxis: { title: { text: 'Borehole', font: { size: 10 } }, tickfont: { size: 9 }, gridcolor: '#d1d5db' },
+        yaxis: { title: { text: 'Depth Layer', font: { size: 10 } }, tickfont: { size: 9 }, gridcolor: '#d1d5db' },
+        zaxis: {
+          title: { text: 'Elevation (m)', font: { size: 10 } },
+          tickfont: { size: 9 },
+          tickvals: z.map((_, i) => z[i][0]),
+          ticktext: z.map((_, i) => `${Math.abs(z[i][0]).toFixed(1)} m`),
+          gridcolor: '#d1d5db',
+        },
+        camera: { eye: { x: 1.6, y: -1.6, z: 1.2 } },
+        bgcolor: '#f8fafc',
+        aspectmode: 'manual',
+        aspectratio: { x: 1.2, y: 1.8, z: 0.8 },
+      },
+      paper_bgcolor: '#ffffff',
+      font: { family: 'Arial, sans-serif' },
+      legend: { x: 0.01, y: 0.99, font: { size: 9 } },
+    };
+
+    const config = { displayModeBar: false, staticPlot: false };
+
+    Plotly.newPlot(containerRef.current, [surfaceTrace, collarTrace], layout, config)
+      .then((gd) => {
+        plotRef.current = gd;
+        // Capture a high-res PNG snapshot immediately after render.
+        // This image is what gets printed — it's a plain <img> that
+        // react-to-print can capture without any WebGL/canvas issues.
+        return Plotly.toImage(gd, { format: 'png', width: 1400, height: 920, scale: 2 });
+      })
+      .then((dataUrl) => {
+        setPrintImageUrl(dataUrl);
+      })
+      .catch(() => {
+        // toImage can fail in some environments — silently ignore,
+        // the live chart will still show on screen.
+      });
+
+    return () => {
+      if (plotRef.current && window.Plotly) {
+        window.Plotly.purge(plotRef.current);
+        plotRef.current = null;
+      }
+    };
+  }, [plotlyReady, boreholeLogs, maxDepths, projectName]);
+
+  const summaryRows = boreholeLogs.map((logs, i) => ({
+    bh: `BH-${String(i + 1).padStart(2, '0')}`,
+    maxDepth: maxDepths[i] || (logs.length ? logs[logs.length - 1]?.depth : '-') || '-',
+    lat: latitudes[i] || '-',
+    lon: longitudes[i] || '-',
+    layers: (logs || []).filter((r) => r.depth).length,
+  }));
+
+  return (
+    <div className="mb-4">
+      <h2 className="text-sm font-bold text-blue-800 uppercase tracking-wide pb-1 mb-3">
+        Topographic 3D Sub-Surface Profile
+      </h2>
+
+      {/* ── Screen view: live interactive Plotly chart ── */}
+      {!plotlyReady ? (
+        <div className="screen-only flex items-center justify-center h-48 bg-gray-50 border border-gray-200 rounded text-xs text-gray-500">
+          Loading 3D surface plot…
+        </div>
+      ) : (
+        <div
+          ref={containerRef}
+          className="screen-only rounded border border-gray-200 bg-white"
+          style={{ width: '100%', height: '460px' }}
+        />
+      )}
+
+      {/* ── Print view: static PNG snapshot ── */}
+      {printImageUrl ? (
+        <img
+          src={printImageUrl}
+          alt="Topographic 3D Sub-Surface Profile"
+          className="print-only"
+          style={{ width: '100%', height: 'auto', display: 'none' }}
+        />
+      ) : (
+        /* Fallback if snapshot hasn't generated yet when printing */
+        <div
+          className="print-only"
+          style={{ display: 'none', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '4px', textAlign: 'center', fontSize: '10px', color: '#6b7280' }}
+        >
+          3D Surface Plot — open report preview to generate chart image before printing.
+        </div>
+      )}
+
+      {summaryRows.length > 0 && (
+        <div className="mt-3">
+          <p className="text-[9px] font-semibold text-gray-700 mb-1 uppercase tracking-wide">
+            Borehole Summary
+          </p>
+          <table className="w-full text-[9px] border-collapse border border-gray-300">
+            <thead className="bg-[#fcf8f2]">
+              <tr>
+                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">Borehole</th>
+                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">Max Depth (m)</th>
+                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">Latitude (°)</th>
+                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">Longitude (°)</th>
+                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">No. of Layers</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summaryRows.map((row, i) => (
+                <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="border border-gray-300 px-1 py-0.5 font-semibold text-center">{row.bh}</td>
+                  <td className="border border-gray-300 px-1 py-0.5 text-center">{row.maxDepth}</td>
+                  <td className="border border-gray-300 px-1 py-0.5 text-center">{row.lat}</td>
+                  <td className="border border-gray-300 px-1 py-0.5 text-center">{row.lon}</td>
+                  <td className="border border-gray-300 px-1 py-0.5 text-center">{row.layers}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="text-[8px] text-gray-400 mt-1 italic">
+            * Z-axis represents depth below ground level. Surface elevation assumed at 100.000 m R.L.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+
 const renderBlock = (block, index) => {
   switch (block.type) {
     case 'borehole-log-sheet':
@@ -1007,6 +1288,8 @@ const renderBlock = (block, index) => {
       return <SubProfileAnalysisTableBlock key={index} block={block} />;
     case 'particle-size-distribution-curve':
       return <ParticleSizeDistributionCurveBlock key={index} block={block} />;
+    case 'topographic-3d-surface':
+      return <Topographic3DSurfacePlotBlock key={index} block={block} />;
     case 'project-details':
       return <ProjectDetailsBlock key={index} data={block.data} />;
     case 'geotechnical-exploration':

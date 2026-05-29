@@ -467,6 +467,29 @@ export const buildReportPages = (formData) => {
     blocks: [{ type: 'particle-size-distribution-curve', data }],
   });
 
+  // Topographic 3D Surface Plot — only when there are ≥2 boreholes with depth data
+  const boreholeDepthMatrix = (data.boreholeLogs || []).map((logs) =>
+    (logs || []).map((row) => parseFloat(row.depth)).filter((d) => !isNaN(d))
+  );
+  const hasEnoughData = boreholeDepthMatrix.some((depths) => depths.length > 0);
+  if (hasEnoughData) {
+    pages.push({
+      isFirstPage: false,
+      isContinuation: false,
+      sectionTitle: 'Topographic 3D Surface Plot',
+      blocks: [{
+        type: 'topographic-3d-surface',
+        data: {
+          boreholeLogs: data.boreholeLogs,
+          maxDepths: data.maxDepths,
+          latitudes: data.latitudes,
+          longitudes: data.longitudes,
+          projectName: data.projectName || data.projectDetails || '',
+        },
+      }],
+    });
+  }
+
   data.sbcDetails.forEach((levelRows, i) => {
     const filtered = levelRows.filter(
       (r) => rowHasData(r) && (r.useForReport !== false)
