@@ -423,7 +423,7 @@ const SubProfileAnalysisTableBlock = ({ block }) => {
 
   return (
     <div className="text-[9px] leading-tight">
-      <div className="text-center font-bold text-[11px] uppercase tracking-wide border border-gray-400 py-1 mb-0 bg-[#fcf8f2]">
+      <div className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
         Sub-Soil Profile and Classification
       </div>
       <table className="w-full border-collapse border border-gray-400 text-[9px] text-center">
@@ -527,7 +527,7 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
       { key: 'sieve9', size: 0.075 },
     ];
 
-    const colors = ['#ff6f00', '#006687', '#00701a', '#00a3e0', '#b10dc9', '#2ecc40', '#ff4136', '#ff851b', '#7fdbff', '#f012be'];
+    const colors = ['#ff6f00', '#869195ff', '#00701a', '#00a3e0', '#b10dc9', '#2ecc40', '#ff4136', '#ff851b', '#7fdbff', '#f012be'];
     const pointStyles = ['rect', 'diamond', 'triangle', 'crossRot', 'cross', 'line', 'circle', 'star', 'rectRounded', 'rectRot'];
 
     const datasets = [];
@@ -662,8 +662,8 @@ const BoreholeLogTableBlock = ({ block }) => {
 
   return (
     <div className="text-[9px] leading-tight">
-      <div className="text-center font-bold text-[11px] uppercase tracking-wide border border-gray-400 py-0 mb-0 bg-[#fcf8f2]">
-        BORE LOG DATA SHEET
+      <div className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
+        BOREHOLE LOG DATA
       </div>
 
       <table className="w-full border-collapse border border-gray-400 text-[9px]">
