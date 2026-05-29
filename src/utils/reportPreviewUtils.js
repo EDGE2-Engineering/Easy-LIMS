@@ -178,11 +178,18 @@ export const getLabCell = (row, col) => {
 };
 
 export const GRAIN_SIZE_COLUMNS = [
-  { key: 'depth', label: 'Depth (m)' },
-  ...Array.from({ length: 9 }, (_, i) => ({
-    key: `sieve${i + 1}`,
-    label: `Sieve ${i + 1}`,
-  })),
+  { key: 'depth',   label: 'Depth (m)' },
+  { key: 'sieve0',  label: '10mm'      },
+  { key: 'sieve1',  label: '4.75mm'    },
+  { key: 'sieve2',  label: '2.36mm'    },
+  { key: 'sieve1b', label: '2mm'       },
+  { key: 'sieve3',  label: '1.18mm'    },
+  { key: 'sieve4',  label: '0.60mm'    },
+  { key: 'sieve5',  label: '0.425mm'   },
+  { key: 'sieve6',  label: '0.30mm'    },
+  { key: 'sieve7',  label: '0.15mm'    },
+  { key: 'sieve8',  label: '0.075mm'   },
+  { key: 'sieve9',  label: 'Pan'       },
 ];
 
 export const SBC_COLUMNS = [

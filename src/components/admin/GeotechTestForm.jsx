@@ -448,8 +448,8 @@ export default function GeotechTestForm({ value, onChange }) {
                                                     <th className="px-3 py-2 font-bold w-20">Depth</th>
                                                     <th className="px-2 py-2 font-bold text-center">10mm</th>
                                                     <th className="px-2 py-2 font-bold text-center">4.75mm</th>
-                                                    <th className="px-2 py-2 font-bold text-center">2mm</th>
                                                     <th className="px-2 py-2 font-bold text-center">2.36mm</th>
+                                                    <th className="px-2 py-2 font-bold text-center">2mm</th>
                                                     <th className="px-2 py-2 font-bold text-center">1.18mm</th>
                                                     <th className="px-2 py-2 font-bold text-center">0.60mm</th>
                                                     <th className="px-2 py-2 font-bold text-center">0.425mm</th>
@@ -466,7 +466,7 @@ export default function GeotechTestForm({ value, onChange }) {
                                                         <td className="px-2 py-2">
                                                             <Input value={depthData.depth} onChange={(e) => handleGrainSizeChange(boreholeIndex, depthIndex, 'depth', e.target.value)} className="h-8 w-16" title="Depth (m)" />
                                                         </td>
-                                                        {['sieve0', 'sieve1', 'sieve1b', 'sieve2', 'sieve3', 'sieve4', 'sieve5', 'sieve6', 'sieve7', 'sieve8', 'sieve9'].map(key => (
+                                                        {['sieve0', 'sieve1', 'sieve2', 'sieve1b', 'sieve3', 'sieve4', 'sieve5', 'sieve6', 'sieve7', 'sieve8', 'sieve9'].map(key => (
                                                             <td key={key} className="px-1 py-2">
                                                                 <Input value={depthData[key] ?? ''} onChange={(e) => handleGrainSizeChange(boreholeIndex, depthIndex, key, e.target.value)} className="h-8 text-center" placeholder="%" title="Percentage passing (%)" />
                                                             </td>
