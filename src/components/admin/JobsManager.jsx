@@ -1054,7 +1054,7 @@ if (editingRecord) {
 
 
                 {/* Main Content Sections */}
-                <div className="space-y-10">
+                <div className="space-y-10 !mt-2">
                     <div className={cn("bg-white p-4 rounded-sm border border-gray-100 shadow-sm", canModify ? "block" : "hidden")}>
                         <div className="space-y-6" >
                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Client Details</h3>
@@ -1123,7 +1123,7 @@ if (editingRecord) {
                         <>
                             {/* Quotation Summary */}
                             {linkedDocs.find(d => d.document_type === 'Quotation') && (
-                                <div className="bg-white rounded-2xl shadow-sm bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
+                                <div className="bg-white !mt-2 rounded-2xl shadow-sm bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 "><FileText className="w-4 h-4" /> Quotation Summary</h3>
                                         {
@@ -1167,7 +1167,7 @@ if (editingRecord) {
 
                             {/* Materials Summary */}
                             {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.MATERIAL_RECEIVED) && (
-                                <div className="bg-white rounded-2xl shadow-sm bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
+                                <div className="bg-white !mt-2 rounded-2xl shadow-sm bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><Package className="w-4 h-4" /> Material Inward Details</h3>
                                         {canModify && (
@@ -1206,7 +1206,7 @@ if (editingRecord) {
                             )}
 
                             {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.TECHNICIANS_ASSIGNED) && (
-                                <div className="bg-white rounded-2xl shadow-sm bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
+                                <div className="bg-white !mt-2 rounded-2xl shadow-sm bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
                                     {(canModify || user?.role === ROLES.MRO.slug) && (
                                         <div className="flex justify-between items-center mb-6">
                                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2"><UserPlus className="w-4 h-4" /> Technician Assignments</h3>
@@ -1239,9 +1239,9 @@ if (editingRecord) {
 
                             {/* Testing Data */}
                             {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >= Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.UNDER_TESTING) && (
-                                <div className="bg-white rounded-2xl bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
+                                <div className="bg-white !mt-2 rounded-2xl bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
                                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2"><Package className="w-4 h-4" /> Testing Data</h3>
-                                    <TestingManager key={jobDetailRefreshKey} initialJobId={editingRecord.id} onSave={reloadEditingRecord} />
+                                    <TestingManager initialJobId={editingRecord.id} onSave={reloadEditingRecord} />
                                 </div>
                             )}
                         </>

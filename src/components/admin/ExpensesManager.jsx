@@ -567,39 +567,39 @@ const ExpensesManager = () => {
                 <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b">
                         <tr>
-                            <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Date</th>
-                            <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Description / Remarks</th>
-                            <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Amount</th>
-                            <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] hidden md:table-cell">Created By</th>
-                            <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Actions</th>
+                            <th className="text-right py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] ">Date</th>
+                            <th className="text-left py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Description / Remarks</th>
+                            <th className="text-center py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Amount</th>
+                            <th className="text-center py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] hidden md:table-cell">Created By</th>
+                            <th className="text-center py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                         {paginatedExpenses.length > 0 ? (
                             paginatedExpenses.map((expense) => (
                                 <tr key={expense.id} className="hover:bg-gray-50/50 transition-colors group">
-                                    <td className="py-5 px-6">
-                                        <span className="font-mono font-bold text-gray-700 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
+                                    <td className="py-5 px-2 text-right">
+                                        <span className="font-mono font-normal text-xs text-gray-700">
                                             {new Date(expense.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                                         </span>
                                     </td>
-                                    <td className="py-5 px-6">
+                                    <td className="py-5 px-2">
                                         <div className="font-bold text-gray-900 group-hover:text-primary transition-colors">{expense.description}</div>
                                         <div className="text-xs text-gray-500 mt-1 line-clamp-1">{expense.remarks || 'No remarks'}</div>
                                     </td>
 
-                                    <td className="py-5 px-6 text-center">
+                                    <td className="py-5 px-2 text-center">
                                         <div className="font-mono font-bold text-primary">
                                             ₹{Number(expense.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                         </div>
                                     </td>
-                                    <td className="py-5 px-6 text-center hidden md:table-cell">
+                                    <td className="py-5 px-2 text-center hidden md:table-cell">
                                         <div className="text-xs font-semibold text-gray-500 tracking-tight">
                                             {expense.createdBy}
                                         </div>
                                     </td>
 
-                                    <td className="py-5 px-6 text-center">
+                                    <td className="py-5 px-2 text-center">
                                         <div className="flex justify-center gap-2">
                                             <Button variant="ghost" size="sm" onClick={() => handleEdit(expense)} className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all">
                                                 <Edit className="w-4 h-4" />
