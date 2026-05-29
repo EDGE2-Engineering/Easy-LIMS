@@ -518,13 +518,13 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
       { key: 'sieve0', size: 10 },
       { key: 'sieve1', size: 4.75 },
       { key: 'sieve2', size: 2.36 },
-      { key: 'sieve1b', size: 2 },
-      { key: 'sieve3', size: 1.18 },
-      { key: 'sieve4', size: 0.6 },
-      { key: 'sieve5', size: 0.425 },
-      { key: 'sieve6', size: 0.3 },
-      { key: 'sieve7', size: 0.15 },
-      { key: 'sieve8', size: 0.075 },
+      { key: 'sieve3', size: 2 },
+      { key: 'sieve4', size: 1.18 },
+      { key: 'sieve5', size: 0.6 },
+      { key: 'sieve6', size: 0.425 },
+      { key: 'sieve7', size: 0.3 },
+      { key: 'sieve8', size: 0.15 },
+      { key: 'sieve9', size: 0.075 },
     ];
 
     const colors = ['#ff6f00', '#006687', '#00701a', '#00a3e0', '#b10dc9', '#2ecc40', '#ff4136', '#ff851b', '#7fdbff', '#f012be'];
@@ -578,17 +578,18 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
                     min: 0.001,
                     max: 100,
                     grid: { color: '#ccc' },
-                    ticks: {
-                        callback: function(value) {
-                            if ([100, 10, 1, 0.1, 0.01, 0.001].includes(value)) {
-                                return value;
-                            }
-                            return null;
-                        }
-                    },
-                    afterBuildTicks: function(scale) {
-                        scale.ticks = [100, 10, 1, 0.1, 0.01, 0.001].map(v => ({value: v}));
-                    }
+                    // ticks: { stepSize: 10 },
+                    // ticks: {
+                    //     callback: function(value) {
+                    //         if ([100, 10, 1, 0.1, 0.01, 0.001].includes(value)) {
+                    //             return value;
+                    //         }
+                    //         return null;
+                    //     }
+                    // },
+                    // afterBuildTicks: function(scale) {
+                    //     scale.ticks = [100, 10, 1, 0.1, 0.01, 0.001].map(v => ({value: v}));
+                    // }
                 },
                 y: {
                     type: 'linear',
@@ -617,7 +618,7 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
 
   return (
     <div className="mb-6">
-      <h2 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">
+      <h2 className="text-sm font-bold text-gray-900  pb-1 mb-2">
         Particle Size Distribution Curve
       </h2>
       <div className="w-[85%] max-w-[1000px] mx-auto bg-white p-5 rounded-lg">

@@ -441,14 +441,14 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                         { key: 'sieve0',  label: '10mm'    },
                                                                                                         { key: 'sieve1',  label: '4.75mm'  },
                                                                                                         { key: 'sieve2',  label: '2.36mm'  },
-                                                                                                        { key: 'sieve1b', label: '2mm'     },
-                                                                                                        { key: 'sieve3',  label: '1.18mm'  },
-                                                                                                        { key: 'sieve4',  label: '0.60mm'  },
-                                                                                                        { key: 'sieve5',  label: '0.425mm' },
-                                                                                                        { key: 'sieve6',  label: '0.30mm'  },
-                                                                                                        { key: 'sieve7',  label: '0.15mm'  },
-                                                                                                        { key: 'sieve8',  label: '0.075mm' },
-                                                                                                        { key: 'sieve9',  label: 'Pan'     },
+                                                                                                        { key: 'sieve3', label: '2mm'     },
+                                                                                                        { key: 'sieve4',  label: '1.18mm'  },
+                                                                                                        { key: 'sieve5',  label: '0.60mm'  },
+                                                                                                        { key: 'sieve6',  label: '0.425mm' },
+                                                                                                        { key: 'sieve7',  label: '0.30mm'  },
+                                                                                                        { key: 'sieve8',  label: '0.15mm'  },
+                                                                                                        { key: 'sieve9',  label: '0.075mm' },
+                                                                                                        { key: 'sieve10',  label: 'Pan'     },
                                                                                                     ].map(({ key, label }) => (
                                                                                                         <th key={key} className="p-2 font-bold text-gray-400 text-center text-[9px] uppercase">{label}</th>
                                                                                                     ))}
@@ -459,7 +459,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                     <tr key={`sieve-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
                                                                                                         <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
                                                                                                         <td className="p-3 text-gray-900 font-medium">{d.depth || '-'}</td>
-                                                                                                        {['sieve0', 'sieve1', 'sieve2', 'sieve1b', 'sieve3', 'sieve4', 'sieve5', 'sieve6', 'sieve7', 'sieve8', 'sieve9'].map(key => (
+                                                                                                        {['sieve0', 'sieve1', 'sieve2', 'sieve3', 'sieve4', 'sieve5', 'sieve6', 'sieve7', 'sieve8', 'sieve9', 'sieve10'].map(key => (
                                                                                                             <td key={key} className="p-2 text-center text-gray-500 font-mono">{d[key] ?? '-'}</td>
                                                                                                         ))}
                                                                                                     </tr>

@@ -32,7 +32,7 @@ export default function GeotechTestForm({ value, onChange }) {
         longitudes: value?.longitudes || [],
         labTestResults: value?.labTestResults || [[{ depth: '', bulkDensity: '', moistureContent: '', grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' }, atterbergLimits: { liquidLimit: '', plasticLimit: '', plasticityIndex: '' }, specificGravity: '', freeSwellIndex: '' }]],
         chemicalAnalysis: value?.chemicalAnalysis || [{ phValue: '', sulphates: '', chlorides: '', additionalKeys: [{ key: '', value: '' }] }],
-        grainSizeAnalysis: value?.grainSizeAnalysis || [[{ depth: '', sieve0: '', sieve1: '', sieve1b: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' }]],
+        grainSizeAnalysis: value?.grainSizeAnalysis || [[{ depth: '', sieve0: '', sieve1: '', sieve3: '', sieve2: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '', sieve10: '' }]],
         sbcDetails: value?.sbcDetails || [[{ depth: '', footingDimension: '', useForReport: false, sbcValue: '' }]],
         subSoilProfile: value?.subSoilProfile || [[{ depth: '', description: '' }]],
         directShearResults: value?.directShearResults || [[{ shearBoxSize: '', depthOfSample: '', cValue: '', phiValue: '', stressReadings: [{ normalStress: '', shearStress: '' }] }]],
@@ -102,7 +102,7 @@ export default function GeotechTestForm({ value, onChange }) {
             longitudes: [...(formData.longitudes || []), ''],
             sbcDetails: [...formData.sbcDetails, [{ depth: '', sbcValue: '' }]],
             labTestResults: [...formData.labTestResults, [{ depth: '', bulkDensity: '', moistureContent: '', grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' }, atterbergLimits: { liquidLimit: '', plasticLimit: '', plasticityIndex: '' }, specificGravity: '', freeSwellIndex: '' }]],
-            grainSizeAnalysis: [...formData.grainSizeAnalysis, [{ depth: '', sieve0: '', sieve1: '', sieve1b: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' }]]
+            grainSizeAnalysis: [...formData.grainSizeAnalysis, [{ depth: '', sieve0: '', sieve1: '', sieve3: '', sieve2: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '', sieve10: '' }]]
         });
     };
 
@@ -205,7 +205,7 @@ export default function GeotechTestForm({ value, onChange }) {
 
     const addGrainSizeDepth = (boreholeIndex) => {
         const newAnalysis = [...formData.grainSizeAnalysis];
-        newAnalysis[boreholeIndex].push({ depth: '', sieve0: '', sieve1: '', sieve1b: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' });
+        newAnalysis[boreholeIndex].push({ depth: '', sieve0: '', sieve1: '', sieve3: '', sieve2: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '', sieve10: '' });
         setFormData({ ...formData, grainSizeAnalysis: newAnalysis });
     };
 
@@ -466,7 +466,7 @@ export default function GeotechTestForm({ value, onChange }) {
                                                         <td className="px-2 py-2">
                                                             <Input value={depthData.depth} onChange={(e) => handleGrainSizeChange(boreholeIndex, depthIndex, 'depth', e.target.value)} className="h-8 w-16" title="Depth (m)" />
                                                         </td>
-                                                        {['sieve0', 'sieve1', 'sieve2', 'sieve1b', 'sieve3', 'sieve4', 'sieve5', 'sieve6', 'sieve7', 'sieve8', 'sieve9'].map(key => (
+                                                        {['sieve0', 'sieve1', 'sieve2', 'sieve3', 'sieve4', 'sieve5', 'sieve6', 'sieve7', 'sieve8', 'sieve9', 'sieve10'].map(key => (
                                                             <td key={key} className="px-1 py-2">
                                                                 <Input value={depthData[key] ?? ''} onChange={(e) => handleGrainSizeChange(boreholeIndex, depthIndex, key, e.target.value)} className="h-8 text-center" placeholder="%" title="Percentage passing (%)" />
                                                             </td>
