@@ -580,39 +580,6 @@ export const buildReportPages = (formData) => {
     addTextBlockPage(pages, 'Survey Report Note', data.surveyReportNote);
   }
 
-  data.boreholeLogs.forEach((levelLogs, i) => {
-    addTableSectionPages(
-      pages,
-      data.boreholeLogs.length > 1 ? `Borehole Log – Level ${i + 1}` : 'Borehole Log',
-      BOREHOLE_COLUMNS,
-      levelLogs,
-      boreholeCell
-    );
-  });
-  data.labTestResults.forEach((levelRows, i) => {
-    addTableSectionPages(
-      pages,
-      data.labTestResults.length > 1
-        ? `Laboratory Test Results – Level ${i + 1}`
-        : 'Laboratory Test Results',
-      LAB_COLUMNS,
-      levelRows,
-      getLabCell
-    );
-  });
-
-  data.grainSizeAnalysis.forEach((levelRows, i) => {
-    addTableSectionPages(
-      pages,
-      data.grainSizeAnalysis.length > 1
-        ? `Grain Size Analysis – Level ${i + 1}`
-        : 'Grain Size Analysis',
-      GRAIN_SIZE_COLUMNS,
-      levelRows,
-      (row, col) => formatDisplayValue(row[col.key])
-    );
-  });
-
   pages.push({
     isFirstPage: false,
     isContinuation: false,
@@ -624,7 +591,8 @@ export const buildReportPages = (formData) => {
   const boreholeDepthMatrix = (data.boreholeLogs || []).map((logs) =>
     (logs || []).map((row) => parseFloat(row.depth)).filter((d) => !isNaN(d))
   );
-  const hasEnoughData = boreholeDepthMatrix.some((depths) => depths.length > 0);
+  let hasEnoughData = boreholeDepthMatrix.some((depths) => depths.length > 0);
+  hasEnoughData = false; // temporary. Add it back later if needed
   if (hasEnoughData) {
     pages.push({
       isFirstPage: false,

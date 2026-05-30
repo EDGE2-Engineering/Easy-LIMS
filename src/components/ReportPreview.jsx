@@ -220,7 +220,7 @@ const ProjectDetailsBlock = ({ data }) => {
         
         <table className="w-full text-[10px] border-collapse border border-gray-400 text-center">
           <thead>
-            <tr className="bg-[#fcf8f2] border-b border-gray-400">
+            <tr className="bg-[#f3f4f6] border-b border-gray-400">
               <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[5%]" rowSpan="2">S. No</th>
               <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[10%]" rowSpan="2">Borehole No.</th>
               <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[25%]" rowSpan="2">Type of Structure/ Location</th>
@@ -230,7 +230,7 @@ const ProjectDetailsBlock = ({ data }) => {
               <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[10%]" rowSpan="2">Start Date</th>
               <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[10%]" rowSpan="2">Completion Date</th>
             </tr>
-            <tr className="bg-[#fcf8f2] border-b border-gray-400">
+            <tr className="bg-[#f3f4f6] border-b border-gray-400">
               <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900">Latitude (°)</th>
               <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900">Longitude (°)</th>
             </tr>
@@ -432,7 +432,7 @@ const SubProfileAnalysisTableBlock = ({ block }) => {
       </div>
       <table className="w-full border-collapse border border-gray-400 text-[9px] text-center">
         <thead>
-          <tr className="bg-[#fbc49c]">
+          <tr className="bg-[#f3f4f6]">
             <th colSpan="4" className="border border-gray-400 px-2 py-1.5 font-bold text-gray-900 text-left">
               Borehole No: {bhLabel}
             </th>
@@ -440,7 +440,7 @@ const SubProfileAnalysisTableBlock = ({ block }) => {
               Location: {location || 'NA'}
             </th>
           </tr>
-          <tr className="bg-[#fbc49c]">
+          <tr className="bg-[#f3f4f6]">
             <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '5%' }}>S. No</th>
             <th colSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900" style={{ width: '16%' }}>Depth (m)</th>
             <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '14%' }}>Layer Thickness (m)</th>
@@ -449,7 +449,7 @@ const SubProfileAnalysisTableBlock = ({ block }) => {
             <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '10%' }}>CR%</th>
             <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '10%' }}>RQD%</th>
           </tr>
-          <tr className="bg-[#fbc49c]">
+          <tr className="bg-[#f3f4f6]">
             <th className="border border-gray-400 px-1 py-0.5 font-bold text-gray-900">From</th>
             <th className="border border-gray-400 px-1 py-0.5 font-bold text-gray-900">To</th>
           </tr>
@@ -622,7 +622,7 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
 
   return (
     <div className="mb-6">
-      <h2 className="text-sm font-bold text-gray-900  pb-1 mb-2">
+      <h2 className="text-sm font-bold text-blue-800 uppercase tracking-wide pb-1 mb-2">
         Particle Size Distribution Curve
       </h2>
       <div className="w-[85%] max-w-[1000px] mx-auto bg-white p-5 rounded-lg">
@@ -713,7 +713,7 @@ const BoreholeLogTableBlock = ({ block }) => {
 
       <table className="w-full border-collapse border border-gray-400 text-[9px] mt-0">
         <thead>
-          <tr className="bg-[#fcf8f2] text-center">
+          <tr className="bg-[#f3f4f6] text-center">
             <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'4%'}}>S.No.</th>
             <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'18%'}}>Strata Description</th>
             <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'7%'}}>Sample Type</th>
@@ -724,7 +724,7 @@ const BoreholeLogTableBlock = ({ block }) => {
             <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'6%'}}>RQD (%)</th>
             <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'13%'}}>Remarks</th>
           </tr>
-          <tr className="bg-[#fcf8f2] text-center">
+          <tr className="bg-[#f3f4f6] text-center">
             <th className="border border-gray-400 px-1 py-0.5">From</th>
             <th className="border border-gray-400 px-1 py-0.5">To</th>
             <th className="border border-gray-400 px-1 py-0.5">0–15 cm</th>
@@ -813,7 +813,7 @@ const KvTableBlock = ({ title, rows }) => (
       {title}
     </h3>
     <table className="w-full text-xs border-collapse border border-gray-200">
-      <thead className="bg-gray-100">
+      <thead className="bg-[#f3f4f6]">
         <tr>
           <th className="border border-gray-200 px-2 py-1.5 text-left w-[40%]">Parameter</th>
           <th className="border border-gray-200 px-2 py-1.5 text-left">Details</th>
@@ -841,7 +841,7 @@ const DataTableBlock = ({ title, columns, rows, getCell }) => (
       {title}
     </h3>
     <table className="w-full text-[10px] border-collapse border border-gray-200 table-fixed">
-      <thead className="bg-gray-100">
+      <thead className="bg-[#f3f4f6]">
         <tr>
           {columns.map((col) => (
             <th
@@ -893,7 +893,7 @@ const SbcSummaryBlock = ({ rows, projectName, siteAddress }) => {
   return (
     <div className="mb-6">
       <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
-        6.0 Summary of Safe Bearing Capacity
+        Summary of Safe Bearing Capacity
       </h3>
 
       <p className="text-xs text-gray-800 leading-relaxed mb-4 text-justify">
@@ -904,7 +904,7 @@ const SbcSummaryBlock = ({ rows, projectName, siteAddress }) => {
       </p>
 
       <h4 className="text-xs font-bold text-blue-800 mb-1">
-        6.1 Foundation Type: Isolated (Open) Foundation
+        Foundation Type: Isolated (Open) Foundation
       </h4>
       <p className="text-xs text-gray-800 leading-relaxed mb-3">
         Foundation Dimensions (L × B): <strong>{L} m × {B} m</strong> &nbsp;|&nbsp; Shape: <strong>{shape}</strong>
@@ -912,7 +912,7 @@ const SbcSummaryBlock = ({ rows, projectName, siteAddress }) => {
 
       <table className="w-full text-[9px] border-collapse border border-gray-400">
         <thead>
-          <tr className="bg-[#fcf8f2]">
+          <tr className="bg-[#f3f4f6]">
             <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>S. No</th>
             <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Type of Structure / Location</th>
             <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Borehole No.</th>
@@ -922,7 +922,7 @@ const SbcSummaryBlock = ({ rows, projectName, siteAddress }) => {
             <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Considered SPT-N Value</th>
             <th className="border border-gray-400 px-1 py-1 text-center font-bold" colSpan={3}>Bearing Capacity (kN/m²)</th>
           </tr>
-          <tr className="bg-[#fcf8f2]">
+          <tr className="bg-[#f3f4f6]">
             <th className="border border-gray-400 px-1 py-1 text-center font-bold">SBC<br/>(Shear Criteria)</th>
             <th className="border border-gray-400 px-1 py-1 text-center font-bold">Allowable BC for Settlement of 25mm</th>
             <th className="border border-gray-400 px-1 py-1 text-center font-bold">Recommended SBC for Design</th>
@@ -1351,7 +1351,7 @@ const Topographic3DSurfacePlotBlock = ({ block }) => {
         <div className="mt-3">
           <p className="text-[9px] font-semibold text-gray-700 mb-1 uppercase tracking-wide">Borehole Summary</p>
           <table className="w-full text-[9px] border-collapse border border-gray-300">
-            <thead className="bg-[#fcf8f2]">
+            <thead className="bg-[#f3f4f6]">
               <tr>
                 <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">Borehole</th>
                 <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">Max Depth (m)</th>
