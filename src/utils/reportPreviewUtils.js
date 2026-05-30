@@ -193,9 +193,18 @@ export const GRAIN_SIZE_COLUMNS = [
 ];
 
 export const SBC_COLUMNS = [
-  { key: 'depth', label: 'Depth (m)' },
-  { key: 'footingDimension', label: 'Footing Dim.' },
-  { key: 'sbcValue', label: 'SBC Value' },
+  { key: 'structure', label: 'Structure' },
+  { key: 'chainage', label: 'Chainage' },
+  { key: 'depthFromGL', label: 'Depth from GL' },
+  { key: 'scourDepthFromGL', label: 'Scour Depth from GL' },
+  { key: 'strata', label: 'Strata' },
+  { key: 'fieldNValue', label: 'Field N Value' },
+  { key: 'typeOfCorrection', label: 'Type of Correction' },
+  { key: 'cpLayerThickness', label: 'CP Layer Thickness' },
+  { key: 'liquidLimit', label: 'Liquid Limit' },
+  { key: 'width', label: 'Width (m)' },
+  { key: 'footingLength', label: 'Length (m)' },
+  { key: 'shapeOfFooting', label: 'Shape of Footing' },
 ];
 
 export const SUBSOIL_COLUMNS = [
@@ -338,6 +347,150 @@ const addTextBlockPage = (pages, title, content) => {
     sectionTitle: title,
     blocks: [{ type: 'text', title, content }],
   });
+};
+
+/**
+ * Compute SBC summary rows from sbcDetails input data.
+ *
+ * For each entry the following are calculated:
+ *   1. Corrected N (N_corr) — field N capped at 50, then overburden / dilatancy
+ *      corrections applied per IS:2131 / IS:6403.
+ *   2. SBC – Shear Criteria (kN/m²) — Terzaghi's general bearing capacity with
+ *      Meyerhof's N-factors derived from φ estimated via Peck's correlation,
+ *      FOS = 3.
+ *   3. Allowable BC for 25 mm settlement (kN/m²) — IS:8009 / Teng's formula.
+ *   4. Recommended SBC = min(shear, settlement).
+ *
+ * Assumptions:
+ *   γ (unit weight of soil) = 18 kN/m³
+ *   c (cohesion) = 0 (granular soil, SPT-based)
+ *   Groundwater table assumed deep (no GWT correction applied here).
+ */
+export const computeSbcSummaryRows = (sbcDetails, boreholeLogs) => {
+  const GAMMA = 18;   // kN/m³ — unit weight of soil
+  const FOS   = 3;    // factor of safety for shear
+  const S_ALLOW = 25; // mm — allowable settlement
+
+  // Meyerhof bearing capacity factors from φ (degrees)
+  const bearingFactors = (phi_deg) => {
+    const phi = (phi_deg * Math.PI) / 180;
+    const Nq  = Math.exp(Math.PI * Math.tan(phi)) * Math.pow(Math.tan(Math.PI / 4 + phi / 2), 2);
+    const Nc  = phi_deg > 0 ? (Nq - 1) / Math.tan(phi) : 5.14;
+    const Ng  = 2 * (Nq + 1) * Math.tan(phi);
+    return { Nc, Nq, Ng };
+  };
+
+  // Peck's correlation: φ from corrected N (IS:6403)
+  const phiFromN = (N) => {
+    if (N <= 0)  return 0;
+    if (N <= 4)  return 26;
+    if (N <= 10) return 28 + (N - 4) * (30 - 28) / 6;
+    if (N <= 30) return 30 + (N - 10) * (40 - 30) / 20;
+    if (N <= 50) return 40 + (N - 30) * (45 - 40) / 20;
+    return 45;
+  };
+
+  // Shape factors (Meyerhof) for different footing shapes
+  const shapeFactors = (shape, B, L, Nq, Nc) => {
+    const r = B / (L || B); // B/L ratio (≤1)
+    switch ((shape || '').toLowerCase()) {
+      case 'square':
+        return { sc: 1 + 0.2 * r, sq: 1 + 0.1 * r, sg: 1 - 0.4 * r };
+      case 'circle':
+        return { sc: 1.3, sq: 1.2, sg: 0.6 };
+      case 'continous strip':
+      case 'strip':
+        return { sc: 1.0, sq: 1.0, sg: 1.0 };
+      case 'rectangle':
+      default:
+        return { sc: 1 + 0.2 * r, sq: 1 + 0.1 * r, sg: 1 - 0.4 * r };
+    }
+  };
+
+  const rows = [];
+  let sNo = 1;
+
+  (sbcDetails || []).forEach((levelRows, bhIdx) => {
+    const bhLabel = `BH-${String(bhIdx + 1).padStart(2, '0')}`;
+
+    (levelRows || []).filter(rowHasData).forEach((entry) => {
+      const rawN      = parseFloat(entry.fieldNValue) || 0;
+      const Df        = parseFloat(entry.depthFromGL) || 0;
+      const scourDf   = parseFloat(entry.scourDepthFromGL) || 0;
+      const B         = parseFloat(entry.width) || 1.5;
+      const L         = parseFloat(entry.footingLength) || B;
+      const LL        = parseFloat(entry.liquidLimit) || 0;
+      const cpThick   = parseFloat(entry.cpLayerThickness) || 0;
+      const correction = entry.typeOfCorrection || 'No Correction';
+      const shape      = entry.shapeOfFooting || 'Rectangle';
+
+      // Effective depth = Df + scour depth
+      const Df_eff = Df + scourDf;
+
+      // Step 1 — cap N at 50
+      let N = Math.min(rawN, 50);
+
+      // Step 2 — overburden correction (CN factor, IS:2131)
+      // CN = 0.77 * log10(2000 / σ'v), σ'v = γ * Df (kPa)
+      const applyOverburden = correction === 'Over burden Correction' || correction === 'Both Corrections';
+      const applyDilatancy  = correction === 'Dilatancy Correction'   || correction === 'Both Corrections';
+
+      if (applyOverburden && Df_eff > 0) {
+        const sigma_v = GAMMA * Df_eff; // kPa
+        const CN = Math.min(0.77 * Math.log10(2000 / Math.max(sigma_v, 1)), 2.0);
+        N = Math.min(Math.round(CN * N), 50);
+      }
+
+      // Step 3 — dilatancy correction (IS:2131 clause 4.6.2)
+      // For N > 15 in fine saturated sand: N' = 15 + 0.5*(N-15)
+      if (applyDilatancy && N > 15) {
+        N = Math.round(15 + 0.5 * (N - 15));
+      }
+
+      const N_corr = Math.max(N, 1);
+
+      // Step 4 — φ from corrected N
+      const phi = phiFromN(N_corr);
+      const { Nc, Nq, Ng } = bearingFactors(phi);
+      const { sc, sq, sg } = shapeFactors(shape, B, L, Nq, Nc);
+
+      // Step 5 — SBC (shear criteria), Terzaghi general bearing capacity
+      // q_ult = c·Nc·sc + γ·Df·Nq·sq + 0.5·γ·B·Nγ·sg  (c=0 for SPT-based)
+      const q_ult = GAMMA * Df_eff * Nq * sq + 0.5 * GAMMA * B * Ng * sg;
+      const sbc_shear = Math.round(q_ult / FOS);
+
+      // Step 6 — Allowable BC for 25 mm settlement (Teng's formula, IS:8009)
+      // qa = 1.4 * N_corr² * B² / (B + 0.3)² * Fd  (kN/m²) for S=25mm
+      // Fd = depth factor = 1 + Df/(3B) ≤ 2
+      const Fd = Math.min(1 + Df_eff / (3 * B), 2.0);
+      const qa_settlement = Math.round(
+        1.4 * N_corr * N_corr * (B * B) / Math.pow(B + 0.3, 2) * Fd
+      );
+
+      // Step 7 — Recommended SBC
+      const recommended = Math.min(sbc_shear, qa_settlement);
+
+      rows.push({
+        sNo: sNo++,
+        structure: entry.structure || '-',
+        chainage: entry.chainage || '-',
+        bhLabel,
+        depthFromGL: Df > 0 ? Df.toFixed(1) : '-',
+        scourDepthFromGL: scourDf > 0 ? scourDf.toFixed(1) : '-',
+        strata: entry.strata || '-',
+        nCorr: `N=${N_corr}`,
+        sbcShear: sbc_shear,
+        qaSettlement: qa_settlement,
+        recommended,
+        width: B,
+        footingLength: L,
+        shapeOfFooting: shape,
+        typeOfCorrection: correction,
+      });
+    });
+  });
+
+  return rows;
 };
 
 /**
@@ -490,18 +643,22 @@ export const buildReportPages = (formData) => {
     });
   }
 
-  data.sbcDetails.forEach((levelRows, i) => {
-    const filtered = levelRows.filter(
-      (r) => rowHasData(r) && (r.useForReport !== false)
-    );
-    addTableSectionPages(
-      pages,
-      data.sbcDetails.length > 1 ? `SBC Details – Level ${i + 1}` : 'SBC Details',
-      SBC_COLUMNS,
-      filtered,
-      (row, col) => formatDisplayValue(row[col.key])
-    );
-  });
+  // SBC Summary page — computed from sbcDetails input
+  const sbcSummaryRows = computeSbcSummaryRows(data.sbcDetails, data.boreholeLogs);
+  if (sbcSummaryRows.length > 0) {
+    pages.push({
+      isFirstPage: false,
+      isContinuation: false,
+      sectionTitle: 'Summary of Safe Bearing Capacity',
+      blocks: [{
+        type: 'sbc-summary',
+        rows: sbcSummaryRows,
+        sbcDetails: data.sbcDetails,
+        projectName: data.projectName || data.projectDetails || '',
+        siteAddress: data.siteAddress || data.siteName || '',
+      }],
+    });
+  }
 
   data.subSoilProfile.forEach((levelRows, i) => {
     addTableSectionPages(

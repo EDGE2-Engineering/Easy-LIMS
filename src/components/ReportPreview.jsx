@@ -871,6 +871,119 @@ const DataTableBlock = ({ title, columns, rows, getCell }) => (
   </div>
 );
 
+const SbcSummaryBlock = ({ rows, projectName, siteAddress }) => {
+  if (!rows || rows.length === 0) return null;
+
+  const first = rows[0];
+  const B = first?.width ?? '-';
+  const L = first?.footingLength ?? '-';
+  const shape = first?.shapeOfFooting ?? 'Isolated (Open)';
+
+  // Group consecutive rows by structure+chainage for rowspan
+  const grouped = [];
+  rows.forEach((row) => {
+    const last = grouped[grouped.length - 1];
+    if (last && last.structure === row.structure && last.chainage === row.chainage) {
+      last.entries.push(row);
+    } else {
+      grouped.push({ structure: row.structure, chainage: row.chainage, entries: [row] });
+    }
+  });
+
+  return (
+    <div className="mb-6">
+      <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
+        6.0 Summary of Safe Bearing Capacity
+      </h3>
+
+      <p className="text-xs text-gray-800 leading-relaxed mb-4 text-justify">
+        This design report has been prepared to assess the ground conditions for its suitability for
+        {projectName ? <> &ldquo;<strong>{projectName}</strong>&rdquo;</> : ' the proposed construction'}
+        {siteAddress ? <> at <strong>{siteAddress}</strong></> : ''}.
+        Based on the evaluation of ground conditions, the following technical recommendations have been arrived.
+      </p>
+
+      <h4 className="text-xs font-bold text-blue-800 mb-1">
+        6.1 Foundation Type: Isolated (Open) Foundation
+      </h4>
+      <p className="text-xs text-gray-800 leading-relaxed mb-3">
+        Foundation Dimensions (L × B): <strong>{L} m × {B} m</strong> &nbsp;|&nbsp; Shape: <strong>{shape}</strong>
+      </p>
+
+      <table className="w-full text-[9px] border-collapse border border-gray-400">
+        <thead>
+          <tr className="bg-[#fcf8f2]">
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>S. No</th>
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Type of Structure / Location</th>
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Borehole No.</th>
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Depth of Foundation (from E.G.L.) (m)</th>
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Scour Depth (from E.G.L.) (m)</th>
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Strata Description</th>
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Considered SPT-N Value</th>
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold" colSpan={3}>Bearing Capacity (kN/m²)</th>
+          </tr>
+          <tr className="bg-[#fcf8f2]">
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold">SBC<br/>(Shear Criteria)</th>
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold">Allowable BC for Settlement of 25mm</th>
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold">Recommended SBC for Design</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(() => {
+            let sNo = 1;
+            return grouped.map((group, gi) => {
+              const currentSNo = sNo++;
+              return group.entries.map((row, ei) => (
+                <tr key={`${gi}-${ei}`} className="border-b border-gray-300">
+                  {ei === 0 && (
+                    <td className="border border-gray-400 px-1 py-1 text-center font-bold align-middle text-gray-800" rowSpan={group.entries.length}>
+                      {currentSNo}
+                    </td>
+                  )}
+                  {ei === 0 && (
+                    <td className="border border-gray-400 px-1 py-1 align-middle text-gray-800" rowSpan={group.entries.length}>
+                      {group.structure !== '-' ? group.structure : ''}
+                      {group.chainage && group.chainage !== '-' ? ` / ${group.chainage}` : ''}
+                    </td>
+                  )}
+                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{row.bhLabel}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{row.depthFromGL}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{row.scourDepthFromGL}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-gray-800">{row.strata}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{row.nCorr}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{row.sbcShear}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{row.qaSettlement}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-center font-bold text-gray-900">{row.recommended}</td>
+                </tr>
+              ));
+            });
+          })()}
+        </tbody>
+      </table>
+
+      <div className="mt-3">
+        <p className="text-xs font-bold text-gray-800 mb-1">Note:</p>
+        <ol className="list-decimal list-inside space-y-1 text-xs text-gray-800 leading-relaxed">
+          <li>
+            For the purpose of SBC calculations, foundation dimensions (L × B) of {L} m × {B} m have been
+            considered for {shape} foundation. A sample calculation is provided in the Annexure for reference.
+          </li>
+          <li>
+            For N &gt; 50, the N value is restricted and conservatively taken as 50 for design calculations.
+            Beyond the borehole termination depth, it is assumed that the same soil strata continue.
+            This assumption has been applied for the purpose of this analysis.
+          </li>
+          <li>
+            SBC (Shear Criteria) is computed using Terzaghi's general bearing capacity equation with
+            Meyerhof's bearing capacity factors (FOS = 3). Allowable BC for 25 mm settlement is computed
+            using Teng's formula (IS:8009). Recommended SBC = min(Shear Criteria, Settlement Criteria).
+          </li>
+        </ol>
+      </div>
+    </div>
+  );
+};
+
 const TextBlock = ({ title, content }) => (
   <div className="mb-4">
     <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">
@@ -1296,6 +1409,8 @@ const renderBlock = (block, index) => {
           getCell={block.getCell}
         />
       );
+    case 'sbc-summary':
+      return <SbcSummaryBlock key={index} rows={block.rows} projectName={block.projectName} siteAddress={block.siteAddress} />;
     case 'text':
       return <TextBlock key={index} title={block.title} content={block.content} />;
     case 'list':

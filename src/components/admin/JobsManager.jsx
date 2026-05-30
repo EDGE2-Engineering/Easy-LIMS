@@ -456,7 +456,7 @@ const JobsManager = ({ id }) => {
                 latitudes: [],
                 longitudes: [],
                 labTestResults: [[{ depth: '', bulkDensity: '', moistureContent: '', grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' }, atterbergLimits: { liquidLimit: '', plasticLimit: '', plasticityIndex: '' }, specificGravity: '', freeSwellIndex: '' }]],
-                sbcDetails: [[{ depth: '', footingDimension: '', useForReport: false, sbcValue: '' }]],
+                sbcDetails: [[{ structure: '', chainage: '', depthFromGL: '', scourDepthFromGL: '', strata: '', fieldNValue: '', typeOfCorrection: '', cpLayerThickness: '', liquidLimit: '', width: '', footingLength: '', shapeOfFooting: '' }]],
                 grainSizeAnalysis: [[{ depth: '', sieve1: '', sieve2: '', sieve3: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '' }]],
                 subSoilProfile: [[{ depth: '', description: '' }]],
                 directShearResults: [[{ shearBoxSize: '', depthOfSample: '', cValue: '', phiValue: '', stressReadings: [{ normalStress: '', shearStress: '' }] }]],

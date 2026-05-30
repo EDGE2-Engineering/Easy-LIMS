@@ -378,16 +378,36 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                             <thead className="bg-gray-50 border-b">
                                                                                                 <tr>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">BH</th>
-                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Depth (m)</th>
-                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">SBC Value (t/m²)</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Structure</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Chainage</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Depth from GL</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Scour Depth from GL</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Strata</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Field N Value</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Type of Correction</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">CP Layer Thickness</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Liquid Limit</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Width (m)</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Length (m)</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Shape of Footing</th>
                                                                                                 </tr>
                                                                                             </thead>
                                                                                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                                                                                                 {sbcDetails.map((bh, bhIdx) => bh.map((d, dIdx) => (
                                                                                                     <tr key={`sbc-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
                                                                                                         <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
-                                                                                                        <td className="p-3 text-gray-900 font-medium">{d.depth || '-'}</td>
-                                                                                                        <td className="p-3 text-gray-900 font-bold tabular-nums">{d.sbcValue || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900">{d.structure || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900">{d.chainage || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900">{d.depthFromGL || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900">{d.scourDepthFromGL || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900">{d.strata || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900 tabular-nums">{d.fieldNValue || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900">{d.typeOfCorrection || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900 tabular-nums">{d.cpLayerThickness || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900 tabular-nums">{d.liquidLimit || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900 tabular-nums">{d.width || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900 tabular-nums">{d.footingLength || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900">{d.shapeOfFooting || '-'}</td>
                                                                                                     </tr>
                                                                                                 )))}
                                                                                             </tbody>
