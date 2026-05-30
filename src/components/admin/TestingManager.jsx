@@ -449,7 +449,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                             {grainSizeAnalysis.some(bh => bh.length > 0) && (
                                                                                 <div className="space-y-3">
                                                                                     <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                                                                        <Layers className="w-3 h-3 text-orange-500" /> Sieve Analysis (Passing %)
+                                                                                        <Layers className="w-3 h-3 text-orange-500" /> Sieve Analysis - Weight Retained (gms)
                                                                                     </h5>
                                                                                     <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
                                                                                         <table className="w-full text-left text-[11px]">

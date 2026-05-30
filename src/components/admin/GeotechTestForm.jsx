@@ -468,7 +468,7 @@ export default function GeotechTestForm({ value, onChange }) {
                             <Layers className="w-4 h-4 text-primary" />
                             Sieve Analysis
                         </h3>
-                        <p className="text-[11px] text-gray-500 mb-4 italic">Record percentage passing through standard sieves for grain size distribution analysis.</p>
+                        <p className="text-[11px] text-gray-500 mb-4 italic">Enter weight retained (gms) for each sieve size. % Weight Retained, % Cumulative Weight Retained, and % Fines Passing are computed automatically in the report.</p>
                         <div className="space-y-4">
                             {formData.grainSizeAnalysis.map((logs, boreholeIndex) => (
                                 <div key={boreholeIndex} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
@@ -479,7 +479,7 @@ export default function GeotechTestForm({ value, onChange }) {
                                         <table className="w-full text-sm text-left border-collapse min-w-[1200px]">
                                             <thead className="text-[11px] text-gray-500 uppercase bg-gray-50/50 border-b">
                                                 <tr>
-                                                    <th className="px-3 py-2 font-bold w-20">Depth</th>
+                                                    <th className="px-3 py-2 font-bold w-20">Depth (m)</th>
                                                     <th className="px-2 py-2 font-bold text-center">10mm</th>
                                                     <th className="px-2 py-2 font-bold text-center">4.75mm</th>
                                                     <th className="px-2 py-2 font-bold text-center">2.36mm</th>
@@ -493,6 +493,13 @@ export default function GeotechTestForm({ value, onChange }) {
                                                     <th className="px-2 py-2 font-bold text-center">Pan</th>
                                                     <th className="px-2 py-2 w-[50px]"></th>
                                                 </tr>
+                                                <tr className="text-[10px] text-gray-400 border-b">
+                                                    <td className="px-3 py-1 italic">depth</td>
+                                                    {['sieve0','sieve1','sieve2','sieve3','sieve4','sieve5','sieve6','sieve7','sieve8','sieve9','sieve10'].map(k => (
+                                                        <td key={k} className="px-2 py-1 text-center italic">Wt. Ret. (g)</td>
+                                                    ))}
+                                                    <td></td>
+                                                </tr>
                                             </thead>
                                             <tbody>
                                                 {logs.map((depthData, depthIndex) => (
@@ -502,7 +509,7 @@ export default function GeotechTestForm({ value, onChange }) {
                                                         </td>
                                                         {['sieve0', 'sieve1', 'sieve2', 'sieve3', 'sieve4', 'sieve5', 'sieve6', 'sieve7', 'sieve8', 'sieve9', 'sieve10'].map(key => (
                                                             <td key={key} className="px-1 py-2">
-                                                                <Input value={depthData[key] ?? ''} onChange={(e) => handleGrainSizeChange(boreholeIndex, depthIndex, key, e.target.value)} className="h-8 text-center" placeholder="%" title="Percentage passing (%)" />
+                                                                <Input value={depthData[key] ?? ''} onChange={(e) => handleGrainSizeChange(boreholeIndex, depthIndex, key, e.target.value)} className="h-8 text-center" placeholder="gms" title="Weight retained (gms)" />
                                                             </td>
                                                         ))}
                                                         <td className="px-2 py-2">

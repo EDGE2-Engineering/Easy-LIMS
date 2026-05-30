@@ -507,127 +507,162 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
-  useEffect(() => {
-    if (chartInstance.current) {
-      chartInstance.current.destroy();
-    }
-    
-    if (!chartRef.current) return;
+  const grainSizeAnalysis = block.data?.grainSizeAnalysis || [];
 
+  const SIEVES = [
+    { key: 'sieve0',  label: '10mm',    size: 10    },
+    { key: 'sieve1',  label: '4.75mm',  size: 4.75  },
+    { key: 'sieve2',  label: '2.36mm',  size: 2.36  },
+    { key: 'sieve3',  label: '2mm',     size: 2     },
+    { key: 'sieve4',  label: '1.18mm',  size: 1.18  },
+    { key: 'sieve5',  label: '0.60mm',  size: 0.6   },
+    { key: 'sieve6',  label: '0.425mm', size: 0.425 },
+    { key: 'sieve7',  label: '0.30mm',  size: 0.3   },
+    { key: 'sieve8',  label: '0.15mm',  size: 0.15  },
+    { key: 'sieve9',  label: '0.075mm', size: 0.075 },
+    { key: 'sieve10', label: 'Pan',     size: null  },
+  ];
+
+  // Compute derived values for each depth row in each borehole
+  const computedData = grainSizeAnalysis.map((bh, bhIdx) =>
+    bh.map((d) => {
+      const weights = SIEVES.map(s => ({ ...s, wt: parseFloat(d[s.key]) || 0 }));
+      const totalWt = weights.reduce((sum, s) => sum + s.wt, 0);
+      let cumWt = 0;
+      return {
+        depth: d.depth,
+        bhIdx,
+        sieves: weights.map(s => {
+          const pctRetained = totalWt > 0 ? (s.wt / totalWt) * 100 : 0;
+          cumWt += s.wt;
+          const cumPctRetained = totalWt > 0 ? (cumWt / totalWt) * 100 : 0;
+          const finesPassing = 100 - cumPctRetained;
+          return {
+            label: s.label,
+            size: s.size,
+            wt: s.wt,
+            pctRetained,
+            cumPctRetained,
+            finesPassing: Math.max(0, finesPassing),
+          };
+        }),
+        totalWt,
+      };
+    })
+  );
+
+  useEffect(() => {
+    if (chartInstance.current) chartInstance.current.destroy();
+    if (!chartRef.current) return;
     const ctx = chartRef.current.getContext('2d');
 
-    const grainSizeAnalysis = block.data?.grainSizeAnalysis || [];
-    
-    const SIEVES = [
-      { key: 'sieve0', size: 10 },
-      { key: 'sieve1', size: 4.75 },
-      { key: 'sieve2', size: 2.36 },
-      { key: 'sieve3', size: 2 },
-      { key: 'sieve4', size: 1.18 },
-      { key: 'sieve5', size: 0.6 },
-      { key: 'sieve6', size: 0.425 },
-      { key: 'sieve7', size: 0.3 },
-      { key: 'sieve8', size: 0.15 },
-      { key: 'sieve9', size: 0.075 },
-    ];
-
-    const colors = ['#ff6f00', '#869195ff', '#00701a', '#00a3e0', '#b10dc9', '#2ecc40', '#ff4136', '#ff851b', '#7fdbff', '#f012be'];
+    const colors = ['#ff6f00', '#00701a', '#00a3e0', '#b10dc9', '#ff4136', '#2ecc40', '#ff851b', '#7fdbff', '#f012be', '#869195'];
     const pointStyles = ['rect', 'diamond', 'triangle', 'crossRot', 'cross', 'line', 'circle', 'star', 'rectRounded', 'rectRot'];
-
     const datasets = [];
     let colorIndex = 0;
 
-    grainSizeAnalysis.forEach((bh, bhIdx) => {
+    computedData.forEach((bh, bhIdx) => {
       bh.forEach((d) => {
-        const dataPoints = [];
-        
-        // Add default starting points for visual consistency with original graph if desired, 
-        // or just let it start at 10mm.
-        dataPoints.push({x: 100, y: 100}); 
-        dataPoints.push({x: 50, y: 100}); 
-        dataPoints.push({x: 20, y: 100}); 
-        
-        SIEVES.forEach(({ key, size }) => {
-          if (d[key] !== undefined && d[key] !== '') {
-            dataPoints.push({ x: size, y: Number(d[key]) });
+        if (d.totalWt === 0) return;
+        const dataPoints = [
+          { x: 100, y: 100 },
+          { x: 50,  y: 100 },
+          { x: 20,  y: 100 },
+        ];
+        d.sieves.forEach(s => {
+          if (s.size !== null) {
+            dataPoints.push({ x: s.size, y: parseFloat(s.finesPassing.toFixed(2)) });
           }
         });
-
-        // Skip if no data
-        if (dataPoints.length <= 3) return;
-
         datasets.push({
-          label: `BH-${bhIdx + 1} (${d.depth || 'Unknown'} m)`,
+          label: `BH-${bhIdx + 1} (${d.depth || '?'} m)`,
           data: dataPoints,
           borderColor: colors[colorIndex % colors.length],
           backgroundColor: colors[colorIndex % colors.length],
           pointStyle: pointStyles[colorIndex % pointStyles.length],
+          tension: 0.1,
         });
         colorIndex++;
       });
     });
 
     chartInstance.current = new Chart(ctx, {
-        type: 'line',
-        data: {
-            datasets: datasets
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            type: 'logarithmic',
+            reverse: true,
+            title: { display: true, text: 'PARTICLE SIZE (MM)', font: { weight: 'bold' } },
+            min: 0.001,
+            max: 100,
+            grid: { color: '#ccc' },
+          },
+          y: {
+            type: 'linear',
+            title: { display: true, text: '% FINES PASSING', font: { weight: 'bold' } },
+            min: 0,
+            max: 100,
+            ticks: { stepSize: 10 },
+            grid: { color: '#ccc' },
+          },
         },
-        options: {
-            responsive: true,
-            scales: {
-                x: {
-                    type: 'logarithmic',
-                    reverse: true,
-                    title: { display: true, text: 'PARTICLE SIZE ( MM )', font: { weight: 'bold' } },
-                    min: 0.001,
-                    max: 100,
-                    grid: { color: '#ccc' },
-                    // ticks: { stepSize: 10 },
-                    // ticks: {
-                    //     callback: function(value) {
-                    //         if ([100, 10, 1, 0.1, 0.01, 0.001].includes(value)) {
-                    //             return value;
-                    //         }
-                    //         return null;
-                    //     }
-                    // },
-                    // afterBuildTicks: function(scale) {
-                    //     scale.ticks = [100, 10, 1, 0.1, 0.01, 0.001].map(v => ({value: v}));
-                    // }
-                },
-                y: {
-                    type: 'linear',
-                    title: { display: true, text: 'PERCENTAGE FINER THAN', font: { weight: 'bold' } },
-                    min: 0,
-                    max: 100,
-                    ticks: { stepSize: 10 },
-                    grid: { color: '#ccc' }
-                }
-            },
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: { usePointStyle: true, boxWidth: 10, font: { weight: 'bold' } }
-                }
-            }
-        }
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { usePointStyle: true, boxWidth: 10, font: { weight: 'bold' } },
+          },
+        },
+      },
     });
 
-    return () => {
-      if (chartInstance.current) {
-        chartInstance.current.destroy();
-      }
-    };
+    return () => { if (chartInstance.current) chartInstance.current.destroy(); };
   }, []);
+
+  const fmt = (v) => (typeof v === 'number' ? v.toFixed(2) : '-');
 
   return (
     <div className="mb-6">
-      <h2 className="text-sm font-bold text-blue-800 uppercase tracking-wide pb-1 mb-2">
+      <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
         Particle Size Distribution Curve
-      </h2>
-      <div className="w-[85%] max-w-[1000px] mx-auto bg-white p-5 rounded-lg">
+      </h3>
+      <div className="w-[90%] mx-auto bg-white p-4 rounded-lg mb-6">
         <canvas ref={chartRef}></canvas>
       </div>
+
+      {computedData.map((bh, bhIdx) =>
+        bh.filter(d => d.totalWt > 0).map((d, dIdx) => (
+          <div key={`${bhIdx}-${dIdx}`} className="mb-5">
+            <p className="text-[10px] font-semibold text-gray-700 mb-1">
+              BH-{bhIdx + 1} — Depth: {d.depth || '?'} m &nbsp;|&nbsp; Total Weight: {d.totalWt.toFixed(2)} g
+            </p>
+            <table className="w-full text-[9px] border-collapse border border-gray-400">
+              <thead>
+                <tr className="bg-[#f3f4f6]">
+                  <th className="border border-gray-400 px-1 py-1 text-center font-bold">Sieve No.</th>
+                  <th className="border border-gray-400 px-1 py-1 text-center font-bold">Weight Retained (gms)</th>
+                  <th className="border border-gray-400 px-1 py-1 text-center font-bold">% Weight Retained</th>
+                  <th className="border border-gray-400 px-1 py-1 text-center font-bold">% Cumulative Weight Retained</th>
+                  <th className="border border-gray-400 px-1 py-1 text-center font-bold">% Fines Passing</th>
+                </tr>
+              </thead>
+              <tbody>
+                {d.sieves.map((s, si) => (
+                  <tr key={si} className="border-b border-gray-300">
+                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{s.label}</td>
+                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{s.wt > 0 ? s.wt.toFixed(2) : '-'}</td>
+                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{s.wt > 0 ? fmt(s.pctRetained) : '-'}</td>
+                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{s.wt > 0 ? fmt(s.cumPctRetained) : '-'}</td>
+                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{s.size !== null ? fmt(s.finesPassing) : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))
+      )}
     </div>
   );
 };
