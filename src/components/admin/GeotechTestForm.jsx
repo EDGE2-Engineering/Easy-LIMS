@@ -215,6 +215,65 @@ export default function GeotechTestForm({ value, onChange }) {
         setFormData({ ...formData, grainSizeAnalysis: newAnalysis });
     };
 
+    // --- Sub-Soil Profile Handlers ---
+    const handleSubSoilChange = (boreholeIndex, rowIndex, field, val) => {
+        const newProfile = [...formData.subSoilProfile];
+        if (!newProfile[boreholeIndex]) newProfile[boreholeIndex] = [];
+        newProfile[boreholeIndex][rowIndex][field] = val;
+        setFormData({ ...formData, subSoilProfile: newProfile });
+    };
+
+    const addSubSoilRow = (boreholeIndex) => {
+        const newProfile = [...formData.subSoilProfile];
+        if (!newProfile[boreholeIndex]) newProfile[boreholeIndex] = [];
+        newProfile[boreholeIndex].push({ depth: '', description: '' });
+        setFormData({ ...formData, subSoilProfile: newProfile });
+    };
+
+    const removeSubSoilRow = (boreholeIndex, rowIndex) => {
+        const newProfile = [...formData.subSoilProfile];
+        newProfile[boreholeIndex].splice(rowIndex, 1);
+        setFormData({ ...formData, subSoilProfile: newProfile });
+    };
+
+    // --- Direct Shear Handlers ---
+    const handleDirectShearChange = (boreholeIndex, rowIndex, field, val) => {
+        const newResults = [...formData.directShearResults];
+        if (!newResults[boreholeIndex]) newResults[boreholeIndex] = [];
+        newResults[boreholeIndex][rowIndex][field] = val;
+        setFormData({ ...formData, directShearResults: newResults });
+    };
+
+    const handleDirectShearStressChange = (boreholeIndex, rowIndex, stressIndex, field, val) => {
+        const newResults = [...formData.directShearResults];
+        newResults[boreholeIndex][rowIndex].stressReadings[stressIndex][field] = val;
+        setFormData({ ...formData, directShearResults: newResults });
+    };
+
+    const addDirectShearRow = (boreholeIndex) => {
+        const newResults = [...formData.directShearResults];
+        if (!newResults[boreholeIndex]) newResults[boreholeIndex] = [];
+        newResults[boreholeIndex].push({ shearBoxSize: '', depthOfSample: '', cValue: '', phiValue: '', stressReadings: [{ normalStress: '', shearStress: '' }] });
+        setFormData({ ...formData, directShearResults: newResults });
+    };
+
+    const removeDirectShearRow = (boreholeIndex, rowIndex) => {
+        const newResults = [...formData.directShearResults];
+        newResults[boreholeIndex].splice(rowIndex, 1);
+        setFormData({ ...formData, directShearResults: newResults });
+    };
+
+    const addStressReading = (boreholeIndex, rowIndex) => {
+        const newResults = [...formData.directShearResults];
+        newResults[boreholeIndex][rowIndex].stressReadings.push({ normalStress: '', shearStress: '' });
+        setFormData({ ...formData, directShearResults: newResults });
+    };
+
+    const removeStressReading = (boreholeIndex, rowIndex, stressIndex) => {
+        const newResults = [...formData.directShearResults];
+        newResults[boreholeIndex][rowIndex].stressReadings.splice(stressIndex, 1);
+        setFormData({ ...formData, directShearResults: newResults });
+    };
     return (
         <div className="w-full">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -227,6 +286,12 @@ export default function GeotechTestForm({ value, onChange }) {
                     </TabsTrigger>
                     <TabsTrigger value="sieve" className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2" title="Manage detailed grain size analysis data">
                         <Layers className="w-4 h-4" /> Sieve Analysis
+                    </TabsTrigger>
+                    <TabsTrigger value="subsoil" className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2" title="Manage sub-soil profile descriptions">
+                        <ArrowDownFromLine className="w-4 h-4" /> Sub-Soil Profile
+                    </TabsTrigger>
+                    <TabsTrigger value="directshear" className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2" title="Manage direct shear test results">
+                        <TestTube className="w-4 h-4" /> Direct Shear
                     </TabsTrigger>
                 </TabsList>
 
@@ -612,9 +677,150 @@ export default function GeotechTestForm({ value, onChange }) {
                     </div>
                 </TabsContent>
                 
-                {/* Note: In a complete version we would also include pointload, sbc, rock, chemical, grainsize, etc tabs identical to NewReportForm */}
-                {/* I have built the Borehole & Lab tests as the primary 'soil testing' forms based on their density. You can easily add the other tabs following this exact same pattern. */}
-            </Tabs>
-        </div>
+                {/* SUB-SOIL PROFILE TAB */}
+                <TabsContent value="subsoil" className="mt-0 space-y-4">
+                    <div className="bg-gray-50/30 p-4 rounded-xl border border-gray-100">
+                        <h3 className="text-md font-bold text-gray-800 mb-1 pb-1 flex items-center gap-2">
+                            <ArrowDownFromLine className="w-4 h-4 text-primary" />
+                            Sub-Soil Profile
+                        </h3>
+                        <p className="text-[11px] text-gray-500 mb-4 italic">Record depth and strata description for each layer in the sub-soil profile.</p>
+                        <div className="space-y-4">
+                            {formData.boreholeLogs.map((_, boreholeIndex) => (
+                                <div key={boreholeIndex} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                    <h4 className="text-sm font-bold text-gray-800 mb-3">Sub-Soil Profile - BH {boreholeIndex + 1}</h4>
+                                    <div className="border rounded-lg bg-white mb-4 overflow-hidden">
+                                        <table className="w-full text-sm text-left border-collapse">
+                                            <thead className="text-[11px] text-gray-500 uppercase bg-gray-50/50 border-b">
+                                                <tr>
+                                                    <th className="px-3 py-2 font-bold w-28">Depth (m)</th>
+                                                    <th className="px-3 py-2 font-bold">Description</th>
+                                                    <th className="px-3 py-2 w-[50px]"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {(formData.subSoilProfile[boreholeIndex] || []).map((row, rowIndex) => (
+                                                    <tr key={rowIndex} className="border-b last:border-0">
+                                                        <td className="px-2 py-2">
+                                                            <Input value={row.depth || ''} onChange={(e) => handleSubSoilChange(boreholeIndex, rowIndex, 'depth', e.target.value)} className="h-8" placeholder="Depth" />
+                                                        </td>
+                                                        <td className="px-2 py-2">
+                                                            <Input value={row.description || ''} onChange={(e) => handleSubSoilChange(boreholeIndex, rowIndex, 'description', e.target.value)} className="h-8" placeholder="Strata description" />
+                                                        </td>
+                                                        <td className="px-2 py-2 text-right">
+                                                            {(formData.subSoilProfile[boreholeIndex] || []).length > 1 && (
+                                                                <Button type="button" variant="ghost" size="icon" onClick={() => removeSubSoilRow(boreholeIndex, rowIndex)} className="text-red-500 h-8 w-8">
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {(!formData.subSoilProfile[boreholeIndex] || formData.subSoilProfile[boreholeIndex].length === 0) && (
+                                                    <tr><td colSpan="3" className="px-3 py-4 text-center text-gray-400 italic text-xs">No entries. Click "Add Row" to begin.</td></tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => addSubSoilRow(boreholeIndex)} className="text-primary h-8"><Plus className="w-4 h-4 mr-2" /> Add Row</Button>
+                                </div>
+                            ))}
+                            {formData.boreholeLogs.length === 0 && (
+                                <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500 italic">Add a borehole in the 'Borehole' tab to enter sub-soil profile data.</div>
+                            )}
+                        </div>
+                    </div>
+                </TabsContent>
+
+                {/* DIRECT SHEAR TAB */}
+                <TabsContent value="directshear" className="mt-0 space-y-4">
+                    <div className="bg-gray-50/30 p-4 rounded-xl border border-gray-100">
+                        <h3 className="text-md font-bold text-gray-800 mb-1 pb-1 flex items-center gap-2">
+                            <TestTube className="w-4 h-4 text-primary" />
+                            Direct Shear Test Results
+                        </h3>
+                        <p className="text-[11px] text-gray-500 mb-4 italic">Record direct shear test parameters and stress readings for each sample.</p>
+                        <div className="space-y-4">
+                            {formData.boreholeLogs.map((_, boreholeIndex) => (
+                                <div key={boreholeIndex} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                    <h4 className="text-sm font-bold text-gray-800 mb-3">Direct Shear - BH {boreholeIndex + 1}</h4>
+                                    <div className="space-y-3">
+                                        {(formData.directShearResults[boreholeIndex] || []).map((row, rowIndex) => (
+                                            <div key={rowIndex} className="border border-gray-200 rounded-lg bg-white p-3">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Sample {rowIndex + 1}</span>
+                                                    {(formData.directShearResults[boreholeIndex] || []).length > 1 && (
+                                                        <Button type="button" variant="ghost" size="icon" onClick={() => removeDirectShearRow(boreholeIndex, rowIndex)} className="text-red-500 h-7 w-7">
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
+                                                    <div className="flex flex-col gap-1">
+                                                        <Label className="text-xs text-gray-500">Shear Box Size</Label>
+                                                        <Input value={row.shearBoxSize || ''} onChange={(e) => handleDirectShearChange(boreholeIndex, rowIndex, 'shearBoxSize', e.target.value)} className="h-8" placeholder="e.g. 60mm" />
+                                                    </div>
+                                                    <div className="flex flex-col gap-1">
+                                                        <Label className="text-xs text-gray-500">Depth of Sample (m)</Label>
+                                                        <Input value={row.depthOfSample || ''} onChange={(e) => handleDirectShearChange(boreholeIndex, rowIndex, 'depthOfSample', e.target.value)} className="h-8" placeholder="Depth" />
+                                                    </div>
+                                                    <div className="flex flex-col gap-1">
+                                                        <Label className="text-xs text-gray-500">C Value (kN/m²)</Label>
+                                                        <Input value={row.cValue || ''} onChange={(e) => handleDirectShearChange(boreholeIndex, rowIndex, 'cValue', e.target.value)} className="h-8" placeholder="Cohesion" />
+                                                    </div>
+                                                    <div className="flex flex-col gap-1">
+                                                        <Label className="text-xs text-gray-500">Φ Value (°)</Label>
+                                                        <Input value={row.phiValue || ''} onChange={(e) => handleDirectShearChange(boreholeIndex, rowIndex, 'phiValue', e.target.value)} className="h-8" placeholder="Friction angle" />
+                                                    </div>
+                                                </div>
+                                                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Stress Readings</p>
+                                                <div className="border rounded-lg overflow-hidden mb-2">
+                                                    <table className="w-full text-sm text-left border-collapse">
+                                                        <thead className="text-[11px] text-gray-500 uppercase bg-gray-50/50 border-b">
+                                                            <tr>
+                                                                <th className="px-3 py-2 font-bold">Normal Stress (kN/m²)</th>
+                                                                <th className="px-3 py-2 font-bold">Shear Stress (kN/m²)</th>
+                                                                <th className="px-3 py-2 w-[50px]"></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {(row.stressReadings || []).map((stress, stressIndex) => (
+                                                                <tr key={stressIndex} className="border-b last:border-0">
+                                                                    <td className="px-2 py-2">
+                                                                        <Input value={stress.normalStress || ''} onChange={(e) => handleDirectShearStressChange(boreholeIndex, rowIndex, stressIndex, 'normalStress', e.target.value)} className="h-8" placeholder="Normal stress" />
+                                                                    </td>
+                                                                    <td className="px-2 py-2">
+                                                                        <Input value={stress.shearStress || ''} onChange={(e) => handleDirectShearStressChange(boreholeIndex, rowIndex, stressIndex, 'shearStress', e.target.value)} className="h-8" placeholder="Shear stress" />
+                                                                    </td>
+                                                                    <td className="px-2 py-2 text-right">
+                                                                        {(row.stressReadings || []).length > 1 && (
+                                                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeStressReading(boreholeIndex, rowIndex, stressIndex)} className="text-red-500 h-8 w-8">
+                                                                                <Trash2 className="w-4 h-4" />
+                                                                            </Button>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <Button type="button" variant="outline" size="sm" onClick={() => addStressReading(boreholeIndex, rowIndex)} className="text-primary h-7 text-xs"><Plus className="w-3 h-3 mr-1" /> Add Stress Reading</Button>
+                                            </div>
+                                        ))}
+                                        {(!formData.directShearResults[boreholeIndex] || formData.directShearResults[boreholeIndex].length === 0) && (
+                                            <div className="px-3 py-6 text-center text-gray-400 italic text-xs border border-dashed border-gray-200 rounded-lg">No samples. Click "Add Sample" to begin.</div>
+                                        )}
+                                    </div>
+                                    <Button type="button" variant="outline" size="sm" onClick={() => addDirectShearRow(boreholeIndex)} className="text-primary h-8 mt-3"><Plus className="w-4 h-4 mr-2" /> Add Sample</Button>
+                                </div>
+                            ))}
+                            {formData.boreholeLogs.length === 0 && (
+                                <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500 italic">Add a borehole in the 'Borehole' tab to enter direct shear results.</div>
+                            )}
+                        </div>
+                    </div>
+                </TabsContent>
+
+            </Tabs>        </div>
     );
 }
