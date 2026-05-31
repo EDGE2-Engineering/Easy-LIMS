@@ -375,43 +375,39 @@ const GeotechnicalExplorationBlock = ({ data }) => {
       <p className="text-xs text-gray-800 leading-relaxed mb-2">
         Following laboratory tests were performed on collected samples:
       </p>  
-<table border="1" cellpadding="8" cellspacing="0" className="w-full text-xs border-collapse border border-gray-200 table-fixed">
+<table className="w-full text-[9px] border-collapse border border-gray-400">
   <thead>
-    <tr>
-      <th className="py-1 border border-gray-200 px-1">Sl. No.</th>
-      <th className="py-1 border border-gray-200 px-1">Test</th>
-      <th className="py-1 border border-gray-200 px-1">Referenced IS Code</th>
+    <tr className="bg-[#f3f4f6]">
+      <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-center" style={{width:'8%'}}>Sl. No.</th>
+      <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-left" style={{width:'46%'}}>Test</th>
+      <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-left" style={{width:'46%'}}>Referenced IS Code</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td colSpan="3" className="border border-gray-200 px-1 py-1 text-center font-semibold uppercase break-words"><strong>Soil</strong></td>
+      <td colSpan="3" className="border border-gray-400 px-1 py-1 text-center font-bold text-gray-900">Soil</td>
     </tr>
     <tr>
-      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">1</td>
-      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">Water Content (WC)</td>
-      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">IS 2720-Part 2-1973</td>
+      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">1</td>
+      <td className="border border-gray-400 px-1 py-1 text-gray-800">Water Content (WC)</td>
+      <td className="border border-gray-400 px-1 py-1 text-gray-800">IS 2720-Part 2-1973</td>
     </tr>
     <tr>
-      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">2</td>
-      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">Specific Gravity (G)</td>
-      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">IS 2720 (Part 3/Sec 1): 1980</td>
+      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">2</td>
+      <td className="border border-gray-400 px-1 py-1 text-gray-800">Specific Gravity (G)</td>
+      <td className="border border-gray-400 px-1 py-1 text-gray-800">IS 2720 (Part 3/Sec 1): 1980</td>
     </tr>
     <tr>
-      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">3</td>
-      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">Grain Size Analysis (GSA)</td>
-      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">IS 2720-Part 4-1985</td>
+      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">3</td>
+      <td className="border border-gray-400 px-1 py-1 text-gray-800">Grain Size Analysis (GSA)</td>
+      <td className="border border-gray-400 px-1 py-1 text-gray-800">IS 2720-Part 4-1985</td>
     </tr>
     <tr>
-      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">4</td>
-      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words text-xs">
-        Atterberg Limits:
-        <ul>
-          <li>Liquid Limit (LL)</li>
-          <li>Plastic Limit (PL)</li>
-        </ul>
+      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">4</td>
+      <td className="border border-gray-400 px-1 py-1 text-gray-800">
+        Atterberg Limits: Liquid Limit (LL), Plastic Limit (PL)
       </td>
-      <td className="border border-gray-200 px-1 py-1 text-left font-semibold uppercase break-words">IS 2720-Part 5-1985</td>
+      <td className="border border-gray-400 px-1 py-1 text-gray-800">IS 2720-Part 5-1985</td>
     </tr>
   </tbody>
 </table>
@@ -844,23 +840,23 @@ const BoreholeLogTableBlock = ({ block }) => {
 
 const KvTableBlock = ({ title, rows }) => (
   <div className="mb-4">
-    <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">
+    <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
       {title}
     </h3>
-    <table className="w-full text-xs border-collapse border border-gray-200">
-      <thead className="bg-[#f3f4f6]">
-        <tr>
-          <th className="border border-gray-200 px-2 py-1.5 text-left w-[40%]">Parameter</th>
-          <th className="border border-gray-200 px-2 py-1.5 text-left">Details</th>
+    <table className="w-full text-[9px] border-collapse border border-gray-400">
+      <thead>
+        <tr className="bg-[#f3f4f6]">
+          <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-left w-[40%]">Parameter</th>
+          <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-left">Details</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((row, i) => (
-          <tr key={i} className="border-b border-gray-100">
-            <td className="border border-gray-200 px-2 py-1.5 font-medium text-gray-800 align-top">
+          <tr key={i} className="border-b border-gray-300">
+            <td className="border border-gray-400 px-1 py-1 text-gray-800 align-top">
               {row.key}
             </td>
-            <td className="border border-gray-200 px-2 py-1.5 text-gray-700 align-top whitespace-pre-wrap break-words">
+            <td className="border border-gray-400 px-1 py-1 text-gray-800 align-top whitespace-pre-wrap break-words">
               {row.value}
             </td>
           </tr>
