@@ -194,7 +194,7 @@ export const GRAIN_SIZE_COLUMNS = [
 
 export const SBC_COLUMNS = [
   { key: 'structure', label: 'Structure' },
-  { key: 'chainage', label: 'Chainage' },
+  { key: 'chainage', label: 'Location' },
   { key: 'depthFromGL', label: 'Depth from GL' },
   { key: 'scourDepthFromGL', label: 'Scour Depth from GL' },
   { key: 'strata', label: 'Strata' },
@@ -589,7 +589,7 @@ export const buildReportPages = (formData) => {
 
   // Topographic 3D Surface Plot — only when there are ≥2 boreholes with depth data
   const boreholeDepthMatrix = (data.boreholeLogs || []).map((logs) =>
-    (logs || []).map((row) => parseFloat(row.depth)).filter((d) => !isNaN(d))
+    (logs || []).map((row) => parseFloat(row.toDepth || row.depth)).filter((d) => !isNaN(d))
   );
   let hasEnoughData = boreholeDepthMatrix.some((depths) => depths.length > 0);
   hasEnoughData = false; // temporary. Add it back later if needed
@@ -628,17 +628,6 @@ export const buildReportPages = (formData) => {
     });
   }
 
-  data.subSoilProfile.forEach((levelRows, i) => {
-    addTableSectionPages(
-      pages,
-      data.subSoilProfile.length > 1
-        ? `Sub Soil Profile – Level ${i + 1}`
-        : 'Sub Soil Profile',
-      SUBSOIL_COLUMNS,
-      levelRows,
-      (row, col) => formatDisplayValue(row[col.key])
-    );
-  });
   data.directShearResults.forEach((levelRows, i) => {
     addTableSectionPages(
       pages,

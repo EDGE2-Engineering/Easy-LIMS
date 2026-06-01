@@ -459,8 +459,8 @@ const SubProfileAnalysisTableBlock = ({ block }) => {
             </tr>
           ) : (
             logs.map((row, idx) => {
-              const fromDepth = idx === 0 ? '0.0' : (logs[idx - 1]?.depth ?? '-');
-              const toDepth = row.depth || '-';
+              const fromDepth = row.fromDepth ?? (idx === 0 ? '0.0' : (logs[idx - 1]?.toDepth ?? '-'));
+              const toDepth = row.toDepth || row.depth || '-';
               const fromNum = parseFloat(fromDepth);
               const toNum = parseFloat(toDepth);
               const thickness = (!isNaN(fromNum) && !isNaN(toNum))
@@ -523,7 +523,9 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
   const computedData = grainSizeAnalysis.map((bh, bhIdx) =>
     bh.map((d) => {
       const weights = SIEVES.map(s => ({ ...s, wt: parseFloat(d[s.key]) || 0 }));
-      const totalWt = weights.reduce((sum, s) => sum + s.wt, 0);
+      const sumRetained = weights.reduce((sum, s) => sum + s.wt, 0);
+      // Use the explicitly entered total weight if available, otherwise fall back to sum of retained
+      const totalWt = parseFloat(d.totalWeight) > 0 ? parseFloat(d.totalWeight) : sumRetained;
       let cumWt = 0;
       return {
         depth: d.depth,
@@ -772,7 +774,8 @@ const BoreholeLogTableBlock = ({ block }) => {
             </tr>
           ) : (
             logs.map((row, idx) => {
-              const prevDepth = idx === 0 ? '0.0' : (logs[idx - 1]?.depth ?? '-');
+              const prevDepth = row.fromDepth ?? (idx === 0 ? '0.0' : (logs[idx - 1]?.toDepth ?? '-'));
+              const toDepth = row.toDepth || row.depth || '-';
               const isDS = row.natureOfSampling === 'DS';
               const spt2n = Number(row.spt2);
               const spt3n = Number(row.spt3);
@@ -792,7 +795,7 @@ const BoreholeLogTableBlock = ({ block }) => {
                   <td className="border border-gray-400 px-1 py-0.5 text-left">{row.soilType || '-'}</td>
                   <td className="border border-gray-400 px-1 py-0.5">{row.natureOfSampling || '-'}</td>
                   <td className="border border-gray-400 px-1 py-0.5">{prevDepth}</td>
-                  <td className="border border-gray-400 px-1 py-0.5">{row.depth || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-0.5">{toDepth}</td>
                   <td className="border border-gray-400 px-1 py-0.5">{isDS ? '-' : (row.spt1 ?? '-')}</td>
                   <td className="border border-gray-400 px-1 py-0.5">{isDS ? '-' : (row.spt2 ?? '-')}</td>
                   <td className="border border-gray-400 px-1 py-0.5">{isDS ? '-' : (row.spt3 ?? '-')}</td>
@@ -948,7 +951,7 @@ const SbcSummaryBlock = ({ rows, projectName, siteAddress }) => {
             <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Type of Structure / Location</th>
             <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Borehole No.</th>
             <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Depth of Foundation (from E.G.L.) (m)</th>
-            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Scour Depth (from E.G.L.) (m)</th>
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Foundation RL (from E.G.L.) (m)</th>
             <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Strata Description</th>
             <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Considered SPT-N Value</th>
             <th className="border border-gray-400 px-1 py-1 text-center font-bold" colSpan={3}>Bearing Capacity (kN/m²)</th>
@@ -1191,12 +1194,12 @@ function prepareBoreholesData(boreholeLogs, maxDepths, latitudes, longitudes, so
     const nx = boreholeLogs.length === 1 ? 0 : ((positions[i].x - xMin) / span) * (boreholeLogs.length - 1) * 8;
     const ny = boreholeLogs.length === 1 ? 0 : ((positions[i].y - yMin) / span) * (boreholeLogs.length - 1) * 8;
     const valid = (logs || [])
-      .filter((r) => r.depth && !isNaN(parseFloat(r.depth)))
-      .sort((a, b) => parseFloat(a.depth) - parseFloat(b.depth));
-    const maxD = parseFloat(maxDepths?.[i]) || (valid.length ? parseFloat(valid[valid.length - 1].depth) : 1);
+      .filter((r) => (r.toDepth || r.depth) && !isNaN(parseFloat(r.toDepth || r.depth)))
+      .sort((a, b) => parseFloat(a.toDepth || a.depth) - parseFloat(b.toDepth || b.depth));
+    const maxD = parseFloat(maxDepths?.[i]) || (valid.length ? parseFloat(valid[valid.length - 1].toDepth || valid[valid.length - 1].depth) : 1);
     const layers = valid.map((row, idx) => {
-      const top = idx === 0 ? 0 : parseFloat(valid[idx - 1].depth);
-      const bottom = parseFloat(row.depth);
+      const top = idx === 0 ? 0 : parseFloat(valid[idx - 1].toDepth || valid[idx - 1].depth);
+      const bottom = parseFloat(row.toDepth || row.depth);
       const soilType = row.soilType || 'Unknown';
       if (!soilColorMap.has(soilType)) {
         soilColorMap.set(soilType, SOIL_COLOR_PALETTE[soilColorMap.size % SOIL_COLOR_PALETTE.length]);

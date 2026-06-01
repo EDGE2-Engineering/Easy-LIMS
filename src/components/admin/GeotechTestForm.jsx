@@ -12,6 +12,15 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs.jsx";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ArrowDownFromLine, Layers, LandPlot, Trash2, Plus, FlaskConical, TestTube } from 'lucide-react';
 import { soilTypes } from '@/data/soilTypes';
 
@@ -20,9 +29,10 @@ export default function GeotechTestForm({ value, onChange }) {
     const [activeSoilField, setActiveSoilField] = useState(null);
     const [filteredSoilTypes, setFilteredSoilTypes] = useState(soilTypes);
     const [showSoilSuggestions, setShowSoilSuggestions] = useState(false);
+    const [sieveError, setSieveError] = useState(null); // { boreholeIndex, depthIndex, message }
 
     // Ensure all required properties exist with defaults if value is empty
-    const initialBoreholeLogs = value?.boreholeLogs || [[{ depth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]];
+    const initialBoreholeLogs = value?.boreholeLogs || [[{ fromDepth: '', toDepth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]];
     const initialMaxDepths = value?.maxDepths || [];
 
     const formData = {
@@ -32,8 +42,8 @@ export default function GeotechTestForm({ value, onChange }) {
         longitudes: value?.longitudes || [],
         labTestResults: value?.labTestResults || [[{ depth: '', bulkDensity: '', moistureContent: '', grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' }, atterbergLimits: { liquidLimit: '', plasticLimit: '', plasticityIndex: '' }, specificGravity: '', freeSwellIndex: '' }]],
         chemicalAnalysis: value?.chemicalAnalysis || [{ phValue: '', sulphates: '', chlorides: '', additionalKeys: [{ key: '', value: '' }] }],
-        grainSizeAnalysis: value?.grainSizeAnalysis || [[{ depth: '', sieve0: '', sieve1: '', sieve3: '', sieve2: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '', sieve10: '' }]],
-        sbcDetails: value?.sbcDetails || [[{ structure: '', chainage: '', depthFromGL: '', scourDepthFromGL: '', strata: '', fieldNValue: '', typeOfCorrection: '', cpLayerThickness: '', liquidLimit: '', width: '', footingLength: '', shapeOfFooting: '' }]],
+        grainSizeAnalysis: value?.grainSizeAnalysis || [[{ depth: '', totalWeight: '', sieve0: '', sieve1: '', sieve3: '', sieve2: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '', sieve10: '' }]],
+        sbcDetails: value?.sbcDetails || [[{ foundation: '', structure: '', chainage: '', depthFromGL: '', scourDepthFromGL: '', strata: '', fieldNValue: '', typeOfCorrection: '', cpLayerThickness: '', liquidLimit: '', width: '', footingLength: '', shapeOfFooting: '' }]],
         subSoilProfile: value?.subSoilProfile || [[{ depth: '', description: '' }]],
         directShearResults: value?.directShearResults || [[{ shearBoxSize: '', depthOfSample: '', cValue: '', phiValue: '', stressReadings: [{ normalStress: '', shearStress: '' }] }]],
         pointLoadStrength: value?.pointLoadStrength || [[{ depth: '', readings: [{ loadAtFailure: '', d50: '', d: '', ucs: '' }] }]],
@@ -64,7 +74,7 @@ export default function GeotechTestForm({ value, onChange }) {
 
     const addBoreholeDepth = (boreholeIndex) => {
         const newLogs = [...formData.boreholeLogs];
-        newLogs[boreholeIndex].push({ depth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' });
+        newLogs[boreholeIndex].push({ fromDepth: '', toDepth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' });
         setFormData({ ...formData, boreholeLogs: newLogs });
     };
 
@@ -96,13 +106,13 @@ export default function GeotechTestForm({ value, onChange }) {
     const addBorehole = () => {
         setFormData({
             ...formData,
-            boreholeLogs: [...formData.boreholeLogs, [{ depth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]],
+            boreholeLogs: [...formData.boreholeLogs, [{ fromDepth: '', toDepth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]],
             maxDepths: [...(formData.maxDepths || []), ''],
             latitudes: [...(formData.latitudes || []), ''],
             longitudes: [...(formData.longitudes || []), ''],
-            sbcDetails: [...formData.sbcDetails, [{ structure: '', chainage: '', depthFromGL: '', scourDepthFromGL: '', strata: '', fieldNValue: '', typeOfCorrection: '', cpLayerThickness: '', liquidLimit: '', width: '', footingLength: '', shapeOfFooting: '' }]],
+            sbcDetails: [...formData.sbcDetails, [{ foundation: '', structure: '', chainage: '', depthFromGL: '', scourDepthFromGL: '', strata: '', fieldNValue: '', typeOfCorrection: '', cpLayerThickness: '', liquidLimit: '', width: '', footingLength: '', shapeOfFooting: '' }]],
             labTestResults: [...formData.labTestResults, [{ depth: '', bulkDensity: '', moistureContent: '', grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' }, atterbergLimits: { liquidLimit: '', plasticLimit: '', plasticityIndex: '' }, specificGravity: '', freeSwellIndex: '' }]],
-            grainSizeAnalysis: [...formData.grainSizeAnalysis, [{ depth: '', sieve0: '', sieve1: '', sieve3: '', sieve2: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '', sieve10: '' }]]
+            grainSizeAnalysis: [...formData.grainSizeAnalysis, [{ depth: '', totalWeight: '', sieve0: '', sieve1: '', sieve3: '', sieve2: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '', sieve10: '' }]]
         });
     };
 
@@ -161,7 +171,7 @@ export default function GeotechTestForm({ value, onChange }) {
     const addSbcEntry = (boreholeIndex) => {
         const newSbc = [...formData.sbcDetails];
         if (!newSbc[boreholeIndex]) newSbc[boreholeIndex] = [];
-        newSbc[boreholeIndex].push({ structure: '', chainage: '', depthFromGL: '', scourDepthFromGL: '', strata: '', fieldNValue: '', typeOfCorrection: '', cpLayerThickness: '', liquidLimit: '', width: '', footingLength: '', shapeOfFooting: '' });
+        newSbc[boreholeIndex].push({ foundation: '', structure: '', chainage: '', depthFromGL: '', scourDepthFromGL: '', strata: '', fieldNValue: '', typeOfCorrection: '', cpLayerThickness: '', liquidLimit: '', width: '', footingLength: '', shapeOfFooting: '' });
         setFormData({ ...formData, sbcDetails: newSbc });
     };
 
@@ -201,11 +211,29 @@ export default function GeotechTestForm({ value, onChange }) {
         const newAnalysis = [...formData.grainSizeAnalysis];
         newAnalysis[boreholeIndex][depthIndex][field] = val;
         setFormData({ ...formData, grainSizeAnalysis: newAnalysis });
+
+        // Validate: sum of retained weights must be >= 1% of totalWeight
+        const row = newAnalysis[boreholeIndex][depthIndex];
+        const totalWeight = parseFloat(field === 'totalWeight' ? val : row.totalWeight);
+        if (totalWeight > 0) {
+            const sieveKeys = ['sieve0','sieve1','sieve2','sieve3','sieve4','sieve5','sieve6','sieve7','sieve8','sieve9','sieve10'];
+            const sumRetained = sieveKeys.reduce((sum, k) => {
+                const v = parseFloat(field === k ? val : row[k]);
+                return sum + (isNaN(v) ? 0 : v);
+            }, 0);
+            if (sumRetained > 0 && sumRetained < totalWeight * 0.01) {
+                setSieveError({
+                    boreholeIndex,
+                    depthIndex,
+                    message: `Sum of retained weights (${sumRetained.toFixed(2)} g) is less than 1% of the total sample weight (${totalWeight.toFixed(2)} g). Minimum required: ${(totalWeight * 0.01).toFixed(2)} g.`,
+                });
+            }
+        }
     };
 
     const addGrainSizeDepth = (boreholeIndex) => {
         const newAnalysis = [...formData.grainSizeAnalysis];
-        newAnalysis[boreholeIndex].push({ depth: '', sieve0: '', sieve1: '', sieve3: '', sieve2: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '', sieve10: '' });
+        newAnalysis[boreholeIndex].push({ depth: '', totalWeight: '', sieve0: '', sieve1: '', sieve3: '', sieve2: '', sieve4: '', sieve5: '', sieve6: '', sieve7: '', sieve8: '', sieve9: '', sieve10: '' });
         setFormData({ ...formData, grainSizeAnalysis: newAnalysis });
     };
 
@@ -276,6 +304,20 @@ export default function GeotechTestForm({ value, onChange }) {
     };
     return (
         <div className="w-full">
+            {/* Sieve weight validation error dialog */}
+            <AlertDialog open={!!sieveError} onOpenChange={(open) => { if (!open) setSieveError(null); }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-red-600">Sieve Analysis Warning</AlertDialogTitle>
+                        <AlertDialogDescription className="text-sm text-gray-700">
+                            {sieveError?.message}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => setSieveError(null)}>OK</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="bg-white rounded-lg p-1 shadow-sm mb-4 flex flex-wrap h-auto gap-1">
                     <TabsTrigger value="borehole" className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2" title="Manage borehole logs, sampling, and SPT data">
@@ -354,17 +396,19 @@ export default function GeotechTestForm({ value, onChange }) {
                                         <table className="w-full text-sm text-left border-collapse">
                                             <thead className="text-[11px] text-gray-500 uppercase bg-gray-50/50 border-b">
                                                 <tr>
-                                                    <th className="px-3 py-2 font-bold min-w-[100px]" title="Depth below ground level (m)">Depth (m)</th>
+                                                    <th className="px-3 py-2 font-bold min-w-[80px]" title="From depth below ground level (m)">From (m)</th>
+                                                    <th className="px-3 py-2 font-bold min-w-[80px]" title="To depth below ground level (m)">To (m)</th>
                                                     <th className="px-3 py-2 font-bold min-w-[150px]" title="Method used to collect soil sample (CR/DS/UDS/SPT)">Sampling</th>
                                                     <th className="px-3 py-2 font-bold min-w-[200px]" title="Visual soil or rock classification">Soil Type</th>
-                                                    <th className="px-3 py-2 font-bold min-w-[150px]" title="SPT blow counts for 15/30/45cm intervals">SPT Depth</th>
+                                                    <th className="px-3 py-2 font-bold min-w-[150px]" title="SPT blow counts for 15/30/45cm intervals">SPT N Value</th>
                                                     <th className="px-3 py-2 w-[50px]"></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {logs.map((depthData, depthIndex) => (
                                                     <tr key={depthIndex} className="border-b">
-                                                        <td className="px-2 py-2"><Input value={depthData.depth} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'depth', e.target.value)} className="h-8" title="Depth below ground level (m)" /></td>
+                                                        <td className="px-2 py-2"><Input value={depthData.fromDepth} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'fromDepth', e.target.value)} className="h-8" type="number" min="0" step="0.1" placeholder="0.00" title="From depth below ground level (m)" /></td>
+                                                        <td className="px-2 py-2"><Input value={depthData.toDepth} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'toDepth', e.target.value)} className="h-8" type="number" min="0" step="0.1" placeholder="0.00" title="To depth below ground level (m)" /></td>
                                                         <td className="px-2 py-2">
                                                             <Select value={depthData.natureOfSampling} onValueChange={(v) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'natureOfSampling', v)}>
                                                                 <SelectTrigger className="h-8" title="Nature of Sampling (CR: Core Recovery, DS: Disturbed, UDS: Undisturbed, SPT: Split Spoon)"><SelectValue placeholder="Select" /></SelectTrigger>
@@ -393,9 +437,9 @@ export default function GeotechTestForm({ value, onChange }) {
                                                                 </div>
                                                             ) : (
                                                                 <>
-                                                                    <Input value={depthData.spt1} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'spt1', e.target.value)} className="h-8 mb-1" placeholder="15cm" title="SPT N-Value for first 15cm" />
-                                                                    <Input value={depthData.spt2} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'spt2', e.target.value)} className="h-8 mb-1" placeholder="30cm" title="SPT N-Value for second 15cm" />
-                                                                    <Input value={depthData.spt3} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'spt3', e.target.value)} className="h-8" placeholder="45cm" title="SPT N-Value for third 15cm" />
+                                                                    <Input value={depthData.spt1} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'spt1', e.target.value)} className="h-8 mb-1" type="number" min="0" step="1" placeholder="15cm" title="SPT N-Value for first 15cm" />
+                                                                    <Input value={depthData.spt2} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'spt2', e.target.value)} className="h-8 mb-1" type="number" min="0" step="1" placeholder="30cm" title="SPT N-Value for second 15cm" />
+                                                                    <Input value={depthData.spt3} onChange={(e) => handleBoreholeDepthChange(boreholeIndex, depthIndex, 'spt3', e.target.value)} className="h-8" type="number" min="0" step="1" placeholder="45cm" title="SPT N-Value for third 15cm" />
                                                                 </>
                                                             )}
                                                         </td>
@@ -444,20 +488,31 @@ export default function GeotechTestForm({ value, onChange }) {
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                                                     <div className="flex flex-col gap-1">
+                                                        <Label className="text-xs text-gray-500">Foundation</Label>
+                                                        <Select value={sbcData.foundation || ''} onValueChange={(val) => handleSbcChange(boreholeIndex, entryIndex, 'foundation', val)}>
+                                                            <SelectTrigger className="h-8 w-full"><SelectValue placeholder="Select foundation" /></SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="Isolated (Open)">Isolated (Open)</SelectItem>
+                                                                <SelectItem value="Raft">Raft</SelectItem>
+                                                                <SelectItem value="Pile">Pile</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                    <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">Structure</Label>
                                                         <Input value={sbcData.structure || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'structure', e.target.value)} className="h-8" placeholder="Structure" />
                                                     </div>
                                                     <div className="flex flex-col gap-1">
-                                                        <Label className="text-xs text-gray-500">Chainage</Label>
-                                                        <Input value={sbcData.chainage || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'chainage', e.target.value)} className="h-8" placeholder="Chainage" />
+                                                        <Label className="text-xs text-gray-500">Location</Label>
+                                                        <Input value={sbcData.chainage || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'chainage', e.target.value)} className="h-8" placeholder="Location" />
                                                     </div>
                                                     <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">Depth from GL</Label>
                                                         <Input value={sbcData.depthFromGL || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'depthFromGL', e.target.value)} className="h-8" placeholder="Depth from GL" />
                                                     </div>
                                                     <div className="flex flex-col gap-1">
-                                                        <Label className="text-xs text-gray-500">Scour Depth from GL</Label>
-                                                        <Input value={sbcData.scourDepthFromGL || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'scourDepthFromGL', e.target.value)} className="h-8" placeholder="Scour Depth from GL" />
+                                                        <Label className="text-xs text-gray-500">Foundation RL</Label>
+                                                        <Input value={sbcData.scourDepthFromGL || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'scourDepthFromGL', e.target.value)} className="h-8" placeholder="Foundation RL" />
                                                     </div>
                                                     <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">Strata</Label>
@@ -545,6 +600,7 @@ export default function GeotechTestForm({ value, onChange }) {
                                             <thead className="text-[11px] text-gray-500 uppercase bg-gray-50/50 border-b">
                                                 <tr>
                                                     <th className="px-3 py-2 font-bold w-20">Depth (m)</th>
+                                                    <th className="px-2 py-2 font-bold text-center">Total Wt. (g)</th>
                                                     <th className="px-2 py-2 font-bold text-center">10mm</th>
                                                     <th className="px-2 py-2 font-bold text-center">4.75mm</th>
                                                     <th className="px-2 py-2 font-bold text-center">2.36mm</th>
@@ -560,6 +616,7 @@ export default function GeotechTestForm({ value, onChange }) {
                                                 </tr>
                                                 <tr className="text-[10px] text-gray-400 border-b">
                                                     <td className="px-3 py-1 italic">depth</td>
+                                                    <td className="px-2 py-1 text-center italic">sample wt.</td>
                                                     {['sieve0','sieve1','sieve2','sieve3','sieve4','sieve5','sieve6','sieve7','sieve8','sieve9','sieve10'].map(k => (
                                                         <td key={k} className="px-2 py-1 text-center italic">Wt. Ret. (g)</td>
                                                     ))}
@@ -572,9 +629,21 @@ export default function GeotechTestForm({ value, onChange }) {
                                                         <td className="px-2 py-2">
                                                             <Input value={depthData.depth} onChange={(e) => handleGrainSizeChange(boreholeIndex, depthIndex, 'depth', e.target.value)} className="h-8 w-16" title="Depth (m)" />
                                                         </td>
+                                                        <td className="px-1 py-2">
+                                                            <Input
+                                                                value={depthData.totalWeight ?? ''}
+                                                                onChange={(e) => handleGrainSizeChange(boreholeIndex, depthIndex, 'totalWeight', e.target.value)}
+                                                                className="h-8 text-center"
+                                                                type="number"
+                                                                min="0"
+                                                                step="0.01"
+                                                                placeholder="gms"
+                                                                title="Total weight of sample taken for the test (g)"
+                                                            />
+                                                        </td>
                                                         {['sieve0', 'sieve1', 'sieve2', 'sieve3', 'sieve4', 'sieve5', 'sieve6', 'sieve7', 'sieve8', 'sieve9', 'sieve10'].map(key => (
                                                             <td key={key} className="px-1 py-2">
-                                                                <Input value={depthData[key] ?? ''} onChange={(e) => handleGrainSizeChange(boreholeIndex, depthIndex, key, e.target.value)} className="h-8 text-center" placeholder="gms" title="Weight retained (gms)" />
+                                                                <Input value={depthData[key] ?? ''} onChange={(e) => handleGrainSizeChange(boreholeIndex, depthIndex, key, e.target.value)} className="h-8 text-center" type="number" min="0" step="0.01" placeholder="gms" title="Weight retained (gms)" />
                                                             </td>
                                                         ))}
                                                         <td className="px-2 py-2">

@@ -307,10 +307,11 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Max Depth of Exploration (m)</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Latitude</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Longitude</th>
-                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Depth (m)</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">From (m)</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">To (m)</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Sampling</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Soil Type</th>
-                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">SPT (15/30/45)</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">SPT N Values (15/30/45)</th>
                                                                                                 </tr>
                                                                                             </thead>
                                                                                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
@@ -320,7 +321,8 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                         <td className="p-3 font-mono text-gray-500">{maxDepths[bhIdx] || '-'}</td>
                                                                                                         <td className="p-3 font-mono text-gray-500">{latitudes[bhIdx] || '-'}</td>
                                                                                                         <td className="p-3 font-mono text-gray-500">{longitudes[bhIdx] || '-'}</td>
-                                                                                                        <td className="p-3 text-gray-900 font-medium">{d.depth || '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900 font-medium">{d.fromDepth ?? d.depth ?? '-'}</td>
+                                                                                                        <td className="p-3 text-gray-900 font-medium">{d.toDepth ?? '-'}</td>
                                                                                                         <td className="p-3"><Badge variant="outline" className="text-[9px] font-bold py-0 h-4 bg-gray-50">{d.natureOfSampling || '-'}</Badge></td>
                                                                                                         <td className="p-3 text-gray-600 max-w-[200px] truncate" title={d.soilType}>{d.soilType || '-'}</td>
                                                                                                         <td className="p-3 font-mono text-gray-500">{d.spt1 || '-'}/{d.spt2 || '-'}/{d.spt3 || '-'}</td>
@@ -378,10 +380,11 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                             <thead className="bg-gray-50 border-b">
                                                                                                 <tr>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">BH</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Foundation</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Structure</th>
-                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Chainage</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Location</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Depth from GL</th>
-                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Scour Depth from GL</th>
+                                                                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Foundation RL</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Strata</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Field N Value</th>
                                                                                                     <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Type of Correction</th>
@@ -396,6 +399,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                                                                 {sbcDetails.map((bh, bhIdx) => bh.map((d, dIdx) => (
                                                                                                     <tr key={`sbc-${bhIdx}-${dIdx}`} className="hover:bg-gray-50/30 transition-colors">
                                                                                                         <td className="p-3 font-bold text-gray-400">BH-{bhIdx + 1}</td>
+                                                                                                        <td className="p-3 text-gray-900">{d.foundation || '-'}</td>
                                                                                                         <td className="p-3 text-gray-900">{d.structure || '-'}</td>
                                                                                                         <td className="p-3 text-gray-900">{d.chainage || '-'}</td>
                                                                                                         <td className="p-3 text-gray-900">{d.depthFromGL || '-'}</td>

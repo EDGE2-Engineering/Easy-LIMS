@@ -251,7 +251,8 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
             maxDepths: [''],
             boreholeLogs: [
                 [{
-                    depth: '',
+                    fromDepth: '',
+                    toDepth: '',
                     natureOfSampling: '',
                     soilType: '',
                     waterTable: false,
@@ -499,13 +500,13 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
         // Populate Max Depths
         data.maxDepths = data.boreholeLogs.map(bh => {
             const lastRow = bh[bh.length - 1];
-            return lastRow.depth;
+            return lastRow.toDepth || lastRow.depth;
         });
 
         // Populate Lab Test Results
         data.labTestResults = data.boreholeLogs.map(bh =>
             bh.map(log => ({
-                depth: log.depth,
+                depth: log.toDepth || log.depth,
                 bulkDensity: (1.6 + Math.random() * 0.4).toFixed(2),
                 moistureContent: (10 + Math.random() * 20).toFixed(1),
                 grainSizeDistribution: {
@@ -526,7 +527,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
         // Populate Grain Size Analysis (2 samples per BH)
         data.grainSizeAnalysis = data.boreholeLogs.map(bh =>
             bh.slice(0, 2).map(log => ({
-                depth: log.depth,
+                depth: log.toDepth || log.depth,
                 sieve1: (95 + Math.random() * 5).toFixed(1),
                 sieve2: (85 + Math.random() * 10).toFixed(1),
                 sieve3: (75 + Math.random() * 10).toFixed(1),
@@ -542,7 +543,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
         // Populate SBC Details
         data.sbcDetails = data.boreholeLogs.map(bh =>
             bh.map(log => ({
-                depth: log.depth,
+                depth: log.toDepth || log.depth,
                 footingDimension: '1.5m x 1.5m',
                 useForReport: Math.random() > 0.5,
                 sbcValue: log.sbc
@@ -552,7 +553,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
         // Populate Sub Soil Profile
         data.subSoilProfile = data.boreholeLogs.map(bh =>
             bh.slice(0, 2).map((log, i) => ({
-                depth: i === 0 ? `0.0 to ${log.depth}` : `${bh[i - 1].depth} to ${log.depth}`,
+                depth: i === 0 ? `0.0 to ${log.toDepth || log.depth}` : `${bh[i - 1].toDepth || bh[i - 1].depth} to ${log.toDepth || log.depth}`,
                 description: log.soilType
             }))
         );
@@ -575,7 +576,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
         // Populate Point Load Strength (Rock Core)
         data.pointLoadStrength = data.boreholeLogs.map(bh =>
             bh.slice(0, 2).map(log => ({
-                depth: log.depth,
+                depth: log.toDepth || log.depth,
                 readings: Array.from({ length: 3 }, () => ({
                     loadAtFailure: (4 + Math.random() * 5).toFixed(1),
                     d50: '50',
@@ -588,7 +589,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
         // Populate Point Load Strength (Lump)
         data.pointLoadStrengthLump = data.boreholeLogs.map(bh =>
             bh.slice(0, 2).map(log => ({
-                depth: log.depth,
+                depth: log.toDepth || log.depth,
                 readings: Array.from({ length: 3 }, () => ({
                     loadAtFailure: (3 + Math.random() * 4).toFixed(1),
                     d50: '45',
@@ -846,7 +847,8 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
     const addBoreholeLog = (levelIndex) => {
         const newLogs = [...formData.boreholeLogs];
         newLogs[levelIndex].push({
-            depth: '',
+            fromDepth: '',
+            toDepth: '',
             natureOfSampling: '',
             soilType: '',
             waterTable: false,
@@ -2629,7 +2631,8 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
                                                         <table className="w-full text-sm text-left">
                                                             <thead className="text-xs text-gray-700 uppercase bg-gray-100 border-b">
                                                                 <tr>
-                                                                    <th className="px-3 py-3 min-w-[100px]">Depth (m)</th>
+                                                                    <th className="px-3 py-3 min-w-[80px]">From (m)</th>
+                                                                    <th className="px-3 py-3 min-w-[80px]">To (m)</th>
                                                                     <th className="px-3 py-3 min-w-[150px]">Nature of Sampling</th>
                                                                     <th className="px-3 py-3 min-w-[150px]">Soil Type</th>
                                                                     <th className="px-3 py-0 min-w-[60px]">Water Table</th>
@@ -2645,7 +2648,8 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
                                                             <tbody>
                                                                 {levelLogs.map((log, logIndex) => (
                                                                     <tr key={logIndex} className="bg-white border-b hover:bg-gray-50/50">
-                                                                        <td className="px-2 py-2"><Input value={log.depth} onChange={(e) => handleBoreholeLogChange(levelIndex, logIndex, 'depth', e.target.value)} className="h-8" /></td>
+                                                                        <td className="px-2 py-2"><Input value={log.fromDepth} onChange={(e) => handleBoreholeLogChange(levelIndex, logIndex, 'fromDepth', e.target.value)} className="h-8" type="number" min="0" step="0.1" placeholder="0.00" /></td>
+                                                                        <td className="px-2 py-2"><Input value={log.toDepth} onChange={(e) => handleBoreholeLogChange(levelIndex, logIndex, 'toDepth', e.target.value)} className="h-8" type="number" min="0" step="0.1" placeholder="0.00" /></td>
                                                                         <td className="px-2 py-2">
                                                                             <Select
                                                                                 value={log.natureOfSampling}

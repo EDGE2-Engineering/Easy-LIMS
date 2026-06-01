@@ -451,7 +451,7 @@ const JobsManager = ({ id }) => {
             const reportNumber = `RPT/${new Date().getFullYear()}/${String(editingRecord.id).padStart(3, '0')}`;
 
             const defaultGeotechData = {
-                boreholeLogs: [[{ depth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]],
+                boreholeLogs: [[{ fromDepth: '', toDepth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]],
                 maxDepths: [],
                 latitudes: [],
                 longitudes: [],
