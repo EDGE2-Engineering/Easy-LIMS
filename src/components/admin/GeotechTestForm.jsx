@@ -85,7 +85,7 @@ export default function GeotechTestForm({ value, onChange }) {
     };
 
     const handleMaxDepthChange = (boreholeIndex, val) => {
-        const parsed = val === '' ? '' : parseInt(val, 10);
+        const parsed = val === '' ? '' : parseFloat(val);
         const newMaxDepths = [...(formData.maxDepths || [])];
         newMaxDepths[boreholeIndex] = parsed;
         setFormData({ ...formData, maxDepths: newMaxDepths });
