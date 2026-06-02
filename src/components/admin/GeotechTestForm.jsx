@@ -359,7 +359,7 @@ export default function GeotechTestForm({ value, onChange }) {
                                                     className="h-8 text-xs w-full"
                                                     placeholder="Max Exploration Depth"
                                                     type="number"
-                                                    step="1"
+                                                    step="0.1"
                                                     min="0"
                                                     value={formData.maxDepths?.[boreholeIndex] ?? ''}
                                                     onChange={(e) =>
@@ -508,11 +508,11 @@ export default function GeotechTestForm({ value, onChange }) {
                                                     </div>
                                                     <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">Depth from GL</Label>
-                                                        <Input value={sbcData.depthFromGL || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'depthFromGL', e.target.value)} className="h-8" placeholder="Depth from GL" />
+                                                        <Input value={sbcData.depthFromGL || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'depthFromGL', e.target.value)} className="h-8" type="number" min="0" step="0.1" placeholder="Depth from GL" />
                                                     </div>
                                                     <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">Foundation RL</Label>
-                                                        <Input value={sbcData.scourDepthFromGL || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'scourDepthFromGL', e.target.value)} className="h-8" placeholder="Foundation RL" />
+                                                        <Input value={sbcData.scourDepthFromGL || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'scourDepthFromGL', e.target.value)} className="h-8" type="number" min="0" step="0.1" placeholder="Foundation RL" />
                                                     </div>
                                                     <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">Strata</Label>
@@ -520,7 +520,7 @@ export default function GeotechTestForm({ value, onChange }) {
                                                     </div>
                                                     <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">Field N Value</Label>
-                                                        <Input value={sbcData.fieldNValue || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'fieldNValue', e.target.value)} className="h-8" placeholder="Field N Value" />
+                                                        <Input value={sbcData.fieldNValue || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'fieldNValue', e.target.value)} className="h-8" type="number" min="0" step="0.1" placeholder="Field N Value" />
                                                     </div>
                                                     <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">Type of Correction</Label>
@@ -536,19 +536,19 @@ export default function GeotechTestForm({ value, onChange }) {
                                                     </div>
                                                     <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">CP Layer Thickness</Label>
-                                                        <Input value={sbcData.cpLayerThickness || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'cpLayerThickness', e.target.value)} className="h-8" placeholder="CP Layer Thickness" />
+                                                        <Input value={sbcData.cpLayerThickness || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'cpLayerThickness', e.target.value)} className="h-8" type="number" min="0" step="0.1" placeholder="CP Layer Thickness" />
                                                     </div>
                                                     <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">Liquid Limit</Label>
-                                                        <Input value={sbcData.liquidLimit || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'liquidLimit', e.target.value)} className="h-8" placeholder="Liquid Limit" />
+                                                        <Input value={sbcData.liquidLimit || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'liquidLimit', e.target.value)} className="h-8" type="number" min="0" step="0.1" placeholder="Liquid Limit" />
                                                     </div>
                                                     <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">Width (m)</Label>
-                                                        <Input value={sbcData.width || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'width', e.target.value)} className="h-8" placeholder="Width (m)" />
+                                                        <Input value={sbcData.width || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'width', e.target.value)} className="h-8" type="number" min="0" step="0.1" placeholder="Width (m)" />
                                                     </div>
                                                     <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">Length (m)</Label>
-                                                        <Input value={sbcData.footingLength || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'footingLength', e.target.value)} className="h-8" placeholder="Length (m)" />
+                                                        <Input value={sbcData.footingLength || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'footingLength', e.target.value)} className="h-8" type="number" min="0" step="0.1" placeholder="Length (m)" />
                                                     </div>
                                                     <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">Shape of Footing</Label>

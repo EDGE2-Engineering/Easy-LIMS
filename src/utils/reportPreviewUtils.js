@@ -503,14 +503,6 @@ export const buildReportPages = (formData) => {
   const firstBlocks = [{ type: 'project-details', data }];
   const isCodeChunks = paginateChunks(data.isCodes, PAGINATION.kvFirst, PAGINATION.kvCont);
 
-  if (isCodeChunks.length) {
-    firstBlocks.push({
-      type: 'kv-table',
-      title: 'IS Codes',
-      rows: isCodeChunks[0],
-    });
-  }
-
   pages.push({
     isFirstPage: true,
     isContinuation: false,
@@ -518,13 +510,14 @@ export const buildReportPages = (formData) => {
     blocks: firstBlocks,
   });
 
-  for (let i = 1; i < isCodeChunks.length; i++) {
+  // IS Codes on its own page(s), immediately after the cover/project-details page
+  for (let i = 0; i < isCodeChunks.length; i++) {
     pages.push({
       isFirstPage: false,
-      isContinuation: true,
-      sectionTitle: 'IS Codes (Continued)',
+      isContinuation: i > 0,
+      sectionTitle: i === 0 ? 'IS Codes' : 'IS Codes (Continued)',
       blocks: [
-        { type: 'kv-table', title: 'IS Codes (Continued)', rows: isCodeChunks[i] },
+        { type: 'kv-table', title: i === 0 ? 'IS Codes' : 'IS Codes (Continued)', rows: isCodeChunks[i] },
       ],
     });
   }
