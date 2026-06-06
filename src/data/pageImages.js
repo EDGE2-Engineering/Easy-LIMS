@@ -1,17 +1,17 @@
-
 import { STORAGE_KEYS } from './storageKeys';
 
 export const initialPageImages = {
   home: {
-    heroBackground: "", // Empty defaults to CSS pattern
+    heroBackground: '', // Empty defaults to CSS pattern
   },
   location: {
-    heroImage: "https://images.unsplash.com/photo-1658214039954-932c22eebc13",
-    mapImage: "https://images.unsplash.com/photo-1624727945121-0e92bbc66a50"
+    heroImage: 'https://images.unsplash.com/photo-1658214039954-932c22eebc13',
+    mapImage: 'https://images.unsplash.com/photo-1624727945121-0e92bbc66a50',
   },
   about: {
-    mainImage: "https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&q=80&w=800"
-  }
+    mainImage:
+      'https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&q=80&w=800',
+  },
 };
 
 export const getPageImages = () => {

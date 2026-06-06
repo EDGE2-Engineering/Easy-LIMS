@@ -65,17 +65,12 @@ const paginateChunks = (items, firstSize, contSize) => {
   return pages;
 };
 
-const filterKvRows = (rows) =>
-  (rows || []).filter((r) => r?.key?.trim() || r?.value?.trim());
+const filterKvRows = (rows) => (rows || []).filter((r) => r?.key?.trim() || r?.value?.trim());
 
 export const normalizeReportData = (formData) => ({
   reportId: formData.reportId || '',
   reportCreatedOn: formData.reportCreatedOn || new Date().toISOString().split('T')[0],
-  projectName:
-    formData.projectName ||
-    formData.projectDetails ||
-    formData.projectType ||
-    '',
+  projectName: formData.projectName || formData.projectDetails || formData.projectType || '',
   projectDetails: formData.projectDetails || '',
   projectType: formData.projectType || '',
   client: formData.client || '',
@@ -98,9 +93,7 @@ export const normalizeReportData = (formData) => ({
     .filter((c) => c?.trim()),
   isCodes: filterKvRows(formData.isCodes),
   surveyReport: filterKvRows(formData.surveyReport),
-  surveyReportNote: formData.includeSurveyReportNote
-    ? formData.surveyReportNote?.trim()
-    : '',
+  surveyReportNote: formData.includeSurveyReportNote ? formData.surveyReportNote?.trim() : '',
   boreholeLogs: formData.boreholeLogs || [],
   maxDepths: formData.maxDepths || [],
   latitudes: formData.latitudes || [],
@@ -178,18 +171,18 @@ export const getLabCell = (row, col) => {
 };
 
 export const GRAIN_SIZE_COLUMNS = [
-  { key: 'depth',   label: 'Depth (m)' },
-  { key: 'sieve0',  label: '10mm'      },
-  { key: 'sieve1',  label: '4.75mm'    },
-  { key: 'sieve2',  label: '2.36mm'    },
-  { key: 'sieve3', label: '2mm'       },
-  { key: 'sieve4',  label: '1.18mm'    },
-  { key: 'sieve5',  label: '0.60mm'    },
-  { key: 'sieve6',  label: '0.425mm'   },
-  { key: 'sieve7',  label: '0.30mm'    },
-  { key: 'sieve8',  label: '0.15mm'    },
-  { key: 'sieve9',  label: '0.075mm'   },
-  { key: 'sieve10',  label: 'Pan'       },
+  { key: 'depth', label: 'Depth (m)' },
+  { key: 'sieve0', label: '10mm' },
+  { key: 'sieve1', label: '4.75mm' },
+  { key: 'sieve2', label: '2.36mm' },
+  { key: 'sieve3', label: '2mm' },
+  { key: 'sieve4', label: '1.18mm' },
+  { key: 'sieve5', label: '0.60mm' },
+  { key: 'sieve6', label: '0.425mm' },
+  { key: 'sieve7', label: '0.30mm' },
+  { key: 'sieve8', label: '0.15mm' },
+  { key: 'sieve9', label: '0.075mm' },
+  { key: 'sieve10', label: 'Pan' },
 ];
 
 export const SBC_COLUMNS = [
@@ -283,11 +276,7 @@ const flattenPointLoadRows = (levelRows, isLump = false) => {
 const addTableSectionPages = (pages, title, columns, rows, getCell) => {
   const filtered = rows.filter(rowHasData);
   if (!filtered.length) return;
-  const chunks = paginateChunks(
-    filtered,
-    PAGINATION.tableFirst,
-    PAGINATION.tableCont
-  );
+  const chunks = paginateChunks(filtered, PAGINATION.tableFirst, PAGINATION.tableCont);
   chunks.forEach((chunkRows, i) => {
     pages.push({
       isFirstPage: false,
@@ -315,7 +304,9 @@ const addKvSectionPages = (pages, title, rows) => {
       isFirstPage: false,
       isContinuation: i > 0,
       sectionTitle: i === 0 ? title : `${title} (Continued)`,
-      blocks: [{ type: 'kv-table', title: i === 0 ? title : `${title} (Continued)`, rows: chunkRows }],
+      blocks: [
+        { type: 'kv-table', title: i === 0 ? title : `${title} (Continued)`, rows: chunkRows },
+      ],
     });
   });
 };
@@ -367,26 +358,26 @@ const addTextBlockPage = (pages, title, content) => {
  *   Groundwater table assumed deep (no GWT correction applied here).
  */
 export const computeSbcSummaryRows = (sbcDetails, boreholeLogs) => {
-  const GAMMA = 18;   // kN/m³ — unit weight of soil
-  const FOS   = 3;    // factor of safety for shear
+  const GAMMA = 18; // kN/m³ — unit weight of soil
+  const FOS = 3; // factor of safety for shear
   const S_ALLOW = 25; // mm — allowable settlement
 
   // Meyerhof bearing capacity factors from φ (degrees)
   const bearingFactors = (phi_deg) => {
     const phi = (phi_deg * Math.PI) / 180;
-    const Nq  = Math.exp(Math.PI * Math.tan(phi)) * Math.pow(Math.tan(Math.PI / 4 + phi / 2), 2);
-    const Nc  = phi_deg > 0 ? (Nq - 1) / Math.tan(phi) : 5.14;
-    const Ng  = 2 * (Nq + 1) * Math.tan(phi);
+    const Nq = Math.exp(Math.PI * Math.tan(phi)) * Math.pow(Math.tan(Math.PI / 4 + phi / 2), 2);
+    const Nc = phi_deg > 0 ? (Nq - 1) / Math.tan(phi) : 5.14;
+    const Ng = 2 * (Nq + 1) * Math.tan(phi);
     return { Nc, Nq, Ng };
   };
 
   // Peck's correlation: φ from corrected N (IS:6403)
   const phiFromN = (N) => {
-    if (N <= 0)  return 0;
-    if (N <= 4)  return 26;
-    if (N <= 10) return 28 + (N - 4) * (30 - 28) / 6;
-    if (N <= 30) return 30 + (N - 10) * (40 - 30) / 20;
-    if (N <= 50) return 40 + (N - 30) * (45 - 40) / 20;
+    if (N <= 0) return 0;
+    if (N <= 4) return 26;
+    if (N <= 10) return 28 + ((N - 4) * (30 - 28)) / 6;
+    if (N <= 30) return 30 + ((N - 10) * (40 - 30)) / 20;
+    if (N <= 50) return 40 + ((N - 30) * (45 - 40)) / 20;
     return 45;
   };
 
@@ -414,15 +405,15 @@ export const computeSbcSummaryRows = (sbcDetails, boreholeLogs) => {
     const bhLabel = `BH-${String(bhIdx + 1).padStart(2, '0')}`;
 
     (levelRows || []).filter(rowHasData).forEach((entry) => {
-      const rawN      = parseFloat(entry.fieldNValue) || 0;
-      const Df        = parseFloat(entry.depthFromGL) || 0;
-      const scourDf   = parseFloat(entry.scourDepthFromGL) || 0;
-      const B         = parseFloat(entry.width) || 1.5;
-      const L         = parseFloat(entry.footingLength) || B;
-      const LL        = parseFloat(entry.liquidLimit) || 0;
-      const cpThick   = parseFloat(entry.cpLayerThickness) || 0;
+      const rawN = parseFloat(entry.fieldNValue) || 0;
+      const Df = parseFloat(entry.depthFromGL) || 0;
+      const scourDf = parseFloat(entry.scourDepthFromGL) || 0;
+      const B = parseFloat(entry.width) || 1.5;
+      const L = parseFloat(entry.footingLength) || B;
+      const LL = parseFloat(entry.liquidLimit) || 0;
+      const cpThick = parseFloat(entry.cpLayerThickness) || 0;
       const correction = entry.typeOfCorrection || 'No Correction';
-      const shape      = entry.shapeOfFooting || 'Rectangle';
+      const shape = entry.shapeOfFooting || 'Rectangle';
 
       // Effective depth = Df + scour depth
       const Df_eff = Df + scourDf;
@@ -432,8 +423,10 @@ export const computeSbcSummaryRows = (sbcDetails, boreholeLogs) => {
 
       // Step 2 — overburden correction (CN factor, IS:2131)
       // CN = 0.77 * log10(2000 / σ'v), σ'v = γ * Df (kPa)
-      const applyOverburden = correction === 'Over burden Correction' || correction === 'Both Corrections';
-      const applyDilatancy  = correction === 'Dilatancy Correction'   || correction === 'Both Corrections';
+      const applyOverburden =
+        correction === 'Over burden Correction' || correction === 'Both Corrections';
+      const applyDilatancy =
+        correction === 'Dilatancy Correction' || correction === 'Both Corrections';
 
       if (applyOverburden && Df_eff > 0) {
         const sigma_v = GAMMA * Df_eff; // kPa
@@ -464,7 +457,7 @@ export const computeSbcSummaryRows = (sbcDetails, boreholeLogs) => {
       // Fd = depth factor = 1 + Df/(3B) ≤ 2
       const Fd = Math.min(1 + Df_eff / (3 * B), 2.0);
       const qa_settlement = Math.round(
-        1.4 * N_corr * N_corr * (B * B) / Math.pow(B + 0.3, 2) * Fd
+        ((1.4 * N_corr * N_corr * (B * B)) / Math.pow(B + 0.3, 2)) * Fd
       );
 
       // Step 7 — Recommended SBC
@@ -517,7 +510,11 @@ export const buildReportPages = (formData) => {
       isContinuation: i > 0,
       sectionTitle: i === 0 ? 'IS Codes' : 'IS Codes (Continued)',
       blocks: [
-        { type: 'kv-table', title: i === 0 ? 'IS Codes' : 'IS Codes (Continued)', rows: isCodeChunks[i] },
+        {
+          type: 'kv-table',
+          title: i === 0 ? 'IS Codes' : 'IS Codes (Continued)',
+          rows: isCodeChunks[i],
+        },
       ],
     });
   }
@@ -535,14 +532,16 @@ export const buildReportPages = (formData) => {
       isFirstPage: false,
       isContinuation: false,
       sectionTitle: `Sub-Soil Profile – BH-${String(i + 1).padStart(2, '0')}`,
-      blocks: [{
-        type: 'sub-profile-analysis',
-        boreholeIndex: i,
-        boreholeNumber: i + 1,
-        logs: levelLogs,
-        location: data.siteAddress || data.siteName || '',
-        methodOfBoring: data.methodOfBoring || '',
-      }],
+      blocks: [
+        {
+          type: 'sub-profile-analysis',
+          boreholeIndex: i,
+          boreholeNumber: i + 1,
+          logs: levelLogs,
+          location: data.siteAddress || data.siteName || '',
+          methodOfBoring: data.methodOfBoring || '',
+        },
+      ],
     });
   });
 
@@ -552,19 +551,21 @@ export const buildReportPages = (formData) => {
       isFirstPage: false,
       isContinuation: false,
       sectionTitle: `Bore Log Data Sheet – BH-${String(i + 1).padStart(2, '0')}`,
-      blocks: [{
-        type: 'borehole-log-sheet',
-        boreholeIndex: i,
-        boreholeNumber: i + 1,
-        logs: levelLogs,
-        maxDepth: data.maxDepths?.[i] ?? '',
-        latitude: data.latitudes?.[i] ?? '',
-        longitude: data.longitudes?.[i] ?? '',
-        surveyDate: data.surveyDate || '',
-        projectName: data.projectName || data.projectDetails || '',
-        location: data.siteAddress || data.siteName || '',
-        methodOfBoring: data.methodOfBoring || '',
-      }],
+      blocks: [
+        {
+          type: 'borehole-log-sheet',
+          boreholeIndex: i,
+          boreholeNumber: i + 1,
+          logs: levelLogs,
+          maxDepth: data.maxDepths?.[i] ?? '',
+          latitude: data.latitudes?.[i] ?? '',
+          longitude: data.longitudes?.[i] ?? '',
+          surveyDate: data.surveyDate || '',
+          projectName: data.projectName || data.projectDetails || '',
+          location: data.siteAddress || data.siteName || '',
+          methodOfBoring: data.methodOfBoring || '',
+        },
+      ],
     });
   });
 
@@ -591,16 +592,18 @@ export const buildReportPages = (formData) => {
       isFirstPage: false,
       isContinuation: false,
       sectionTitle: 'Topographic 3D Surface Plot',
-      blocks: [{
-        type: 'topographic-3d-surface',
-        data: {
-          boreholeLogs: data.boreholeLogs,
-          maxDepths: data.maxDepths,
-          latitudes: data.latitudes,
-          longitudes: data.longitudes,
-          projectName: data.projectName || data.projectDetails || '',
+      blocks: [
+        {
+          type: 'topographic-3d-surface',
+          data: {
+            boreholeLogs: data.boreholeLogs,
+            maxDepths: data.maxDepths,
+            latitudes: data.latitudes,
+            longitudes: data.longitudes,
+            projectName: data.projectName || data.projectDetails || '',
+          },
         },
-      }],
+      ],
     });
   }
 
@@ -611,13 +614,15 @@ export const buildReportPages = (formData) => {
       isFirstPage: false,
       isContinuation: false,
       sectionTitle: 'Summary of Safe Bearing Capacity',
-      blocks: [{
-        type: 'sbc-summary',
-        rows: sbcSummaryRows,
-        sbcDetails: data.sbcDetails,
-        projectName: data.projectName || data.projectDetails || '',
-        siteAddress: data.siteAddress || data.siteName || '',
-      }],
+      blocks: [
+        {
+          type: 'sbc-summary',
+          rows: sbcSummaryRows,
+          sbcDetails: data.sbcDetails,
+          projectName: data.projectName || data.projectDetails || '',
+          siteAddress: data.siteAddress || data.siteName || '',
+        },
+      ],
     });
   }
 

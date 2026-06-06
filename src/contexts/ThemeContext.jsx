@@ -27,18 +27,19 @@ export const ThemeProvider = ({ children }) => {
     window.localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
-  const value = useMemo(() => ({
-    theme,
-    isDark: theme === 'dark',
-    toggleTheme: () => setTheme(prev => (prev === 'dark' ? 'light' : 'dark')),
-    setTheme,
-  }), [theme]);
+  const value = useMemo(
+    () => ({
+      theme,
+      isDark: theme === 'dark',
+      toggleTheme: () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark')),
+      setTheme,
+    }),
+    [theme]
+  );
 
   return (
     <ThemeContext.Provider value={value}>
-      <CustomProvider theme={theme}>
-        {children}
-      </CustomProvider>
+      <CustomProvider theme={theme}>{children}</CustomProvider>
     </ThemeContext.Provider>
   );
 };

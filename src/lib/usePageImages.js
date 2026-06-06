@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { getPageImages, savePageImages } from '@/data/pageImages';
 
@@ -9,11 +8,11 @@ export const usePageImages = () => {
     const handleStorageChange = () => {
       setImages(getPageImages());
     };
-    
+
     window.addEventListener('storage-images', handleStorageChange);
     // Also listen to standard storage event for cross-tab sync
     window.addEventListener('storage', handleStorageChange);
-    
+
     return () => {
       window.removeEventListener('storage-images', handleStorageChange);
       window.removeEventListener('storage', handleStorageChange);
@@ -25,8 +24,8 @@ export const usePageImages = () => {
       ...images,
       [section]: {
         ...images[section],
-        [key]: value
-      }
+        [key]: value,
+      },
     };
     setImages(newImages);
     savePageImages(newImages);

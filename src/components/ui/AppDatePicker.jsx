@@ -21,100 +21,108 @@ const formatLocalDate = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-const AppDatePicker = React.forwardRef(({
-  value,
-  onChange,
-  className,
-  placeholder = 'Select date',
-  disabled = false,
-  required = false,
-  max,
-  id,
-  name,
-  ...props
-}, ref) => {
-  const wrapperRef = useRef(null);
+const AppDatePicker = React.forwardRef(
+  (
+    {
+      value,
+      onChange,
+      className,
+      placeholder = 'Select date',
+      disabled = false,
+      required = false,
+      max,
+      id,
+      name,
+      ...props
+    },
+    ref
+  ) => {
+    const wrapperRef = useRef(null);
 
-  const dateValue = useMemo(() => {
-    if (!value) return null;
-    if (value instanceof Date) return value;
-    return parseLocalDate(value);
-  }, [value]);
+    const dateValue = useMemo(() => {
+      if (!value) return null;
+      if (value instanceof Date) return value;
+      return parseLocalDate(value);
+    }, [value]);
 
-  const handleChange = (date) => {
-    if (!onChange) return;
-    onChange({
-      target: { value: formatLocalDate(date), name: name || '', id: id || '' }
-    });
-  };
-
-  const shouldDisableDate = useMemo(() => {
-    if (!max) return undefined;
-    return (date) => {
-      const d = new Date(date);
-      d.setHours(0, 0, 0, 0);
-      const m = parseLocalDate(max) || new Date(max);
-      m.setHours(0, 0, 0, 0);
-      return d > m;
+    const handleChange = (date) => {
+      if (!onChange) return;
+      onChange({
+        target: { value: formatLocalDate(date), name: name || '', id: id || '' },
+      });
     };
-  }, [max]);
 
-  return (
-    // We own ALL the visual chrome (border, bg, radius, focus ring).
-    // RSuite DatePicker uses appearance="subtle" so its toggle is
-    // completely borderless/shadowless — we only need it for the calendar popup.
-    <div
-      ref={wrapperRef}
-      className={cn(
-        'app-datepicker-root relative',
-        // Identical base classes to SelectTrigger in select.jsx:
-        'flex h-10 w-full items-center rounded-md border border-input bg-background',
-        'ring-offset-background',
-        'focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
-        disabled && 'cursor-not-allowed opacity-50',
-        className
-      )}
-    >
-      <DatePicker
-        ref={ref}
-        appearance="subtle"
-        value={dateValue}
-        onChange={handleChange}
-        placeholder={placeholder}
-        disabled={disabled}
-        shouldDisableDate={shouldDisableDate}
-        format="dd MMM yyyy"
-        block
-        cleanable
-        oneTap
-        placement="autoVerticalStart"
-        // Portal the calendar into the wrapper div so it stays inside
-        // Radix Dialog's focus trap — without this, Radix blocks all
-        // pointer events on the rsuite popup since it's outside the dialog DOM.
-        container={() => wrapperRef.current || document.body}
-        id={id}
-        name={name}
-        style={{ width: '100%', height: '100%' }}
-        {...props}
-      />
+    const shouldDisableDate = useMemo(() => {
+      if (!max) return undefined;
+      return (date) => {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        const m = parseLocalDate(max) || new Date(max);
+        m.setHours(0, 0, 0, 0);
+        return d > m;
+      };
+    }, [max]);
 
-      {/* Hidden input for HTML5 required validation */}
-      {required && (
-        <input
-          type="text"
-          value={value || ''}
-          required
-          readOnly
-          tabIndex={-1}
-          style={{
-            opacity: 0, width: 0, height: 0,
-            position: 'absolute', pointerEvents: 'none'
-          }}
+    return (
+      // We own ALL the visual chrome (border, bg, radius, focus ring).
+      // RSuite DatePicker uses appearance="subtle" so its toggle is
+      // completely borderless/shadowless — we only need it for the calendar popup.
+      <div
+        ref={wrapperRef}
+        className={cn(
+          'app-datepicker-root relative',
+          // Identical base classes to SelectTrigger in select.jsx:
+          'flex h-10 w-full items-center rounded-md border border-input bg-background',
+          'ring-offset-background',
+          'focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+          disabled && 'cursor-not-allowed opacity-50',
+          className
+        )}
+      >
+        <DatePicker
+          ref={ref}
+          appearance="subtle"
+          value={dateValue}
+          onChange={handleChange}
+          placeholder={placeholder}
+          disabled={disabled}
+          shouldDisableDate={shouldDisableDate}
+          format="dd MMM yyyy"
+          block
+          cleanable
+          oneTap
+          placement="autoVerticalStart"
+          // Portal the calendar into the wrapper div so it stays inside
+          // Radix Dialog's focus trap — without this, Radix blocks all
+          // pointer events on the rsuite popup since it's outside the dialog DOM.
+          container={() => wrapperRef.current || document.body}
+          id={id}
+          name={name}
+          style={{ width: '100%', height: '100%' }}
+          {...props}
         />
-      )}
-    </div>
-  );
-});
+
+        {/* Hidden input for HTML5 required validation */}
+        {required && (
+          <input
+            type="text"
+            value={value || ''}
+            required
+            readOnly
+            tabIndex={-1}
+            style={{
+              opacity: 0,
+              width: 0,
+              height: 0,
+              position: 'absolute',
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+);
 
 AppDatePicker.displayName = 'AppDatePicker';
 export default AppDatePicker;
