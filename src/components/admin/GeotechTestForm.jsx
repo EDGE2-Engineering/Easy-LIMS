@@ -23,6 +23,81 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ArrowDownFromLine, Layers, LandPlot, Trash2, Plus, FlaskConical, TestTube } from 'lucide-react';
 import { soilTypes } from '@/data/soilTypes';
+import { useSettings } from '@/contexts/SettingsContext';
+
+/**
+ * Look up the Correction Factor (CF) from the overburden correction table stored
+ * in settings, interpolating linearly between the two nearest pressure rows.
+ * Returns { cf, formula } — cf defaults to 1 and formula to '' if table is empty.
+ */
+function lookupCorrectionFactor(overburdenRows, depthFromGL) {
+    const fallback = { cf: 1, formula: '' };
+    if (!Array.isArray(overburdenRows) || overburdenRows.length === 0) return fallback;
+    const sorted = overburdenRows
+        .map(r => ({ pressure: parseFloat(r.pressure), correction: parseFloat(r.correction) }))
+        .filter(r => !isNaN(r.pressure) && !isNaN(r.correction))
+        .sort((a, b) => a.pressure - b.pressure);
+    if (sorted.length === 0) return fallback;
+    const pressure = parseFloat(depthFromGL) || 0;
+    if (pressure <= sorted[0].pressure) {
+        return { cf: sorted[0].correction, formula: `CF at ${sorted[0].pressure} kN/m²` };
+    }
+    if (pressure >= sorted[sorted.length - 1].pressure) {
+        const last = sorted[sorted.length - 1];
+        return { cf: last.correction, formula: `CF at ${last.pressure} kN/m²` };
+    }
+    for (let i = 0; i < sorted.length - 1; i++) {
+        const lo = sorted[i], hi = sorted[i + 1];
+        if (pressure >= lo.pressure && pressure <= hi.pressure) {
+            const t = (pressure - lo.pressure) / (hi.pressure - lo.pressure);
+            const cf = lo.correction + t * (hi.correction - lo.correction);
+            return {
+                cf,
+                formula: `Interpolated from Field N Value between ${lo.pressure}→${hi.pressure} kN/m² from iverburden chart in settings`,
+            };
+        }
+    }
+    return fallback;
+}
+
+/**
+ * Calculate Corrected SPT N value based on type of correction and the overburden table.
+ * Returns { value, formula } where value is rounded to 2 dp (or '-') and formula is
+ * the human-readable expression used to compute it.
+ */
+function computeCorrectedSPT(sbcData, overburdenRows) {
+    const fieldN = parseFloat(sbcData.fieldNValue);
+    if (isNaN(fieldN) || sbcData.fieldNValue === '') return { value: '-', formula: '' };
+    const correction = sbcData.typeOfCorrection || 'No Correction';
+    const { cf } = lookupCorrectionFactor(overburdenRows, sbcData.depthFromGL);
+
+    if (correction === 'No Correction') {
+        return {
+            value: String(fieldN),
+            formula: 'N = Field N',
+        };
+    }
+    if (correction === 'Over burden Correction') {
+        return {
+            value: (fieldN * cf).toFixed(2),
+            formula: `N = ${fieldN} × ${cf.toFixed(3)} (CF)`,
+        };
+    }
+    if (correction === 'Dilatancy Correction') {
+        return {
+            value: ((fieldN + 15) / 2).toFixed(2),
+            formula: `N = (${fieldN} + 15) / 2`,
+        };
+    }
+    if (correction === 'Both Corrections') {
+        const nOB = fieldN * cf;
+        return {
+            value: ((nOB + 15) / 2).toFixed(2),
+            formula: `N = (${fieldN} × ${cf.toFixed(3)} + 15) / 2`,
+        };
+    }
+    return { value: '-', formula: '' };
+}
 
 export default function GeotechTestForm({ value, onChange }) {
     const [activeTab, setActiveTab] = useState('borehole');
@@ -30,6 +105,16 @@ export default function GeotechTestForm({ value, onChange }) {
     const [filteredSoilTypes, setFilteredSoilTypes] = useState(soilTypes);
     const [showSoilSuggestions, setShowSoilSuggestions] = useState(false);
     const [sieveError, setSieveError] = useState(null); // { boreholeIndex, depthIndex, message }
+
+    // Overburden correction table from Settings → System → Overburden
+    const { settings } = useSettings();
+    const overburdenRows = (() => {
+        try {
+            const raw = settings?.overburden_correction_data;
+            if (!raw) return [];
+            return typeof raw === 'string' ? JSON.parse(raw) : raw;
+        } catch { return []; }
+    })();
 
     // Ensure all required properties exist with defaults if value is empty
     const initialBoreholeLogs = value?.boreholeLogs || [[{ fromDepth: '', toDepth: '', natureOfSampling: '', soilType: '', waterTable: false, spt1: '', spt2: '', spt3: '', shearParameters: { cValue: '', phiValue: '' }, coreLength: '', coreRecovery: '', rqd: '', sbc: '' }]];
@@ -534,6 +619,36 @@ export default function GeotechTestForm({ value, onChange }) {
                                                             </SelectContent>
                                                         </Select>
                                                     </div>
+                                                    {(() => {
+                                                        const { value: nVal, formula } = computeCorrectedSPT(sbcData, overburdenRows);
+                                                        const { cf, formula: cfFormula } = lookupCorrectionFactor(overburdenRows, sbcData.depthFromGL);
+                                                        const hasN = sbcData.fieldNValue !== '' && sbcData.fieldNValue != null;
+                                                        return (
+                                                            <>
+
+                                                                <div className="flex flex-col gap-1">
+                                                                    <Label className="text-xs text-gray-500">Correction Factor</Label>
+                                                                    {hasN && cfFormula && (
+                                                                        <span className="text-[10px] text-gray-400 italic">{cfFormula}</span>
+                                                                    )}
+                                                                    <div className="h-8 px-3 flex items-center rounded-md border border-gray-200 bg-gray-50 select-none">
+                                                                        <span className="text-sm font-semibold text-primary tabular-nums">
+                                                                            {hasN ? cf.toFixed(3) : '-'}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                                                                                <div className="flex flex-col gap-1">
+                                                                    <Label className="text-xs text-gray-500">Corrected SPT N Value</Label>
+                                                                    {formula && (
+                                                                        <span className="text-[10px] text-gray-400 italic">{formula}</span>
+                                                                    )}
+                                                                    <div className="h-8 px-3 flex items-center rounded-md border border-gray-200 bg-gray-50 select-none">
+                                                                        <span className="text-sm font-semibold text-primary tabular-nums">{nVal}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </>
+                                                        );
+                                                    })()}
                                                     <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">CP Layer Thickness</Label>
                                                         <Input value={sbcData.cpLayerThickness || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'cpLayerThickness', e.target.value)} className="h-8" type="number" min="0" step="0.1" placeholder="CP Layer Thickness" />
