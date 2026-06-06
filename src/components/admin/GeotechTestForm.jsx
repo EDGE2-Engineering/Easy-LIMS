@@ -645,6 +645,7 @@ export default function GeotechTestForm({ value, onChange }) {
       depthOfSample: '',
       cValue: '',
       phiValue: '',
+
       stressReadings: [{ normalStress: '', shearStress: '' }],
     });
     setFormData({ ...formData, directShearResults: newResults });
