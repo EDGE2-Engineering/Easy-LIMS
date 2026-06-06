@@ -1155,7 +1155,7 @@ export default function GeotechTestForm({ value, onChange }) {
                             </Button>
                           )}
                         </div>
-                        <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+                        <div className="grid grid-cols-4 gap-x-4 gap-y-2">
                           <div className="flex flex-col gap-1">
                             <Label className="text-xs text-gray-500">Foundation</Label>
                             <Select
