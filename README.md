@@ -8,9 +8,17 @@
 
 ### Install `pg_dump`
 
+In *nix
+
 ```
 sudo apt install postgresql-client-common
 sudo apt update && sudo apt install postgresql-client
+```
+
+On Mac
+
+```
+brew install postgresql@17
 ```
 
 ### Export Supabase Database as SQL file

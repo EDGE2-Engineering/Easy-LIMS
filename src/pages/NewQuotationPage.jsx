@@ -4,7 +4,7 @@ import { useReactToPrint } from 'react-to-print';
 import { Plus, Trash2, Printer, FileText, ArrowLeft, X, Building2, Save, Loader2, CreditCard, ChevronUp, ChevronDown, AlertCircle, Axe, TestTube, BriefcaseBusiness, Drill, SwatchBook } from 'lucide-react';
 import { Link, useSearchParams, useLocation, useNavigate, useParams, useBlocker } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
-import { getNextDocNumber } from '@/utils/docUtils';
+
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -566,11 +566,8 @@ const NewQuotationPage = () => {
             // Detect if the document type has changed from what was loaded
             const isTypeChanged = savedRecordId && loadedDocumentType && documentType !== loadedDocumentType;
 
-            // Generate doc number on first save OR when doc type has changed
-            let docNumber = quoteDetails.quoteNumber;
-            if ((!savedRecordId || isTypeChanged) && (!docNumber || isTypeChanged)) {
-                docNumber = await getNextDocNumber(supabase, documentType);
-            }
+            // Keep the existing document number for updates, or let the database trigger generate a new one for insert
+            const docNumber = (savedRecordId && !isTypeChanged) ? quoteDetails.quoteNumber : null;
 
             const updatedQuoteDetails = { ...quoteDetails, quoteNumber: docNumber };
 
@@ -648,6 +645,8 @@ const NewQuotationPage = () => {
             };
 
             let error;
+            let finalDocNumber = docNumber;
+
             if (savedRecordId && !isTypeChanged) {
                 // Update existing – keep the same doc number
                 const { error: updateError } = await supabase
@@ -655,6 +654,18 @@ const NewQuotationPage = () => {
                     .update(recordData)
                     .eq('id', savedRecordId);
                 error = updateError;
+
+                if (!error) {
+                    setQuoteDetails(updatedQuoteDetails);
+                    const snapshot = {
+                        quoteDetails: updatedQuoteDetails,
+                        items,
+                        documentType,
+                        discount,
+                        discountShow
+                    };
+                    setLastSavedData(JSON.stringify(snapshot));
+                }
             } else {
                 // Create new (Clone if isTypeChanged)
                 const { data, error: insertError } = await supabase
@@ -662,37 +673,42 @@ const NewQuotationPage = () => {
                     .insert([recordData])
                     .select()
                     .single();
+                error = insertError;
 
                 if (!insertError && data) {
+                    finalDocNumber = data.quote_number;
+                    const returnedContent = data.content || {};
+                    const returnedQuoteDetails = returnedContent.quoteDetails || {};
+
+                    const finalQuoteDetails = {
+                        ...quoteDetails,
+                        ...returnedQuoteDetails,
+                        quoteNumber: finalDocNumber
+                    };
+
                     setSavedRecordId(data.id);
                     setLoadedDocumentType(documentType); // Update loaded type to new one
-                    
-                    // Update the state with the doc number BEFORE navigating
-                    setQuoteDetails(updatedQuoteDetails);
+                    setQuoteDetails(finalQuoteDetails);
+
+                    const snapshot = {
+                        quoteDetails: finalQuoteDetails,
+                        items,
+                        documentType,
+                        discount,
+                        discountShow
+                    };
+                    setLastSavedData(JSON.stringify(snapshot));
                     
                     isNavigatingRef.current = true;
                     navigate(`/doc/${data.id}`, { replace: true });
                 }
-                error = insertError;
             }
 
             if (error) throw error;
 
-            // Update the doc number in state after successful save
-            setQuoteDetails(updatedQuoteDetails);
-
-            const snapshot = {
-                quoteDetails: updatedQuoteDetails,
-                items,
-                documentType,
-                discount,
-                discountShow
-            };
-            setLastSavedData(JSON.stringify(snapshot));
-
             toast({
                 title: "Success",
-                description: (savedRecordId && !isTypeChanged) ? `${documentType} updated successfully.` : `${documentType} saved as ${docNumber}.`
+                description: (savedRecordId && !isTypeChanged) ? `${documentType} updated successfully.` : `${documentType} saved as ${finalDocNumber}.`
             });
 
             // If we have a jobId and just created a Quotation or Purchase Order, update the job status
@@ -719,7 +735,7 @@ const NewQuotationPage = () => {
                 const action = (savedRecordId && !isTypeChanged) ? "Updated" : "Created";
                 const emoji = (savedRecordId && !isTypeChanged) ? "📝" : "📄";
                 const message = `${emoji} *${documentType} ${action}*\n\n` +
-                    `Number: \`${docNumber}\`\n` +
+                    `Number: \`${finalDocNumber}\`\n` +
                     `Client: \`${quoteDetails.clientName}\`\n` +
                     `${action} By: \`${user.fullName}\``;
                 await sendTelegramNotification(message);

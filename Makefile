@@ -83,3 +83,28 @@ test-e2e: init-test
 test-ui: init-test
 	@npx playwright test --ui
 	@npx playwright show-report
+
+
+db-dump:
+	@: $${DB_PASSWORD:?DB_PASSWORD environment variable is not set. Set it via \'export DB_PASSWORD=<your-password>\'}
+	@: $${PROJECT_ID:?PROJECT_ID environment variable is not set. Set it via \'export PROJECT_ID=<your-project-id>\'}
+# 	@pg_dump \
+# 		--format=plain \
+# 		--blobs \
+# 		--no-owner \
+# 		--no-privileges \
+# 		"postgresql://postgres:$$DB_PASSWORD@db.$$PROJECT_ID.supabase.co:5432/postgres" \
+# 		> data-model.sql
+	@pg_dump \
+		--schema-only \
+		--no-owner \
+		--no-privileges \
+		--quote-all-identifiers \
+		"postgresql://postgres:$$DB_PASSWORD@db.$$PROJECT_ID.supabase.co:5432/postgres" \
+		> data-model.sql
+	@pg_dump \
+		--format=custom \
+		--blobs \
+		--verbose \
+		"postgresql://postgres:$$DB_PASSWORD@db.$$PROJECT_ID.supabase.co:5432/postgres" \
+		-f full-database.dump

@@ -15,6 +15,8 @@ const ExpensesProvider = ({ children }) => {
         amount: Number(e.amount) || 0,
         date: e.date || new Date().toISOString().split('T')[0],
         remarks: e.remarks || '',
+        projectName: e.project_name || '',
+        siteAddress: e.site_address || '',
         createdBy: e.users?.full_name || e.created_by_name || 'Unknown',
         createdById: e.created_by,
         createdAt: e.created_at || new Date().toISOString()
@@ -26,6 +28,8 @@ const ExpensesProvider = ({ children }) => {
         amount: Number(e.amount),
         date: e.date,
         remarks: e.remarks,
+        project_name: e.projectName || null,
+        site_address: e.siteAddress || null,
         created_by: e.createdById
     }), []);
 

@@ -164,6 +164,8 @@ const ExpensesManager = () => {
             amount: '',
             date: new Date().toISOString().split('T')[0],
             remarks: '',
+            projectName: '',
+            siteAddress: '',
             createdBy: user?.fullName || 'Admin',
             createdById: user?.id
         });
@@ -218,7 +220,7 @@ const ExpensesManager = () => {
         if (filteredExpenses.length === 0) return;
 
         // Define headers
-        const headers = ['Date', 'Description', 'Amount', 'Created By', 'Remarks'];
+        const headers = ['Date', 'Description', 'Amount', 'Created By', 'Project Name', 'Site Address', 'Remarks'];
         
         // Map data to rows
         const rows = filteredExpenses.map(e => [
@@ -226,6 +228,8 @@ const ExpensesManager = () => {
             `"${e.description?.replace(/"/g, '""') || ''}"`, // Escape quotes and wrap in quotes
             e.amount,
             `"${e.createdBy?.replace(/"/g, '""') || ''}"`,
+            `"${e.projectName?.replace(/"/g, '""') || ''}"`,
+            `"${e.siteAddress?.replace(/"/g, '""') || ''}"`,
             `"${e.remarks?.replace(/"/g, '""') || ''}"`
         ]);
 
@@ -272,12 +276,23 @@ const ExpensesManager = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                         <div className="space-y-2">
+                            <Label className="text-sm font-semibold text-gray-700">Project Name</Label>
+                            <Textarea
+                                rows={2}
+                                value={editingExpense.projectName || ''}
+                                onChange={(e) => setEditingExpense(prev => ({ ...prev, projectName: e.target.value }))}
+                                placeholder="Which project is this for?"
+                                className="rounded-xl resize-none"
+                            />
+                        </div>
+                        <div className="space-y-2">
                             <Label className="text-sm font-semibold text-gray-700">Description</Label>
-                            <Input
+                            <Textarea
+                                rows={2}
                                 value={editingExpense.description || ''}
                                 onChange={(e) => setEditingExpense(prev => ({ ...prev, description: e.target.value }))}
                                 placeholder="What was the expense for?"
-                                className="rounded-xl"
+                                className="rounded-xl resize-none"
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -312,9 +327,19 @@ const ExpensesManager = () => {
                     </div>
                     <div className="space-y-4">
                         <div className="space-y-2">
+                            <Label className="text-sm font-semibold text-gray-700">Site Address</Label>
+                            <Textarea
+                                rows={2}
+                                value={editingExpense.siteAddress || ''}
+                                onChange={(e) => setEditingExpense(prev => ({ ...prev, siteAddress: e.target.value }))}
+                                placeholder="Site address..."
+                                className="rounded-xl resize-none"
+                            />
+                        </div>
+                        <div className="space-y-2">
                             <Label className="text-sm font-semibold text-gray-700">Remarks</Label>
                             <Textarea
-                                rows={6}
+                                rows={2}
                                 value={editingExpense.remarks || ''}
                                 onChange={(e) => setEditingExpense(prev => ({ ...prev, remarks: e.target.value }))}
                                 placeholder="Additional details..."
@@ -585,7 +610,23 @@ const ExpensesManager = () => {
                                     </td>
                                     <td className="py-5 px-2">
                                         <div className="font-bold text-gray-900 group-hover:text-primary transition-colors">{expense.description}</div>
-                                        <div className="text-xs text-gray-500 mt-1 line-clamp-1">{expense.remarks || 'No remarks'}</div>
+                                        {expense.projectName && (
+                                            <div className="text-xs text-gray-700 mt-1">
+                                                <span className="font-semibold text-gray-400 uppercase tracking-wider text-[9px] mr-1">Project:</span>
+                                                {expense.projectName}
+                                            </div>
+                                        )}
+                                        {expense.siteAddress && (
+                                            <div className="text-xs text-gray-700 mt-0.5">
+                                                <span className="font-semibold text-gray-400 uppercase tracking-wider text-[9px] mr-1">Site:</span>
+                                                {expense.siteAddress}
+                                            </div>
+                                        )}
+                                        {expense.remarks && (
+                                            <div className="text-xs text-gray-400 mt-1 italic">
+                                                {expense.remarks}
+                                            </div>
+                                        )}
                                     </td>
 
                                     <td className="py-5 px-2 text-center">
