@@ -53,7 +53,7 @@ function lookupCorrectionFactor(overburdenRows, depthFromGL) {
             const cf = lo.correction + t * (hi.correction - lo.correction);
             return {
                 cf,
-                formula: `Interpolated from Field N Value between ${lo.pressure}→${hi.pressure} kN/m² from iverburden chart in settings`,
+                formula: `Interpolated from Field N Value between ${lo.pressure}→${hi.pressure} kN/m² from overburden chart in settings`,
             };
         }
     }
@@ -74,26 +74,26 @@ function computeCorrectedSPT(sbcData, overburdenRows) {
     if (correction === 'No Correction') {
         return {
             value: String(fieldN),
-            formula: 'N = Field N',
+            formula: 'NR = Field N',
         };
     }
     if (correction === 'Over burden Correction') {
         return {
             value: (fieldN * cf).toFixed(2),
-            formula: `N = ${fieldN} × ${cf.toFixed(3)} (CF)`,
+            formula: `NR = ${fieldN} × ${cf.toFixed(3)} (CF)`,
         };
     }
     if (correction === 'Dilatancy Correction') {
         return {
             value: ((fieldN + 15) / 2).toFixed(2),
-            formula: `N = (${fieldN} + 15) / 2`,
+            formula: `NR = (${fieldN} + 15) / 2`,
         };
     }
     if (correction === 'Both Corrections') {
         const nOB = fieldN * cf;
         return {
             value: ((nOB + 15) / 2).toFixed(2),
-            formula: `N = (${fieldN} × ${cf.toFixed(3)} + 15) / 2`,
+            formula: `NR = (${fieldN} × ${cf.toFixed(3)} + 15) / 2`,
         };
     }
     return { value: '-', formula: '' };
@@ -627,7 +627,7 @@ export default function GeotechTestForm({ value, onChange }) {
                                                             <>
 
                                                                 <div className="flex flex-col gap-1">
-                                                                    <Label className="text-xs text-gray-500">Correction Factor</Label>
+                                                                    <Label className="text-xs text-gray-500">Correction Factor (CF)</Label>
                                                                     {hasN && cfFormula && (
                                                                         <span className="text-[10px] text-gray-400 italic">{cfFormula}</span>
                                                                     )}
@@ -638,7 +638,7 @@ export default function GeotechTestForm({ value, onChange }) {
                                                                     </div>
                                                                 </div>
                                                                                                                                 <div className="flex flex-col gap-1">
-                                                                    <Label className="text-xs text-gray-500">Corrected SPT N Value</Label>
+                                                                    <Label className="text-xs text-gray-500">Corrected SPT N Value (NR)</Label>
                                                                     {formula && (
                                                                         <span className="text-[10px] text-gray-400 italic">{formula}</span>
                                                                     )}
