@@ -76,6 +76,71 @@ function lookupCorrectionFactor(overburdenRows, depthFromGL) {
 }
 
 /**
+ * Compute Depth of Foundation Below Scour Level: Df = D - ds
+ * Returns { value, formula }
+ */
+function computeDepthBelowScour(sbcData) {
+  const D = parseFloat(sbcData.depthFromGL);
+  const ds = parseFloat(sbcData.scourDepth);
+  if (isNaN(D) || isNaN(ds)) return { value: '-', formula: '' };
+  const Df = D - ds;
+  return {
+    value: Df.toFixed(3),
+    formula: `Df = D − ds = ${D} − ${ds}`,
+  };
+}
+
+/**
+ * Compute Depth of Failure Zone: Dfz = 0.5 * B * tan(45 + φ/2)
+ * Returns { value, formula }
+ */
+function computeDepthFailureZone(sbcData) {
+  const B = parseFloat(sbcData.width);
+  const phi = parseFloat(sbcData.consideredAngleOfFriction);
+  if (isNaN(B) || isNaN(phi)) return { value: '-', formula: '' };
+  const angleRad = ((45 + phi / 2) * Math.PI) / 180;
+  const Dfz = 0.5 * B * Math.tan(angleRad);
+  return {
+    value: Dfz.toFixed(3),
+    formula: `Dfz = 0.5 × ${B} × tan(45 + ${phi}/2)`,
+  };
+}
+
+/**
+ * Compute Reduced Angle of Friction: ϕ' = atan(0.67 * tan(φ)) in degrees
+ * Returns { value, formula }
+ */
+function computeReducedFriction(sbcData) {
+  const phi = parseFloat(sbcData.consideredAngleOfFriction);
+  if (isNaN(phi)) return { value: '-', formula: '' };
+  const phiRad = (phi * Math.PI) / 180;
+  const phiPrime = (Math.atan(0.67 * Math.tan(phiRad)) * 180) / Math.PI;
+  return {
+    value: phiPrime.toFixed(3),
+    formula: `ϕ' = tan⁻¹(0.67 × tan(${phi}°))`,
+  };
+}
+
+/**
+ * Compute Effective Overburden Pressure: q = γsub × Df
+ * where γsub = effectiveUnitWeight (γ') and Df = D - ds
+ * Returns { value, formula }
+ */
+function computeEffectiveOverburden(sbcData) {
+  const bulk = parseFloat(sbcData.bulkUnitWeight);
+  const D = parseFloat(sbcData.depthFromGL);
+  const ds = parseFloat(sbcData.scourDepth);
+  if (isNaN(bulk) || isNaN(D) || isNaN(ds)) return { value: '-', formula: '' };
+  const gammaSub = Math.max(0, bulk - 10);
+  const Df = D - ds;
+  const q = gammaSub * Df;
+  return {
+    value: q.toFixed(3),
+    formula: `q = γ' × Df = (${bulk} − 10) × ${Df.toFixed(3)}`,
+  };
+}
+
+/**
  * Calculate Corrected SPT N value based on type of correction and the overburden table.
  * Returns { value, formula } where value is rounded to 2 dp (or '-') and formula is
  * the human-readable expression used to compute it.
@@ -1090,7 +1155,7 @@ export default function GeotechTestForm({ value, onChange }) {
                             </Button>
                           )}
                         </div>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                        <div className="grid grid-cols-3 gap-x-4 gap-y-2">
                           <div className="flex flex-col gap-1">
                             <Label className="text-xs text-gray-500">Foundation</Label>
                             <Select
@@ -1142,8 +1207,9 @@ export default function GeotechTestForm({ value, onChange }) {
                             />
                           </div>
                           <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500">
-                              Foundation Depth from GL
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Foundation Depth from GL</span>
+                              <span className="text-[10px] text-gray-400 italic">Symbol: D</span>
                             </Label>
                             <Input
                               value={sbcData.depthFromGL || ''}
@@ -1318,7 +1384,10 @@ export default function GeotechTestForm({ value, onChange }) {
                             />
                           </div>
                           <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500">Width (m)</Label>
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Width of Foundation (m)</span>
+                              <span className="text-[10px] text-gray-400 italic">Symbol: B</span>
+                            </Label>
                             <Input
                               value={sbcData.width || ''}
                               onChange={(e) =>
@@ -1328,11 +1397,14 @@ export default function GeotechTestForm({ value, onChange }) {
                               type="number"
                               min="0"
                               step="0.1"
-                              placeholder="Width (m)"
+                              placeholder="Width of Foundation (m)"
                             />
                           </div>
                           <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500">Length (m)</Label>
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Length of Foundation (m)</span>
+                              <span className="text-[10px] text-gray-400 italic">Symbol: L</span>
+                            </Label>
                             <Input
                               value={sbcData.footingLength || ''}
                               onChange={(e) =>
@@ -1347,8 +1419,137 @@ export default function GeotechTestForm({ value, onChange }) {
                               type="number"
                               min="0"
                               step="0.1"
-                              placeholder="Length (m)"
+                              placeholder="Length of Foundation (m)"
                             />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Angle of Inclination of Foundation</span>
+                              <span className="text-[10px] text-gray-400 italic">Symbol: α</span>
+                            </Label>
+                            <Input
+                              value={sbcData.foundationInclinationAngle || ''}
+                              onChange={(e) =>
+                                handleSbcChange(
+                                  boreholeIndex,
+                                  entryIndex,
+                                  'foundationInclinationAngle',
+                                  e.target.value
+                                )
+                              }
+                              className="h-8"
+                              type="number"
+                              min="-90"
+                              max="90"
+                              step="0.1"
+                              placeholder="Angle of Inclination of Foundation"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Scour Depth from Ground Level</span>
+                              <span className="text-[10px] text-gray-400 italic">Symbol: ds</span>
+                            </Label>
+                            <Input
+                              value={sbcData.scourDepth || ''}
+                              onChange={(e) =>
+                                handleSbcChange(
+                                  boreholeIndex,
+                                  entryIndex,
+                                  'scourDepth',
+                                  e.target.value
+                                )
+                              }
+                              className="h-8"
+                              type="number"
+                              min="0"
+                              step="0.1"
+                              placeholder="Scour Depth from Ground Level"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Depth of Ground Water Level</span>
+                              <span className="text-[10px] text-gray-400 italic">Symbol: Dw</span>
+                            </Label>
+                            <Input
+                              value={sbcData.depthOfGroundWaterLevel || ''}
+                              onChange={(e) =>
+                                handleSbcChange(
+                                  boreholeIndex,
+                                  entryIndex,
+                                  'depthOfGroundWaterLevel',
+                                  e.target.value
+                                )
+                              }
+                              className="h-8"
+                              type="number"
+                              min="0"
+                              step="0.1"
+                              placeholder="Depth of Ground Water Level"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Considered angle of Friction</span>
+                              <span className="text-[10px] text-gray-400 italic">Symbol: φ</span>
+                            </Label>
+                            <Input
+                              value={sbcData.consideredAngleOfFriction || ''}
+                              onChange={(e) =>
+                                handleSbcChange(
+                                  boreholeIndex,
+                                  entryIndex,
+                                  'consideredAngleOfFriction',
+                                  e.target.value
+                                )
+                              }
+                              className="h-8"
+                              type="number"
+                              min="0"
+                              step="0.1"
+                              placeholder="Considered angle of Friction"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Bulk Unit Weight</span>
+                              <span className="text-[10px] text-gray-400 italic">Symbol: γ</span>
+                            </Label>
+                            <Input
+                              value={sbcData.bulkUnitWeight || ''}
+                              onChange={(e) =>
+                                handleSbcChange(
+                                  boreholeIndex,
+                                  entryIndex,
+                                  'bulkUnitWeight',
+                                  e.target.value
+                                )
+                              }
+                              className="h-8"
+                              type="number"
+                              min="0"
+                              step="0.1"
+                              placeholder="Bulk Unit Weight"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Effective Unit Weight</span>
+                              <span className="text-[10px] text-gray-400 italic">Symbol: γ'</span>
+                            </Label>
+                            {sbcData.bulkUnitWeight !== '' && sbcData.bulkUnitWeight != null && (
+                              <span className="text-[10px] text-gray-400 italic">
+                                γ' = γ − 10 = {sbcData.bulkUnitWeight} − 10
+                              </span>
+                            )}
+                            <div className="h-8 px-3 flex items-center rounded-md border border-gray-200 bg-gray-50 select-none">
+                              <span className="text-sm font-semibold text-primary tabular-nums">
+                                {sbcData.bulkUnitWeight !== '' && sbcData.bulkUnitWeight != null
+                                  ? Math.max(0, parseFloat(sbcData.bulkUnitWeight) - 10).toFixed(3)
+                                  : '-'}
+                              </span>
+                            </div>
                           </div>
                           <div className="flex flex-col gap-1">
                             <Label className="text-xs text-gray-500">Shape of Footing</Label>
@@ -1369,6 +1570,93 @@ export default function GeotechTestForm({ value, onChange }) {
                               </SelectContent>
                             </Select>
                           </div>
+                          {/* Computed fields */}
+                          {(() => {
+                            const { value: dfVal, formula: dfFormula } =
+                              computeDepthBelowScour(sbcData);
+                            const { value: dfzVal, formula: dfzFormula } =
+                              computeDepthFailureZone(sbcData);
+                            const { value: phiPrimeVal, formula: phiPrimeFormula } =
+                              computeReducedFriction(sbcData);
+                            const { value: qVal, formula: qFormula } =
+                              computeEffectiveOverburden(sbcData);
+                            return (
+                              <>
+                                <div className="flex flex-col gap-1">
+                                  <Label className="text-xs text-gray-500 flex flex-col">
+                                    <span>Depth of Foundation Below Scour Level</span>
+                                    <span className="text-[10px] text-gray-400 italic">
+                                      Symbol: Df &nbsp;|&nbsp; Unit: m
+                                    </span>
+                                  </Label>
+                                  {dfFormula && (
+                                    <span className="text-[10px] text-gray-400 italic">
+                                      {dfFormula}
+                                    </span>
+                                  )}
+                                  <div className="h-8 px-3 flex items-center rounded-md border border-gray-200 bg-gray-50 select-none">
+                                    <span className="text-sm font-semibold text-primary tabular-nums">
+                                      {dfVal}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <Label className="text-xs text-gray-500 flex flex-col">
+                                    <span>Depth of Failure Zone</span>
+                                    <span className="text-[10px] text-gray-400 italic">
+                                      Symbol: Dfz &nbsp;|&nbsp; Unit: m
+                                    </span>
+                                  </Label>
+                                  {dfzFormula && (
+                                    <span className="text-[10px] text-gray-400 italic">
+                                      {dfzFormula}
+                                    </span>
+                                  )}
+                                  <div className="h-8 px-3 flex items-center rounded-md border border-gray-200 bg-gray-50 select-none">
+                                    <span className="text-sm font-semibold text-primary tabular-nums">
+                                      {dfzVal}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <Label className="text-xs text-gray-500 flex flex-col">
+                                    <span>Reduced Angle of Friction</span>
+                                    <span className="text-[10px] text-gray-400 italic">
+                                      Symbol: ϕ&apos; &nbsp;|&nbsp; Unit: deg
+                                    </span>
+                                  </Label>
+                                  {phiPrimeFormula && (
+                                    <span className="text-[10px] text-gray-400 italic">
+                                      {phiPrimeFormula}
+                                    </span>
+                                  )}
+                                  <div className="h-8 px-3 flex items-center rounded-md border border-gray-200 bg-gray-50 select-none">
+                                    <span className="text-sm font-semibold text-primary tabular-nums">
+                                      {phiPrimeVal}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <Label className="text-xs text-gray-500 flex flex-col">
+                                    <span>Effective Overburden Pressure</span>
+                                    <span className="text-[10px] text-gray-400 italic">
+                                      Symbol: q &nbsp;|&nbsp; Unit: kN/m²
+                                    </span>
+                                  </Label>
+                                  {qFormula && (
+                                    <span className="text-[10px] text-gray-400 italic">
+                                      {qFormula}
+                                    </span>
+                                  )}
+                                  <div className="h-8 px-3 flex items-center rounded-md border border-gray-200 bg-gray-50 select-none">
+                                    <span className="text-sm font-semibold text-primary tabular-nums">
+                                      {qVal}
+                                    </span>
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     ))}

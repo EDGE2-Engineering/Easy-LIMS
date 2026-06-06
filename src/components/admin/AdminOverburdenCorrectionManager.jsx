@@ -539,9 +539,8 @@ const AdminOverburdenCorrectionManager = () => {
       <div className="flex items-start gap-3 p-4 bg-primary/10 rounded-xl border border-primary/20">
         <Layers className="w-5 h-5 text-primary shrink-0 mt-0.5" />
         <p className="text-xs text-gray-600 leading-relaxed">
-          Grid lines follow the reference diagram — dense 0.1 intervals between{' '}
-          <strong>0.5 and 1.0</strong>, coarse 0.5 steps outside. Y-axis is inverted (0 kN/m² at
-          top, increasing downward). Hover the curve for{' '}
+          Curve Details: Dense 0.1 intervals between <strong>0.5 and 1.0</strong>, coarse 0.5 steps
+          outside. Y-axis is inverted (0 kN/m² at top, increasing downward). Hover the curve for{' '}
           <strong>interpolated CF and Q values</strong>. Click <em>Save</em> to persist.
         </p>
       </div>
