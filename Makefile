@@ -1,6 +1,6 @@
 # Makefile for running the project
 
-.PHONY: help install dev preview stop build build-production clean clean-build android android-install
+.PHONY: help install dev preview stop build build-production clean clean-build android android-install format format-check setup-hooks
 
 # Default target
 help:
@@ -13,6 +13,9 @@ help:
 	@echo "  make build-production - Build with optimizations (alias for build)"
 	@echo "  make clean            - Remove build artifacts and dependencies"
 	@echo "  make clean-build      - Remove only build artifacts"
+	@echo "  make format           - Format source files with Prettier (writes in-place)"
+	@echo "  make format-check     - Check formatting without writing (CI-friendly)"
+	@echo "  make setup-hooks      - Install Git hooks (run once after cloning)"
 
 # Install dependencies
 install:
@@ -108,3 +111,20 @@ db-dump:
 		--verbose \
 		"postgresql://postgres:$$DB_PASSWORD@db.$$PROJECT_ID.supabase.co:5432/postgres" \
 		-f full-database.dump
+
+# Format source files with Prettier
+format:
+	@echo "Formatting source files with Prettier..."
+	npx prettier --write "src/**/*.{js,jsx,ts,tsx,css,html,json}" "index.html" "*.json" --ignore-path .gitignore
+
+# Check formatting without writing (useful in CI)
+format-check:
+	@echo "Checking formatting with Prettier..."
+	npx prettier --check "src/**/*.{js,jsx,ts,tsx,css,html,json}" "index.html" "*.json" --ignore-path .gitignore
+
+# Install Git hooks from scripts/hooks into .git/hooks
+setup-hooks:
+	@echo "Installing Git hooks..."
+	cp scripts/hooks/pre-commit .git/hooks/pre-commit
+	chmod +x .git/hooks/pre-commit
+	@echo "Git hooks installed. 'make format' will run on every commit."

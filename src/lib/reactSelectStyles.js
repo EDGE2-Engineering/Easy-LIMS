@@ -1,4 +1,8 @@
-const themedReactSelectStyles = ({ minHeight = '40px', borderRadius = '0.75rem', fontSize = '0.875rem' } = {}) => ({
+const themedReactSelectStyles = ({
+  minHeight = '40px',
+  borderRadius = '0.75rem',
+  fontSize = '0.875rem',
+} = {}) => ({
   control: (base, state) => ({
     ...base,
     minHeight,

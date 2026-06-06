@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from '@/App';
@@ -11,22 +10,32 @@ migrateStorageKeys();
 
 // Handle dynamic import failures (often caused by new builds/deployments)
 // This catches errors that might occur outside of lazyWithRetry
-window.addEventListener('error', (e) => {
-  if (e.message?.includes('Failed to fetch dynamically imported module') || 
-      e.message?.includes('Importing a module script failed')) {
-    const pageHasBeenForceRefreshed = window.sessionStorage.getItem('page-has-been-force-refreshed') === 'true';
+window.addEventListener(
+  'error',
+  (e) => {
+    if (
+      e.message?.includes('Failed to fetch dynamically imported module') ||
+      e.message?.includes('Importing a module script failed')
+    ) {
+      const pageHasBeenForceRefreshed =
+        window.sessionStorage.getItem('page-has-been-force-refreshed') === 'true';
 
-    if (!pageHasBeenForceRefreshed) {
-      window.sessionStorage.setItem('page-has-been-force-refreshed', 'true');
-      window.location.reload();
+      if (!pageHasBeenForceRefreshed) {
+        window.sessionStorage.setItem('page-has-been-force-refreshed', 'true');
+        window.location.reload();
+      }
     }
-  }
-}, true);
+  },
+  true
+);
 
 window.addEventListener('unhandledrejection', (e) => {
-  if (e.reason?.message?.includes('Failed to fetch dynamically imported module') ||
-      e.reason?.message?.includes('Importing a module script failed')) {
-    const pageHasBeenForceRefreshed = window.sessionStorage.getItem('page-has-been-force-refreshed') === 'true';
+  if (
+    e.reason?.message?.includes('Failed to fetch dynamically imported module') ||
+    e.reason?.message?.includes('Importing a module script failed')
+  ) {
+    const pageHasBeenForceRefreshed =
+      window.sessionStorage.getItem('page-has-been-force-refreshed') === 'true';
 
     if (!pageHasBeenForceRefreshed) {
       window.sessionStorage.setItem('page-has-been-force-refreshed', 'true');
@@ -35,6 +44,4 @@ window.addEventListener('unhandledrejection', (e) => {
   }
 });
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <App />
-);
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);

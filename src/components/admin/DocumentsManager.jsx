@@ -1,7 +1,20 @@
-
 import React, { useState, useEffect } from 'react';
 import ReactSelect from 'react-select';
-import { Search, Trash2, ExternalLink, FileText, Loader2, AlertCircle, ArrowUpDown, SortAsc, SortDesc, Calendar, Plus, Filter, X } from 'lucide-react';
+import {
+  Search,
+  Trash2,
+  ExternalLink,
+  FileText,
+  Loader2,
+  AlertCircle,
+  ArrowUpDown,
+  SortAsc,
+  SortDesc,
+  Calendar,
+  Plus,
+  Filter,
+  X,
+} from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
@@ -25,14 +38,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 
 const DocumentsManager = () => {
@@ -44,7 +57,11 @@ const DocumentsManager = () => {
   const [filterDocType, setFilterDocType] = useState('all');
   const [filterUser, setFilterUser] = useState('all');
   const [filterClient, setFilterClient] = useState('all');
-  const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, recordId: null, quoteNumber: '' });
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    isOpen: false,
+    recordId: null,
+    quoteNumber: '',
+  });
   const [sortField, setSortField] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
@@ -98,9 +115,9 @@ const DocumentsManager = () => {
     } catch (error) {
       console.error('Error fetching documents:', error);
       toast({
-        title: "Error",
-        description: "Failed to load documents. " + error.message,
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to load documents. ' + error.message,
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -115,14 +132,18 @@ const DocumentsManager = () => {
     setDeleteConfirmation({
       isOpen: true,
       recordId: record.id,
-      quoteNumber: record.quote_number
+      quoteNumber: record.quote_number,
     });
   };
 
   const confirmDelete = async () => {
     if (!deleteConfirmation.recordId) return;
     if (user?.role === ROLES.ACCOUNTS.slug) {
-      toast({ title: "Access Denied", description: "You do not have permission to delete documents.", variant: "destructive" });
+      toast({
+        title: 'Access Denied',
+        description: 'You do not have permission to delete documents.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -134,11 +155,15 @@ const DocumentsManager = () => {
 
       if (error) throw error;
 
-      toast({ title: "Document Deleted", description: "The document record has been removed.", variant: "destructive" });
+      toast({
+        title: 'Document Deleted',
+        description: 'The document record has been removed.',
+        variant: 'destructive',
+      });
       fetchDocuments();
     } catch (error) {
       console.error('Error deleting document:', error);
-      toast({ title: "Error", description: "Failed to delete document.", variant: "destructive" });
+      toast({ title: 'Error', description: 'Failed to delete document.', variant: 'destructive' });
     } finally {
       setDeleteConfirmation({ isOpen: false, recordId: null, quoteNumber: '' });
     }
@@ -147,7 +172,7 @@ const DocumentsManager = () => {
   const handleOpen = (recordId, docNumber) => {
     navigate(`/doc/${recordId}`);
   };
-  
+
   const applyDatePreset = (preset) => {
     const now = new Date();
     let start = '';
@@ -188,18 +213,17 @@ const DocumentsManager = () => {
     setDatePreset(preset);
   };
 
-  const uniqueUsers = Array.from(new Set(documents
-    .map(r => r.users?.full_name)
-    .filter(Boolean)))
-    .sort();
+  const uniqueUsers = Array.from(
+    new Set(documents.map((r) => r.users?.full_name).filter(Boolean))
+  ).sort();
 
-  const uniqueClients = Array.from(new Set(documents
-    .map(r => r.clients?.client_name)
-    .filter(Boolean)))
-    .sort();
+  const uniqueClients = Array.from(
+    new Set(documents.map((r) => r.clients?.client_name).filter(Boolean))
+  ).sort();
 
-  const filteredDocuments = documents.filter(r => {
-    const matchesSearch = (r.quote_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+  const filteredDocuments = documents.filter((r) => {
+    const matchesSearch =
+      (r.quote_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (r.clients?.client_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (r.document_type?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
@@ -331,13 +355,19 @@ const DocumentsManager = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant={showFilters ? "secondary" : "outline"}
+                  variant={showFilters ? 'secondary' : 'outline'}
                   onClick={() => setShowFilters(!showFilters)}
                   className={`h-10 px-4 rounded-xl transition-all border-gray-200 ${showFilters ? 'bg-primary/10 text-primary border-primary/20' : 'bg-gray-50/50'}`}
                 >
                   <Filter className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-bold uppercase tracking-widest leading-none">Filters</span>
-                  {(fromDate || toDate || filterDocType !== 'all' || filterUser !== 'all' || filterClient !== 'all') && (
+                  <span className="text-sm font-bold uppercase tracking-widest leading-none">
+                    Filters
+                  </span>
+                  {(fromDate ||
+                    toDate ||
+                    filterDocType !== 'all' ||
+                    filterUser !== 'all' ||
+                    filterClient !== 'all') && (
                     <Badge className="ml-2 bg-primary text-white scale-75">!</Badge>
                   )}
                 </Button>
@@ -348,7 +378,9 @@ const DocumentsManager = () => {
             </Tooltip>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Sort</span>
+              <span className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">
+                Sort
+              </span>
               <Select value={sortField} onValueChange={setSortField}>
                 <SelectTrigger className="w-40 h-10 text-sm bg-gray-50/50 border-gray-200 rounded-lg">
                   <SelectValue />
@@ -366,20 +398,31 @@ const DocumentsManager = () => {
                     variant="outline"
                     size="icon"
                     className="h-10 w-10 border-gray-200 bg-gray-50/50 rounded-lg"
-                    onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                    onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
                   >
-                    {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                    {sortOrder === 'asc' ? (
+                      <SortAsc className="w-4 h-4" />
+                    ) : (
+                      <SortDesc className="w-4 h-4" />
+                    )}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                  <p className="text-xs">Toggle {sortOrder === 'asc' ? 'Descending' : 'Ascending'} Sort</p>
+                  <p className="text-xs">
+                    Toggle {sortOrder === 'asc' ? 'Descending' : 'Ascending'} Sort
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </div>
           </div>
 
           <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">
-            Showing <span className="text-primary">{sortedDocuments.length === 0 ? 0 : startIndex + 1}–{Math.min(endIndex, sortedDocuments.length)}</span> of <span className="text-primary">{sortedDocuments.length}</span> Documents
+            Showing{' '}
+            <span className="text-primary">
+              {sortedDocuments.length === 0 ? 0 : startIndex + 1}–
+              {Math.min(endIndex, sortedDocuments.length)}
+            </span>{' '}
+            of <span className="text-primary">{sortedDocuments.length}</span> Documents
           </div>
         </div>
 
@@ -391,13 +434,20 @@ const DocumentsManager = () => {
                 <Filter className="w-4 h-4 mr-2 text-primary" />
                 Advanced Filters
               </h3>
-              <Button variant="ghost" size="sm" onClick={resetAll} className="text-xs text-gray-400 hover:text-red-500 font-bold uppercase tracking-widest">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetAll}
+                className="text-xs text-gray-400 hover:text-red-500 font-bold uppercase tracking-widest"
+              >
                 <X className="w-3 h-3 mr-1" /> Reset All
               </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Document Type</Label>
+                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  Document Type
+                </Label>
                 <Select value={filterDocType} onValueChange={setFilterDocType}>
                   <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
                     <SelectValue placeholder="All Types" />
@@ -414,7 +464,9 @@ const DocumentsManager = () => {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Quick Date</Label>
+                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  Quick Date
+                </Label>
                 <Select value={datePreset} onValueChange={applyDatePreset}>
                   <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
                     <SelectValue placeholder="Custom" />
@@ -431,7 +483,9 @@ const DocumentsManager = () => {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">From Date</Label>
+                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  From Date
+                </Label>
                 <AppDatePicker
                   value={fromDate}
                   onChange={(e) => {
@@ -443,7 +497,9 @@ const DocumentsManager = () => {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">To Date</Label>
+                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  To Date
+                </Label>
                 <AppDatePicker
                   value={toDate}
                   onChange={(e) => {
@@ -456,15 +512,19 @@ const DocumentsManager = () => {
 
               {!isStandard() && (
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Created By</Label>
+                  <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    Created By
+                  </Label>
                   <Select value={filterUser} onValueChange={setFilterUser}>
                     <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
                       <SelectValue placeholder="All Users" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Users</SelectItem>
-                      {uniqueUsers.map(u => (
-                        <SelectItem key={u} value={u}>{u}</SelectItem>
+                      {uniqueUsers.map((u) => (
+                        <SelectItem key={u} value={u}>
+                          {u}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -472,15 +532,20 @@ const DocumentsManager = () => {
               )}
 
               <div className="space-y-2 md:col-span-2">
-                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Client</Label>
+                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  Client
+                </Label>
                 <ReactSelect
                   className="text-sm"
                   classNamePrefix="react-select"
                   options={[
                     { value: 'all', label: 'All Clients' },
-                    ...uniqueClients.map(c => ({ value: c, label: c }))
+                    ...uniqueClients.map((c) => ({ value: c, label: c })),
                   ]}
-                  value={{ value: filterClient, label: filterClient === 'all' ? 'All Clients' : filterClient }}
+                  value={{
+                    value: filterClient,
+                    label: filterClient === 'all' ? 'All Clients' : filterClient,
+                  }}
                   onChange={(option) => setFilterClient(option ? option.value : 'all')}
                   placeholder="Search Clients..."
                   isSearchable
@@ -497,23 +562,37 @@ const DocumentsManager = () => {
       {/* Pagination Controls - Top */}
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-2 px-4 rounded-xl shadow-sm border border-gray-100">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">Items</span>
-          <Select value={itemsPerPage.toString()} onValueChange={(value) => {
-            setItemsPerPage(Number(value));
-            setCurrentPage(1);
-          }}>
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-none">
+            Items
+          </span>
+          <Select
+            value={itemsPerPage.toString()}
+            onValueChange={(value) => {
+              setItemsPerPage(Number(value));
+              setCurrentPage(1);
+            }}
+          >
             <SelectTrigger className="w-20 h-9 text-xs bg-gray-50/50 border-gray-200 rounded-lg">
               <SelectValue className="text-xs" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="10" className="text-xs">10</SelectItem>
-              <SelectItem value="25" className="text-xs">25</SelectItem>
-              <SelectItem value="50" className="text-xs">50</SelectItem>
-              <SelectItem value="100" className="text-xs">100</SelectItem>
+              <SelectItem value="10" className="text-xs">
+                10
+              </SelectItem>
+              <SelectItem value="25" className="text-xs">
+                25
+              </SelectItem>
+              <SelectItem value="50" className="text-xs">
+                50
+              </SelectItem>
+              <SelectItem value="100" className="text-xs">
+                100
+              </SelectItem>
             </SelectContent>
           </Select>
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none border-l pl-3 ml-1">
-            Showing {sortedDocuments.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, sortedDocuments.length)} of {sortedDocuments.length}
+            Showing {sortedDocuments.length === 0 ? 0 : startIndex + 1}-
+            {Math.min(endIndex, sortedDocuments.length)} of {sortedDocuments.length}
           </span>
         </div>
 
@@ -521,7 +600,7 @@ const DocumentsManager = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
             className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest border-gray-200 bg-gray-50/50 rounded-lg disabled:opacity-50"
           >
@@ -535,7 +614,7 @@ const DocumentsManager = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages || totalPages === 0}
             className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest border-gray-200 bg-gray-50/50 rounded-lg disabled:opacity-50"
           >
@@ -549,13 +628,27 @@ const DocumentsManager = () => {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Document #</th>
-                <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Client and Project Name</th>
-                <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Total Amount</th>
-                <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Created On</th>
-                <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Created By</th>
-                <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Document Type</th>
-                <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Actions</th>
+                <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                  Document #
+                </th>
+                <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                  Client and Project Name
+                </th>
+                <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                  Total Amount
+                </th>
+                <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                  Created On
+                </th>
+                <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                  Created By
+                </th>
+                <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                  Document Type
+                </th>
+                <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -567,20 +660,32 @@ const DocumentsManager = () => {
                 </tr>
               ) : (
                 paginatedDocuments.map((record) => (
-                  <tr key={record.id} className="border-b hover:bg-gray-50/50 transition-colors group">
+                  <tr
+                    key={record.id}
+                    className="border-b hover:bg-gray-50/50 transition-colors group"
+                  >
                     <td className="py-5 px-6">
-                      <span className="font-mono font-bold text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10">{record.quote_number}</span>
+                      <span className="font-mono font-bold text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10">
+                        {record.quote_number}
+                      </span>
                     </td>
 
                     <td className="py-5 px-6">
-                      <div className="font-bold text-gray-900">{record.clients?.client_name || '-'}</div>
-                      <div className="text-[10px] text-gray-400 mt-0.5 font-medium">{record.clients?.gstin ? `GSTIN: ${record.clients.gstin}` : ''}</div>
-                      {record.jobs?.project_name && <div className="text-xs text-gray-500 mt-1">{record.jobs.project_name}</div>}
+                      <div className="font-bold text-gray-900">
+                        {record.clients?.client_name || '-'}
+                      </div>
+                      <div className="text-[10px] text-gray-400 mt-0.5 font-medium">
+                        {record.clients?.gstin ? `GSTIN: ${record.clients.gstin}` : ''}
+                      </div>
+                      {record.jobs?.project_name && (
+                        <div className="text-xs text-gray-500 mt-1">{record.jobs.project_name}</div>
+                      )}
                     </td>
 
                     <td className="py-5 px-6 text-right">
                       <span className="font-bold text-gray-900 tabular-nums">
-                        <Rupee />{Math.floor(calculateRecordTotal(record)).toLocaleString('en-IN')}
+                        <Rupee />
+                        {Math.floor(calculateRecordTotal(record)).toLocaleString('en-IN')}
                       </span>
                     </td>
 
@@ -597,16 +702,19 @@ const DocumentsManager = () => {
                     </td>
 
                     <td className="py-5 px-6 text-center">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${record.document_type === 'Tax Invoice'
-                        ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'
-                        : record.document_type === 'Proforma Invoice'
-                          ? 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800'
-                          : record.document_type === 'Purchase Order'
-                            ? 'bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800'
-                            : record.document_type === 'Delivery Challan'
-                              ? 'bg-teal-50 text-teal-700 border-teal-100 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800'
-                              : 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
-                        }`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${
+                          record.document_type === 'Tax Invoice'
+                            ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'
+                            : record.document_type === 'Proforma Invoice'
+                              ? 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800'
+                              : record.document_type === 'Purchase Order'
+                                ? 'bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800'
+                                : record.document_type === 'Delivery Challan'
+                                  ? 'bg-teal-50 text-teal-700 border-teal-100 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800'
+                                  : 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
+                        }`}
+                      >
                         {record.document_type}
                       </span>
                     </td>
@@ -656,8 +764,12 @@ const DocumentsManager = () => {
         </div>
       </div>
 
-
-      <AlertDialog open={deleteConfirmation.isOpen} onOpenChange={(isOpen) => !isOpen && setDeleteConfirmation({ isOpen: false, recordId: null, quoteNumber: '' })}>
+      <AlertDialog
+        open={deleteConfirmation.isOpen}
+        onOpenChange={(isOpen) =>
+          !isOpen && setDeleteConfirmation({ isOpen: false, recordId: null, quoteNumber: '' })
+        }
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center text-red-600">
@@ -665,13 +777,17 @@ const DocumentsManager = () => {
               Delete Document?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <span className="font-semibold text-gray-900">{deleteConfirmation.quoteNumber}</span>?
+              Are you sure you want to delete{' '}
+              <span className="font-semibold text-gray-900">{deleteConfirmation.quoteNumber}</span>?
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

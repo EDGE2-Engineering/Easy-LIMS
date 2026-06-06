@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+# Run Prettier formatting before every commit.
+# Files are re-staged automatically after formatting.
+
+set -e
+
+echo "Running Prettier via 'make format'..."
+make format
+
+# Re-stage any files that Prettier just modified so the formatted
+# versions are included in the commit (not left as unstaged changes).
+git diff --name-only | xargs -r git add
+
+echo "Formatting complete."

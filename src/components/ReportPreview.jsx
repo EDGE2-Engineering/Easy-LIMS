@@ -43,9 +43,7 @@ const ReportWatermark = () => (
 const ReportFullHeader = ({ reportId, reportDate }) => (
   <div className="flex justify-between items-start gap-2 border-b border-gray-200 pb-4 mb-2 min-w-0 max-w-full overflow-hidden">
     <div className="w-[30%] min-w-0 shrink">
-      <h3 className="text-lg font-bold text-gray-900 tracking-tight">
-        GEOTECHNICAL REPORT
-      </h3>
+      <h3 className="text-lg font-bold text-gray-900 tracking-tight">GEOTECHNICAL REPORT</h3>
       <p className="text-gray-500 mt-1 text-xs break-all">
         {reportId ? `#${reportId}` : <span className="text-red-500 italic">Pending</span>}
       </p>
@@ -59,12 +57,8 @@ const ReportFullHeader = ({ reportId, reportDate }) => (
     <div className="w-[70%] min-w-0 shrink flex items-center gap-2 text-right">
       <div className="text-right min-w-0 flex-1">
         <h2 className="font-bold text-lg text-gray-900">{COMPANY_NAME}</h2>
-        <p className="text-gray-600 text-xs">
-          Shivaganga Arcade, B35/130, 6th Cross, 6th Block,
-        </p>
-        <p className="text-gray-600 text-xs">
-          Vishweshwaraiah Layout, Ullal Upanagar,
-        </p>
+        <p className="text-gray-600 text-xs">Shivaganga Arcade, B35/130, 6th Cross, 6th Block,</p>
+        <p className="text-gray-600 text-xs">Vishweshwaraiah Layout, Ullal Upanagar,</p>
         <p className="text-gray-600 text-xs">Bangalore - 560056, Karnataka</p>
         <p className="text-gray-600 text-xs">
           <span className="font-bold">PAN:</span> AACCE1702A,{' '}
@@ -96,13 +90,24 @@ const ReportContinuedHeader = ({ title }) => (
 );
 
 const Edge2Stamp = () => (
-  <div className="absolute bottom-4 right-4 pointer-events-none opacity-80" style={{ transform: 'rotate(-5deg)', zIndex: 10 }}>
+  <div
+    className="absolute bottom-4 right-4 pointer-events-none opacity-80"
+    style={{ transform: 'rotate(-5deg)', zIndex: 10 }}
+  >
     <svg width="100" height="100" viewBox="0 0 100 100" className="text-blue-700/80">
-      <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="3 1" />
+      <circle
+        cx="50"
+        cy="50"
+        r="46"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeDasharray="3 1"
+      />
       <circle cx="50" cy="50" r="34" fill="none" stroke="currentColor" strokeWidth="1.5" />
       <path id="stamp-text-path-1" d="M 12 50 A 38 38 0 0 1 88 50" fill="none" />
       <path id="stamp-text-path-2" d="M 88 50 A 38 38 0 0 1 12 50" fill="none" />
-      
+
       <text fontFamily="monospace" fontSize="6.5" fontWeight="bold" fill="currentColor">
         <textPath href="#stamp-text-path-1" startOffset="50%" textAnchor="middle">
           EDGE2 ENGINEERING SOLUTIONS
@@ -113,12 +118,28 @@ const Edge2Stamp = () => (
           INDIA PRIVATE LIMITED
         </textPath>
       </text>
-      
+
       <circle cx="50" cy="50" r="2" fill="currentColor" />
-      <text x="50" y="47" fontFamily="monospace" fontSize="6" fontWeight="bold" textAnchor="middle" fill="currentColor">
+      <text
+        x="50"
+        y="47"
+        fontFamily="monospace"
+        fontSize="6"
+        fontWeight="bold"
+        textAnchor="middle"
+        fill="currentColor"
+      >
         BANGALORE
       </text>
-      <text x="50" y="57" fontFamily="monospace" fontSize="6.5" fontWeight="bold" textAnchor="middle" fill="currentColor">
+      <text
+        x="50"
+        y="57"
+        fontFamily="monospace"
+        fontSize="6.5"
+        fontWeight="bold"
+        textAnchor="middle"
+        fill="currentColor"
+      >
         560056
       </text>
     </svg>
@@ -129,17 +150,17 @@ const ContentPageHeader = () => (
   <div
     className="content-page-header"
     style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "10px",
-      borderBottom: "2px solid #1e3a8a",
-      paddingTop: "16px",
-      paddingBottom: "8px",
-      marginBottom: "16px",
-      width: "100%",
-      marginTop: "-15px",
-      position: "relative",
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '10px',
+      borderBottom: '2px solid #1e3a8a',
+      paddingTop: '16px',
+      paddingBottom: '8px',
+      marginBottom: '16px',
+      width: '100%',
+      marginTop: '-15px',
+      position: 'relative',
       zIndex: 20,
     }}
   >
@@ -150,23 +171,23 @@ const ContentPageHeader = () => (
       height={20}
       style={{
         // width: "72px",
-        height: "20px",
+        height: '20px',
         // minWidth: "72px",
         // maxWidth: "72px",
         // minHeight: "20px",
         // maxHeight: "20px",
-        objectFit: "contain",
-        display: "block",
+        objectFit: 'contain',
+        display: 'block',
       }}
     />
 
     <h3
       style={{
-        fontSize: "14px",
+        fontSize: '14px',
         fontWeight: 900,
-        letterSpacing: "1px",
-        textTransform: "uppercase",
-        color: "#172554",
+        letterSpacing: '1px',
+        textTransform: 'uppercase',
+        color: '#172554',
         margin: 0,
       }}
     >
@@ -188,7 +209,7 @@ const ProjectDetailsBlock = ({ data }) => {
   };
 
   const getBoreholeMaxDepth = (bh, idx) => {
-    console.log(data)
+    console.log(data);
     return data.maxDepths?.[idx] ?? '-';
   };
 
@@ -202,7 +223,25 @@ const ProjectDetailsBlock = ({ data }) => {
           1.0 INTRODUCTION
         </h3>
         <p className="text-xs text-gray-800 leading-relaxed text-justify">
-          M/s. <strong className="text-gray-900">{data.client || 'Client Name'}</strong> entrusted Geotechnical investigation work to M/s. <strong className="text-gray-900">Edge2 Engineering Solutions India Private Limited</strong> for the proposed Geotechnical Investigation for &ldquo;<strong className="text-gray-900">{data.projectName || data.projectDetails || 'Proposed Construction'}</strong>&rdquo; at the site <strong className="text-gray-900">{data.siteAddress || data.location || 'Site Location'}</strong>. The purpose of this investigation is to determine the surface conditions, subsurface conditions, groundwater table levels and collect representative soil/rock and water samples for testing of physical and mechanical properties. Based on this field and laboratory test results, the properties of soil available at site are concluded. This report includes all relevant field and laboratory test data, as well as the conclusions derived from their analysis.
+          M/s. <strong className="text-gray-900">{data.client || 'Client Name'}</strong> entrusted
+          Geotechnical investigation work to M/s.{' '}
+          <strong className="text-gray-900">
+            Edge2 Engineering Solutions India Private Limited
+          </strong>{' '}
+          for the proposed Geotechnical Investigation for &ldquo;
+          <strong className="text-gray-900">
+            {data.projectName || data.projectDetails || 'Proposed Construction'}
+          </strong>
+          &rdquo; at the site{' '}
+          <strong className="text-gray-900">
+            {data.siteAddress || data.location || 'Site Location'}
+          </strong>
+          . The purpose of this investigation is to determine the surface conditions, subsurface
+          conditions, groundwater table levels and collect representative soil/rock and water
+          samples for testing of physical and mechanical properties. Based on this field and
+          laboratory test results, the properties of soil available at site are concluded. This
+          report includes all relevant field and laboratory test data, as well as the conclusions
+          derived from their analysis.
         </p>
       </div>
 
@@ -214,25 +253,67 @@ const ProjectDetailsBlock = ({ data }) => {
         <p className="text-xs text-gray-800 leading-relaxed mb-3">
           The site information observed during the investigation are summarized below for reference.
         </p>
-        <h4 className="text-xs font-bold text-blue-800 mb-2">
-          2.1 Details of Boreholes:
-        </h4>
-        
+        <h4 className="text-xs font-bold text-blue-800 mb-2">2.1 Details of Boreholes:</h4>
+
         <table className="w-full text-[10px] border-collapse border border-gray-400 text-center">
           <thead>
             <tr className="bg-[#f3f4f6] border-b border-gray-400">
-              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[5%]" rowSpan="2">S. No</th>
-              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[10%]" rowSpan="2">Borehole No.</th>
-              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[25%]" rowSpan="2">Type of Structure/ Location</th>
-              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[12%]" rowSpan="2">*Ground R.L (m)</th>
-              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[15%]" rowSpan="2">Max. Depth of Exploration (m)</th>
-              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 w-[20%]" colSpan="2">Co-ordinates</th>
-              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[10%]" rowSpan="2">Start Date</th>
-              <th className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[10%]" rowSpan="2">Completion Date</th>
+              <th
+                className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[5%]"
+                rowSpan="2"
+              >
+                S. No
+              </th>
+              <th
+                className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[10%]"
+                rowSpan="2"
+              >
+                Borehole No.
+              </th>
+              <th
+                className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[25%]"
+                rowSpan="2"
+              >
+                Type of Structure/ Location
+              </th>
+              <th
+                className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[12%]"
+                rowSpan="2"
+              >
+                *Ground R.L (m)
+              </th>
+              <th
+                className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[15%]"
+                rowSpan="2"
+              >
+                Max. Depth of Exploration (m)
+              </th>
+              <th
+                className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 w-[20%]"
+                colSpan="2"
+              >
+                Co-ordinates
+              </th>
+              <th
+                className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[10%]"
+                rowSpan="2"
+              >
+                Start Date
+              </th>
+              <th
+                className="border border-gray-400 px-1 py-1.5 font-bold text-gray-900 align-middle w-[10%]"
+                rowSpan="2"
+              >
+                Completion Date
+              </th>
             </tr>
             <tr className="bg-[#f3f4f6] border-b border-gray-400">
-              <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900">Latitude (°)</th>
-              <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900">Longitude (°)</th>
+              <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900">
+                Latitude (°)
+              </th>
+              <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900">
+                Longitude (°)
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -243,21 +324,40 @@ const ProjectDetailsBlock = ({ data }) => {
                   BH-{String(idx + 1).padStart(2, '0')}
                 </td>
                 {idx === 0 ? (
-                  <td className="border border-gray-400 px-2 py-1 text-gray-800 text-xs align-middle" rowSpan={numBoreholes}>
+                  <td
+                    className="border border-gray-400 px-2 py-1 text-gray-800 text-xs align-middle"
+                    rowSpan={numBoreholes}
+                  >
                     {data.projectName || data.projectDetails || 'Project Site'}
                   </td>
                 ) : null}
                 <td className="border border-gray-400 px-1 py-1 text-gray-800">100.0</td>
-                <td className="border border-gray-400 px-1 py-1 text-gray-800">{getBoreholeMaxDepth(bh, idx)}</td>
-                <td className="border border-gray-400 px-1 py-1 text-gray-800">{(data.latitudes && data.latitudes[idx] != null && data.latitudes[idx] !== '') ? data.latitudes[idx] : (data.latitude || '-')}</td>
-                <td className="border border-gray-400 px-1 py-1 text-gray-800">{(data.longitudes && data.longitudes[idx] != null && data.longitudes[idx] !== '') ? data.longitudes[idx] : (data.longitude || '-')}</td>
-                <td className="border border-gray-400 px-1 py-1 text-gray-800">{safeFormatDate(data.surveyDate)}</td>
-                <td className="border border-gray-400 px-1 py-1 text-gray-800">{safeFormatDate(data.surveyDate)}</td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">
+                  {getBoreholeMaxDepth(bh, idx)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">
+                  {data.latitudes && data.latitudes[idx] != null && data.latitudes[idx] !== ''
+                    ? data.latitudes[idx]
+                    : data.latitude || '-'}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">
+                  {data.longitudes && data.longitudes[idx] != null && data.longitudes[idx] !== ''
+                    ? data.longitudes[idx]
+                    : data.longitude || '-'}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">
+                  {safeFormatDate(data.surveyDate)}
+                </td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">
+                  {safeFormatDate(data.surveyDate)}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-        <p className="text-[9px] text-gray-500 mt-1 italic">*Ground R.L values are assumed as 100.000m</p>
+        <p className="text-[9px] text-gray-500 mt-1 italic">
+          *Ground R.L values are assumed as 100.000m
+        </p>
       </div>
 
       {/* 3.0 SCOPE OF PRESENT WORK */}
@@ -266,7 +366,8 @@ const ProjectDetailsBlock = ({ data }) => {
           3.0 SCOPE OF PRESENT WORK
         </h3>
         <p className="text-xs text-gray-800 leading-relaxed mb-2">
-          As per client requirement, {numBoreholes} No's of boreholes were proposed for soil investigation.
+          As per client requirement, {numBoreholes} No's of boreholes were proposed for soil
+          investigation.
         </p>
         <p className="text-xs text-gray-800 leading-relaxed mb-2">
           To achieve the above objectives, the scope includes the following:
@@ -293,9 +394,7 @@ const ProjectDetailsBlock = ({ data }) => {
           <li className="leading-relaxed pl-1">
             Carry out laboratory testing on collected samples.
           </li>
-          <li className="leading-relaxed pl-1">
-            To arrive at safe bearing capacity.
-          </li>
+          <li className="leading-relaxed pl-1">To arrive at safe bearing capacity.</li>
           <li className="leading-relaxed pl-1">
             To recommend any risks mitigations for foundation system.
           </li>
@@ -320,99 +419,128 @@ const GeotechnicalExplorationBlock = ({ data }) => {
       </h3>
       <p className="text-xs text-gray-800 leading-relaxed mb-2">
         Geotechnical investigation was conducted to obtain subsurface stratification in the “The
-        Construction Residential Building (G+3) at Site No.201, Residential Layout, “Northern Boulevard”
-        ,
-        Sy No.323 & 324, at Aluru Duddanahalli Village, Kundana Hobli, Devanahalli Taluk, Bangalore.
-        and to collect soil, rock and ground water samples for laboratory testing to arrive at geotechnical
-        design parameters.
+        Construction Residential Building (G+3) at Site No.201, Residential Layout, “Northern
+        Boulevard” , Sy No.323 & 324, at Aluru Duddanahalli Village, Kundana Hobli, Devanahalli
+        Taluk, Bangalore. and to collect soil, rock and ground water samples for laboratory testing
+        to arrive at geotechnical design parameters.
       </p>
       <p className="text-xs text-gray-800 leading-relaxed mb-2">
-        Erecting and setting up of boring rig: at each borehole location, as per the Client’s location plan,
-        Manual auger system is shifted, assembled and erected.
+        Erecting and setting up of boring rig: at each borehole location, as per the Client’s
+        location plan, Manual auger system is shifted, assembled and erected.
       </p>
       <p className="text-xs text-gray-800 leading-relaxed mb-2">
-        <b>In –Situ Tests in Overburden</b>: Standard Penetration Tests are conducted in overburden. Disturbed
-        soil samples are collected through split spoon sampler of SPT to determine the index properties
-        from laboratory tests.
+        <b>In –Situ Tests in Overburden</b>: Standard Penetration Tests are conducted in overburden.
+        Disturbed soil samples are collected through split spoon sampler of SPT to determine the
+        index properties from laboratory tests.
       </p>
       <p className="text-xs text-gray-800 leading-relaxed mb-2">
-        <b>Standard Penetration Test</b>: SPT was conducted 1 m below ground level and was carried out at
-        intervals of 1.5 m and at any change of material. Standard split spoon sampler attached to lower end
-        of drill rods was driven in the boreholes by means of standard hammer of 63.50 kg falling freely
-        from a height of 75 cm. The sampler was driven 45 cm as per specifications and number of blows
-        required for each 15 cm penetration was recorded. The number of blows for the first 15 cm
-        penetration was not considered as it is taken as seating drive. The number of blows for next 30 cm
-        penetration was designated as SPT ‘N’ value. Wherever the total penetration was less than 45 cm,
-        the number of blows & the depth penetrated is incorporated in respective bore logs.
-        Disturbed Soil samples obtained from standard split spoon sampler were collected in polythene bags
-        of suitable size. These samples were properly sealed, labelled, recorded and carefully transported
-        to laboratory for testing. Based on SPT N values soil is classified for its denseness/consistency.
-      </p>  
-      
-      <p className="text-xs text-gray-800 leading-relaxed mb-2">
-        <b>Drilling in Rock</b>: Once the hard stratum or rock surface was met, the size of the bore hole was
-        reduced to NX size (76mm). The hard stratum or top of the rock surface was confirmed, either by
-        the refusal from standard penetration test N value or due to resistance during the drilling operation.
-        In this hard stratum, further work was carried out by using NX double core barrel with Diamond
-        studded drill bits. The work was done as per IS: 6926-1973. The maximum length of the drill (run)
-        was maintained as 1.50m or 1.0m. At the end of each run the drill rod string with core barrel was
-        extracted from the bore hole and core was recovered from the core barrel. Recovered rock cores
-        were numbered and labelled serially and carefully transferred into good quality, sturdy, wooden
-        core boxes and preserved. The core recovery percentage was recorded. Core Recovery percentage
-        = (C.R. % = (Length of Core / Length of run) x 100). Rock Quality Designation (RQD) was also
-        recorded. Rock Quality Designation (RQD) = (Total Length of core pieces of 100mm & above in
-        Length / length of run) x 100). Core recovery percentage and RQD were computed for every drilled
-        run based on the length of cores retrieved.
-        <br />
-        <b>Water Level Observation:</b> The depth of ground water table (G.W.T) was checked/ measured in all
-        two bore holes. Ground water table was not found in any of the bore holes during the boring activity.
-      </p>  
+        <b>Standard Penetration Test</b>: SPT was conducted 1 m below ground level and was carried
+        out at intervals of 1.5 m and at any change of material. Standard split spoon sampler
+        attached to lower end of drill rods was driven in the boreholes by means of standard hammer
+        of 63.50 kg falling freely from a height of 75 cm. The sampler was driven 45 cm as per
+        specifications and number of blows required for each 15 cm penetration was recorded. The
+        number of blows for the first 15 cm penetration was not considered as it is taken as seating
+        drive. The number of blows for next 30 cm penetration was designated as SPT ‘N’ value.
+        Wherever the total penetration was less than 45 cm, the number of blows & the depth
+        penetrated is incorporated in respective bore logs. Disturbed Soil samples obtained from
+        standard split spoon sampler were collected in polythene bags of suitable size. These
+        samples were properly sealed, labelled, recorded and carefully transported to laboratory for
+        testing. Based on SPT N values soil is classified for its denseness/consistency.
+      </p>
 
-      <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">4.2 Laboratory Investigation</h3>
+      <p className="text-xs text-gray-800 leading-relaxed mb-2">
+        <b>Drilling in Rock</b>: Once the hard stratum or rock surface was met, the size of the bore
+        hole was reduced to NX size (76mm). The hard stratum or top of the rock surface was
+        confirmed, either by the refusal from standard penetration test N value or due to resistance
+        during the drilling operation. In this hard stratum, further work was carried out by using
+        NX double core barrel with Diamond studded drill bits. The work was done as per IS:
+        6926-1973. The maximum length of the drill (run) was maintained as 1.50m or 1.0m. At the end
+        of each run the drill rod string with core barrel was extracted from the bore hole and core
+        was recovered from the core barrel. Recovered rock cores were numbered and labelled serially
+        and carefully transferred into good quality, sturdy, wooden core boxes and preserved. The
+        core recovery percentage was recorded. Core Recovery percentage = (C.R. % = (Length of Core
+        / Length of run) x 100). Rock Quality Designation (RQD) was also recorded. Rock Quality
+        Designation (RQD) = (Total Length of core pieces of 100mm & above in Length / length of run)
+        x 100). Core recovery percentage and RQD were computed for every drilled run based on the
+        length of cores retrieved.
+        <br />
+        <b>Water Level Observation:</b> The depth of ground water table (G.W.T) was checked/
+        measured in all two bore holes. Ground water table was not found in any of the bore holes
+        during the boring activity.
+      </p>
+
+      <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
+        4.2 Laboratory Investigation
+      </h3>
       <p className="text-xs text-gray-800 leading-relaxed mb-2">
         Collected soil/rock samples were transported to laboratory for further testing.
       </p>
       <p className="text-xs text-gray-800 leading-relaxed mb-2">
         Following laboratory tests were performed on collected samples:
-      </p>  
-<table className="w-full text-[9px] border-collapse border border-gray-400">
-  <thead>
-    <tr className="bg-[#f3f4f6]">
-      <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-center" style={{width:'8%'}}>Sl. No.</th>
-      <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-left" style={{width:'46%'}}>Test</th>
-      <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-left" style={{width:'46%'}}>Referenced IS Code</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td colSpan="3" className="border border-gray-400 px-1 py-1 text-center font-bold text-gray-900">Soil</td>
-    </tr>
-    <tr>
-      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">1</td>
-      <td className="border border-gray-400 px-1 py-1 text-gray-800">Water Content (WC)</td>
-      <td className="border border-gray-400 px-1 py-1 text-gray-800">IS 2720-Part 2-1973</td>
-    </tr>
-    <tr>
-      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">2</td>
-      <td className="border border-gray-400 px-1 py-1 text-gray-800">Specific Gravity (G)</td>
-      <td className="border border-gray-400 px-1 py-1 text-gray-800">IS 2720 (Part 3/Sec 1): 1980</td>
-    </tr>
-    <tr>
-      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">3</td>
-      <td className="border border-gray-400 px-1 py-1 text-gray-800">Grain Size Analysis (GSA)</td>
-      <td className="border border-gray-400 px-1 py-1 text-gray-800">IS 2720-Part 4-1985</td>
-    </tr>
-    <tr>
-      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">4</td>
-      <td className="border border-gray-400 px-1 py-1 text-gray-800">
-        Atterberg Limits: Liquid Limit (LL), Plastic Limit (PL)
-      </td>
-      <td className="border border-gray-400 px-1 py-1 text-gray-800">IS 2720-Part 5-1985</td>
-    </tr>
-  </tbody>
-</table>
-  <p className="text-xs text-gray-800 w-full ">*All test results have been compiled and are presented in the Annexure-II of this report.</p>
-
+      </p>
+      <table className="w-full text-[9px] border-collapse border border-gray-400">
+        <thead>
+          <tr className="bg-[#f3f4f6]">
+            <th
+              className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-center"
+              style={{ width: '8%' }}
+            >
+              Sl. No.
+            </th>
+            <th
+              className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-left"
+              style={{ width: '46%' }}
+            >
+              Test
+            </th>
+            <th
+              className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-left"
+              style={{ width: '46%' }}
+            >
+              Referenced IS Code
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td
+              colSpan="3"
+              className="border border-gray-400 px-1 py-1 text-center font-bold text-gray-900"
+            >
+              Soil
+            </td>
+          </tr>
+          <tr>
+            <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">1</td>
+            <td className="border border-gray-400 px-1 py-1 text-gray-800">Water Content (WC)</td>
+            <td className="border border-gray-400 px-1 py-1 text-gray-800">IS 2720-Part 2-1973</td>
+          </tr>
+          <tr>
+            <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">2</td>
+            <td className="border border-gray-400 px-1 py-1 text-gray-800">Specific Gravity (G)</td>
+            <td className="border border-gray-400 px-1 py-1 text-gray-800">
+              IS 2720 (Part 3/Sec 1): 1980
+            </td>
+          </tr>
+          <tr>
+            <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">3</td>
+            <td className="border border-gray-400 px-1 py-1 text-gray-800">
+              Grain Size Analysis (GSA)
+            </td>
+            <td className="border border-gray-400 px-1 py-1 text-gray-800">IS 2720-Part 4-1985</td>
+          </tr>
+          <tr>
+            <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">4</td>
+            <td className="border border-gray-400 px-1 py-1 text-gray-800">
+              Atterberg Limits: Liquid Limit (LL), Plastic Limit (PL)
+            </td>
+            <td className="border border-gray-400 px-1 py-1 text-gray-800">IS 2720-Part 5-1985</td>
+          </tr>
+        </tbody>
+      </table>
+      <p className="text-xs text-gray-800 w-full ">
+        *All test results have been compiled and are presented in the Annexure-II of this report.
+      </p>
     </div>
   );
 };
@@ -429,21 +557,69 @@ const SubProfileAnalysisTableBlock = ({ block }) => {
       <table className="w-full border-collapse border border-gray-400 text-[9px] text-center">
         <thead>
           <tr className="bg-[#f3f4f6]">
-            <th colSpan="4" className="border border-gray-400 px-2 py-1.5 font-bold text-gray-900 text-left">
+            <th
+              colSpan="4"
+              className="border border-gray-400 px-2 py-1.5 font-bold text-gray-900 text-left"
+            >
               Borehole No: {bhLabel}
             </th>
-            <th colSpan="4" className="border border-gray-400 px-2 py-1.5 font-bold text-gray-900 text-left">
+            <th
+              colSpan="4"
+              className="border border-gray-400 px-2 py-1.5 font-bold text-gray-900 text-left"
+            >
               Location: {location || 'NA'}
             </th>
           </tr>
           <tr className="bg-[#f3f4f6]">
-            <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '5%' }}>S. No</th>
-            <th colSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900" style={{ width: '16%' }}>Depth (m)</th>
-            <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '14%' }}>Layer Thickness (m)</th>
-            <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '35%' }}>Strata Description</th>
-            <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '10%' }}>N Value</th>
-            <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '10%' }}>CR%</th>
-            <th rowSpan="2" className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle" style={{ width: '10%' }}>RQD%</th>
+            <th
+              rowSpan="2"
+              className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle"
+              style={{ width: '5%' }}
+            >
+              S. No
+            </th>
+            <th
+              colSpan="2"
+              className="border border-gray-400 px-1 py-1 font-bold text-gray-900"
+              style={{ width: '16%' }}
+            >
+              Depth (m)
+            </th>
+            <th
+              rowSpan="2"
+              className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle"
+              style={{ width: '14%' }}
+            >
+              Layer Thickness (m)
+            </th>
+            <th
+              rowSpan="2"
+              className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle"
+              style={{ width: '35%' }}
+            >
+              Strata Description
+            </th>
+            <th
+              rowSpan="2"
+              className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle"
+              style={{ width: '10%' }}
+            >
+              N Value
+            </th>
+            <th
+              rowSpan="2"
+              className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle"
+              style={{ width: '10%' }}
+            >
+              CR%
+            </th>
+            <th
+              rowSpan="2"
+              className="border border-gray-400 px-1 py-1 font-bold text-gray-900 align-middle"
+              style={{ width: '10%' }}
+            >
+              RQD%
+            </th>
           </tr>
           <tr className="bg-[#f3f4f6]">
             <th className="border border-gray-400 px-1 py-0.5 font-bold text-gray-900">From</th>
@@ -453,39 +629,41 @@ const SubProfileAnalysisTableBlock = ({ block }) => {
         <tbody>
           {logs.length === 0 ? (
             <tr>
-              <td colSpan="8" className="border border-gray-400 px-2 py-3 text-center text-gray-400 italic">
+              <td
+                colSpan="8"
+                className="border border-gray-400 px-2 py-3 text-center text-gray-400 italic"
+              >
                 No sub-soil profile data recorded.
               </td>
             </tr>
           ) : (
             logs.map((row, idx) => {
-              const fromDepth = row.fromDepth ?? (idx === 0 ? '0.0' : (logs[idx - 1]?.toDepth ?? '-'));
+              const fromDepth =
+                row.fromDepth ?? (idx === 0 ? '0.0' : (logs[idx - 1]?.toDepth ?? '-'));
               const toDepth = row.toDepth || row.depth || '-';
               const fromNum = parseFloat(fromDepth);
               const toNum = parseFloat(toDepth);
-              const thickness = (!isNaN(fromNum) && !isNaN(toNum))
-                ? (toNum - fromNum).toFixed(1)
-                : '-';
+              const thickness =
+                !isNaN(fromNum) && !isNaN(toNum) ? (toNum - fromNum).toFixed(1) : '-';
               const isDS = row.natureOfSampling === 'DS';
               const spt2n = Number(row.spt2);
               const spt3n = Number(row.spt3);
-              const rawN = !isDS && row.natureOfSampling === 'SPT' && !isNaN(spt2n) && !isNaN(spt3n)
-                ? spt2n + spt3n
-                : null;
+              const rawN =
+                !isDS && row.natureOfSampling === 'SPT' && !isNaN(spt2n) && !isNaN(spt3n)
+                  ? spt2n + spt3n
+                  : null;
               const isRotary = methodOfBoring === 'Rotary Drilling';
               const nValueLimit = isRotary ? 100 : 50;
-              const nValue = rawN === null
-                ? '-'
-                : rawN > nValueLimit
-                  ? `>${nValueLimit}`
-                  : rawN;
+              const nValue = rawN === null ? '-' : rawN > nValueLimit ? `>${nValueLimit}` : rawN;
               return (
                 <tr key={idx} className="border-b border-gray-300">
                   <td className="border border-gray-400 px-1 py-1">{idx + 1}</td>
                   <td className="border border-gray-400 px-1 py-1">{fromDepth}</td>
                   <td className="border border-gray-400 px-1 py-1">{toDepth}</td>
                   <td className="border border-gray-400 px-1 py-1">{thickness}</td>
-                  <td className="border border-gray-400 px-1 py-1 text-left">{row.soilType || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">
+                    {row.soilType || '-'}
+                  </td>
                   <td className="border border-gray-400 px-1 py-1">{nValue}</td>
                   <td className="border border-gray-400 px-1 py-1">{row.coreRecovery || '-'}</td>
                   <td className="border border-gray-400 px-1 py-1">{row.rqd || '-'}</td>
@@ -506,23 +684,23 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
   const grainSizeAnalysis = block.data?.grainSizeAnalysis || [];
 
   const SIEVES = [
-    { key: 'sieve0',  label: '10mm',    size: 10    },
-    { key: 'sieve1',  label: '4.75mm',  size: 4.75  },
-    { key: 'sieve2',  label: '2.36mm',  size: 2.36  },
-    { key: 'sieve3',  label: '2mm',     size: 2     },
-    { key: 'sieve4',  label: '1.18mm',  size: 1.18  },
-    { key: 'sieve5',  label: '0.60mm',  size: 0.6   },
-    { key: 'sieve6',  label: '0.425mm', size: 0.425 },
-    { key: 'sieve7',  label: '0.30mm',  size: 0.3   },
-    { key: 'sieve8',  label: '0.15mm',  size: 0.15  },
-    { key: 'sieve9',  label: '0.075mm', size: 0.075 },
-    { key: 'sieve10', label: 'Pan',     size: null  },
+    { key: 'sieve0', label: '10mm', size: 10 },
+    { key: 'sieve1', label: '4.75mm', size: 4.75 },
+    { key: 'sieve2', label: '2.36mm', size: 2.36 },
+    { key: 'sieve3', label: '2mm', size: 2 },
+    { key: 'sieve4', label: '1.18mm', size: 1.18 },
+    { key: 'sieve5', label: '0.60mm', size: 0.6 },
+    { key: 'sieve6', label: '0.425mm', size: 0.425 },
+    { key: 'sieve7', label: '0.30mm', size: 0.3 },
+    { key: 'sieve8', label: '0.15mm', size: 0.15 },
+    { key: 'sieve9', label: '0.075mm', size: 0.075 },
+    { key: 'sieve10', label: 'Pan', size: null },
   ];
 
   // Compute derived values for each depth row in each borehole
   const computedData = grainSizeAnalysis.map((bh, bhIdx) =>
     bh.map((d) => {
-      const weights = SIEVES.map(s => ({ ...s, wt: parseFloat(d[s.key]) || 0 }));
+      const weights = SIEVES.map((s) => ({ ...s, wt: parseFloat(d[s.key]) || 0 }));
       const sumRetained = weights.reduce((sum, s) => sum + s.wt, 0);
       // Use the explicitly entered total weight if available, otherwise fall back to sum of retained
       const totalWt = parseFloat(d.totalWeight) > 0 ? parseFloat(d.totalWeight) : sumRetained;
@@ -530,7 +708,7 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
       return {
         depth: d.depth,
         bhIdx,
-        sieves: weights.map(s => {
+        sieves: weights.map((s) => {
           const pctRetained = totalWt > 0 ? (s.wt / totalWt) * 100 : 0;
           cumWt += s.wt;
           const cumPctRetained = totalWt > 0 ? (cumWt / totalWt) * 100 : 0;
@@ -554,8 +732,30 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
     if (!chartRef.current) return;
     const ctx = chartRef.current.getContext('2d');
 
-    const colors = ['#ff6f00', '#00701a', '#00a3e0', '#b10dc9', '#ff4136', '#2ecc40', '#ff851b', '#7fdbff', '#f012be', '#869195'];
-    const pointStyles = ['rect', 'diamond', 'triangle', 'crossRot', 'cross', 'line', 'circle', 'star', 'rectRounded', 'rectRot'];
+    const colors = [
+      '#ff6f00',
+      '#00701a',
+      '#00a3e0',
+      '#b10dc9',
+      '#ff4136',
+      '#2ecc40',
+      '#ff851b',
+      '#7fdbff',
+      '#f012be',
+      '#869195',
+    ];
+    const pointStyles = [
+      'rect',
+      'diamond',
+      'triangle',
+      'crossRot',
+      'cross',
+      'line',
+      'circle',
+      'star',
+      'rectRounded',
+      'rectRot',
+    ];
     const datasets = [];
     let colorIndex = 0;
 
@@ -564,10 +764,10 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
         if (d.totalWt === 0) return;
         const dataPoints = [
           { x: 100, y: 100 },
-          { x: 50,  y: 100 },
-          { x: 20,  y: 100 },
+          { x: 50, y: 100 },
+          { x: 20, y: 100 },
         ];
-        d.sieves.forEach(s => {
+        d.sieves.forEach((s) => {
           if (s.size !== null) {
             dataPoints.push({ x: s.size, y: parseFloat(s.finesPassing.toFixed(2)) });
           }
@@ -616,7 +816,9 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
       },
     });
 
-    return () => { if (chartInstance.current) chartInstance.current.destroy(); };
+    return () => {
+      if (chartInstance.current) chartInstance.current.destroy();
+    };
   }, []);
 
   const fmt = (v) => (typeof v === 'number' ? v.toFixed(2) : '-');
@@ -631,35 +833,58 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
       </div>
 
       {computedData.map((bh, bhIdx) =>
-        bh.filter(d => d.totalWt > 0).map((d, dIdx) => (
-          <div key={`${bhIdx}-${dIdx}`} className="mb-5">
-            <p className="text-[10px] font-semibold text-gray-700 mb-1">
-              BH-{bhIdx + 1} — Depth: {d.depth || '?'} m &nbsp;|&nbsp; Total Weight: {d.totalWt.toFixed(2)} g
-            </p>
-            <table className="w-full text-[9px] border-collapse border border-gray-400">
-              <thead>
-                <tr className="bg-[#f3f4f6]">
-                  <th className="border border-gray-400 px-1 py-1 text-center font-bold">Sieve No.</th>
-                  <th className="border border-gray-400 px-1 py-1 text-center font-bold">Weight Retained (gms)</th>
-                  <th className="border border-gray-400 px-1 py-1 text-center font-bold">% Weight Retained</th>
-                  <th className="border border-gray-400 px-1 py-1 text-center font-bold">% Cumulative Weight Retained</th>
-                  <th className="border border-gray-400 px-1 py-1 text-center font-bold">% Fines Passing</th>
-                </tr>
-              </thead>
-              <tbody>
-                {d.sieves.map((s, si) => (
-                  <tr key={si} className="border-b border-gray-300">
-                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{s.label}</td>
-                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{s.wt > 0 ? s.wt.toFixed(2) : '-'}</td>
-                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{s.wt > 0 ? fmt(s.pctRetained) : '-'}</td>
-                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{s.wt > 0 ? fmt(s.cumPctRetained) : '-'}</td>
-                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{s.size !== null ? fmt(s.finesPassing) : '-'}</td>
+        bh
+          .filter((d) => d.totalWt > 0)
+          .map((d, dIdx) => (
+            <div key={`${bhIdx}-${dIdx}`} className="mb-5">
+              <p className="text-[10px] font-semibold text-gray-700 mb-1">
+                BH-{bhIdx + 1} — Depth: {d.depth || '?'} m &nbsp;|&nbsp; Total Weight:{' '}
+                {d.totalWt.toFixed(2)} g
+              </p>
+              <table className="w-full text-[9px] border-collapse border border-gray-400">
+                <thead>
+                  <tr className="bg-[#f3f4f6]">
+                    <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                      Sieve No.
+                    </th>
+                    <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                      Weight Retained (gms)
+                    </th>
+                    <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                      % Weight Retained
+                    </th>
+                    <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                      % Cumulative Weight Retained
+                    </th>
+                    <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                      % Fines Passing
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ))
+                </thead>
+                <tbody>
+                  {d.sieves.map((s, si) => (
+                    <tr key={si} className="border-b border-gray-300">
+                      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                        {s.label}
+                      </td>
+                      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                        {s.wt > 0 ? s.wt.toFixed(2) : '-'}
+                      </td>
+                      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                        {s.wt > 0 ? fmt(s.pctRetained) : '-'}
+                      </td>
+                      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                        {s.wt > 0 ? fmt(s.cumPctRetained) : '-'}
+                      </td>
+                      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                        {s.size !== null ? fmt(s.finesPassing) : '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))
       )}
     </div>
   );
@@ -708,7 +933,9 @@ const BoreholeLogTableBlock = ({ block }) => {
           <tr>
             <td className="border border-gray-400 px-1 py-0.5 font-bold w-[18%]">Location:</td>
             <td className="border border-gray-400 px-1 py-0.5 w-[32%]">{location || 'NA'}</td>
-            <td className="border border-gray-400 px-1 py-0.5 font-bold w-[20%]">Method of Boring:</td>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold w-[20%]">
+              Method of Boring:
+            </td>
             <td className="border border-gray-400 px-1 py-0.5 w-[30%]">{methodLabel}</td>
           </tr>
           <tr>
@@ -747,15 +974,61 @@ const BoreholeLogTableBlock = ({ block }) => {
       <table className="w-full border-collapse border border-gray-400 text-[9px] mt-0">
         <thead>
           <tr className="bg-[#f3f4f6] text-center">
-            <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'4%'}}>S.No.</th>
-            <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'18%'}}>Strata Description</th>
-            <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'7%'}}>Sample Type</th>
-            <th className="border border-gray-400 px-1 py-1" colSpan="2" style={{width:'12%'}}>Depth of Drilling (m)</th>
-            <th className="border border-gray-400 px-1 py-1" colSpan="3" style={{width:'18%'}}>SPT (No. of Blows)</th>
-            <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'8%'}}>N-Value (IS-2131)</th>
-            <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'6%'}}>CR (%)</th>
-            <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'6%'}}>RQD (%)</th>
-            <th className="border border-gray-400 px-1 py-1 align-middle" rowSpan="2" style={{width:'13%'}}>Remarks</th>
+            <th
+              className="border border-gray-400 px-1 py-1 align-middle"
+              rowSpan="2"
+              style={{ width: '4%' }}
+            >
+              S.No.
+            </th>
+            <th
+              className="border border-gray-400 px-1 py-1 align-middle"
+              rowSpan="2"
+              style={{ width: '18%' }}
+            >
+              Strata Description
+            </th>
+            <th
+              className="border border-gray-400 px-1 py-1 align-middle"
+              rowSpan="2"
+              style={{ width: '7%' }}
+            >
+              Sample Type
+            </th>
+            <th className="border border-gray-400 px-1 py-1" colSpan="2" style={{ width: '12%' }}>
+              Depth of Drilling (m)
+            </th>
+            <th className="border border-gray-400 px-1 py-1" colSpan="3" style={{ width: '18%' }}>
+              SPT (No. of Blows)
+            </th>
+            <th
+              className="border border-gray-400 px-1 py-1 align-middle"
+              rowSpan="2"
+              style={{ width: '8%' }}
+            >
+              N-Value (IS-2131)
+            </th>
+            <th
+              className="border border-gray-400 px-1 py-1 align-middle"
+              rowSpan="2"
+              style={{ width: '6%' }}
+            >
+              CR (%)
+            </th>
+            <th
+              className="border border-gray-400 px-1 py-1 align-middle"
+              rowSpan="2"
+              style={{ width: '6%' }}
+            >
+              RQD (%)
+            </th>
+            <th
+              className="border border-gray-400 px-1 py-1 align-middle"
+              rowSpan="2"
+              style={{ width: '13%' }}
+            >
+              Remarks
+            </th>
           </tr>
           <tr className="bg-[#f3f4f6] text-center">
             <th className="border border-gray-400 px-1 py-0.5">From</th>
@@ -768,41 +1041,54 @@ const BoreholeLogTableBlock = ({ block }) => {
         <tbody>
           {logs.length === 0 ? (
             <tr>
-              <td colSpan="12" className="border border-gray-400 px-2 py-2 text-center text-gray-400 italic">
+              <td
+                colSpan="12"
+                className="border border-gray-400 px-2 py-2 text-center text-gray-400 italic"
+              >
                 No borehole data recorded.
               </td>
             </tr>
           ) : (
             logs.map((row, idx) => {
-              const prevDepth = row.fromDepth ?? (idx === 0 ? '0.0' : (logs[idx - 1]?.toDepth ?? '-'));
+              const prevDepth =
+                row.fromDepth ?? (idx === 0 ? '0.0' : (logs[idx - 1]?.toDepth ?? '-'));
               const toDepth = row.toDepth || row.depth || '-';
               const isDS = row.natureOfSampling === 'DS';
               const spt2n = Number(row.spt2);
               const spt3n = Number(row.spt3);
-              const rawN = !isDS && row.natureOfSampling === 'SPT' && !isNaN(spt2n) && !isNaN(spt3n)
-                ? spt2n + spt3n
-                : null;
+              const rawN =
+                !isDS && row.natureOfSampling === 'SPT' && !isNaN(spt2n) && !isNaN(spt3n)
+                  ? spt2n + spt3n
+                  : null;
               const isRotary = methodOfBoring === 'Rotary Drilling';
               const nValueLimit = isRotary ? 100 : 50;
-              const nValue = rawN === null
-                ? '-'
-                : rawN > nValueLimit
-                  ? `>${nValueLimit}`
-                  : rawN;
+              const nValue = rawN === null ? '-' : rawN > nValueLimit ? `>${nValueLimit}` : rawN;
               return (
                 <tr key={idx} className="text-center">
                   <td className="border border-gray-400 px-1 py-0.5">{idx + 1}</td>
-                  <td className="border border-gray-400 px-1 py-0.5 text-left">{row.soilType || '-'}</td>
-                  <td className="border border-gray-400 px-1 py-0.5">{row.natureOfSampling || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-left">
+                    {row.soilType || '-'}
+                  </td>
+                  <td className="border border-gray-400 px-1 py-0.5">
+                    {row.natureOfSampling || '-'}
+                  </td>
                   <td className="border border-gray-400 px-1 py-0.5">{prevDepth}</td>
                   <td className="border border-gray-400 px-1 py-0.5">{toDepth}</td>
-                  <td className="border border-gray-400 px-1 py-0.5">{isDS ? '-' : (row.spt1 ?? '-')}</td>
-                  <td className="border border-gray-400 px-1 py-0.5">{isDS ? '-' : (row.spt2 ?? '-')}</td>
-                  <td className="border border-gray-400 px-1 py-0.5">{isDS ? '-' : (row.spt3 ?? '-')}</td>
+                  <td className="border border-gray-400 px-1 py-0.5">
+                    {isDS ? '-' : (row.spt1 ?? '-')}
+                  </td>
+                  <td className="border border-gray-400 px-1 py-0.5">
+                    {isDS ? '-' : (row.spt2 ?? '-')}
+                  </td>
+                  <td className="border border-gray-400 px-1 py-0.5">
+                    {isDS ? '-' : (row.spt3 ?? '-')}
+                  </td>
                   <td className="border border-gray-400 px-1 py-0.5 font-semibold">{nValue}</td>
                   <td className="border border-gray-400 px-1 py-0.5">{row.coreRecovery || '-'}</td>
                   <td className="border border-gray-400 px-1 py-0.5">{row.rqd || '-'}</td>
-                  <td className="border border-gray-400 px-1 py-0.5 text-left">{row.waterTable ? 'GWT observed' : ''}</td>
+                  <td className="border border-gray-400 px-1 py-0.5 text-left">
+                    {row.waterTable ? 'GWT observed' : ''}
+                  </td>
                 </tr>
               );
             })
@@ -813,10 +1099,14 @@ const BoreholeLogTableBlock = ({ block }) => {
       <table className="w-full border-collapse border border-gray-400 text-[8px] mt-0">
         <tbody>
           <tr>
-            <td className="border border-gray-400 px-1 py-0.5 font-bold" colSpan="2">Description:</td>
+            <td className="border border-gray-400 px-1 py-0.5 font-bold" colSpan="2">
+              Description:
+            </td>
             <td className="border border-gray-400 px-1 py-0.5">SPT – Standard Penetration Test</td>
             <td className="border border-gray-400 px-1 py-0.5">CR – Core Recovery</td>
-            <td className="border border-gray-400 px-1 py-0.5">Ground R.L – Ground Reduced Level</td>
+            <td className="border border-gray-400 px-1 py-0.5">
+              Ground R.L – Ground Reduced Level
+            </td>
             <td className="border border-gray-400 px-1 py-0.5">WS – Washed Sample</td>
           </tr>
           <tr>
@@ -832,8 +1122,12 @@ const BoreholeLogTableBlock = ({ block }) => {
       <table className="w-full border-collapse border border-gray-400 text-[9px] mt-0">
         <tbody>
           <tr>
-            <td className="border border-gray-400 px-2 py-2 w-1/2">Site Engineer's Signature: _______________</td>
-            <td className="border border-gray-400 px-2 py-2 text-right">Client's Signature: _______________</td>
+            <td className="border border-gray-400 px-2 py-2 w-1/2">
+              Site Engineer's Signature: _______________
+            </td>
+            <td className="border border-gray-400 px-2 py-2 text-right">
+              Client's Signature: _______________
+            </td>
           </tr>
         </tbody>
       </table>
@@ -843,22 +1137,22 @@ const BoreholeLogTableBlock = ({ block }) => {
 
 const KvTableBlock = ({ title, rows }) => (
   <div className="mb-4">
-    <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
-      {title}
-    </h3>
+    <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">{title}</h3>
     <table className="w-full text-[9px] border-collapse border border-gray-400">
       <thead>
         <tr className="bg-[#f3f4f6]">
-          <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-left w-[40%]">Parameter</th>
-          <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-left">Details</th>
+          <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-left w-[40%]">
+            Parameter
+          </th>
+          <th className="border border-gray-400 px-1 py-1 font-bold text-gray-900 text-left">
+            Details
+          </th>
         </tr>
       </thead>
       <tbody>
         {rows.map((row, i) => (
           <tr key={i} className="border-b border-gray-300">
-            <td className="border border-gray-400 px-1 py-1 text-gray-800 align-top">
-              {row.key}
-            </td>
+            <td className="border border-gray-400 px-1 py-1 text-gray-800 align-top">{row.key}</td>
             <td className="border border-gray-400 px-1 py-1 text-gray-800 align-top whitespace-pre-wrap break-words">
               {row.value}
             </td>
@@ -871,9 +1165,7 @@ const KvTableBlock = ({ title, rows }) => (
 
 const DataTableBlock = ({ title, columns, rows, getCell }) => (
   <div className="mb-4">
-    <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">
-      {title}
-    </h3>
+    <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">{title}</h3>
     <table className="w-full text-[10px] border-collapse border border-gray-200 table-fixed">
       <thead className="bg-[#f3f4f6]">
         <tr>
@@ -932,34 +1224,98 @@ const SbcSummaryBlock = ({ rows, projectName, siteAddress }) => {
 
       <p className="text-xs text-gray-800 leading-relaxed mb-4 text-justify">
         This design report has been prepared to assess the ground conditions for its suitability for
-        {projectName ? <> &ldquo;<strong>{projectName}</strong>&rdquo;</> : ' the proposed construction'}
-        {siteAddress ? <> at <strong>{siteAddress}</strong></> : ''}.
-        Based on the evaluation of ground conditions, the following technical recommendations have been arrived.
+        {projectName ? (
+          <>
+            {' '}
+            &ldquo;<strong>{projectName}</strong>&rdquo;
+          </>
+        ) : (
+          ' the proposed construction'
+        )}
+        {siteAddress ? (
+          <>
+            {' '}
+            at <strong>{siteAddress}</strong>
+          </>
+        ) : (
+          ''
+        )}
+        . Based on the evaluation of ground conditions, the following technical recommendations have
+        been arrived.
       </p>
 
       <h4 className="text-xs font-bold text-blue-800 mb-1">
         Foundation Type: Isolated (Open) Foundation
       </h4>
       <p className="text-xs text-gray-800 leading-relaxed mb-3">
-        Foundation Dimensions (L × B): <strong>{L} m × {B} m</strong> &nbsp;|&nbsp; Shape: <strong>{shape}</strong>
+        Foundation Dimensions (L × B):{' '}
+        <strong>
+          {L} m × {B} m
+        </strong>{' '}
+        &nbsp;|&nbsp; Shape: <strong>{shape}</strong>
       </p>
 
       <table className="w-full text-[9px] border-collapse border border-gray-400">
         <thead>
           <tr className="bg-[#f3f4f6]">
-            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>S. No</th>
-            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Type of Structure / Location</th>
-            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Borehole No.</th>
-            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Depth of Foundation (from E.G.L.) (m)</th>
-            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Foundation RL (from E.G.L.) (m)</th>
-            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Strata Description</th>
-            <th className="border border-gray-400 px-1 py-1 text-center font-bold align-middle" rowSpan={2}>Considered SPT-N Value</th>
-            <th className="border border-gray-400 px-1 py-1 text-center font-bold" colSpan={3}>Bearing Capacity (kN/m²)</th>
+            <th
+              className="border border-gray-400 px-1 py-1 text-center font-bold align-middle"
+              rowSpan={2}
+            >
+              S. No
+            </th>
+            <th
+              className="border border-gray-400 px-1 py-1 text-center font-bold align-middle"
+              rowSpan={2}
+            >
+              Type of Structure / Location
+            </th>
+            <th
+              className="border border-gray-400 px-1 py-1 text-center font-bold align-middle"
+              rowSpan={2}
+            >
+              Borehole No.
+            </th>
+            <th
+              className="border border-gray-400 px-1 py-1 text-center font-bold align-middle"
+              rowSpan={2}
+            >
+              Depth of Foundation (from E.G.L.) (m)
+            </th>
+            <th
+              className="border border-gray-400 px-1 py-1 text-center font-bold align-middle"
+              rowSpan={2}
+            >
+              Foundation RL (from E.G.L.) (m)
+            </th>
+            <th
+              className="border border-gray-400 px-1 py-1 text-center font-bold align-middle"
+              rowSpan={2}
+            >
+              Strata Description
+            </th>
+            <th
+              className="border border-gray-400 px-1 py-1 text-center font-bold align-middle"
+              rowSpan={2}
+            >
+              Considered SPT-N Value
+            </th>
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold" colSpan={3}>
+              Bearing Capacity (kN/m²)
+            </th>
           </tr>
           <tr className="bg-[#f3f4f6]">
-            <th className="border border-gray-400 px-1 py-1 text-center font-bold">SBC<br/>(Shear Criteria)</th>
-            <th className="border border-gray-400 px-1 py-1 text-center font-bold">Allowable BC for Settlement of 25mm</th>
-            <th className="border border-gray-400 px-1 py-1 text-center font-bold">Recommended SBC for Design</th>
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+              SBC
+              <br />
+              (Shear Criteria)
+            </th>
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+              Allowable BC for Settlement of 25mm
+            </th>
+            <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+              Recommended SBC for Design
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -970,24 +1326,44 @@ const SbcSummaryBlock = ({ rows, projectName, siteAddress }) => {
               return group.entries.map((row, ei) => (
                 <tr key={`${gi}-${ei}`} className="border-b border-gray-300">
                   {ei === 0 && (
-                    <td className="border border-gray-400 px-1 py-1 text-center font-bold align-middle text-gray-800" rowSpan={group.entries.length}>
+                    <td
+                      className="border border-gray-400 px-1 py-1 text-center font-bold align-middle text-gray-800"
+                      rowSpan={group.entries.length}
+                    >
                       {currentSNo}
                     </td>
                   )}
                   {ei === 0 && (
-                    <td className="border border-gray-400 px-1 py-1 align-middle text-gray-800" rowSpan={group.entries.length}>
+                    <td
+                      className="border border-gray-400 px-1 py-1 align-middle text-gray-800"
+                      rowSpan={group.entries.length}
+                    >
                       {group.structure !== '-' ? group.structure : ''}
                       {group.chainage && group.chainage !== '-' ? ` / ${group.chainage}` : ''}
                     </td>
                   )}
-                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{row.bhLabel}</td>
-                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{row.depthFromGL}</td>
-                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{row.scourDepthFromGL}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                    {row.bhLabel}
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                    {row.depthFromGL}
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                    {row.scourDepthFromGL}
+                  </td>
                   <td className="border border-gray-400 px-1 py-1 text-gray-800">{row.strata}</td>
-                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{row.nCorr}</td>
-                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{row.sbcShear}</td>
-                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">{row.qaSettlement}</td>
-                  <td className="border border-gray-400 px-1 py-1 text-center font-bold text-gray-900">{row.recommended}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                    {row.nCorr}
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                    {row.sbcShear}
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                    {row.qaSettlement}
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-center font-bold text-gray-900">
+                    {row.recommended}
+                  </td>
                 </tr>
               ));
             });
@@ -999,18 +1375,20 @@ const SbcSummaryBlock = ({ rows, projectName, siteAddress }) => {
         <p className="text-xs font-bold text-gray-800 mb-1">Note:</p>
         <ol className="list-decimal list-inside space-y-1 text-xs text-gray-800 leading-relaxed">
           <li>
-            For the purpose of SBC calculations, foundation dimensions (L × B) of {L} m × {B} m have been
-            considered for {shape} foundation. A sample calculation is provided in the Annexure for reference.
+            For the purpose of SBC calculations, foundation dimensions (L × B) of {L} m × {B} m have
+            been considered for {shape} foundation. A sample calculation is provided in the Annexure
+            for reference.
           </li>
           <li>
-            For N &gt; 50, the N value is restricted and conservatively taken as 50 for design calculations.
-            Beyond the borehole termination depth, it is assumed that the same soil strata continue.
-            This assumption has been applied for the purpose of this analysis.
+            For N &gt; 50, the N value is restricted and conservatively taken as 50 for design
+            calculations. Beyond the borehole termination depth, it is assumed that the same soil
+            strata continue. This assumption has been applied for the purpose of this analysis.
           </li>
           <li>
             SBC (Shear Criteria) is computed using Terzaghi's general bearing capacity equation with
-            Meyerhof's bearing capacity factors (FOS = 3). Allowable BC for 25 mm settlement is computed
-            using Teng's formula (IS:8009). Recommended SBC = min(Shear Criteria, Settlement Criteria).
+            Meyerhof's bearing capacity factors (FOS = 3). Allowable BC for 25 mm settlement is
+            computed using Teng's formula (IS:8009). Recommended SBC = min(Shear Criteria,
+            Settlement Criteria).
           </li>
         </ol>
       </div>
@@ -1020,18 +1398,14 @@ const SbcSummaryBlock = ({ rows, projectName, siteAddress }) => {
 
 const TextBlock = ({ title, content }) => (
   <div className="mb-4">
-    <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">
-      {title}
-    </h3>
+    <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">{title}</h3>
     <p className="text-xs text-gray-800 whitespace-pre-wrap leading-relaxed">{content}</p>
   </div>
 );
 
 const ListBlock = ({ title, items }) => (
   <div className="mb-4">
-    <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">
-      {title}
-    </h3>
+    <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">{title}</h3>
     <ol className="list-decimal list-inside space-y-2 text-xs text-gray-800">
       {items.map((item, i) => (
         <li key={i} className="leading-relaxed pl-1">
@@ -1044,9 +1418,7 @@ const ListBlock = ({ title, items }) => (
 
 const PhotosBlock = ({ title, photos }) => (
   <div className="mb-4">
-    <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">
-      {title}
-    </h3>
+    <h3 className="text-sm font-bold text-gray-900 border-b border-gray-200 pb-1 mb-2">{title}</h3>
     <div className="grid grid-cols-2 gap-3">
       {photos.map((src, i) => (
         <img
@@ -1108,13 +1480,11 @@ const CoverPageBlock = ({ data }) => {
         <h2 className="text-base font-bold text-gray-900 px-6 max-w-xl leading-relaxed text-center">
           {data.projectName || data.projectDetails || 'Project Details / Proposed Construction'}
         </h2>
-        
+
         <div className="my-10 w-24 border-b border-gray-300"></div>
 
         <p className="text-sm font-semibold text-gray-500 mb-3">Submitted to</p>
-        <h3 className="text-base font-bold text-blue-900 mb-2">
-          {data.client || 'Client Name'}
-        </h3>
+        <h3 className="text-base font-bold text-blue-900 mb-2">{data.client || 'Client Name'}</h3>
         <p className="text-xs font-semibold text-blue-800 italic">
           Technical Draft Report – {safeFormatDate(data.reportCreatedOn)}
         </p>
@@ -1126,23 +1496,53 @@ const CoverPageBlock = ({ data }) => {
         <h4 className="font-bold text-md text-gray-900 uppercase tracking-wider mb-3">
           Edge2 Engineering Solutions India Pvt. Ltd.
         </h4>
-        
+
         <div className="w-full text-[10px] text-gray-600 space-y-1 max-w-2xl mx-auto">
           <p className="font-bold text-blue-900 border-b border-gray-100 pb-0.5 mb-1 text-center">
             Our Services:
           </p>
           <p className="leading-relaxed px-4 text-center">
-            Geo-Technical Investigation, Construction & Highway Material Testing Laboratory, Structural Health Assessment / Stability, Non-Destructive Testing (NDT), Restoration & Rehabilitation, Project Management Consultancy & Third-Party Inspection.
+            Geo-Technical Investigation, Construction & Highway Material Testing Laboratory,
+            Structural Health Assessment / Stability, Non-Destructive Testing (NDT), Restoration &
+            Rehabilitation, Project Management Consultancy & Third-Party Inspection.
           </p>
           <p className="text-gray-500 pt-1 text-center">
-            <span className="font-bold">Address:</span> "Shivaganga Arcade", B35/130, 6th Cross, 6th Block, Vishweshwaraiah Layout, Ullal Upanagar, Bangalore - 560056
+            <span className="font-bold">Address:</span> "Shivaganga Arcade", B35/130, 6th Cross, 6th
+            Block, Vishweshwaraiah Layout, Ullal Upanagar, Bangalore - 560056
           </p>
           <p className="flex justify-center gap-4 text-gray-500">
-            <span><span className="font-bold">Email ID:</span> <a style={{color: "#0000EE"}} href="mailto:info@edge2.in" target="_blank" rel="noopener noreferrer">info@edge2.in</a></span>
-            <span><span className="font-bold">Website:</span> <a style={{color: "#0000EE"}} href="https://www.edge2.in" target="_blank" rel="noopener noreferrer">www.edge2.in</a></span>
+            <span>
+              <span className="font-bold">Email ID:</span>{' '}
+              <a
+                style={{ color: '#0000EE' }}
+                href="mailto:info@edge2.in"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                info@edge2.in
+              </a>
+            </span>
+            <span>
+              <span className="font-bold">Website:</span>{' '}
+              <a
+                style={{ color: '#0000EE' }}
+                href="https://www.edge2.in"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                www.edge2.in
+              </a>
+            </span>
           </p>
           <p className="font-semibold text-gray-600 text-center">
-            Contact No: <a style={{color: "#0000EE"}} href="tel:+919448377127">9448377127</a> / <a style={{color: "#0000EE"}} href="tel:+9109880973810">9880973810</a>
+            Contact No:{' '}
+            <a style={{ color: '#0000EE' }} href="tel:+919448377127">
+              9448377127
+            </a>{' '}
+            /{' '}
+            <a style={{ color: '#0000EE' }} href="tel:+9109880973810">
+              9880973810
+            </a>
           </p>
         </div>
       </div>
@@ -1160,18 +1560,41 @@ const CoverPageBlock = ({ data }) => {
 
 // Soil type → consistent hex color
 const SOIL_COLOR_PALETTE = [
-  '#c8a96e', '#a0785a', '#d4b483', '#8fbc8f', '#6b8e6b',
-  '#b5a642', '#9e7b5a', '#7a6652', '#c0c0c0', '#808080',
-  '#505050', '#4a4a8a', '#d2691e', '#cd853f', '#f4a460', '#deb887',
+  '#c8a96e',
+  '#a0785a',
+  '#d4b483',
+  '#8fbc8f',
+  '#6b8e6b',
+  '#b5a642',
+  '#9e7b5a',
+  '#7a6652',
+  '#c0c0c0',
+  '#808080',
+  '#505050',
+  '#4a4a8a',
+  '#d2691e',
+  '#cd853f',
+  '#f4a460',
+  '#deb887',
 ];
 
 // Soil type → color index mapping (kept for legacy compat)
 const SOIL_COLORSCALE = [
-  [0.00, '#f5e6c8'], [0.07, '#c8a96e'], [0.14, '#a0785a'],
-  [0.21, '#d4b483'], [0.28, '#8fbc8f'], [0.35, '#6b8e6b'],
-  [0.42, '#b5a642'], [0.49, '#9e7b5a'], [0.56, '#7a6652'],
-  [0.63, '#c0c0c0'], [0.70, '#808080'], [0.77, '#505050'],
-  [0.84, '#4a4a8a'], [0.91, '#d2691e'], [1.00, '#8b4513'],
+  [0.0, '#f5e6c8'],
+  [0.07, '#c8a96e'],
+  [0.14, '#a0785a'],
+  [0.21, '#d4b483'],
+  [0.28, '#8fbc8f'],
+  [0.35, '#6b8e6b'],
+  [0.42, '#b5a642'],
+  [0.49, '#9e7b5a'],
+  [0.56, '#7a6652'],
+  [0.63, '#c0c0c0'],
+  [0.7, '#808080'],
+  [0.77, '#505050'],
+  [0.84, '#4a4a8a'],
+  [0.91, '#d2691e'],
+  [1.0, '#8b4513'],
 ];
 
 /**
@@ -1185,32 +1608,59 @@ function prepareBoreholesData(boreholeLogs, maxDepths, latitudes, longitudes, so
   });
   const xs = positions.map((p) => p.x);
   const ys = positions.map((p) => p.y);
-  const xMin = Math.min(...xs), xMax = Math.max(...xs);
-  const yMin = Math.min(...ys), yMax = Math.max(...ys);
+  const xMin = Math.min(...xs),
+    xMax = Math.max(...xs);
+  const yMin = Math.min(...ys),
+    yMax = Math.max(...ys);
   const span = Math.max(xMax - xMin, yMax - yMin, 1);
 
   return boreholeLogs.map((logs, i) => {
     const bhLabel = `BH-${String(i + 1).padStart(2, '0')}`;
-    const nx = boreholeLogs.length === 1 ? 0 : ((positions[i].x - xMin) / span) * (boreholeLogs.length - 1) * 8;
-    const ny = boreholeLogs.length === 1 ? 0 : ((positions[i].y - yMin) / span) * (boreholeLogs.length - 1) * 8;
+    const nx =
+      boreholeLogs.length === 1
+        ? 0
+        : ((positions[i].x - xMin) / span) * (boreholeLogs.length - 1) * 8;
+    const ny =
+      boreholeLogs.length === 1
+        ? 0
+        : ((positions[i].y - yMin) / span) * (boreholeLogs.length - 1) * 8;
     const valid = (logs || [])
       .filter((r) => (r.toDepth || r.depth) && !isNaN(parseFloat(r.toDepth || r.depth)))
       .sort((a, b) => parseFloat(a.toDepth || a.depth) - parseFloat(b.toDepth || b.depth));
-    const maxD = parseFloat(maxDepths?.[i]) || (valid.length ? parseFloat(valid[valid.length - 1].toDepth || valid[valid.length - 1].depth) : 1);
+    const maxD =
+      parseFloat(maxDepths?.[i]) ||
+      (valid.length
+        ? parseFloat(valid[valid.length - 1].toDepth || valid[valid.length - 1].depth)
+        : 1);
     const layers = valid.map((row, idx) => {
       const top = idx === 0 ? 0 : parseFloat(valid[idx - 1].toDepth || valid[idx - 1].depth);
       const bottom = parseFloat(row.toDepth || row.depth);
       const soilType = row.soilType || 'Unknown';
       if (!soilColorMap.has(soilType)) {
-        soilColorMap.set(soilType, SOIL_COLOR_PALETTE[soilColorMap.size % SOIL_COLOR_PALETTE.length]);
+        soilColorMap.set(
+          soilType,
+          SOIL_COLOR_PALETTE[soilColorMap.size % SOIL_COLOR_PALETTE.length]
+        );
       }
-      return { top, bottom, soilType, color: soilColorMap.get(soilType),
+      return {
+        top,
+        bottom,
+        soilType,
+        color: soilColorMap.get(soilType),
         spt: [row.spt1, row.spt2, row.spt3].filter(Boolean).join('/') || '-',
-        nature: row.natureOfSampling || '-' };
+        nature: row.natureOfSampling || '-',
+      };
     });
     if (layers.length && layers[layers.length - 1].bottom < maxD - 0.01) {
       const last = layers[layers.length - 1];
-      layers.push({ top: last.bottom, bottom: maxD, soilType: last.soilType, color: last.color, spt: '-', nature: '-' });
+      layers.push({
+        top: last.bottom,
+        bottom: maxD,
+        soilType: last.soilType,
+        color: last.color,
+        spt: '-',
+        nature: '-',
+      });
     }
     return { bhLabel, x: nx, y: ny, layers, maxDepth: maxD };
   });
@@ -1222,17 +1672,41 @@ function BoreholeLayer({ top, bottom, color, bhLabel, soilType, spt, nature, dep
   const yCenter = -(top + height / 2);
   const [hovered, setHovered] = React.useState(false);
   return (
-    <mesh position={[0, yCenter, 0]}
-      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
-      onPointerOut={() => setHovered(false)}>
+    <mesh
+      position={[0, yCenter, 0]}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        setHovered(true);
+      }}
+      onPointerOut={() => setHovered(false)}
+    >
       <cylinderGeometry args={[0.4, 0.4, height, 16]} />
-      <meshStandardMaterial color={hovered ? '#ffffff' : color} opacity={hovered ? 0.7 : 1} transparent />
+      <meshStandardMaterial
+        color={hovered ? '#ffffff' : color}
+        opacity={hovered ? 0.7 : 1}
+        transparent
+      />
       {hovered && (
         <Html distanceFactor={20} style={{ pointerEvents: 'none' }}>
-          <div style={{ background: 'rgba(15,23,42,0.92)', color: '#fff', padding: '5px 8px', borderRadius: 4, fontSize: 10, whiteSpace: 'nowrap', lineHeight: 1.5, border: '1px solid rgba(255,255,255,0.15)' }}>
-            <strong>{bhLabel}-D{depthIdx + 1}</strong><br />
+          <div
+            style={{
+              background: 'rgba(15,23,42,0.92)',
+              color: '#fff',
+              padding: '5px 8px',
+              borderRadius: 4,
+              fontSize: 10,
+              whiteSpace: 'nowrap',
+              lineHeight: 1.5,
+              border: '1px solid rgba(255,255,255,0.15)',
+            }}
+          >
+            <strong>
+              {bhLabel}-D{depthIdx + 1}
+            </strong>
+            <br />
             Depth: {top.toFixed(1)} – {bottom.toFixed(1)} m<br />
-            Soil: {soilType}<br />
+            Soil: {soilType}
+            <br />
             Sample: {nature} | SPT: {spt}
           </div>
         </Html>
@@ -1245,7 +1719,13 @@ function DepthMarker({ depth, bhLabel, depthIdx, soilType }) {
   const [hovered, setHovered] = React.useState(false);
   return (
     <group position={[0, -depth, 0]}>
-      <mesh onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }} onPointerOut={() => setHovered(false)}>
+      <mesh
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHovered(true);
+        }}
+        onPointerOut={() => setHovered(false)}
+      >
         <sphereGeometry args={[0.22, 12, 12]} />
         <meshStandardMaterial color={hovered ? '#facc15' : '#7c3aed'} />
       </mesh>
@@ -1254,9 +1734,24 @@ function DepthMarker({ depth, bhLabel, depthIdx, soilType }) {
       </Text>
       {hovered && (
         <Html distanceFactor={20} style={{ pointerEvents: 'none' }}>
-          <div style={{ background: 'rgba(15,23,42,0.92)', color: '#fff', padding: '5px 8px', borderRadius: 4, fontSize: 10, whiteSpace: 'nowrap', lineHeight: 1.5, border: '1px solid rgba(255,255,255,0.15)' }}>
-            <strong>{bhLabel}-D{depthIdx + 1}</strong><br />
-            Depth: <strong>{depth.toFixed(2)} m</strong><br />
+          <div
+            style={{
+              background: 'rgba(15,23,42,0.92)',
+              color: '#fff',
+              padding: '5px 8px',
+              borderRadius: 4,
+              fontSize: 10,
+              whiteSpace: 'nowrap',
+              lineHeight: 1.5,
+              border: '1px solid rgba(255,255,255,0.15)',
+            }}
+          >
+            <strong>
+              {bhLabel}-D{depthIdx + 1}
+            </strong>
+            <br />
+            Depth: <strong>{depth.toFixed(2)} m</strong>
+            <br />
             Soil: {soilType}
           </div>
         </Html>
@@ -1272,7 +1767,13 @@ function Borehole3D({ bhLabel, x, y, layers, maxDepth }) {
         <BoreholeLayer key={i} {...layer} bhLabel={bhLabel} depthIdx={i} />
       ))}
       {layers.map((layer, i) => (
-        <DepthMarker key={i} depth={layer.bottom} bhLabel={bhLabel} depthIdx={i} soilType={layer.soilType} />
+        <DepthMarker
+          key={i}
+          depth={layer.bottom}
+          bhLabel={bhLabel}
+          depthIdx={i}
+          soilType={layer.soilType}
+        />
       ))}
       <mesh position={[0, 0.1, 0]}>
         <cylinderGeometry args={[0.55, 0.55, 0.2, 16]} />
@@ -1293,7 +1794,9 @@ function SnapshotCapture({ onCapture }) {
     done.current = true;
     requestAnimationFrame(() => {
       gl.render(scene, camera);
-      try { onCapture(gl.domElement.toDataURL('image/png')); } catch (_) {}
+      try {
+        onCapture(gl.domElement.toDataURL('image/png'));
+      } catch (_) {}
     });
   });
   return null;
@@ -1302,13 +1805,18 @@ function SnapshotCapture({ onCapture }) {
 function BoreholeScene({ boreholes, globalMaxDepth, onSnapshot }) {
   const camDist = Math.max(globalMaxDepth * 0.9, 20);
   return (
-    <Canvas gl={{ preserveDrawingBuffer: true }} camera={{ position: [camDist, camDist * 0.6, camDist], fov: 45 }}
-      style={{ width: '100%', height: '100%', background: '#f0f4f8' }}>
+    <Canvas
+      gl={{ preserveDrawingBuffer: true }}
+      camera={{ position: [camDist, camDist * 0.6, camDist], fov: 45 }}
+      style={{ width: '100%', height: '100%', background: '#f0f4f8' }}
+    >
       <ambientLight intensity={0.7} />
       <directionalLight position={[20, 40, 30]} intensity={0.9} />
       <directionalLight position={[-20, 20, -10]} intensity={0.3} />
       <Suspense fallback={null}>
-        {boreholes.map((bh, i) => <Borehole3D key={i} {...bh} />)}
+        {boreholes.map((bh, i) => (
+          <Borehole3D key={i} {...bh} />
+        ))}
       </Suspense>
       <gridHelper args={[Math.max(boreholes.length * 14, 30), 10, '#94a3b8', '#cbd5e1']} />
       <OrbitControls enablePan enableZoom enableRotate />
@@ -1321,25 +1829,45 @@ const Topographic3DSurfacePlotBlock = ({ block }) => {
   const [printImageUrl, setPrintImageUrl] = useState(null);
   const soilColorMapRef = useRef(new Map());
 
-  const { boreholeLogs = [], maxDepths = [], latitudes = [], longitudes = [], projectName = '' } = block.data || {};
+  const {
+    boreholeLogs = [],
+    maxDepths = [],
+    latitudes = [],
+    longitudes = [],
+    projectName = '',
+  } = block.data || {};
 
   const boreholes = useMemo(() => {
     soilColorMapRef.current = new Map();
-    return prepareBoreholesData(boreholeLogs, maxDepths, latitudes, longitudes, soilColorMapRef.current);
+    return prepareBoreholesData(
+      boreholeLogs,
+      maxDepths,
+      latitudes,
+      longitudes,
+      soilColorMapRef.current
+    );
   }, [boreholeLogs, maxDepths, latitudes, longitudes]);
 
-  const globalMaxDepth = useMemo(() => Math.max(...boreholes.map((b) => b.maxDepth), 1), [boreholes]);
+  const globalMaxDepth = useMemo(
+    () => Math.max(...boreholes.map((b) => b.maxDepth), 1),
+    [boreholes]
+  );
 
   const soilLegend = useMemo(() => {
     const seen = new Map();
-    boreholes.forEach((bh) => bh.layers.forEach((l) => { if (!seen.has(l.soilType)) seen.set(l.soilType, l.color); }));
+    boreholes.forEach((bh) =>
+      bh.layers.forEach((l) => {
+        if (!seen.has(l.soilType)) seen.set(l.soilType, l.color);
+      })
+    );
     return Array.from(seen.entries()).map(([type, color]) => ({ type, color }));
   }, [boreholes]);
 
   const summaryRows = boreholeLogs.map((logs, i) => ({
     bh: `BH-${String(i + 1).padStart(2, '0')}`,
     maxDepth: maxDepths[i] || (logs.length ? logs[logs.length - 1]?.depth : '-') || '-',
-    lat: latitudes[i] || '-', lon: longitudes[i] || '-',
+    lat: latitudes[i] || '-',
+    lon: longitudes[i] || '-',
     layers: (logs || []).filter((r) => r.depth).length,
   }));
 
@@ -1353,17 +1881,46 @@ const Topographic3DSurfacePlotBlock = ({ block }) => {
       {projectName && <p className="text-[9px] text-gray-500 mb-2 italic">{projectName}</p>}
 
       {/* Screen: live Three.js canvas */}
-      <div className="screen-only rounded border border-gray-200 bg-[#f0f4f8]" style={{ width: '100%', height: '480px' }}>
-        <Suspense fallback={<div className="flex items-center justify-center h-full text-xs text-gray-400">Loading 3D scene…</div>}>
-          <BoreholeScene boreholes={boreholes} globalMaxDepth={globalMaxDepth} onSnapshot={(url) => setPrintImageUrl(url)} />
+      <div
+        className="screen-only rounded border border-gray-200 bg-[#f0f4f8]"
+        style={{ width: '100%', height: '480px' }}
+      >
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center h-full text-xs text-gray-400">
+              Loading 3D scene…
+            </div>
+          }
+        >
+          <BoreholeScene
+            boreholes={boreholes}
+            globalMaxDepth={globalMaxDepth}
+            onSnapshot={(url) => setPrintImageUrl(url)}
+          />
         </Suspense>
       </div>
 
       {/* Print: static PNG snapshot */}
       {printImageUrl ? (
-        <img src={printImageUrl} alt="Sub-Surface Stratigraphy 3D Borehole Profile" className="print-only" style={{ width: '100%', height: 'auto', display: 'none' }} />
+        <img
+          src={printImageUrl}
+          alt="Sub-Surface Stratigraphy 3D Borehole Profile"
+          className="print-only"
+          style={{ width: '100%', height: 'auto', display: 'none' }}
+        />
       ) : (
-        <div className="print-only" style={{ display: 'none', padding: '8px', border: '1px solid #e5e7eb', borderRadius: 4, textAlign: 'center', fontSize: 10, color: '#6b7280' }}>
+        <div
+          className="print-only"
+          style={{
+            display: 'none',
+            padding: '8px',
+            border: '1px solid #e5e7eb',
+            borderRadius: 4,
+            textAlign: 'center',
+            fontSize: 10,
+            color: '#6b7280',
+          }}
+        >
           3D Borehole Profile — open report preview to generate chart image before printing.
         </div>
       )}
@@ -1373,7 +1930,17 @@ const Topographic3DSurfacePlotBlock = ({ block }) => {
         <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
           {soilLegend.map((s, i) => (
             <div key={i} className="flex items-center gap-1 text-[8px] text-gray-700">
-              <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: s.color, border: '1px solid #ccc', flexShrink: 0 }} />
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: 10,
+                  height: 10,
+                  borderRadius: 2,
+                  background: s.color,
+                  border: '1px solid #ccc',
+                  flexShrink: 0,
+                }}
+              />
               {s.type}
             </div>
           ))}
@@ -1383,21 +1950,35 @@ const Topographic3DSurfacePlotBlock = ({ block }) => {
       {/* Summary table */}
       {summaryRows.length > 0 && (
         <div className="mt-3">
-          <p className="text-[9px] font-semibold text-gray-700 mb-1 uppercase tracking-wide">Borehole Summary</p>
+          <p className="text-[9px] font-semibold text-gray-700 mb-1 uppercase tracking-wide">
+            Borehole Summary
+          </p>
           <table className="w-full text-[9px] border-collapse border border-gray-300">
             <thead className="bg-[#f3f4f6]">
               <tr>
-                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">Borehole</th>
-                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">Max Depth (m)</th>
-                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">Latitude (°)</th>
-                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">Longitude (°)</th>
-                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">No. of Layers</th>
+                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">
+                  Borehole
+                </th>
+                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">
+                  Max Depth (m)
+                </th>
+                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">
+                  Latitude (°)
+                </th>
+                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">
+                  Longitude (°)
+                </th>
+                <th className="border border-gray-300 px-1 py-0.5 font-bold text-gray-800">
+                  No. of Layers
+                </th>
               </tr>
             </thead>
             <tbody>
               {summaryRows.map((row, i) => (
                 <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="border border-gray-300 px-1 py-0.5 font-semibold text-center">{row.bh}</td>
+                  <td className="border border-gray-300 px-1 py-0.5 font-semibold text-center">
+                    {row.bh}
+                  </td>
                   <td className="border border-gray-300 px-1 py-0.5 text-center">{row.maxDepth}</td>
                   <td className="border border-gray-300 px-1 py-0.5 text-center">{row.lat}</td>
                   <td className="border border-gray-300 px-1 py-0.5 text-center">{row.lon}</td>
@@ -1407,7 +1988,9 @@ const Topographic3DSurfacePlotBlock = ({ block }) => {
             </tbody>
           </table>
           <p className="text-[8px] text-gray-400 mt-1 italic">
-            * Depth increases downward from ground surface (0 m). Cylinder colours = soil/rock type. Purple spheres = recorded depth boundaries (D1, D2…). Hover for details. Drag to rotate, scroll to zoom.
+            * Depth increases downward from ground surface (0 m). Cylinder colours = soil/rock type.
+            Purple spheres = recorded depth boundaries (D1, D2…). Hover for details. Drag to rotate,
+            scroll to zoom.
           </p>
         </div>
       )}
@@ -1444,7 +2027,14 @@ const renderBlock = (block, index) => {
         />
       );
     case 'sbc-summary':
-      return <SbcSummaryBlock key={index} rows={block.rows} projectName={block.projectName} siteAddress={block.siteAddress} />;
+      return (
+        <SbcSummaryBlock
+          key={index}
+          rows={block.rows}
+          projectName={block.projectName}
+          siteAddress={block.siteAddress}
+        />
+      );
     case 'text':
       return <TextBlock key={index} title={block.title} content={block.content} />;
     case 'list':
@@ -1509,7 +2099,6 @@ const ReportPreview = forwardRef(function ReportPreview(
     const seenTitles = new Set(['Cover Page', 'Table of Contents', 'Project Details']);
 
     shiftedPages.slice(1).forEach((page) => {
-
       let title = page.sectionTitle;
       if (!title && page.blocks && page.blocks.length > 0) {
         const firstBlock = page.blocks[0];
@@ -1608,7 +2197,10 @@ const ReportPreview = forwardRef(function ReportPreview(
             {pages.map((page) => {
               if (page.isCoverPage) {
                 return (
-                  <div key={page.pageNumber} className="a4-container bg-white relative flex flex-col justify-between">
+                  <div
+                    key={page.pageNumber}
+                    className="a4-container bg-white relative flex flex-col justify-between"
+                  >
                     <ReportWatermark />
                     <div className="a4-page-content relative z-[1] flex-1 flex flex-col justify-between h-full">
                       <CoverPageBlock data={formData} />
@@ -1631,8 +2223,8 @@ const ReportPreview = forwardRef(function ReportPreview(
                   <div className="a4-page-footer">
                     <span>{COMPANY_NAME}</span>
                     <span>
-                      Report {reportId ? `#${reportId}` : '#Pending'} | Page{' '}
-                      {page.pageNumber} of {totalPages}
+                      Report {reportId ? `#${reportId}` : '#Pending'} | Page {page.pageNumber} of{' '}
+                      {totalPages}
                     </span>
                   </div>
                 </div>

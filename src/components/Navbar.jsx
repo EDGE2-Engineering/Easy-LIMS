@@ -1,11 +1,49 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Lock, FileText, Settings, LogOut, User, Package, Database, Files, Briefcase, IndianRupee, Wallet, ClipboardCheck, Calculator, ChevronDown, TestTube, Cpu, SwatchBook, Drill, BriefcaseBusiness, CalendarOff, LayoutDashboard, CheckCircle2, Calendar, Loader2, Send, Building2, MessageSquare, Moon, Sun } from 'lucide-react';
+import {
+  Menu,
+  X,
+  Lock,
+  FileText,
+  Settings,
+  LogOut,
+  User,
+  Package,
+  Database,
+  Files,
+  Briefcase,
+  IndianRupee,
+  Wallet,
+  ClipboardCheck,
+  Calculator,
+  ChevronDown,
+  TestTube,
+  Cpu,
+  SwatchBook,
+  Drill,
+  BriefcaseBusiness,
+  CalendarOff,
+  LayoutDashboard,
+  CheckCircle2,
+  Calendar,
+  Loader2,
+  Send,
+  Building2,
+  MessageSquare,
+  Moon,
+  Sun,
+} from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
-import { getSiteContent, VIEWS, ROLES, NAVBAR_ACTIONS, NAV_ITEM_IDS, SETTINGS_ITEM_IDS } from '@/data/config';
+import {
+  getSiteContent,
+  VIEWS,
+  ROLES,
+  NAVBAR_ACTIONS,
+  NAV_ITEM_IDS,
+  SETTINGS_ITEM_IDS,
+} from '@/data/config';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useToast } from '@/components/ui/use-toast';
@@ -17,11 +55,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { AppDatePicker } from "@/components/ui/AppDatePicker";
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { AppDatePicker } from '@/components/ui/AppDatePicker';
 
 const Navbar = ({ isDirty = false, isSaving = false }) => {
   const { user, logout, isAdmin } = useAuth();
@@ -40,7 +78,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     startDate: '',
     endDate: '',
     leaveType: 'Casual Leave',
-    reason: ''
+    reason: '',
   });
   const location = useLocation();
   const settingsDropdownRef = useRef(null);
@@ -48,10 +86,18 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (settingsDropdownOpen && settingsDropdownRef.current && !settingsDropdownRef.current.contains(event.target)) {
+      if (
+        settingsDropdownOpen &&
+        settingsDropdownRef.current &&
+        !settingsDropdownRef.current.contains(event.target)
+      ) {
         setSettingsDropdownOpen(false);
       }
-      if (dropdownOpen && userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+      if (
+        dropdownOpen &&
+        userDropdownRef.current &&
+        !userDropdownRef.current.contains(event.target)
+      ) {
         setDropdownOpen(false);
       }
     };
@@ -74,29 +120,29 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     e.preventDefault();
     setRequestLoading(true);
     try {
-      const { error } = await supabase
-        .from('request_approvals')
-        .insert([{
+      const { error } = await supabase.from('request_approvals').insert([
+        {
           requester_id: user.id,
           request_type: 'LEAVE',
           status: 'PENDING',
-          request_data: leaveRequest
-        }]);
+          request_data: leaveRequest,
+        },
+      ]);
 
       if (error) throw error;
 
       toast({
-        title: "Request Submitted",
-        description: "Your leave request has been sent for approval.",
+        title: 'Request Submitted',
+        description: 'Your leave request has been sent for approval.',
       });
       setIsRequestDialogOpen(false);
       setLeaveRequest({ startDate: '', endDate: '', leaveType: 'Casual Leave', reason: '' });
     } catch (error) {
-      console.error("Error submitting request:", error);
+      console.error('Error submitting request:', error);
       toast({
-        title: "Error",
-        description: "Failed to submit request. Please try again.",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to submit request. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setRequestLoading(false);
@@ -104,33 +150,149 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
   };
 
   const ALL_NAV_ITEMS = [
-    { navItemId: NAV_ITEM_IDS.DASHBOARD,          view: VIEWS.DASHBOARD,          path: '/settings/dashboard',        label: 'Dashboard',   icon: LayoutDashboard },
-    { navItemId: NAV_ITEM_IDS.ANALYST_DASHBOARD,  view: VIEWS.ANALYST_DASHBOARD,  path: '/settings/analyst_dashboard',label: 'My Dashboard',icon: LayoutDashboard },
-    { navItemId: NAV_ITEM_IDS.ACCOUNTS_DASHBOARD, view: VIEWS.ACCOUNTS_DASHBOARD, path: '/settings/accounts_dashboard',label: 'My Dashboard',icon: LayoutDashboard },
-    { navItemId: NAV_ITEM_IDS.TECHNICIAN_DASHBOARD, view: VIEWS.TECHNICIAN_DASHBOARD, path: '/settings/technician_dashboard', label: 'My Dashboard', icon: LayoutDashboard },
-    { navItemId: NAV_ITEM_IDS.MRO_DASHBOARD, view: VIEWS.MRO_DASHBOARD, path: '/settings/mro_dashboard', label: 'My Dashboard', icon: LayoutDashboard },
-    { navItemId: NAV_ITEM_IDS.HR_DASHBOARD, view: VIEWS.HR_DASHBOARD, path: '/settings/hr_dashboard', label: 'My Dashboard', icon: LayoutDashboard },
-    { navItemId: NAV_ITEM_IDS.JOBS,               view: VIEWS.JOBS,               path: '/settings/jobs',             label: 'Jobs',        icon: Briefcase },
+    {
+      navItemId: NAV_ITEM_IDS.DASHBOARD,
+      view: VIEWS.DASHBOARD,
+      path: '/settings/dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+    },
+    {
+      navItemId: NAV_ITEM_IDS.ANALYST_DASHBOARD,
+      view: VIEWS.ANALYST_DASHBOARD,
+      path: '/settings/analyst_dashboard',
+      label: 'My Dashboard',
+      icon: LayoutDashboard,
+    },
+    {
+      navItemId: NAV_ITEM_IDS.ACCOUNTS_DASHBOARD,
+      view: VIEWS.ACCOUNTS_DASHBOARD,
+      path: '/settings/accounts_dashboard',
+      label: 'My Dashboard',
+      icon: LayoutDashboard,
+    },
+    {
+      navItemId: NAV_ITEM_IDS.TECHNICIAN_DASHBOARD,
+      view: VIEWS.TECHNICIAN_DASHBOARD,
+      path: '/settings/technician_dashboard',
+      label: 'My Dashboard',
+      icon: LayoutDashboard,
+    },
+    {
+      navItemId: NAV_ITEM_IDS.MRO_DASHBOARD,
+      view: VIEWS.MRO_DASHBOARD,
+      path: '/settings/mro_dashboard',
+      label: 'My Dashboard',
+      icon: LayoutDashboard,
+    },
+    {
+      navItemId: NAV_ITEM_IDS.HR_DASHBOARD,
+      view: VIEWS.HR_DASHBOARD,
+      path: '/settings/hr_dashboard',
+      label: 'My Dashboard',
+      icon: LayoutDashboard,
+    },
+    {
+      navItemId: NAV_ITEM_IDS.JOBS,
+      view: VIEWS.JOBS,
+      path: '/settings/jobs',
+      label: 'Jobs',
+      icon: Briefcase,
+    },
     // { navItemId: 'testing', view: VIEWS.TESTING, path: '/settings/testing', label: 'Testing', icon: TestTube },
-    { navItemId: NAV_ITEM_IDS.DOCUMENTS,          view: VIEWS.DOCUMENTS,          path: '/settings/documents',        label: 'Documents',   icon: Files },
-    { navItemId: NAV_ITEM_IDS.EXPENSES,           view: VIEWS.EXPENSES,           path: '/settings/expenses',         label: 'Expenses',    icon: IndianRupee },
-    { navItemId: NAV_ITEM_IDS.CLIENTS,            view: VIEWS.SETTINGS,           path: '/settings/clients',          label: 'Clients',     icon: BriefcaseBusiness },
+    {
+      navItemId: NAV_ITEM_IDS.DOCUMENTS,
+      view: VIEWS.DOCUMENTS,
+      path: '/settings/documents',
+      label: 'Documents',
+      icon: Files,
+    },
+    {
+      navItemId: NAV_ITEM_IDS.EXPENSES,
+      view: VIEWS.EXPENSES,
+      path: '/settings/expenses',
+      label: 'Expenses',
+      icon: IndianRupee,
+    },
+    {
+      navItemId: NAV_ITEM_IDS.CLIENTS,
+      view: VIEWS.SETTINGS,
+      path: '/settings/clients',
+      label: 'Clients',
+      icon: BriefcaseBusiness,
+    },
   ];
 
   const SETTINGS_SUB_ITEMS = [
-    { id: SETTINGS_ITEM_IDS.ORGANIZATION,   label: 'Organization',   icon: Building2,        path: '/settings/organization',    description: 'Manage expenses, leaves, and approvals', views: [VIEWS.EXPENSES, VIEWS.WORK_LOG, VIEWS.APPROVALS] },
-    { id: SETTINGS_ITEM_IDS.CLIENTS,        label: 'Clients',        icon: BriefcaseBusiness,path: '/settings/clients',          description: 'Manage your client database',             view: VIEWS.SETTINGS },
-    { id: SETTINGS_ITEM_IDS.CLIENT_PRICING, label: 'Client Pricing', icon: IndianRupee,      path: '/settings/client_pricing',   description: 'Configure custom prices per client',      view: VIEWS.CLIENT_PRICING },
-    { id: SETTINGS_ITEM_IDS.FIELD_TESTS,    label: 'Field Tests',    icon: Drill,            path: '/settings/field_tests',      description: 'Configure on-site testing services',     view: VIEWS.SETTINGS },
-    { id: SETTINGS_ITEM_IDS.LAB_TESTS,      label: 'Lab Tests',      icon: TestTube,         path: '/settings/lab_tests',        description: 'Manage laboratory testing parameters',   view: VIEWS.SETTINGS },
-    { id: SETTINGS_ITEM_IDS.SAMPLING,       label: 'Sampling',       icon: SwatchBook,       path: '/settings/sampling',         description: 'Configure material sampling methods',    view: VIEWS.SETTINGS },
-    { id: SETTINGS_ITEM_IDS.UTILITIES,      label: 'Utilities',      icon: Calculator,       path: '/settings/utilities',        description: 'Access the handy tools',                 view: VIEWS.UTILITIES },
-    { id: SETTINGS_ITEM_IDS.SYSTEM,         label: 'System',         icon: Cpu,              path: '/settings/system',           description: 'General system settings and users',      view: VIEWS.SETTINGS },
+    {
+      id: SETTINGS_ITEM_IDS.ORGANIZATION,
+      label: 'Organization',
+      icon: Building2,
+      path: '/settings/organization',
+      description: 'Manage expenses, leaves, and approvals',
+      views: [VIEWS.EXPENSES, VIEWS.WORK_LOG, VIEWS.APPROVALS],
+    },
+    {
+      id: SETTINGS_ITEM_IDS.CLIENTS,
+      label: 'Clients',
+      icon: BriefcaseBusiness,
+      path: '/settings/clients',
+      description: 'Manage your client database',
+      view: VIEWS.SETTINGS,
+    },
+    {
+      id: SETTINGS_ITEM_IDS.CLIENT_PRICING,
+      label: 'Client Pricing',
+      icon: IndianRupee,
+      path: '/settings/client_pricing',
+      description: 'Configure custom prices per client',
+      view: VIEWS.CLIENT_PRICING,
+    },
+    {
+      id: SETTINGS_ITEM_IDS.FIELD_TESTS,
+      label: 'Field Tests',
+      icon: Drill,
+      path: '/settings/field_tests',
+      description: 'Configure on-site testing services',
+      view: VIEWS.SETTINGS,
+    },
+    {
+      id: SETTINGS_ITEM_IDS.LAB_TESTS,
+      label: 'Lab Tests',
+      icon: TestTube,
+      path: '/settings/lab_tests',
+      description: 'Manage laboratory testing parameters',
+      view: VIEWS.SETTINGS,
+    },
+    {
+      id: SETTINGS_ITEM_IDS.SAMPLING,
+      label: 'Sampling',
+      icon: SwatchBook,
+      path: '/settings/sampling',
+      description: 'Configure material sampling methods',
+      view: VIEWS.SETTINGS,
+    },
+    {
+      id: SETTINGS_ITEM_IDS.UTILITIES,
+      label: 'Utilities',
+      icon: Calculator,
+      path: '/settings/utilities',
+      description: 'Access the handy tools',
+      view: VIEWS.UTILITIES,
+    },
+    {
+      id: SETTINGS_ITEM_IDS.SYSTEM,
+      label: 'System',
+      icon: Cpu,
+      path: '/settings/system',
+      description: 'General system settings and users',
+      view: VIEWS.SETTINGS,
+    },
   ];
 
-  const navItems = ALL_NAV_ITEMS.filter(item => canShowNavItem(item.navItemId, item.view));
+  const navItems = ALL_NAV_ITEMS.filter((item) => canShowNavItem(item.navItemId, item.view));
 
-  const visibleSettingsSubItems = SETTINGS_SUB_ITEMS.filter(item =>
+  const visibleSettingsSubItems = SETTINGS_SUB_ITEMS.filter((item) =>
     canShowSettingsItem(item.id, item.views ?? item.view)
   );
 
@@ -138,11 +300,13 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
 
   const isActive = (path, id) => {
     if (path === '/settings/clients') {
-      const isManagementTab = ALL_NAV_ITEMS.some(item => location.pathname.startsWith(item.path));
+      const isManagementTab = ALL_NAV_ITEMS.some((item) => location.pathname.startsWith(item.path));
 
-      return (location.pathname.startsWith('/settings') && !isManagementTab) ||
+      return (
+        (location.pathname.startsWith('/settings') && !isManagementTab) ||
         location.pathname.startsWith('/service/') ||
-        location.pathname.startsWith('/test/');
+        location.pathname.startsWith('/test/')
+      );
     }
 
     if (id === 'utilities') {
@@ -189,10 +353,11 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                     <Link
                       to={item.path}
                       state={item.path === '/doc/new' ? { forceReset: Date.now() } : undefined}
-                      className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all text-sm font-semibold ${active
-                        ? 'bg-primary text-white shadow-sm'
-                        : 'text-gray-600 hover:text-primary hover:bg-gray-300'
-                        }`}
+                      className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all text-sm font-semibold ${
+                        active
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'text-gray-600 hover:text-primary hover:bg-gray-300'
+                      }`}
                     >
                       <item.icon className={`w-4 h-4 ${active ? 'text-white' : ''}`} />
                       <span>{item.label}</span>
@@ -212,14 +377,19 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => setSettingsDropdownOpen(!settingsDropdownOpen)}
-                      className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all text-sm font-semibold ${isActive('/settings/clients')
-                        ? 'bg-primary text-white shadow-sm'
-                        : 'text-gray-600 hover:text-primary hover:bg-gray-300'
-                        }`}
+                      className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all text-sm font-semibold ${
+                        isActive('/settings/clients')
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'text-gray-600 hover:text-primary hover:bg-gray-300'
+                      }`}
                     >
-                      <Settings className={`w-4 h-4 ${isActive('/settings/clients') ? 'text-white' : ''}`} />
+                      <Settings
+                        className={`w-4 h-4 ${isActive('/settings/clients') ? 'text-white' : ''}`}
+                      />
                       <span>Settings</span>
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${settingsDropdownOpen ? 'rotate-180' : ''}`} />
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 transition-transform duration-300 ${settingsDropdownOpen ? 'rotate-180' : ''}`}
+                      />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">
@@ -240,17 +410,22 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                           key={subItem.path}
                           to={subItem.path}
                           onClick={() => setSettingsDropdownOpen(false)}
-                          className={`flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors ${location.pathname === subItem.path
-                            ? 'bg-primary/10 text-primary'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-primary'
-                            }`}
+                          className={`flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                            location.pathname === subItem.path
+                              ? 'bg-primary/10 text-primary'
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-primary'
+                          }`}
                         >
-                          <div className={`w-8 h-8 shrink-0 rounded-lg flex items-center justify-center ${location.pathname === subItem.path ? 'bg-primary/20' : 'bg-gray-100'}`}>
+                          <div
+                            className={`w-8 h-8 shrink-0 rounded-lg flex items-center justify-center ${location.pathname === subItem.path ? 'bg-primary/20' : 'bg-gray-100'}`}
+                          >
                             <subItem.icon className="w-4 h-4 shrink-0" />
                           </div>
                           <div>
                             <p className="font-bold">{subItem.label}</p>
-                            <p className="text-[10px] text-gray-400 font-medium leading-tight">{subItem.description}</p>
+                            <p className="text-[10px] text-gray-400 font-medium leading-tight">
+                              {subItem.description}
+                            </p>
                           </div>
                         </Link>
                       ))}
@@ -274,10 +449,16 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                         <User className="w-4 h-4 text-primary" />
                       </div>
                       <div className="text-left hidden lg:block">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Logged in as</p>
-                        <p className="text-sm font-bold text-gray-900 leading-none truncate max-w-[120px]">{user?.fullName || user?.username}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">
+                          Logged in as
+                        </p>
+                        <p className="text-sm font-bold text-gray-900 leading-none truncate max-w-[120px]">
+                          {user?.fullName || user?.username}
+                        </p>
                       </div>
-                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                      <ChevronDown
+                        className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`}
+                      />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="bg-gray-900 text-white border-gray-800">
@@ -294,10 +475,15 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                       className="absolute right-0 mt-2 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden py-2"
                     >
                       <div className="px-4 py-2 border-b border-gray-50 mb-1">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Employee Info</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                          Employee Info
+                        </p>
                         <p className="text-sm font-bold text-gray-800">{user?.fullName}</p>
                         <p className="text-sm font-medium text-gray-400">{user?.emp_id}</p>
-                        <p className="text-sm font-medium text-gray-400">{Object.values(ROLES).find(r => r.slug === user?.role)?.label || user?.role}</p>
+                        <p className="text-sm font-medium text-gray-400">
+                          {Object.values(ROLES).find((r) => r.slug === user?.role)?.label ||
+                            user?.role}
+                        </p>
                       </div>
 
                       {canShowNavbarAction(NAVBAR_ACTIONS.APPLY_LEAVE) && (
@@ -365,10 +551,9 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                     key={item.path}
                     to={item.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center space-x-3 p-4 rounded-2xl text-sm font-bold transition-all ${active
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-gray-600 hover:bg-gray-50'
-                      }`}
+                    className={`flex items-center space-x-3 p-4 rounded-2xl text-sm font-bold transition-all ${
+                      active ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-50'
+                    }`}
                   >
                     <item.icon className="w-5 h-5" />
                     <span>{item.label}</span>
@@ -380,17 +565,20 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                 <div className="space-y-1 pt-2 border-t border-gray-100">
                   <div className="flex items-center space-x-3 py-2 px-4 text-gray-400">
                     <Settings className="w-4 h-4" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Settings</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                      Settings
+                    </span>
                   </div>
                   {visibleSettingsSubItems.map((subItem) => (
                     <Link
                       key={subItem.path}
                       to={subItem.path}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center space-x-3 p-4 rounded-2xl text-sm font-bold transition-all ${location.pathname === subItem.path
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-gray-600 hover:bg-gray-50'
-                        }`}
+                      className={`flex items-center space-x-3 p-4 rounded-2xl text-sm font-bold transition-all ${
+                        location.pathname === subItem.path
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      }`}
                     >
                       <subItem.icon className="w-5 h-5" />
                       <span>{subItem.label}</span>
@@ -405,8 +593,12 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                     <User className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Logged in as</p>
-                    <p className="text-sm font-bold text-gray-900 leading-none">{user?.fullName || user?.username}</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">
+                      Logged in as
+                    </p>
+                    <p className="text-sm font-bold text-gray-900 leading-none">
+                      {user?.fullName || user?.username}
+                    </p>
                   </div>
                 </div>
 
@@ -450,9 +642,12 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
             <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-2">
               <LogOut className="w-8 h-8 text-red-500" />
             </div>
-            <DialogTitle className="text-md font-black text-center text-gray-900 tracking-tight">Confirm Logout</DialogTitle>
+            <DialogTitle className="text-md font-black text-center text-gray-900 tracking-tight">
+              Confirm Logout
+            </DialogTitle>
             <DialogDescription className="text-center font-medium text-gray-500 text-sm">
-              Are you sure you want to sign out? You will need to log back in to access your dashboard.
+              Are you sure you want to sign out? You will need to log back in to access your
+              dashboard.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-col sm:flex-row gap-3 mt-8">
@@ -480,7 +675,9 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
             <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-2">
               <Calendar className="w-8 h-8 text-primary" />
             </div>
-            <DialogTitle className="text-2xl font-black text-center text-gray-900 tracking-tight">Apply for Leave</DialogTitle>
+            <DialogTitle className="text-2xl font-black text-center text-gray-900 tracking-tight">
+              Apply for Leave
+            </DialogTitle>
             <DialogDescription className="text-center font-medium text-gray-500">
               Submit your leave request for approval.
             </DialogDescription>
@@ -488,7 +685,9 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
           <form onSubmit={handleRequestSubmit} className="space-y-4 mt-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Start Date</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Start Date
+                </Label>
                 <AppDatePicker
                   required
                   value={leaveRequest.startDate}
@@ -497,7 +696,9 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">End Date</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  End Date
+                </Label>
                 <AppDatePicker
                   required
                   value={leaveRequest.endDate}
@@ -507,7 +708,9 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Leave Type</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                Leave Type
+              </Label>
               <select
                 value={leaveRequest.leaveType}
                 onChange={(e) => setLeaveRequest({ ...leaveRequest, leaveType: e.target.value })}
@@ -520,7 +723,9 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
               </select>
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Reason</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                Reason
+              </Label>
               <Textarea
                 required
                 value={leaveRequest.reason}

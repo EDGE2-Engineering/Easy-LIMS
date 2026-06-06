@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ClipboardCheck } from 'lucide-react';
@@ -24,7 +23,10 @@ const Footer = () => {
 
         <div className="pt-0 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
           {/* <p>&copy; {new Date().getFullYear()} {content.global?.siteName}. All rights reserved.</p> */}
-          <p>&copy; {new Date().getFullYear()} EDGE2 Engineering Solutions India Pvt. Ltd. All rights reserved.</p>
+          <p>
+            &copy; {new Date().getFullYear()} EDGE2 Engineering Solutions India Pvt. Ltd. All rights
+            reserved.
+          </p>
         </div>
       </div>
     </footer>
