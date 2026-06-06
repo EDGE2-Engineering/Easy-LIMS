@@ -974,6 +974,9 @@ const NewQuotationPage = () => {
         return items.reduce((sum, item) => sum + item.total, 0);
     };
 
+    // Always floor to nearest rupee (remove decimal portion)
+    const roundAmount = (value) => Math.floor(value);
+
     // Dynamic pagination: Split items across pages
     const siteContent = getSiteContent();
     const ITEMS_PER_FIRST_PAGE = siteContent.pagination?.itemsPerFirstPage || 6;
@@ -1986,23 +1989,23 @@ const NewQuotationPage = () => {
                                                             </div>
                                                             <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
                                                                 <span>Total</span>
-                                                                <span><Rupee />{((calculateTotal() * (1 - discount / 100)) * (1 + (taxTotalPercent / 100))).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                                                <span><Rupee />{roundAmount((calculateTotal() * (1 - discount / 100)) * (1 + (taxTotalPercent / 100))).toLocaleString()}</span>
                                                             </div>
                                                             {documentType === 'Tax Invoice' && quoteDetails.paymentAmount > 0 && (
                                                                 <>
                                                                     <div className="flex justify-between text-xs text-red-600">
                                                                         <span>Less: Payment Received</span>
-                                                                        <span>- <Rupee />{Number(quoteDetails.paymentAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                                        <span>- <Rupee />{roundAmount(Number(quoteDetails.paymentAmount)).toLocaleString()}</span>
                                                                     </div>
                                                                     <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
                                                                         <span>Balance Due</span>
-                                                                        <span><Rupee />{(((calculateTotal() * (1 - discount / 100)) * (1 + (taxTotalPercent / 100))) - Number(quoteDetails.paymentAmount)).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                                                        <span><Rupee />{roundAmount(((calculateTotal() * (1 - discount / 100)) * (1 + (taxTotalPercent / 100))) - Number(quoteDetails.paymentAmount)).toLocaleString()}</span>
                                                                     </div>
                                                                 </>
                                                             )}
                                                             <div className="mt-2 text-xs text-gray-600 italic">
                                                                 <span className="font-medium">Amount in Words: Rupees </span>
-                                                                <span>{numberToWords((calculateTotal() * (1 - discount / 100)) * (1 + (taxTotalPercent / 100)))} /-</span>
+                                                                <span>{numberToWords(roundAmount((calculateTotal() * (1 - discount / 100)) * (1 + (taxTotalPercent / 100))))} /-</span>
                                                             </div>
                                                             {discount > 0 && (
                                                                 <div className="mt-2 text-xs text-gray-600 italic">
