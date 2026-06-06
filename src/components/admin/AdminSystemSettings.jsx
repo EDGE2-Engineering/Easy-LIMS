@@ -4,7 +4,7 @@ import { MermaidDiagram } from '@lightenna/react-mermaid-diagram';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { Ruler, Hash, CreditCard, FileText, Axe, Building2, Info, CheckCircle2, ChevronRight, ZoomIn, ZoomOut, RotateCcw, HandHeart, SwatchBook, TestTube, MapPin, BriefcaseBusiness, Package, UsersRound, Fullscreen, IndianRupee, Calendar, ShieldCheck } from 'lucide-react';
+import { Ruler, Hash, CreditCard, FileText, Axe, Building2, Info, CheckCircle2, ChevronRight, ZoomIn, ZoomOut, RotateCcw, HandHeart, SwatchBook, TestTube, MapPin, BriefcaseBusiness, Package, UsersRound, Fullscreen, IndianRupee, Calendar, ShieldCheck, Weight, Layers } from 'lucide-react';
 
 
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
@@ -16,6 +16,8 @@ import AdminTechnicalsManager from './AdminTechnicalsManager';
 import AdminCollectionCentersManager from './AdminCollectionCentersManager';
 import AdminMaterialsManager from './AdminMaterialsManager';
 import AdminUsersManager from './AdminUsersManager';
+import AdminUnitWeightsManager from './AdminUnitWeightsManager';
+import AdminOverburdenCorrectionManager from './AdminOverburdenCorrectionManager';
 
 
 import { enableInfoDiagramZoom, getSiteContent } from '../../data/config';
@@ -130,15 +132,39 @@ const AdminSystemSettings = ({ id }) => {
                             </Tooltip>
                         </TabsTrigger>
 
-                        
+                        <TabsTrigger
+                            value="unit_weights"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <Weight className="w-4 h-4" /> Unit Weights
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Manage bulk and effective unit weights for materials</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
 
 
+                        <TabsTrigger
+                            value="overburden_correction"
+                            className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2">
+                                        <Layers className="w-4 h-4" /> Overburden
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                    <p className="text-xs">Overburden pressure correction factor table & curve</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TabsTrigger>
 
-
-                        
-                        
-                        
-                        
                         <TabsTrigger
                             value="users"
                             className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
@@ -194,9 +220,13 @@ const AdminSystemSettings = ({ id }) => {
                     <AdminUsersManager />
                 </TabsContent>
 
+                <TabsContent value="unit_weights" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <AdminUnitWeightsManager />
+                </TabsContent>
 
-
-
+                <TabsContent value="overburden_correction" className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <AdminOverburdenCorrectionManager />
+                </TabsContent>
 
 
 

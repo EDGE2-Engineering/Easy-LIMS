@@ -507,8 +507,8 @@ export default function GeotechTestForm({ value, onChange }) {
                                                         <Input value={sbcData.chainage || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'chainage', e.target.value)} className="h-8" placeholder="Location" />
                                                     </div>
                                                     <div className="flex flex-col gap-1">
-                                                        <Label className="text-xs text-gray-500">Depth from GL</Label>
-                                                        <Input value={sbcData.depthFromGL || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'depthFromGL', e.target.value)} className="h-8" type="number" min="0" step="0.1" placeholder="Depth from GL" />
+                                                        <Label className="text-xs text-gray-500">Foundation Depth from GL</Label>
+                                                        <Input value={sbcData.depthFromGL || ''} onChange={(e) => handleSbcChange(boreholeIndex, entryIndex, 'depthFromGL', e.target.value)} className="h-8" type="number" min="0" step="0.1" placeholder="Foundation Depth from GL" />
                                                     </div>
                                                     <div className="flex flex-col gap-1">
                                                         <Label className="text-xs text-gray-500">Foundation RL</Label>

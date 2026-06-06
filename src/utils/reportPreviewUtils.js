@@ -195,7 +195,7 @@ export const GRAIN_SIZE_COLUMNS = [
 export const SBC_COLUMNS = [
   { key: 'structure', label: 'Structure' },
   { key: 'chainage', label: 'Location' },
-  { key: 'depthFromGL', label: 'Depth from GL' },
+  { key: 'depthFromGL', label: 'Foundation Depth from GL' },
   { key: 'scourDepthFromGL', label: 'Scour Depth from GL' },
   { key: 'strata', label: 'Strata' },
   { key: 'fieldNValue', label: 'Field N Value' },
