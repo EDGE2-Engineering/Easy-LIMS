@@ -580,7 +580,7 @@ const DocumentsManager = () => {
 
                     <td className="py-5 px-6 text-right">
                       <span className="font-bold text-gray-900 tabular-nums">
-                        <Rupee />{calculateRecordTotal(record).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <Rupee />{Math.floor(calculateRecordTotal(record)).toLocaleString('en-IN')}
                       </span>
                     </td>
 
