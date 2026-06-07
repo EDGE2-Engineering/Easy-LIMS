@@ -168,7 +168,7 @@ const makeCrosshairPlugin = (colors) => ({
         text: v !== null ? `${labels[i]}: ${v.toFixed(2)}` : `${labels[i]}: \u2014`,
         color: dsColors[i],
       })),
-      { text: `\u03c6\u2032: ${phiPrime.toFixed(2)}\u00b0`, color: '#99f6e4' },
+      { text: `\u03c6\u2032: ${phiPrime.toFixed(2)}\u00b0`, color: colors.card },
       ...interpolated.slice(3).map((v, i) => ({
         text: v !== null ? `${labels[i + 3]}: ${v.toFixed(2)}` : `${labels[i + 3]}: \u2014`,
         color: dsColors[i + 3],
