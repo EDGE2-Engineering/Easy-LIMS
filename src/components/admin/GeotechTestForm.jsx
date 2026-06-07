@@ -1584,9 +1584,9 @@ export default function GeotechTestForm({ value, onChange }) {
                               <>
                                 <div className="flex flex-col gap-1">
                                   <Label className="text-xs text-gray-500 flex flex-col">
-                                    <span>Depth of Foundation Below Scour Level</span>
+                                    <span>Depth of Foundation Below Scour Level (m)</span>
                                     <span className="text-[10px] text-gray-400 italic">
-                                      Symbol: Df &nbsp;|&nbsp; Unit: m
+                                      Symbol: Df
                                     </span>
                                   </Label>
                                   {dfFormula && (
@@ -1602,9 +1602,9 @@ export default function GeotechTestForm({ value, onChange }) {
                                 </div>
                                 <div className="flex flex-col gap-1">
                                   <Label className="text-xs text-gray-500 flex flex-col">
-                                    <span>Depth of Failure Zone</span>
+                                    <span>Depth of Failure Zone (m)</span>
                                     <span className="text-[10px] text-gray-400 italic">
-                                      Symbol: Dfz &nbsp;|&nbsp; Unit: m
+                                      Symbol: Dfz
                                     </span>
                                   </Label>
                                   {dfzFormula && (
@@ -1620,9 +1620,9 @@ export default function GeotechTestForm({ value, onChange }) {
                                 </div>
                                 <div className="flex flex-col gap-1">
                                   <Label className="text-xs text-gray-500 flex flex-col">
-                                    <span>Reduced Angle of Friction</span>
+                                    <span>Reduced Angle of Friction (deg)</span>
                                     <span className="text-[10px] text-gray-400 italic">
-                                      Symbol: ϕ&apos; &nbsp;|&nbsp; Unit: deg
+                                      Symbol: ϕ&apos;
                                     </span>
                                   </Label>
                                   {phiPrimeFormula && (

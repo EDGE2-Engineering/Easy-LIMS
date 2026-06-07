@@ -30,6 +30,7 @@ import {
   ShieldCheck,
   Weight,
   Layers,
+  Mountain,
 } from 'lucide-react';
 
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
@@ -43,6 +44,7 @@ import AdminMaterialsManager from './AdminMaterialsManager';
 import AdminUsersManager from './AdminUsersManager';
 import AdminUnitWeightsManager from './AdminUnitWeightsManager';
 import AdminOverburdenCorrectionManager from './AdminOverburdenCorrectionManager';
+import AdminBearingCapacityManager from './AdminBearingCapacityManager';
 
 import { enableInfoDiagramZoom, getSiteContent } from '../../data/config';
 
@@ -189,6 +191,24 @@ const AdminSystemSettings = ({ id }) => {
             </TabsTrigger>
 
             <TabsTrigger
+              value="bearing_capacity"
+              className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2">
+                    <Mountain className="w-4 h-4" /> Bearing Capacity
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                  <p className="text-xs">
+                    Bearing capacity factors Nc, Nq and Nγ vs. friction angle φ
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TabsTrigger>
+
+            <TabsTrigger
               value="users"
               className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
             >
@@ -267,6 +287,13 @@ const AdminSystemSettings = ({ id }) => {
           className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
         >
           <AdminOverburdenCorrectionManager />
+        </TabsContent>
+
+        <TabsContent
+          value="bearing_capacity"
+          className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
+        >
+          <AdminBearingCapacityManager />
         </TabsContent>
 
         <TabsContent
