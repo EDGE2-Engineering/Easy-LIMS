@@ -121,10 +121,10 @@ const AdminUnitWeightsManager = () => {
                 Material Type
               </th>
               <th className="text-center py-4 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Bulk Unit Weight (kN/m³)
+                Bulk Unit Weight - γ (kN/m³)
               </th>
               <th className="text-center py-4 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Effective Unit Weight (kN/m³)
+                Effective Unit Weight - γ' (kN/m³)
               </th>
             </tr>
           </thead>
