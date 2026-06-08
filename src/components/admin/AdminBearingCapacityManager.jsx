@@ -240,8 +240,8 @@ const makeCrosshairPlugin = (colors, basePts) => ({
 // ─── Stable sub-components (defined at module level to preserve focus) ────────
 
 const BcInputRow = ({ description, symbol, unit, value, onChange, placeholder }) => (
-  <div className="flex flex-col gap-1.5 w-40">
-    <label className="text-xs text-gray-500 dark:text-gray-400 leading-tight w-40 break-words">
+  <div className="flex flex-col gap-1.5">
+    <label className="text-xs text-gray-500 dark:text-gray-400 leading-tight break-words">
       {description}
       <span className="ml-1 font-bold text-gray-700 dark:text-gray-200">
         — {symbol}
@@ -255,7 +255,7 @@ const BcInputRow = ({ description, symbol, unit, value, onChange, placeholder })
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-40 text-center rounded-xl h-9 text-sm font-mono"
+      className="w-full text-center rounded-xl h-9 text-sm font-mono"
     />
   </div>
 );
@@ -545,7 +545,7 @@ const AdminBearingCapacityManager = () => {
             <div className="p-2 bg-primary/10 rounded-2xl">
               <Mountain className="w-6 h-6 text-primary" />
             </div>
-            Bearing Capacity Factors Tester
+            Bearing Capacity Factors
           </h1>
           <p className="text-gray-500 font-medium mt-1 uppercase text-[10px] tracking-widest ml-1">
             N<sub>c</sub>, N<sub>q</sub>, N<sub>γ</sub> and derived N′<sub>c</sub>, N′<sub>q</sub>,
@@ -1108,7 +1108,7 @@ const AdminBearingCapacityManager = () => {
             <div className="px-6 pt-5 pb-4 flex flex-col sm:flex-row sm:items-end gap-4 border-b border-gray-100">
               <div className="flex-1">
                 <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
-                  Shape Factors
+                  Shape Factors Tester
                 </h2>
                 <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest font-medium">
                   s<sub>c</sub>, s<sub>q</sub>, s<sub>γ</sub> for different foundation shapes
@@ -1305,7 +1305,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
             <div className="px-6 pt-5 pb-4 flex flex-col sm:flex-row sm:items-end gap-4 border-b border-gray-100">
               <div className="flex-1">
                 <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
-                  Depth Factors
+                  Depth Factors Tester
                 </h2>
                 <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest font-medium">
                   d<sub>c</sub>, d<sub>q</sub>, d<sub>γ</sub> — enter φ, B and D<sub>f</sub> to
@@ -1488,7 +1488,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
             <div className="px-6 pt-5 pb-4 flex flex-col sm:flex-row sm:items-end gap-4 border-b border-gray-100">
               <div className="flex-1">
                 <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
-                  Inclination Factors
+                  Inclination Factors Tester
                 </h2>
                 <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest font-medium">
                   i<sub>c</sub>, i<sub>q</sub>, i<sub>γ</sub> — angle of inclination of resultant
@@ -1747,7 +1747,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
             {/* Header */}
             <div className="px-6 pt-5 pb-4 border-b border-gray-100">
               <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
-                Bearing Capacity
+                Bearing Capacity Tester
               </h2>
               <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest font-medium">
                 Ultimate q<sub>d</sub> and safe q<sub>s</sub> per IS 6403
@@ -1760,7 +1760,10 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
                   Inputs — shared values auto-filled from above
                 </p>
-                <div className="flex flex-wrap gap-4">
+                <div
+                  className="grid gap-4"
+                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}
+                >
                   <BcInputRow
                     description="Considered Angle of Friction"
                     symbol="φ"
@@ -1918,13 +1921,13 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                   {/* Safe bearing capacity */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <BcResultCard
-                      label="qd — Ultimate"
+                      label="Ultimate Bearing Capacity - qd"
                       formula={`Applicable to: ${regimeLabel[regime]}`}
                       value={`${fmtV2(qd)} kN/m²`}
                       highlight
                     />
                     <BcResultCard
-                      label="qs — Safe"
+                      label="Safe Bearing Capacity - qs"
                       formula={`qs = qd / FOS = ${fmtV2(qd)} / ${fos}`}
                       value={hasFos ? `${fmtV2(qs)} kN/m²` : '— (enter FOS)'}
                       highlight={hasFos}

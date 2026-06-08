@@ -11,6 +11,11 @@ export const MATERIALS = [
   { id: 'TILES', name: 'Tiles' },
   { id: 'BRICKS', name: 'Bricks' },
   { id: 'SOIL_AND_ROCK', name: 'Soil and Rock' },
+  { id: 'SAND_AND_SILT', name: 'Sand and Silt' },
+  { id: 'CLAY', name: 'Clay' },
+  { id: 'GRAVEL', name: 'Gravel' },
+  { id: 'WEATHERED_ROCK', name: 'Weathered Rock' },
+  { id: 'SDWR', name: 'SDWR' },
 ];
 
 export const DEPARTMENTS = [
