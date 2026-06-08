@@ -199,6 +199,7 @@ export const NAV_ITEM_IDS = {
   MRO_DASHBOARD: 'mro_dashboard',
   CLIENTS: 'clients',
   HR_DASHBOARD: 'hr_dashboard',
+  BEARING_CAPACITY: 'bearing_capacity',
 };
 
 // IDs for settings dropdown sub-items (used in APP_CONFIG.navbar.settingsItems)
@@ -211,6 +212,7 @@ export const SETTINGS_ITEM_IDS = {
   SAMPLING: 'sampling',
   UTILITIES: 'utilities',
   SYSTEM: 'system',
+  BEARING_CAPACITY: 'bearing_capacity',
 };
 
 export const DOCUMENT_ITEM_TYPE_KEYS = {
@@ -473,7 +475,11 @@ export const APP_CONFIG = {
     navItems: {
       [ROLES.SUPER_ADMIN.slug]: [NAV_ITEM_IDS.DASHBOARD, NAV_ITEM_IDS.JOBS, NAV_ITEM_IDS.DOCUMENTS],
       [ROLES.ADMIN.slug]: [NAV_ITEM_IDS.DASHBOARD, NAV_ITEM_IDS.JOBS, NAV_ITEM_IDS.DOCUMENTS],
-      [ROLES.ANALYST.slug]: [NAV_ITEM_IDS.ANALYST_DASHBOARD, NAV_ITEM_IDS.JOBS],
+      [ROLES.ANALYST.slug]: [
+        NAV_ITEM_IDS.ANALYST_DASHBOARD,
+        NAV_ITEM_IDS.JOBS,
+        NAV_ITEM_IDS.BEARING_CAPACITY,
+      ],
       [ROLES.TECHNICIAN.slug]: [NAV_ITEM_IDS.TECHNICIAN_DASHBOARD, NAV_ITEM_IDS.JOBS],
       [ROLES.MRO.slug]: [NAV_ITEM_IDS.MRO_DASHBOARD, NAV_ITEM_IDS.JOBS, NAV_ITEM_IDS.CLIENTS],
       [ROLES.ACCOUNTS.slug]: [
@@ -523,7 +529,7 @@ export const APP_CONFIG = {
     [ROLES.ADMIN.slug]: Object.values(VIEWS).filter(
       (v) => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.ACCOUNTS_DASHBOARD
     ),
-    [ROLES.ANALYST.slug]: [VIEWS.ANALYST_DASHBOARD, VIEWS.JOBS],
+    [ROLES.ANALYST.slug]: [VIEWS.ANALYST_DASHBOARD, VIEWS.JOBS, VIEWS.SETTINGS],
     [ROLES.TECHNICIAN.slug]: [VIEWS.TECHNICIAN_DASHBOARD, VIEWS.JOBS, VIEWS.TESTING],
     [ROLES.MRO.slug]: [VIEWS.MRO_DASHBOARD, VIEWS.JOBS, VIEWS.SETTINGS],
     [ROLES.ACCOUNTS.slug]: [

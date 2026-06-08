@@ -537,7 +537,7 @@ const AdminBearingCapacityManager = () => {
             <div className="p-2 bg-primary/10 rounded-2xl">
               <Mountain className="w-6 h-6 text-primary" />
             </div>
-            Bearing Capacity Factors
+            Bearing Capacity Factors Tester
           </h1>
           <p className="text-gray-500 font-medium mt-1 uppercase text-[10px] tracking-widest ml-1">
             N<sub>c</sub>, N<sub>q</sub>, N<sub>γ</sub> and derived N′<sub>c</sub>, N′<sub>q</sub>,

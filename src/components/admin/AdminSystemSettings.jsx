@@ -46,16 +46,47 @@ import AdminUnitWeightsManager from './AdminUnitWeightsManager';
 import AdminOverburdenCorrectionManager from './AdminOverburdenCorrectionManager';
 import AdminBearingCapacityManager from './AdminBearingCapacityManager';
 
-import { enableInfoDiagramZoom, getSiteContent } from '../../data/config';
+import { enableInfoDiagramZoom, getSiteContent, SETTINGS_ITEM_IDS } from '../../data/config';
+import { usePermissions } from '@/hooks/usePermissions';
+
+// Map of tab id → component (used for standalone rendering)
+const TAB_COMPONENTS = {
+  unit_types: <AdminUnitTypesManager />,
+  hsn_codes: <AdminHSNCodesManager />,
+  terms: <AdminTermsManager />,
+  technicals: <AdminTechnicalsManager />,
+  payment_settings: <AdminSettingsManager />,
+  collection_centers: <AdminCollectionCentersManager />,
+  unit_weights: <AdminUnitWeightsManager />,
+  overburden_correction: <AdminOverburdenCorrectionManager />,
+  bearing_capacity: <AdminBearingCapacityManager />,
+  users: <AdminUsersManager />,
+};
 
 const AdminSystemSettings = ({ id }) => {
   const navigate = useNavigate();
   const siteName = getSiteContent().global?.siteName;
   const activeTab = id || 'unit_types';
+  const { canShowSettingsItem } = usePermissions();
 
   const handleTabChange = (value) => {
     navigate(`/settings/system/${value}`);
   };
+
+  // Roles that don't have system settings access (e.g. analyst) get a
+  // standalone view of just the requested tab — no tab bar shown.
+  if (!canShowSettingsItem(SETTINGS_ITEM_IDS.SYSTEM)) {
+    const StandaloneComponent = TAB_COMPONENTS[activeTab];
+    return (
+      <div className="space-y-4">
+        {StandaloneComponent ?? (
+          <div className="p-8 border border-dashed rounded-xl bg-muted text-center italic text-sm text-gray-400">
+            Component "{activeTab}" not found.
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
