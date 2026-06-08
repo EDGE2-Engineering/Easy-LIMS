@@ -237,12 +237,14 @@ const makeCrosshairPlugin = (colors, basePts) => ({
 
 // ─── Stable sub-components (defined at module level to preserve focus) ────────
 
-const BcInputRow = ({ label, labelSub, unit, value, onChange, placeholder }) => (
-  <div className="flex items-center gap-2">
-    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 shrink-0 min-w-[2.5rem]">
-      {label}
-      {labelSub && <sub>{labelSub}</sub>}
-      {unit && <span className="text-[10px] font-normal text-gray-400 ml-0.5">{unit}</span>}
+const BcInputRow = ({ description, symbol, unit, value, onChange, placeholder }) => (
+  <div className="flex flex-col gap-1.5 w-40">
+    <label className="text-xs text-gray-500 dark:text-gray-400 leading-tight w-40 break-words">
+      {description}
+      <span className="ml-1 font-bold text-gray-700 dark:text-gray-200">
+        — {symbol}
+        {unit && <span className="font-normal text-gray-400 ml-0.5">({unit})</span>}
+      </span>
     </label>
     <Input
       type="number"
@@ -251,7 +253,7 @@ const BcInputRow = ({ label, labelSub, unit, value, onChange, placeholder }) => 
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-28 text-center rounded-xl h-9 text-sm font-mono"
+      className="w-40 text-center rounded-xl h-9 text-sm font-mono"
     />
   </div>
 );
@@ -599,27 +601,51 @@ const AdminBearingCapacityManager = () => {
                 #
               </th>
               <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                  Considered Angle of Friction
+                </span>
                 φ (°)
               </th>
               <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                  BC Factor — Cohesion
+                </span>
                 N<sub>c</sub>
               </th>
               <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                  BC Factor — Surcharge
+                </span>
                 N<sub>q</sub>
               </th>
               <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
+                <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                  BC Factor — Unit Weight
+                </span>
                 N<sub>γ</sub>
               </th>
               <th className="text-center py-3 px-4 font-bold text-teal-600 dark:text-teal-300 uppercase tracking-widest text-[10px] bg-teal-50/50 dark:bg-teal-900/20">
+                <span className="block normal-case font-normal text-teal-500 dark:text-teal-400 text-[9px] leading-tight">
+                  Reduced Angle of Friction
+                </span>
                 φ′ (°)
               </th>
               <th className="text-center py-3 px-4 font-bold text-teal-600 dark:text-teal-300 uppercase tracking-widest text-[10px] bg-teal-50/50 dark:bg-teal-900/20">
+                <span className="block normal-case font-normal text-teal-500 dark:text-teal-400 text-[9px] leading-tight">
+                  Reduced BC Factor — Cohesion
+                </span>
                 N′<sub>c</sub>
               </th>
               <th className="text-center py-3 px-4 font-bold text-teal-600 dark:text-teal-300 uppercase tracking-widest text-[10px] bg-teal-50/50 dark:bg-teal-900/20">
+                <span className="block normal-case font-normal text-teal-500 dark:text-teal-400 text-[9px] leading-tight">
+                  Reduced BC Factor — Surcharge
+                </span>
                 N′<sub>q</sub>
               </th>
               <th className="text-center py-3 px-4 font-bold text-teal-600 dark:text-teal-300 uppercase tracking-widest text-[10px] bg-teal-50/50 dark:bg-teal-900/20">
+                <span className="block normal-case font-normal text-teal-500 dark:text-teal-400 text-[9px] leading-tight">
+                  Reduced BC Factor — Unit Weight
+                </span>
                 N′<sub>γ</sub>
               </th>
               <th className="py-3 px-4 w-10" />
@@ -855,9 +881,12 @@ const AdminBearingCapacityManager = () => {
                     Enter any φ to compute all factors with step-by-step formulae
                   </p>
                 </div>
-                <div className="flex items-center gap-3 sm:ml-auto">
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 shrink-0">
-                    φ (°)
+                <div className="flex flex-col gap-1.5 sm:ml-auto w-40">
+                  <label className="text-xs text-gray-500 dark:text-gray-400 leading-tight w-40 break-words">
+                    Considered Angle of Friction
+                    <span className="ml-1 font-bold text-gray-700 dark:text-gray-200">
+                      — φ <span className="font-normal text-gray-400">(°)</span>
+                    </span>
                   </label>
                   <Input
                     type="number"
@@ -867,7 +896,7 @@ const AdminBearingCapacityManager = () => {
                     value={phiInput}
                     onChange={(e) => setPhiInput(e.target.value)}
                     placeholder="e.g. 30.5"
-                    className="w-36 text-center rounded-xl h-10 text-base font-mono"
+                    className="w-40 text-center rounded-xl h-10 text-base font-mono"
                   />
                 </div>
               </div>
@@ -1077,9 +1106,14 @@ const AdminBearingCapacityManager = () => {
                   s<sub>c</sub>, s<sub>q</sub>, s<sub>γ</sub> for different foundation shapes
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-semibold text-gray-700 shrink-0">B</label>
+              <div className="flex flex-col sm:flex-row items-end gap-3 flex-wrap">
+                <div className="flex flex-col gap-1.5 w-40">
+                  <label className="text-xs text-gray-500 leading-tight w-40 break-words">
+                    Width of Foundation
+                    <span className="ml-1 font-bold text-gray-700 dark:text-gray-200">
+                      — B <span className="font-normal text-gray-400">(m)</span>
+                    </span>
+                  </label>
                   <Input
                     type="number"
                     step="0.1"
@@ -1087,11 +1121,16 @@ const AdminBearingCapacityManager = () => {
                     value={bInput}
                     onChange={(e) => setBInput(e.target.value)}
                     placeholder="e.g. 2.0"
-                    className="w-28 text-center rounded-xl h-9 text-sm font-mono"
+                    className="w-40 text-center rounded-xl h-9 text-sm font-mono"
                   />
                 </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-semibold text-gray-700 shrink-0">L</label>
+                <div className="flex flex-col gap-1.5 w-40">
+                  <label className="text-xs text-gray-500 leading-tight w-40 break-words">
+                    Length of Foundation
+                    <span className="ml-1 font-bold text-gray-700 dark:text-gray-200">
+                      — L <span className="font-normal text-gray-400">(m)</span>
+                    </span>
+                  </label>
                   <Input
                     type="number"
                     step="0.1"
@@ -1099,11 +1138,11 @@ const AdminBearingCapacityManager = () => {
                     value={lInput}
                     onChange={(e) => setLInput(e.target.value)}
                     placeholder="e.g. 3.0"
-                    className="w-28 text-center rounded-xl h-9 text-sm font-mono"
+                    className="w-40 text-center rounded-xl h-9 text-sm font-mono"
                   />
                 </div>
                 {hasBL && (
-                  <span className="text-xs font-mono text-gray-500 shrink-0">
+                  <span className="text-xs font-mono text-gray-500 shrink-0 pb-2">
                     B/L = {ratio.toFixed(4)}
                   </span>
                 )}
@@ -1265,10 +1304,14 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                   compute
                 </p>
               </div>
-              <div className="flex items-center gap-3 flex-wrap">
-                {/* φ — shared with interpolation calculator */}
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-semibold text-gray-700 shrink-0">φ (°)</label>
+              <div className="flex flex-col sm:flex-row items-end gap-3 flex-wrap">
+                <div className="flex flex-col gap-1.5 w-40">
+                  <label className="text-xs text-gray-500 leading-tight w-40 break-words">
+                    Considered Angle of Friction
+                    <span className="ml-1 font-bold text-gray-700 dark:text-gray-200">
+                      — φ <span className="font-normal text-gray-400">(°)</span>
+                    </span>
+                  </label>
                   <Input
                     type="number"
                     step="0.1"
@@ -1276,12 +1319,16 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                     value={phiInput}
                     onChange={(e) => setPhiInput(e.target.value)}
                     placeholder="e.g. 30"
-                    className="w-28 text-center rounded-xl h-9 text-sm font-mono"
+                    className="w-40 text-center rounded-xl h-9 text-sm font-mono"
                   />
                 </div>
-                {/* B — shared with shape factors */}
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-semibold text-gray-700 shrink-0">B</label>
+                <div className="flex flex-col gap-1.5 w-40">
+                  <label className="text-xs text-gray-500 leading-tight w-40 break-words">
+                    Width of Foundation
+                    <span className="ml-1 font-bold text-gray-700 dark:text-gray-200">
+                      — B <span className="font-normal text-gray-400">(m)</span>
+                    </span>
+                  </label>
                   <Input
                     type="number"
                     step="0.1"
@@ -1289,13 +1336,15 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                     value={bInput}
                     onChange={(e) => setBInput(e.target.value)}
                     placeholder="e.g. 2.0"
-                    className="w-28 text-center rounded-xl h-9 text-sm font-mono"
+                    className="w-40 text-center rounded-xl h-9 text-sm font-mono"
                   />
                 </div>
-                {/* Df input */}
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-semibold text-gray-700 shrink-0">
-                    D<sub>f</sub>
+                <div className="flex flex-col gap-1.5 w-40">
+                  <label className="text-xs text-gray-500 leading-tight w-40 break-words">
+                    Depth of Foundation Below Scour Level
+                    <span className="ml-1 font-bold text-gray-700 dark:text-gray-200">
+                      — D<sub>f</sub> <span className="font-normal text-gray-400">(m)</span>
+                    </span>
                   </label>
                   <Input
                     type="number"
@@ -1304,11 +1353,11 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                     value={dfInput}
                     onChange={(e) => setDfInput(e.target.value)}
                     placeholder="e.g. 1.5"
-                    className="w-28 text-center rounded-xl h-9 text-sm font-mono"
+                    className="w-40 text-center rounded-xl h-9 text-sm font-mono"
                   />
                 </div>
                 {canCalc && (
-                  <span className="text-xs font-mono text-gray-500 shrink-0">
+                  <span className="text-xs font-mono text-gray-500 shrink-0 pb-2">
                     D<sub>f</sub>/B = {dfbRatio.toFixed(4)}
                   </span>
                 )}
@@ -1438,10 +1487,14 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                   load
                 </p>
               </div>
-              <div className="flex items-center gap-3 flex-wrap">
-                {/* φ — shared */}
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-semibold text-gray-700 shrink-0">φ (°)</label>
+              <div className="flex flex-col sm:flex-row items-end gap-3 flex-wrap">
+                <div className="flex flex-col gap-1.5 w-40">
+                  <label className="text-xs text-gray-500 leading-tight w-40 break-words">
+                    Considered Angle of Friction
+                    <span className="ml-1 font-bold text-gray-700 dark:text-gray-200">
+                      — φ <span className="font-normal text-gray-400">(°)</span>
+                    </span>
+                  </label>
                   <Input
                     type="number"
                     step="0.1"
@@ -1449,12 +1502,16 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                     value={phiInput}
                     onChange={(e) => setPhiInput(e.target.value)}
                     placeholder="e.g. 30"
-                    className="w-28 text-center rounded-xl h-9 text-sm font-mono"
+                    className="w-40 text-center rounded-xl h-9 text-sm font-mono"
                   />
                 </div>
-                {/* α input */}
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-semibold text-gray-700 shrink-0">α (°)</label>
+                <div className="flex flex-col gap-1.5 w-40">
+                  <label className="text-xs text-gray-500 leading-tight w-40 break-words">
+                    Angle of Inclination of Foundation
+                    <span className="ml-1 font-bold text-gray-700 dark:text-gray-200">
+                      — α <span className="font-normal text-gray-400">(°)</span>
+                    </span>
+                  </label>
                   <Input
                     type="number"
                     step="0.1"
@@ -1463,7 +1520,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                     value={alphaInput}
                     onChange={(e) => setAlphaInput(e.target.value)}
                     placeholder="e.g. 15"
-                    className="w-28 text-center rounded-xl h-9 text-sm font-mono"
+                    className="w-40 text-center rounded-xl h-9 text-sm font-mono"
                   />
                 </div>
               </div>
@@ -1695,68 +1752,83 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
                   Inputs — shared values auto-filled from above
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-6 gap-y-3">
-                  {/* Shared — editable here too */}
+                <div className="flex flex-wrap gap-4">
                   <BcInputRow
-                    label="φ"
-                    labelSub="(°)"
+                    description="Considered Angle of Friction"
+                    symbol="φ"
+                    unit="°"
                     value={phiInput}
                     onChange={setPhiInput}
                     placeholder="e.g. 30"
                   />
                   <BcInputRow
-                    label="B"
+                    description="Width of Foundation"
+                    symbol="B"
+                    unit="m"
                     value={bInput}
                     onChange={setBInput}
                     placeholder="e.g. 2.0"
-                    unit="m"
                   />
                   <BcInputRow
-                    label="L"
+                    description="Length of Foundation"
+                    symbol="L"
+                    unit="m"
                     value={lInput}
                     onChange={setLInput}
                     placeholder="e.g. 3.0"
-                    unit="m"
                   />
                   <BcInputRow
-                    label="Df"
+                    description="Depth of Foundation Below Scour Level"
+                    symbol="Df"
+                    unit="m"
                     value={dfInput}
                     onChange={setDfInput}
                     placeholder="e.g. 1.5"
-                    unit="m"
                   />
                   <BcInputRow
-                    label="α"
-                    labelSub="(°)"
+                    description="Angle of Inclination of Foundation"
+                    symbol="α"
+                    unit="°"
                     value={alphaInput}
                     onChange={setAlphaInput}
                     placeholder="e.g. 15"
                   />
-                  {/* New inputs */}
                   <BcInputRow
-                    label="c"
+                    description="Cohesion"
+                    symbol="c"
+                    unit="kN/m²"
                     value={cInput}
                     onChange={setCInput}
                     placeholder="e.g. 20"
-                    unit="kN/m²"
                   />
                   <BcInputRow
-                    label="q"
+                    description="Effective Overburden Pressure"
+                    symbol="q"
+                    unit="kN/m²"
                     value={qInput}
                     onChange={setQInput}
                     placeholder="e.g. 18"
-                    unit="kN/m²"
                   />
                   <BcInputRow
-                    label="γ"
+                    description="Bulk Unit Weight"
+                    symbol="γ"
+                    unit="kN/m³"
                     value={gammaInput}
                     onChange={setGammaInput}
                     placeholder="e.g. 18"
-                    unit="kN/m³"
                   />
-                  <BcInputRow label="W′" value={wInput} onChange={setWInput} placeholder="1.0" />
                   <BcInputRow
-                    label="FOS"
+                    description="Constant Value for Safer Design"
+                    symbol="W′"
+                    unit="-"
+                    value={wInput}
+                    onChange={setWInput}
+                    placeholder="e.g. 1.0"
+                  />
+                  <BcInputRow
+                    description="Factor of Safety"
+                    symbol="FOS"
+                    unit="-"
                     value={fosInput}
                     onChange={setFosInput}
                     placeholder="e.g. 3"
