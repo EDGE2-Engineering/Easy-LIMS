@@ -20,7 +20,7 @@ Chart.register(LinearScale, PointElement, LineElement, ChartTooltip, Legend, Lin
 const SETTING_KEY = 'overburden_correction_data';
 const DEFAULT_ROWS = [{ id: Date.now(), pressure: '', correction: '' }];
 
-// ─── Theme helpers ────────────────────────────────────────────────────────────
+// ─── Theme helpers ─────────────────────────────────────────────────────────────
 const getCSSVar = (varName, fallback) => {
   if (typeof window === 'undefined') return fallback;
   const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
@@ -28,32 +28,28 @@ const getCSSVar = (varName, fallback) => {
   return raw || fallback;
 };
 const buildChartColors = () => ({
-  primary: getCSSVar('--primary', '153 38% 18%'),
-  foreground: getCSSVar('--foreground', '20 10% 10%'),
-  muted: getCSSVar('--muted-foreground', '20 10% 40%'),
-  border: getCSSVar('--border', '20 10% 85%'),
-  card: getCSSVar('--card', '0 0% 100%'),
+  primary: getCSSVar('--primary', '#1a6b3c'),
+  foreground: getCSSVar('--foreground', '#1a1a1a'),
+  muted: getCSSVar('--muted-foreground', '#6b7280'),
+  border: getCSSVar('--border', '#e5e7eb'),
+  card: getCSSVar('--card', '#ffffff'),
 });
 
-// ─── Interpolation ────────────────────────────────────────────────────────────
-// Both axes are linear — simple linear interpolation between sorted points.
+// ─── Linear interpolation on sorted { x, y } array ───────────────────────────
 const interpolateY = (points, xVal) => {
   if (points.length < 2) return null;
   if (xVal <= points[0].x) {
-    const p0 = points[0],
-      p1 = points[1];
+    const [p0, p1] = [points[0], points[1]];
     if (p1.x === p0.x) return p0.y;
     return p0.y + ((xVal - p0.x) * (p1.y - p0.y)) / (p1.x - p0.x);
   }
   if (xVal >= points[points.length - 1].x) {
-    const p0 = points[points.length - 2],
-      p1 = points[points.length - 1];
+    const [p0, p1] = [points[points.length - 2], points[points.length - 1]];
     if (p1.x === p0.x) return p1.y;
     return p0.y + ((xVal - p0.x) * (p1.y - p0.y)) / (p1.x - p0.x);
   }
   for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i],
-      p1 = points[i + 1];
+    const [p0, p1] = [points[i], points[i + 1]];
     if (xVal >= p0.x && xVal <= p1.x) {
       if (p1.x === p0.x) return p0.y;
       return p0.y + ((xVal - p0.x) * (p1.y - p0.y)) / (p1.x - p0.x);
@@ -79,11 +75,10 @@ const makeCrosshairPlugin = (colors) => ({
 
     const { ctx, chartArea, scales } = chart;
     const { left, right, top, bottom } = chartArea;
-    const xScale = scales.x;
-    const yScale = scales.y;
-
     if (cursor.x < left || cursor.x > right || cursor.y < top || cursor.y > bottom) return;
 
+    const xScale = scales.x;
+    const yScale = scales.y;
     const points = (chart.data.datasets[0]?.data || []).slice().sort((a, b) => a.x - b.x);
     const xVal = xScale.getValueForPixel(cursor.x);
     const yProjected = interpolateY(points, xVal);
@@ -102,14 +97,14 @@ const makeCrosshairPlugin = (colors) => ({
     ctx.lineTo(cursor.x, bottom);
     ctx.stroke();
 
-    // Horizontal dashed line at interpolated y
+    // Horizontal dashed line
     ctx.beginPath();
     ctx.moveTo(left, yPixel);
     ctx.lineTo(right, yPixel);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Intersection dot
+    // Dot
     ctx.beginPath();
     ctx.arc(cursor.x, yPixel, 5, 0, Math.PI * 2);
     ctx.fillStyle = colors.primary;
@@ -118,25 +113,23 @@ const makeCrosshairPlugin = (colors) => ({
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Floating label
+    // Tooltip
     const cfLabel = `CF: ${xVal.toFixed(3)}`;
-    const qLabel = `Q:  ${yProjected.toFixed(2)} kN/m²`;
+    const qLabel = `Q:  ${yProjected.toFixed(2)} kN/m\u00b2`;
     const fontSize = 11;
     ctx.font = `600 ${fontSize}px 'Poppins','Inter',sans-serif`;
-
-    const pad = 8;
-    const lineH = fontSize + 5;
+    const pad = 8,
+      lineH = fontSize + 5,
+      margin = 10;
     const boxW = Math.max(ctx.measureText(cfLabel).width, ctx.measureText(qLabel).width) + pad * 2;
     const boxH = lineH * 2 + pad * 2;
-    const margin = 10;
-
     let bx = cursor.x + margin;
     let by = yPixel - boxH - margin;
     if (bx + boxW > right) bx = cursor.x - boxW - margin;
     if (by < top) by = yPixel + margin;
 
-    ctx.beginPath();
     const r = 6;
+    ctx.beginPath();
     ctx.moveTo(bx + r, by);
     ctx.lineTo(bx + boxW - r, by);
     ctx.quadraticCurveTo(bx + boxW, by, bx + boxW, by + r);
@@ -159,7 +152,6 @@ const makeCrosshairPlugin = (colors) => ({
     ctx.textBaseline = 'middle';
     ctx.fillText(cfLabel, bx + pad, by + pad + lineH * 0.5);
     ctx.fillText(qLabel, bx + pad, by + pad + lineH * 1.5);
-
     ctx.restore();
   },
 });
@@ -171,12 +163,14 @@ const AdminOverburdenCorrectionManager = () => {
 
   const [rows, setRows] = useState(DEFAULT_ROWS);
   const [isSaving, setIsSaving] = useState(false);
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const [hasInitialized, setHasInit] = useState(false);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const [qInput, setQInput] = useState(''); // interpolation calculator input
 
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
 
+  // Dark mode observer
   useEffect(() => {
     const obs = new MutationObserver(() =>
       setIsDark(document.documentElement.classList.contains('dark'))
@@ -185,6 +179,7 @@ const AdminOverburdenCorrectionManager = () => {
     return () => obs.disconnect();
   }, []);
 
+  // Load persisted data
   useEffect(() => {
     if (!loading && settings && !hasInitialized) {
       const raw = settings[SETTING_KEY];
@@ -196,10 +191,11 @@ const AdminOverburdenCorrectionManager = () => {
           /* keep defaults */
         }
       }
-      setHasInitialized(true);
+      setHasInit(true);
     }
   }, [loading, settings, hasInitialized]);
 
+  // Sorted chart data: x = correction factor, y = pressure
   const chartData = rows
     .filter(
       (r) =>
@@ -211,36 +207,40 @@ const AdminOverburdenCorrectionManager = () => {
     .map((r) => ({ x: parseFloat(r.correction), y: parseFloat(r.pressure) }))
     .sort((a, b) => a.x - b.x);
 
+  // Sorted by Q (pressure as x) for the calculator
+  const qPoints = rows
+    .filter(
+      (r) =>
+        r.pressure !== '' &&
+        r.correction !== '' &&
+        !isNaN(parseFloat(r.pressure)) &&
+        !isNaN(parseFloat(r.correction))
+    )
+    .map((r) => ({ x: parseFloat(r.pressure), y: parseFloat(r.correction) }))
+    .sort((a, b) => a.x - b.x);
+
   const chartDataKey = JSON.stringify(chartData);
 
+  // Chart
   useEffect(() => {
     if (!chartRef.current) return;
-
     if (chartInstanceRef.current) {
       chartInstanceRef.current.destroy();
       chartInstanceRef.current = null;
     }
-
     if (chartData.length < 2) return;
 
     const colors = buildChartColors();
-    const fillColor = colors.primary.replace('hsl(', 'hsla(').replace(')', ', 0.10)');
+    const fillColor = colors.primary.startsWith('hsl')
+      ? colors.primary.replace('hsl(', 'hsla(').replace(')', ', 0.10)')
+      : colors.primary + '1a';
 
     const xMax = Math.max(2.0, Math.ceil((chartData[chartData.length - 1]?.x ?? 2) * 10) / 10);
-
-    // Build explicit tick array:
-    // - 0.0, 0.5 (linear, coarse)
-    // - 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 (dense ticks in the key zone)
-    // - 1.5, 2.0, ... (linear, coarse beyond)
     const tickValues = new Set();
-    // Coarse linear ticks: every 0.5 across full range
-    for (let v = 0; v <= xMax + 1e-9; v = Math.round((v + 0.5) * 100) / 100) {
+    for (let v = 0; v <= xMax + 1e-9; v = Math.round((v + 0.5) * 100) / 100)
       tickValues.add(Math.round(v * 100) / 100);
-    }
-    // Dense ticks in 0.5–1.0
-    for (let v = 0.5; v <= 1.0 + 1e-9; v = Math.round((v + 0.1) * 100) / 100) {
+    for (let v = 0.5; v <= 1.0 + 1e-9; v = Math.round((v + 0.1) * 100) / 100)
       tickValues.add(Math.round(v * 100) / 100);
-    }
     const sortedTicks = [...tickValues].sort((a, b) => a - b);
 
     chartInstanceRef.current = new Chart(chartRef.current, {
@@ -288,27 +288,23 @@ const AdminOverburdenCorrectionManager = () => {
             min: 0,
             max: xMax,
             ticks: {
-              // Use our explicit tick list so the dense 0.1 ticks
-              // only appear in the 0.5–1.0 zone
               values: sortedTicks,
               color: colors.muted,
               font: { size: 10 },
               maxRotation: 0,
               callback(value) {
                 const v = Math.round(value * 100) / 100;
-                // Show label only at coarse 0.5 multiples + the dense zone values
-                const isCoarse = Math.round(v / 0.5) * 0.5 === v;
-                const isDense = v >= 0.5 && v <= 1.0;
-                return isCoarse || isDense ? v.toFixed(1) : '';
+                return Math.round(v / 0.5) * 0.5 === v || (v >= 0.5 && v <= 1.0)
+                  ? v.toFixed(1)
+                  : '';
               },
             },
             afterBuildTicks(axis) {
-              // Replace Chart.js auto-ticks with our explicit set
               axis.ticks = sortedTicks.map((v) => ({ value: v }));
             },
             title: {
               display: true,
-              text: 'Correction Factor (CF)  →',
+              text: 'Correction Factor (CF)  \u2192',
               color: colors.muted,
               font: { size: 11, weight: '600' },
               padding: { top: 8 },
@@ -322,7 +318,7 @@ const AdminOverburdenCorrectionManager = () => {
             min: 0,
             title: {
               display: true,
-              text: '← Effective Overburden Pressure Q (kN/m²)',
+              text: '\u2190 Effective Overburden Pressure Q (kN/m\u00b2)',
               color: colors.muted,
               font: { size: 11, weight: '600' },
               padding: { bottom: 8 },
@@ -349,9 +345,8 @@ const AdminOverburdenCorrectionManager = () => {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
   }, []);
 
-  const handleAddRow = () => {
+  const handleAddRow = () =>
     setRows((prev) => [...prev, { id: Date.now(), pressure: '', correction: '' }]);
-  };
 
   const handleDeleteRow = useCallback((id) => {
     setRows((prev) => {
@@ -386,9 +381,24 @@ const AdminOverburdenCorrectionManager = () => {
     );
   }
 
+  // ── Calculator ──────────────────────────────────────────────────────────────
+  const calcQ = parseFloat(qInput);
+  const hasQ = !isNaN(calcQ) && qInput !== '';
+  const cfValue = hasQ ? interpolateY(qPoints, calcQ) : null;
+
+  const findBracket = (pts, x) => {
+    if (!pts || pts.length < 2 || isNaN(x)) return null;
+    if (x <= pts[0].x) return { lo: pts[0], hi: pts[1] };
+    if (x >= pts[pts.length - 1].x) return { lo: pts[pts.length - 2], hi: pts[pts.length - 1] };
+    for (let i = 0; i < pts.length - 1; i++)
+      if (x >= pts[i].x && x <= pts[i + 1].x) return { lo: pts[i], hi: pts[i + 1] };
+    return null;
+  };
+  const bracket = hasQ ? findBracket(qPoints, calcQ) : null;
+
   return (
-    <div className="space-y-8 max-w-4xl mx-auto pb-12">
-      {/* Header */}
+    <div className="space-y-8 max-w-5xl mx-auto pb-4">
+      {/* ── Header ── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
@@ -398,10 +408,9 @@ const AdminOverburdenCorrectionManager = () => {
             Overburden Pressure Correction
           </h1>
           <p className="text-gray-500 font-medium mt-1 uppercase text-[10px] tracking-widest ml-1">
-            Configure effective overburden pressure vs. correction factor values
+            Effective overburden pressure vs. correction factor
           </p>
         </div>
-
         <div className="flex gap-3">
           <Button
             variant="outline"
@@ -410,7 +419,6 @@ const AdminOverburdenCorrectionManager = () => {
           >
             <Plus className="w-4 h-4" /> Add Row
           </Button>
-
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -433,21 +441,27 @@ const AdminOverburdenCorrectionManager = () => {
         </div>
       </div>
 
-      {/* Table */}
+      {/* ── Table ── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="text-center py-4 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] w-12">
+              <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] w-10">
                 #
               </th>
-              <th className="text-center py-4 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Effective Overburden Pressure Q (kN/m²)
+              <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                  Effective Overburden Pressure
+                </span>
+                Q (kN/m²)
               </th>
-              <th className="text-center py-4 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Correction Factor
+              <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                  Overburden Pressure
+                </span>
+                Correction Factor (CF)
               </th>
-              <th className="py-4 px-4 w-12" />
+              <th className="py-3 px-4 w-10" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
@@ -463,7 +477,7 @@ const AdminOverburdenCorrectionManager = () => {
                       value={row.pressure}
                       onChange={(e) => handleChange(row.id, 'pressure', e.target.value)}
                       placeholder="e.g. 100.00"
-                      className="w-48 text-center rounded-xl h-9"
+                      className="w-40 text-center rounded-xl h-9"
                     />
                   </div>
                 </td>
@@ -476,7 +490,7 @@ const AdminOverburdenCorrectionManager = () => {
                       value={row.correction}
                       onChange={(e) => handleChange(row.id, 'correction', e.target.value)}
                       placeholder="e.g. 1.000"
-                      className="w-48 text-center rounded-xl h-9"
+                      className="w-40 text-center rounded-xl h-9"
                     />
                   </div>
                 </td>
@@ -497,7 +511,6 @@ const AdminOverburdenCorrectionManager = () => {
             ))}
           </tbody>
         </table>
-
         <div className="border-t border-dashed bg-gray-50/50">
           <button
             onClick={handleAddRow}
@@ -508,7 +521,7 @@ const AdminOverburdenCorrectionManager = () => {
         </div>
       </div>
 
-      {/* Chart */}
+      {/* ── Chart ── */}
       {chartData.length >= 2 ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
           <div>
@@ -516,8 +529,8 @@ const AdminOverburdenCorrectionManager = () => {
               Correction Curve
             </h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              Hover anywhere for interpolated values &nbsp;·&nbsp; Dense grid lines at 0.1 intervals
-              between 0.5 – 1.0, coarse 0.5 steps elsewhere
+              Hover anywhere for interpolated values &nbsp;·&nbsp; Dense 0.1 intervals between
+              0.5–1.0, coarse 0.5 steps elsewhere
             </p>
           </div>
           <div className="relative w-full" style={{ height: 420 }}>
@@ -535,12 +548,94 @@ const AdminOverburdenCorrectionManager = () => {
         </div>
       )}
 
-      {/* Info note */}
+      {/* ── Interpolation Calculator ── */}
+      {qPoints.length >= 2 && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 shadow-sm p-6 space-y-6">
+          {/* Title + input */}
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+            <div>
+              <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                Interpolation Calculator
+              </h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Enter Q to compute the interpolated Correction Factor with step-by-step formula
+              </p>
+            </div>
+            <div className="flex flex-col gap-1.5 sm:ml-auto w-40">
+              <label className="text-xs text-gray-500 dark:text-gray-400 leading-tight w-40 break-words">
+                Effective Overburden Pressure
+                <span className="ml-1 font-bold text-gray-700 dark:text-gray-200">
+                  — Q <span className="font-normal text-gray-400">(kN/m²)</span>
+                </span>
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={qInput}
+                onChange={(e) => setQInput(e.target.value)}
+                placeholder="e.g. 150.0"
+                className="w-40 text-center rounded-xl h-10 text-base font-mono"
+              />
+            </div>
+          </div>
+
+          {hasQ ? (
+            <>
+              {/* Result card */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded-xl border p-4 flex flex-col gap-1 bg-gray-50 dark:bg-gray-100 border-gray-100 dark:border-gray-700">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Q (kN/m²)
+                  </p>
+                  <p className="text-2xl font-black font-mono tabular-nums text-gray-900 dark:text-gray-100">
+                    {calcQ.toFixed(4)}
+                  </p>
+                </div>
+                <div className="rounded-xl border p-4 flex flex-col gap-1 bg-primary/5 border-primary/20">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                    Correction Factor (CF)
+                  </p>
+                  <p className="text-2xl font-black font-mono tabular-nums text-primary">
+                    {cfValue !== null ? cfValue.toFixed(4) : '—'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Step-by-step */}
+              {bracket && cfValue !== null && (
+                <div className="space-y-2">
+                  <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
+                    Step-by-step computation
+                  </h3>
+                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700 text-xs font-mono text-gray-600 dark:text-gray-300 whitespace-pre-line leading-relaxed">
+                    <p className="font-sans font-bold text-[10px] uppercase tracking-widest text-gray-400 mb-1 not-italic">
+                      CF — interpolated at Q = {calcQ.toFixed(4)} kN/m²
+                    </p>
+                    {`CF = CF_low + ((CF_high − CF_low) / (Q_high − Q_low)) × (Q − Q_low)
+   = ${bracket.lo.y.toFixed(4)} + ((${bracket.hi.y.toFixed(4)} − ${bracket.lo.y.toFixed(4)}) / (${bracket.hi.x.toFixed(4)} − ${bracket.lo.x.toFixed(4)})) × (${calcQ.toFixed(4)} − ${bracket.lo.x.toFixed(4)})
+   = ${bracket.lo.y.toFixed(4)} + (${(bracket.hi.y - bracket.lo.y).toFixed(4)} / ${(bracket.hi.x - bracket.lo.x).toFixed(4)}) × ${(calcQ - bracket.lo.x).toFixed(4)}
+   = ${bracket.lo.y.toFixed(4)} + ${((bracket.hi.y - bracket.lo.y) / (bracket.hi.x - bracket.lo.x)).toFixed(6)} × ${(calcQ - bracket.lo.x).toFixed(4)}
+   = ${bracket.lo.y.toFixed(4)} + ${(((bracket.hi.y - bracket.lo.y) / (bracket.hi.x - bracket.lo.x)) * (calcQ - bracket.lo.x)).toFixed(6)}
+   = ${cfValue.toFixed(4)}`}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-6 text-gray-400 text-sm">
+              Enter a Q value above to see the interpolated correction factor and formula.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Info note ── */}
       <div className="flex items-start gap-3 p-4 bg-primary/10 rounded-xl border border-primary/20">
         <Layers className="w-5 h-5 text-primary shrink-0 mt-0.5" />
         <p className="text-xs text-gray-600 leading-relaxed">
-          Curve Details: Dense 0.1 intervals between <strong>0.5 and 1.0</strong>, coarse 0.5 steps
-          outside. Y-axis is inverted (0 kN/m² at top, increasing downward). Hover the curve for{' '}
+          Dense 0.1 intervals between <strong>0.5 and 1.0</strong>, coarse 0.5 steps outside. Y-axis
+          is inverted (0 kN/m² at top, increasing downward). Hover the curve for{' '}
           <strong>interpolated CF and Q values</strong>. Click <em>Save</em> to persist.
         </p>
       </div>

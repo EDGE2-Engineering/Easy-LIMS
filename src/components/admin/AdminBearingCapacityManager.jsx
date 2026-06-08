@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Save, Plus, Trash2, Loader2, Mountain } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import AdminOverburdenCorrectionManager from './AdminOverburdenCorrectionManager';
+import AdminUnitWeightsManager from './AdminUnitWeightsManager';
 import {
   Chart,
   LinearScale,
@@ -530,6 +532,12 @@ const AdminBearingCapacityManager = () => {
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12">
+      {/* ── Overburden Pressure Correction ── */}
+      <AdminOverburdenCorrectionManager />
+
+      {/* ── Unit Weights of Materials ── */}
+      <AdminUnitWeightsManager />
+
       {/* ── Header ── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
@@ -875,7 +883,7 @@ const AdminBearingCapacityManager = () => {
               <div className="flex flex-col sm:flex-row sm:items-end gap-4">
                 <div>
                   <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                    Interpolation Calculator
+                    Bearing Capacity Interpolation Calculator
                   </h2>
                   <p className="text-xs text-gray-400 mt-0.5">
                     Enter any φ to compute all factors with step-by-step formulae

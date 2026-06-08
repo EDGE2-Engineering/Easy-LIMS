@@ -28,8 +28,6 @@ import {
   IndianRupee,
   Calendar,
   ShieldCheck,
-  Weight,
-  Layers,
   Mountain,
 } from 'lucide-react';
 
@@ -42,8 +40,6 @@ import AdminTechnicalsManager from './AdminTechnicalsManager';
 import AdminCollectionCentersManager from './AdminCollectionCentersManager';
 import AdminMaterialsManager from './AdminMaterialsManager';
 import AdminUsersManager from './AdminUsersManager';
-import AdminUnitWeightsManager from './AdminUnitWeightsManager';
-import AdminOverburdenCorrectionManager from './AdminOverburdenCorrectionManager';
 import AdminBearingCapacityManager from './AdminBearingCapacityManager';
 
 import { enableInfoDiagramZoom, getSiteContent, SETTINGS_ITEM_IDS } from '../../data/config';
@@ -57,8 +53,6 @@ const TAB_COMPONENTS = {
   technicals: <AdminTechnicalsManager />,
   payment_settings: <AdminSettingsManager />,
   collection_centers: <AdminCollectionCentersManager />,
-  unit_weights: <AdminUnitWeightsManager />,
-  overburden_correction: <AdminOverburdenCorrectionManager />,
   bearing_capacity: <AdminBearingCapacityManager />,
   users: <AdminUsersManager />,
 };
@@ -190,38 +184,6 @@ const AdminSystemSettings = ({ id }) => {
             </TabsTrigger>
 
             <TabsTrigger
-              value="unit_weights"
-              className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-            >
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2">
-                    <Weight className="w-4 h-4" /> Unit Weights
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                  <p className="text-xs">Manage bulk and effective unit weights for materials</p>
-                </TooltipContent>
-              </Tooltip>
-            </TabsTrigger>
-
-            <TabsTrigger
-              value="overburden_correction"
-              className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
-            >
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4" /> Overburden
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                  <p className="text-xs">Overburden pressure correction factor table & curve</p>
-                </TooltipContent>
-              </Tooltip>
-            </TabsTrigger>
-
-            <TabsTrigger
               value="bearing_capacity"
               className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
             >
@@ -304,20 +266,6 @@ const AdminSystemSettings = ({ id }) => {
           className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
         >
           <AdminUsersManager />
-        </TabsContent>
-
-        <TabsContent
-          value="unit_weights"
-          className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
-        >
-          <AdminUnitWeightsManager />
-        </TabsContent>
-
-        <TabsContent
-          value="overburden_correction"
-          className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
-        >
-          <AdminOverburdenCorrectionManager />
         </TabsContent>
 
         <TabsContent
