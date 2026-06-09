@@ -464,6 +464,10 @@ export const computeSbcSummaryRows = (sbcDetails, boreholeLogs) => {
       // Step 7 — Recommended SBC
       const recommended = Math.min(sbc_shear, qa_settlement);
 
+      // Foundation RL = Ground Level RL - Foundation Depth from GL (D)
+      const groundLevelRL = parseFloat(entry.groundLevelRL);
+      const foundationRL = !isNaN(groundLevelRL) && Df > 0 ? groundLevelRL - Df : null;
+
       rows.push({
         sNo: sNo++,
         structure: entry.structure || '-',
@@ -471,6 +475,7 @@ export const computeSbcSummaryRows = (sbcDetails, boreholeLogs) => {
         bhLabel,
         depthFromGL: Df > 0 ? Df.toFixed(1) : '-',
         scourDepthFromGL: scourDf > 0 ? scourDf.toFixed(1) : '-',
+        foundationRL: foundationRL !== null ? foundationRL.toFixed(3) : '-',
         strata: entry.strata || '-',
         nCorr: `N=${N_corr}`,
         sbcShear: sbc_shear,

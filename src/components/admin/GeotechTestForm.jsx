@@ -77,10 +77,7 @@ function lookupCorrectionFactor(overburdenRows, depthFromGL) {
     if (pressure >= lo.pressure && pressure <= hi.pressure) {
       const t = (pressure - lo.pressure) / (hi.pressure - lo.pressure);
       const cf = lo.correction + t * (hi.correction - lo.correction);
-      return applyCap(
-        cf,
-        `Interpolated from Field N Value between ${lo.pressure}→${hi.pressure} kN/m² from overburden chart in settings`
-      );
+      return applyCap(cf, `Interpolated from Overburden Correction chart in settings`);
     }
   }
   return fallback;
@@ -1400,28 +1397,6 @@ export default function GeotechTestForm({ value, onChange }) {
                           </div>
                           <div className="flex flex-col gap-1">
                             <Label className="text-xs text-gray-500 flex flex-col">
-                              <span>Foundation RL</span>
-                              <span className="text-[10px] text-gray-400 italic">m</span>
-                            </Label>
-                            <Input
-                              value={sbcData.scourDepthFromGL || ''}
-                              onChange={(e) =>
-                                handleSbcChange(
-                                  boreholeIndex,
-                                  entryIndex,
-                                  'scourDepthFromGL',
-                                  e.target.value
-                                )
-                              }
-                              className="h-8"
-                              type="number"
-                              min="0"
-                              step="0.1"
-                              placeholder="m"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500 flex flex-col">
                               <span>Ground Level R.L.</span>
                               <span className="text-[10px] text-gray-400 italic">m</span>
                             </Label>
@@ -1438,8 +1413,39 @@ export default function GeotechTestForm({ value, onChange }) {
                               className="h-8"
                               type="number"
                               step="0.001"
-                              placeholder="m"
+                              placeholder="000.000"
                             />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Foundation RL</span>
+                              <span className="text-[10px] text-gray-400 italic">
+                                Ground RL − D &nbsp;|&nbsp; m
+                              </span>
+                            </Label>
+                            {(() => {
+                              const groundRL = parseFloat(sbcData.groundLevelRL);
+                              const depthD = parseFloat(sbcData.depthFromGL);
+                              const hasValues = !isNaN(groundRL) && !isNaN(depthD);
+                              const foundationRL = hasValues ? groundRL - depthD : null;
+                              return (
+                                <>
+                                  {hasValues && (
+                                    <span className="text-[10px] text-gray-400 italic">
+                                      {groundRL.toFixed(3)} − {depthD.toFixed(3)}
+                                    </span>
+                                  )}
+                                  <div className="h-8 px-3 flex items-center rounded-md border border-gray-200 bg-gray-50 select-none">
+                                    <span className="text-sm font-semibold text-primary tabular-nums">
+                                      {foundationRL !== null ? foundationRL.toFixed(3) : '-'}
+                                    </span>
+                                    {foundationRL !== null && (
+                                      <span className="ml-1 text-[10px] text-gray-400">m</span>
+                                    )}
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
                           <div className="flex flex-col gap-1">
                             <Label className="text-xs text-gray-500 flex flex-col">
@@ -1459,7 +1465,7 @@ export default function GeotechTestForm({ value, onChange }) {
                               className="h-8"
                               type="number"
                               step="0.001"
-                              placeholder="m"
+                              placeholder="000.000"
                             />
                           </div>
                           <div className="flex flex-col gap-1">

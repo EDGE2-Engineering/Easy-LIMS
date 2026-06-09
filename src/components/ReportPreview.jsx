@@ -1359,7 +1359,7 @@ const SbcSummaryBlock = ({ rows, projectName, siteAddress }) => {
                     {row.depthFromGL}
                   </td>
                   <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
-                    {row.scourDepthFromGL}
+                    {row.foundationRL}
                   </td>
                   <td className="border border-gray-400 px-1 py-1 text-gray-800">{row.strata}</td>
                   <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
