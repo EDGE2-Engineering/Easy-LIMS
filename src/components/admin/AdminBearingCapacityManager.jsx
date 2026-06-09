@@ -777,12 +777,17 @@ const AdminBearingCapacityManager = () => {
             ticks: {
               color: colors.muted,
               font: { size: 10 },
+              // Return a label for every tick Chart.js generates so grid lines appear.
+              // Major decades get a readable label; minor subdivisions get a dim tick mark.
               callback: (v) => {
-                // Show labels at notable values
-                if (v === 0.1) return '10⁻¹';
-                if (v === 0.01) return '10⁻²';
-                if (v === 0.001) return '10⁻³';
-                return null;
+                const decades = [0.1, 0.01, 0.001];
+                const labels = { 0.1: '10⁻¹', 0.01: '10⁻²', 0.001: '10⁻³' };
+                // Exact decade — show label
+                for (const d of decades) {
+                  if (Math.abs(v - d) / d < 1e-9) return labels[d];
+                }
+                // Minor log subdivision — show the raw value dimly so the grid line renders
+                return v.toExponential(0);
               },
             },
             title: {
@@ -792,7 +797,23 @@ const AdminBearingCapacityManager = () => {
               font: { size: 11, weight: '600' },
               padding: { bottom: 8 },
             },
-            grid: { color: colors.border, lineWidth: 1 },
+            // Major decade lines solid; minor subdivision lines lighter
+            grid: {
+              color: (ctx) => {
+                const v = ctx.tick?.value;
+                const decades = [0.1, 0.01, 0.001];
+                const isMajor = decades.some((d) => v !== undefined && Math.abs(v - d) / d < 1e-9);
+                return isMajor
+                  ? colors.foreground + '33' // ~20% opacity solid line for decades
+                  : colors.border; // normal faint line for subdivisions
+              },
+              lineWidth: (ctx) => {
+                const v = ctx.tick?.value;
+                const decades = [0.1, 0.01, 0.001];
+                const isMajor = decades.some((d) => v !== undefined && Math.abs(v - d) / d < 1e-9);
+                return isMajor ? 1.5 : 0.5;
+              },
+            },
             border: { color: colors.border },
           },
         },
@@ -2690,8 +2711,8 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
             Settlement per Unit Pressure Curves
           </h2>
           <p className="text-xs text-gray-400 mt-0.5">
-            IS : 8009 Part I – 1976 &nbsp;·&nbsp; Figure 9 &nbsp;·&nbsp; Settlement vs. footing
-            width &apos;B&apos; for varying N-values &nbsp;·&nbsp; Hover for interpolated values
+            IS : 8009 Part I – 1976 &nbsp;·&nbsp; Settlement vs. footing width &apos;B&apos; for
+            varying N-values &nbsp;·&nbsp; Hover for interpolated values
           </p>
         </div>
         <div className="relative w-full" style={{ height: 420 }}>
