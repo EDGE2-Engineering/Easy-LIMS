@@ -384,7 +384,10 @@ const AdminOverburdenCorrectionManager = () => {
   // ── Calculator ──────────────────────────────────────────────────────────────
   const calcQ = parseFloat(qInput);
   const hasQ = !isNaN(calcQ) && qInput !== '';
-  const cfValue = hasQ ? interpolateY(qPoints, calcQ) : null;
+  const CF_CAP = 0.75; // CF is fixed at 0.75 the moment Q > 200 kN/m²
+  const cfRaw = hasQ ? interpolateY(qPoints, calcQ) : null;
+  const isCapped = cfRaw !== null && calcQ > 200;
+  const cfValue = isCapped ? CF_CAP : cfRaw;
 
   const findBracket = (pts, x) => {
     if (!pts || pts.length < 2 || isNaN(x)) return null;
@@ -599,6 +602,11 @@ const AdminOverburdenCorrectionManager = () => {
                   <p className="text-2xl font-black font-mono tabular-nums text-primary">
                     {cfValue !== null ? cfValue.toFixed(4) : '—'}
                   </p>
+                  {isCapped && (
+                    <p className="text-[10px] font-semibold text-amber-600 mt-1">
+                      ⚠ Fixed at 0.75 — Q &gt; 200 kN/m²
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -617,7 +625,14 @@ const AdminOverburdenCorrectionManager = () => {
    = ${bracket.lo.y.toFixed(4)} + (${(bracket.hi.y - bracket.lo.y).toFixed(4)} / ${(bracket.hi.x - bracket.lo.x).toFixed(4)}) × ${(calcQ - bracket.lo.x).toFixed(4)}
    = ${bracket.lo.y.toFixed(4)} + ${((bracket.hi.y - bracket.lo.y) / (bracket.hi.x - bracket.lo.x)).toFixed(6)} × ${(calcQ - bracket.lo.x).toFixed(4)}
    = ${bracket.lo.y.toFixed(4)} + ${(((bracket.hi.y - bracket.lo.y) / (bracket.hi.x - bracket.lo.x)) * (calcQ - bracket.lo.x)).toFixed(6)}
-   = ${cfValue.toFixed(4)}`}
+   = ${cfRaw !== null ? cfRaw.toFixed(4) : '—'}${
+     isCapped
+       ? `
+
+⚠ Q > 200 kN/m² → CF is fixed at 0.75 (rule overrides interpolated value)
+   CF = 0.7500`
+       : ''
+   }`}
                   </div>
                 </div>
               )}

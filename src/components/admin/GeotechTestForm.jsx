@@ -36,9 +36,11 @@ import { useSettings } from '@/contexts/SettingsContext';
 /**
  * Look up the Correction Factor (CF) from the overburden correction table stored
  * in settings, interpolating linearly between the two nearest pressure rows.
+ * Per IS code: CF is restricted to a maximum of 0.75 when Q > 200 kN/m².
  * Returns { cf, formula } — cf defaults to 1 and formula to '' if table is empty.
  */
 function lookupCorrectionFactor(overburdenRows, depthFromGL) {
+  const CF_MAX_ABOVE_200 = 0.75;
   const fallback = { cf: 1, formula: '' };
   if (!Array.isArray(overburdenRows) || overburdenRows.length === 0) return fallback;
   const sorted = overburdenRows
@@ -50,15 +52,24 @@ function lookupCorrectionFactor(overburdenRows, depthFromGL) {
     .sort((a, b) => a.pressure - b.pressure);
   if (sorted.length === 0) return fallback;
   const pressure = parseFloat(depthFromGL) || 0;
+
+  // Apply IS code rule: CF = 0.75 (fixed) the moment Q > 200 kN/m²
+  const applyCap = (cf, formulaBase) => {
+    if (pressure > 200) {
+      return {
+        cf: CF_MAX_ABOVE_200,
+        formula: `${formulaBase} → fixed at 0.75 (Q > 200 kN/m²)`,
+      };
+    }
+    return { cf, formula: formulaBase };
+  };
+
   if (pressure <= sorted[0].pressure) {
-    return {
-      cf: sorted[0].correction,
-      formula: `CF at ${sorted[0].pressure} kN/m²`,
-    };
+    return applyCap(sorted[0].correction, `CF at ${sorted[0].pressure} kN/m²`);
   }
   if (pressure >= sorted[sorted.length - 1].pressure) {
     const last = sorted[sorted.length - 1];
-    return { cf: last.correction, formula: `CF at ${last.pressure} kN/m²` };
+    return applyCap(last.correction, `CF at ${last.pressure} kN/m²`);
   }
   for (let i = 0; i < sorted.length - 1; i++) {
     const lo = sorted[i],
@@ -66,10 +77,10 @@ function lookupCorrectionFactor(overburdenRows, depthFromGL) {
     if (pressure >= lo.pressure && pressure <= hi.pressure) {
       const t = (pressure - lo.pressure) / (hi.pressure - lo.pressure);
       const cf = lo.correction + t * (hi.correction - lo.correction);
-      return {
+      return applyCap(
         cf,
-        formula: `Interpolated from Field N Value between ${lo.pressure}→${hi.pressure} kN/m² from overburden chart in settings`,
-      };
+        `Interpolated from Field N Value between ${lo.pressure}→${hi.pressure} kN/m² from overburden chart in settings`
+      );
     }
   }
   return fallback;
