@@ -331,7 +331,11 @@ const ProjectDetailsBlock = ({ data }) => {
                     {data.projectName || data.projectDetails || 'Project Site'}
                   </td>
                 ) : null}
-                <td className="border border-gray-400 px-1 py-1 text-gray-800">100.0</td>
+                <td className="border border-gray-400 px-1 py-1 text-gray-800">
+                  {data.sbcDetails?.[idx]?.[0]?.boreholeRL
+                    ? Number(data.sbcDetails[idx][0].boreholeRL).toFixed(3)
+                    : '100.000'}
+                </td>
                 <td className="border border-gray-400 px-1 py-1 text-gray-800">
                   {getBoreholeMaxDepth(bh, idx)}
                 </td>
@@ -904,6 +908,7 @@ const BoreholeLogTableBlock = ({ block }) => {
     projectName,
     location,
     methodOfBoring,
+    boreholeRL,
   } = block;
 
   const METHOD_LABELS = {
@@ -961,7 +966,9 @@ const BoreholeLogTableBlock = ({ block }) => {
           </tr>
           <tr>
             <td className="border border-gray-400 px-1 py-0.5 font-bold">Ground R.L (m):</td>
-            <td className="border border-gray-400 px-1 py-0.5">100.000</td>
+            <td className="border border-gray-400 px-1 py-0.5">
+              {boreholeRL ? Number(boreholeRL).toFixed(3) : '100.000'}
+            </td>
             <td className="border border-gray-400 px-1 py-0.5 font-bold">Latitude (°):</td>
             <td className="border border-gray-400 px-1 py-0.5">{latitude || 'NA'}</td>
           </tr>

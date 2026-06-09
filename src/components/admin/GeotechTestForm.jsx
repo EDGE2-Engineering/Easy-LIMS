@@ -285,6 +285,8 @@ export default function GeotechTestForm({ value, onChange }) {
           width: '',
           footingLength: '',
           shapeOfFooting: '',
+          groundLevelRL: '',
+          boreholeRL: '',
         },
       ],
     ],
@@ -444,6 +446,8 @@ export default function GeotechTestForm({ value, onChange }) {
             width: '',
             footingLength: '',
             shapeOfFooting: '',
+            groundLevelRL: '',
+            boreholeRL: '',
           },
         ],
       ],
@@ -571,6 +575,8 @@ export default function GeotechTestForm({ value, onChange }) {
       width: '',
       footingLength: '',
       shapeOfFooting: '',
+      groundLevelRL: '',
+      boreholeRL: '',
     });
     setFormData({ ...formData, sbcDetails: newSbc });
   };
@@ -1404,6 +1410,48 @@ export default function GeotechTestForm({ value, onChange }) {
                             />
                           </div>
                           <div className="flex flex-col gap-1">
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Ground Level R.L.</span>
+                              <span className="text-[10px] text-gray-400 italic">m</span>
+                            </Label>
+                            <Input
+                              value={sbcData.groundLevelRL || ''}
+                              onChange={(e) =>
+                                handleSbcChange(
+                                  boreholeIndex,
+                                  entryIndex,
+                                  'groundLevelRL',
+                                  e.target.value
+                                )
+                              }
+                              className="h-8"
+                              type="number"
+                              step="0.001"
+                              placeholder="m"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Borehole R.L.</span>
+                              <span className="text-[10px] text-gray-400 italic">m</span>
+                            </Label>
+                            <Input
+                              value={sbcData.boreholeRL || ''}
+                              onChange={(e) =>
+                                handleSbcChange(
+                                  boreholeIndex,
+                                  entryIndex,
+                                  'boreholeRL',
+                                  e.target.value
+                                )
+                              }
+                              className="h-8"
+                              type="number"
+                              step="0.001"
+                              placeholder="m"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
                             <Label className="text-xs text-gray-500">Strata</Label>
                             <Input
                               value={sbcData.strata || ''}
@@ -1418,7 +1466,7 @@ export default function GeotechTestForm({ value, onChange }) {
                             <Label className="text-xs text-gray-500 flex flex-col">
                               <span>Field N Value</span>
                               <span className="text-[10px] text-gray-400 italic">
-                                dimensionless
+                                Unit not applicable
                               </span>
                             </Label>
                             <Input
@@ -1477,7 +1525,7 @@ export default function GeotechTestForm({ value, onChange }) {
                                   <Label className="text-xs text-gray-500 flex flex-col">
                                     <span>Correction Factor (CF)</span>
                                     <span className="text-[10px] text-gray-400 italic">
-                                      dimensionless
+                                      Unit not applicable
                                     </span>
                                   </Label>
                                   {hasN && cfFormula && (
@@ -1495,7 +1543,7 @@ export default function GeotechTestForm({ value, onChange }) {
                                   <Label className="text-xs text-gray-500 flex flex-col">
                                     <span>Corrected SPT N Value (NR)</span>
                                     <span className="text-[10px] text-gray-400 italic">
-                                      dimensionless
+                                      Unit not applicable
                                     </span>
                                   </Label>
                                   {formula && (

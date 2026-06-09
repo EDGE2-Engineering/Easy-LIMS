@@ -548,6 +548,8 @@ export const buildReportPages = (formData) => {
 
   // One Bore Log Data Sheet page per borehole
   data.boreholeLogs.forEach((levelLogs, i) => {
+    // Pick boreholeRL from the first SBC entry for this borehole (if entered)
+    const boreholeRL = data.sbcDetails?.[i]?.[0]?.boreholeRL ?? '';
     pages.push({
       isFirstPage: false,
       isContinuation: false,
@@ -565,6 +567,7 @@ export const buildReportPages = (formData) => {
           projectName: data.projectName || data.projectDetails || '',
           location: data.siteAddress || data.siteName || '',
           methodOfBoring: data.methodOfBoring || '',
+          boreholeRL,
         },
       ],
     });

@@ -302,9 +302,9 @@ const AdminBearingCapacityManager = () => {
   const [dfInput, setDfInput] = useState('');
   const [alphaInput, setAlphaInput] = useState('');
   const [cInput, setCInput] = useState(''); // cohesion kN/m²
-  const [qInput, setQInput] = useState(''); // surcharge kN/m²
-  const [gammaInput, setGammaInput] = useState(''); // unit weight kN/m³
-  const [wInput, setWInput] = useState('1'); // W′ water table factor (default 1)
+  const [gammaInput, setGammaInput] = useState(''); // bulk unit weight kN/m³
+  // W′ (Water Table Correction) is a system-defined constant of 0.5
+  const W_CONSTANT = 0.5;
   const [fosInput, setFosInput] = useState(''); // factor of safety
 
   const chartRef = useRef(null);
@@ -1617,6 +1617,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
         const Nq = hasPhi ? interpolateY(nqPts, phi) : null;
         const Ng = hasPhi ? interpolateY(ngPts, phi) : null;
         const NcP = hasPhi ? interpolateY(ncPts, phiPrime) : null;
+        const NqP = hasPhi ? interpolateY(nqPts, phiPrime) : null;
         const NgP = hasPhi ? interpolateY(ngPts, phiPrime) : null; // N′γ
 
         // Shape factors (Rectangle formula — most general; fixed for Sq/Sc, user provides B/L)
@@ -1642,16 +1643,21 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
 
         // Additional inputs specific to bearing capacity
         const c = parseFloat(cInput);
-        const q = parseFloat(qInput);
         const gamma = parseFloat(gammaInput);
-        const W = parseFloat(wInput);
         const fos = parseFloat(fosInput);
 
         const hasC = !isNaN(c) && cInput !== '';
-        const hasQ = !isNaN(q) && qInput !== '';
         const hasGamma = !isNaN(gamma) && gammaInput !== '';
-        const hasW = !isNaN(W) && wInput !== '';
         const hasFos = !isNaN(fos) && fosInput !== '' && fos > 0;
+
+        // Derived: effective unit weight and effective overburden pressure
+        const gammaSub = hasGamma ? Math.max(0, gamma - 10) : null;
+        const q = hasGamma && hasDf ? gammaSub * Df : null;
+        const hasQ = q !== null;
+
+        // W′ — system-defined constant 0.5; capped to 0.75 when q > 200 kN/m²
+        const W = hasQ && q > 200 ? 0.75 : W_CONSTANT;
+        const hasW = true;
 
         // All factors present for a full calculation
         const allFactors =
@@ -1680,26 +1686,22 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
 
         // ── Formula terms ────────────────────────────────────────────────────
         // Local shear (uses N′ factors):
-        //   (2/3)·c·N′c·Sc·dc·ic + q·(N′q−1)·Sq·dq·iq + 0.5·γ·B·N′γ·dγ·iγ·W′
+        //   (2/3)·c·N′c·Sc·dc·ic + q·(N′q−1)·Sq·dq·iq + 0.5·γ·B·N′γ·Sγ·dγ·iγ·W′
         // General shear (uses N factors):
-        //   c·Nc·Sc·dc·ic + q·(Nq−1)·Sq·dq·iq + 0.5·γ·B·Nγ·dγ·iγ·W′
-        // Note: the problem statement uses N′γ in the general shear 3rd term — keeping as specified.
+        //   c·Nc·Sc·dc·ic + q·(Nq−1)·Sq·dq·iq + 0.5·γ·B·Nγ·Sγ·dγ·iγ·W′
 
         const localTerm1 = allFactors ? (2 / 3) * c * NcP * Sc * dc_v * ic_v : null;
-        const localTerm2 = allFactors ? q * (NcP - 1) * Sq * dqdg_v * iq_v : null; // N′q ≈ NcP per IS 6403 note; using NcP as stated
-        // Re-reading formula: q·(N′q−1) — user gave N′q as derived from Nq. Use Nq interpolated at φ′
-        const NqP = hasPhi ? interpolateY(nqPts, phiPrime) : null;
-        const localT2_fix = allFactors ? q * (NqP - 1) * Sq * dqdg_v * iq_v : null;
-        const localTerm3 = allFactors ? 0.5 * gamma * B * NgP * dqdg_v * ig_v * W : null;
+        const localTerm2 = allFactors ? q * (NqP - 1) * Sq * dqdg_v * iq_v : null;
+        const localTerm3 = allFactors ? 0.5 * gamma * B * NgP * Sg * dqdg_v * ig_v * W : null;
         const qdLocal = allFactors
           ? (2 / 3) * c * NcP * Sc * dc_v * ic_v +
             q * (NqP - 1) * Sq * dqdg_v * iq_v +
-            0.5 * gamma * B * NgP * dqdg_v * ig_v * W
+            0.5 * gamma * B * NgP * Sg * dqdg_v * ig_v * W
           : null;
 
         const genTerm1 = allFactors ? c * Nc * Sc * dc_v * ic_v : null;
         const genTerm2 = allFactors ? q * (Nq - 1) * Sq * dqdg_v * iq_v : null;
-        const genTerm3 = allFactors ? 0.5 * gamma * B * NgP * dqdg_v * ig_v * W : null;
+        const genTerm3 = allFactors ? 0.5 * gamma * B * Ng * Sg * dqdg_v * ig_v * W : null;
         const qdGeneral = allFactors ? genTerm1 + genTerm2 + genTerm3 : null;
 
         const qdIntermed = allFactors ? 0.5 * (qdLocal + qdGeneral) : null;
@@ -1813,14 +1815,6 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                     placeholder="e.g. 20"
                   />
                   <BcInputRow
-                    description="Effective Overburden Pressure"
-                    symbol="q"
-                    unit="kN/m²"
-                    value={qInput}
-                    onChange={setQInput}
-                    placeholder="e.g. 18"
-                  />
-                  <BcInputRow
                     description="Bulk Unit Weight"
                     symbol="γ"
                     unit="kN/m³"
@@ -1828,14 +1822,66 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                     onChange={setGammaInput}
                     placeholder="e.g. 18"
                   />
-                  <BcInputRow
-                    description="Constant Value for Safer Design"
-                    symbol="W′"
-                    unit="-"
-                    value={wInput}
-                    onChange={setWInput}
-                    placeholder="e.g. 1.0"
-                  />
+                  {/* Computed: Effective Unit Weight */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 leading-tight break-words">
+                      Effective Unit Weight
+                      <span className="ml-1 font-bold text-gray-700">
+                        — γ<sub>sub</sub> <span className="font-normal text-gray-400">(kN/m³)</span>
+                      </span>
+                    </label>
+                    <div className="h-10 px-3 flex items-center rounded-xl border border-gray-200 bg-gray-50 select-none">
+                      <span className="text-sm font-semibold text-primary tabular-nums font-mono">
+                        {hasGamma ? `${Math.max(0, gamma - 10).toFixed(3)} kN/m³` : '—'}
+                      </span>
+                    </div>
+                    {hasGamma && (
+                      <span className="text-[10px] text-gray-400 italic">
+                        γ − 10 = {gamma} − 10
+                      </span>
+                    )}
+                  </div>
+                  {/* Computed: Effective Overburden Pressure */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 leading-tight break-words">
+                      Effective Overburden Pressure
+                      <span className="ml-1 font-bold text-gray-700">
+                        — q <span className="font-normal text-gray-400">(kN/m²)</span>
+                      </span>
+                    </label>
+                    <div className="h-10 px-3 flex items-center rounded-xl border border-gray-200 bg-gray-50 select-none">
+                      <span className="text-sm font-semibold text-primary tabular-nums font-mono">
+                        {hasQ ? `${q.toFixed(3)} kN/m²` : '—'}
+                      </span>
+                    </div>
+                    {hasQ && (
+                      <span className="text-[10px] text-gray-400 italic">
+                        γ<sub>sub</sub> × Df = {gammaSub.toFixed(3)} × {Df.toFixed(3)}
+                      </span>
+                    )}
+                  </div>
+                  {/* System constant: Water Table Correction */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 leading-tight break-words">
+                      Water Table Correction
+                      <span className="ml-1 font-bold text-gray-700">
+                        — W′ <span className="font-normal text-gray-400">(-)</span>
+                      </span>
+                    </label>
+                    <div className="h-10 px-3 flex items-center rounded-xl border border-primary/20 bg-primary/5 select-none">
+                      <span className="text-sm font-semibold text-primary tabular-nums font-mono">
+                        {W}
+                        {hasQ && q > 200 && (
+                          <span className="ml-2 text-[10px] text-amber-600 font-sans">
+                            ↑ capped (q &gt; 200 kN/m²)
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-gray-400 italic">
+                      System constant: 0.5 {hasQ && q > 200 ? '→ 0.75 (q > 200)' : ''}
+                    </span>
+                  </div>
                   <BcInputRow
                     description="Factor of Safety"
                     symbol="FOS"
@@ -1895,7 +1941,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                   {(regime === 'local' || regime === 'intermediate') && (
                     <BcResultCard
                       label="qd (Local)"
-                      formula="(2/3)·c·N′c·Sc·dc·ic + q·(N′q−1)·Sq·dq·iq + 0.5·γ·B·N′γ·dγ·iγ·W′"
+                      formula="(2/3)·c·N′c·Sc·dc·ic + q·(N′q−1)·Sq·dq·iq + 0.5·γ·B·N′γ·Sγ·dγ·iγ·W′"
                       value={`${fmtV2(qdLocal)} kN/m²`}
                       highlight={regime === 'local'}
                     />
@@ -1904,7 +1950,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                   {(regime === 'general' || regime === 'intermediate') && (
                     <BcResultCard
                       label="qd (General)"
-                      formula="c·Nc·Sc·dc·ic + q·(Nq−1)·Sq·dq·iq + 0.5·γ·B·N′γ·dγ·iγ·W′"
+                      formula="c·Nc·Sc·dc·ic + q·(Nq−1)·Sq·dq·iq + 0.5·γ·B·Nγ·Sγ·dγ·iγ·W′"
                       value={`${fmtV2(qdGeneral)} kN/m²`}
                       highlight={regime === 'general'}
                     />
@@ -1947,8 +1993,8 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                           </p>
                           {`= (2/3) × ${fmtV4(c)} × ${fmtV4(NcP)} × ${fmtV4(Sc)} × ${fmtV4(dc_v)} × ${fmtV4(ic_v)}
   + ${fmtV4(q)} × (${fmtV4(NqP)} − 1) × ${fmtV4(Sq)} × ${fmtV4(dqdg_v)} × ${fmtV4(iq_v)}
-  + 0.5 × ${fmtV4(gamma)} × ${fmtV4(B)} × ${fmtV4(NgP)} × ${fmtV4(dqdg_v)} × ${fmtV4(ig_v)} × ${fmtV4(W)}
-= ${fmtV4((2 / 3) * c * NcP * Sc * dc_v * ic_v)} + ${fmtV4(q * (NqP - 1) * Sq * dqdg_v * iq_v)} + ${fmtV4(0.5 * gamma * B * NgP * dqdg_v * ig_v * W)}
+  + 0.5 × ${fmtV4(gamma)} × ${fmtV4(B)} × ${fmtV4(NgP)} × ${fmtV4(Sg)} × ${fmtV4(dqdg_v)} × ${fmtV4(ig_v)} × ${fmtV4(W)}
+= ${fmtV4((2 / 3) * c * NcP * Sc * dc_v * ic_v)} + ${fmtV4(q * (NqP - 1) * Sq * dqdg_v * iq_v)} + ${fmtV4(0.5 * gamma * B * NgP * Sg * dqdg_v * ig_v * W)}
 = ${fmtV2(qdLocal)} kN/m²`}
                         </div>
                       )}
@@ -1959,7 +2005,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                           </p>
                           {`= ${fmtV4(c)} × ${fmtV4(Nc)} × ${fmtV4(Sc)} × ${fmtV4(dc_v)} × ${fmtV4(ic_v)}
   + ${fmtV4(q)} × (${fmtV4(Nq)} − 1) × ${fmtV4(Sq)} × ${fmtV4(dqdg_v)} × ${fmtV4(iq_v)}
-  + 0.5 × ${fmtV4(gamma)} × ${fmtV4(B)} × ${fmtV4(NgP)} × ${fmtV4(dqdg_v)} × ${fmtV4(ig_v)} × ${fmtV4(W)}
+  + 0.5 × ${fmtV4(gamma)} × ${fmtV4(B)} × ${fmtV4(Ng)} × ${fmtV4(Sg)} × ${fmtV4(dqdg_v)} × ${fmtV4(ig_v)} × ${fmtV4(W)}
 = ${fmtV4(genTerm1)} + ${fmtV4(genTerm2)} + ${fmtV4(genTerm3)}
 = ${fmtV2(qdGeneral)} kN/m²`}
                         </div>
@@ -1989,18 +2035,18 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                 </div>
               ) : (
                 <p className="text-xs text-gray-400 text-center py-4">
-                  Fill all inputs above (φ, B, L, Df, α, c, q, γ, W′) to compute bearing capacity.
+                  Fill all inputs above (φ, B, L, Df, α, c, γ) to compute bearing capacity.
                 </p>
               )}
 
               <div className="text-[10px] text-gray-400 space-y-0.5 border-t border-gray-100 pt-3">
                 <p>
-                  c = cohesion (kN/m²) · q = overburden pressure at foundation level (kN/m²) · γ =
-                  unit weight of soil (kN/m³)
+                  c = cohesion (kN/m²) · q = γ<sub>sub</sub> × Df = effective overburden pressure
+                  (kN/m²) · γ = bulk unit weight of soil (kN/m³)
                 </p>
                 <p>
-                  W′ = water table correction factor (1.0 = no correction, 0.5 = water at base) ·
-                  FOS = factor of safety
+                  W′ = water table correction factor (system constant: 0.5; 0.75 when q &gt; 200
+                  kN/m²) · FOS = factor of safety
                 </p>
               </div>
             </div>
