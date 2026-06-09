@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict x1KhLYd9vAtf7KDP8lwCl9H5rEC3teUy4VZnfW6msxSwIKK4LnsTNse76h7CNgo
+\restrict 1wZ2qus0f2bzezUI82FCSDLQDhjvyd9H2tLFVH0fAufRbNkg38cwvW9e4mFXq2e
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.4
@@ -752,55 +752,116 @@ CREATE FUNCTION "public"."generate_document_number"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     AS $$
 DECLARE
-  year_str TEXT;
-  month_str TEXT;
-  type_code TEXT;
-  seq_name TEXT;
-  seq_val BIGINT;
-  generated_num TEXT;
+  fiscal_year_short TEXT;
+  fy_start          INT;
+  fy_end_short      TEXT;
+  type_code         TEXT;
+  seq_name          TEXT;
+  seq_val           BIGINT;
+  generated_num     TEXT;
 BEGIN
-  -- Determine type code and sequence name based on document_type
+
+  -- Determine type code and sequence name
   CASE NEW.document_type
+
     WHEN 'Quotation' THEN
       type_code := 'QN';
       seq_name := 'public.quotation_number_seq';
+
     WHEN 'Tax Invoice' THEN
-      type_code := 'TI';
+      type_code := NULL;
       seq_name := 'public.tax_invoice_number_seq';
+
     WHEN 'Proforma Invoice' THEN
       type_code := 'PI';
       seq_name := 'public.proforma_invoice_number_seq';
+
     WHEN 'Purchase Order' THEN
       type_code := 'PO';
       seq_name := 'public.purchase_order_number_seq';
+
     WHEN 'Delivery Challan' THEN
       type_code := 'DC';
       seq_name := 'public.delivery_challan_number_seq';
+
     ELSE
       type_code := 'QN';
       seq_name := 'public.quotation_number_seq';
+
   END CASE;
 
-  -- Only generate quote_number if it is null or empty
-  IF NEW.quote_number IS NULL OR NEW.quote_number = '' THEN
-    year_str := to_char(CURRENT_DATE, 'YYYY');
-    month_str := to_char(CURRENT_DATE, 'MM');
-    
-    -- Dynamically fetch the next sequence value
-    EXECUTE format('SELECT nextval(%L)', seq_name) INTO seq_val;
-    
-    -- Format: EESIPL/{YYYY}/{MM}/{CODE}/{8-digit seq}
-    generated_num := 'EESIPL/' || year_str || '/' || month_str || '/' || type_code || '/' || LPAD(seq_val::text, 8, '0');
-    
-    NEW.quote_number := generated_num;
-    
-    -- Also sync the newly generated number into the content JSONB structure
-    IF NEW.content IS NOT NULL AND NEW.content ? 'quoteDetails' THEN
-      NEW.content := jsonb_set(NEW.content, '{quoteDetails,quoteNumber}', to_jsonb(generated_num));
+  -- Generate only when blank
+  IF NEW.quote_number IS NULL OR TRIM(NEW.quote_number) = '' THEN
+
+    -- Indian Financial Year (Apr-Mar)
+    IF EXTRACT(MONTH FROM CURRENT_DATE) >= 4 THEN
+      fy_start := EXTRACT(YEAR FROM CURRENT_DATE)::INT;
+    ELSE
+      fy_start := EXTRACT(YEAR FROM CURRENT_DATE)::INT - 1;
     END IF;
+
+    -- Example: 2026 -> 26-27
+    fy_end_short := LPAD(((fy_start + 1) % 100)::TEXT, 2, '0');
+
+    fiscal_year_short :=
+      LPAD((fy_start % 100)::TEXT, 2, '0')
+      || '-'
+      || fy_end_short;
+
+    -- Get next sequence value
+    EXECUTE format('SELECT nextval(%L)', seq_name)
+      INTO seq_val;
+
+    -- ========================================================
+    -- Tax Invoice
+    -- Format: E2/26-27/0001
+    -- ========================================================
+    IF NEW.document_type = 'Tax Invoice' THEN
+
+      generated_num :=
+        'E2/'
+        || fiscal_year_short
+        || '/'
+        || LPAD(seq_val::TEXT, 4, '0');
+
+    -- ========================================================
+    -- Other Documents
+    -- Format:
+    -- E2/26-27/QN/0000001
+    -- E2/26-27/PI/0000001
+    -- E2/26-27/PO/0000001
+    -- E2/26-27/DC/0000001
+    -- ========================================================
+    ELSE
+
+      generated_num :=
+        'E2/'
+        || fiscal_year_short
+        || '/'
+        || type_code
+        || '/'
+        || LPAD(seq_val::TEXT, 7, '0');
+
+    END IF;
+
+    NEW.quote_number := generated_num;
+
+    -- Update JSON content if present
+    IF NEW.content IS NOT NULL
+       AND NEW.content ? 'quoteDetails' THEN
+
+      NEW.content := jsonb_set(
+        NEW.content,
+        '{quoteDetails,quoteNumber}',
+        to_jsonb(generated_num)
+      );
+
+    END IF;
+
   END IF;
 
   RETURN NEW;
+
 END;
 $$;
 
@@ -3411,12 +3472,13 @@ CREATE TABLE "public"."expenses" (
     "amount" numeric DEFAULT 0 NOT NULL,
     "date" "date" DEFAULT CURRENT_DATE NOT NULL,
     "remarks" "text",
-    "project_name" "text",
-    "site_address" "text",
     "created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     "updated_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     "id" bigint NOT NULL,
-    "created_by" bigint NOT NULL
+    "created_by" bigint NOT NULL,
+    "project_name" "text",
+    "site_address" "text",
+    "paid_by" "text"
 );
 
 
@@ -4120,57 +4182,6 @@ PARTITION BY RANGE ("inserted_at");
 
 
 --
--- Name: messages_2026_06_03; Type: TABLE; Schema: realtime; Owner: -
---
-
-CREATE TABLE "realtime"."messages_2026_06_03" (
-    "topic" "text" NOT NULL,
-    "extension" "text" NOT NULL,
-    "payload" "jsonb",
-    "event" "text",
-    "private" boolean DEFAULT false,
-    "updated_at" timestamp without time zone DEFAULT "now"() NOT NULL,
-    "inserted_at" timestamp without time zone DEFAULT "now"() NOT NULL,
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "binary_payload" "bytea"
-);
-
-
---
--- Name: messages_2026_06_04; Type: TABLE; Schema: realtime; Owner: -
---
-
-CREATE TABLE "realtime"."messages_2026_06_04" (
-    "topic" "text" NOT NULL,
-    "extension" "text" NOT NULL,
-    "payload" "jsonb",
-    "event" "text",
-    "private" boolean DEFAULT false,
-    "updated_at" timestamp without time zone DEFAULT "now"() NOT NULL,
-    "inserted_at" timestamp without time zone DEFAULT "now"() NOT NULL,
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "binary_payload" "bytea"
-);
-
-
---
--- Name: messages_2026_06_05; Type: TABLE; Schema: realtime; Owner: -
---
-
-CREATE TABLE "realtime"."messages_2026_06_05" (
-    "topic" "text" NOT NULL,
-    "extension" "text" NOT NULL,
-    "payload" "jsonb",
-    "event" "text",
-    "private" boolean DEFAULT false,
-    "updated_at" timestamp without time zone DEFAULT "now"() NOT NULL,
-    "inserted_at" timestamp without time zone DEFAULT "now"() NOT NULL,
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "binary_payload" "bytea"
-);
-
-
---
 -- Name: messages_2026_06_06; Type: TABLE; Schema: realtime; Owner: -
 --
 
@@ -4229,6 +4240,60 @@ CREATE TABLE "realtime"."messages_2026_06_08" (
 --
 
 CREATE TABLE "realtime"."messages_2026_06_09" (
+    "topic" "text" NOT NULL,
+    "extension" "text" NOT NULL,
+    "payload" "jsonb",
+    "event" "text",
+    "private" boolean DEFAULT false,
+    "updated_at" timestamp without time zone DEFAULT "now"() NOT NULL,
+    "inserted_at" timestamp without time zone DEFAULT "now"() NOT NULL,
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "binary_payload" "bytea",
+    CONSTRAINT "messages_payload_exclusive" CHECK ((("payload" IS NULL) OR ("binary_payload" IS NULL)))
+);
+
+
+--
+-- Name: messages_2026_06_10; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE "realtime"."messages_2026_06_10" (
+    "topic" "text" NOT NULL,
+    "extension" "text" NOT NULL,
+    "payload" "jsonb",
+    "event" "text",
+    "private" boolean DEFAULT false,
+    "updated_at" timestamp without time zone DEFAULT "now"() NOT NULL,
+    "inserted_at" timestamp without time zone DEFAULT "now"() NOT NULL,
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "binary_payload" "bytea",
+    CONSTRAINT "messages_payload_exclusive" CHECK ((("payload" IS NULL) OR ("binary_payload" IS NULL)))
+);
+
+
+--
+-- Name: messages_2026_06_11; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE "realtime"."messages_2026_06_11" (
+    "topic" "text" NOT NULL,
+    "extension" "text" NOT NULL,
+    "payload" "jsonb",
+    "event" "text",
+    "private" boolean DEFAULT false,
+    "updated_at" timestamp without time zone DEFAULT "now"() NOT NULL,
+    "inserted_at" timestamp without time zone DEFAULT "now"() NOT NULL,
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "binary_payload" "bytea",
+    CONSTRAINT "messages_payload_exclusive" CHECK ((("payload" IS NULL) OR ("binary_payload" IS NULL)))
+);
+
+
+--
+-- Name: messages_2026_06_12; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE "realtime"."messages_2026_06_12" (
     "topic" "text" NOT NULL,
     "extension" "text" NOT NULL,
     "payload" "jsonb",
@@ -4430,27 +4495,6 @@ CREATE TABLE "storage"."vector_indexes" (
 
 
 --
--- Name: messages_2026_06_03; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY "realtime"."messages" ATTACH PARTITION "realtime"."messages_2026_06_03" FOR VALUES FROM ('2026-06-03 00:00:00') TO ('2026-06-04 00:00:00');
-
-
---
--- Name: messages_2026_06_04; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY "realtime"."messages" ATTACH PARTITION "realtime"."messages_2026_06_04" FOR VALUES FROM ('2026-06-04 00:00:00') TO ('2026-06-05 00:00:00');
-
-
---
--- Name: messages_2026_06_05; Type: TABLE ATTACH; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY "realtime"."messages" ATTACH PARTITION "realtime"."messages_2026_06_05" FOR VALUES FROM ('2026-06-05 00:00:00') TO ('2026-06-06 00:00:00');
-
-
---
 -- Name: messages_2026_06_06; Type: TABLE ATTACH; Schema: realtime; Owner: -
 --
 
@@ -4476,6 +4520,27 @@ ALTER TABLE ONLY "realtime"."messages" ATTACH PARTITION "realtime"."messages_202
 --
 
 ALTER TABLE ONLY "realtime"."messages" ATTACH PARTITION "realtime"."messages_2026_06_09" FOR VALUES FROM ('2026-06-09 00:00:00') TO ('2026-06-10 00:00:00');
+
+
+--
+-- Name: messages_2026_06_10; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY "realtime"."messages" ATTACH PARTITION "realtime"."messages_2026_06_10" FOR VALUES FROM ('2026-06-10 00:00:00') TO ('2026-06-11 00:00:00');
+
+
+--
+-- Name: messages_2026_06_11; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY "realtime"."messages" ATTACH PARTITION "realtime"."messages_2026_06_11" FOR VALUES FROM ('2026-06-11 00:00:00') TO ('2026-06-12 00:00:00');
+
+
+--
+-- Name: messages_2026_06_12; Type: TABLE ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY "realtime"."messages" ATTACH PARTITION "realtime"."messages_2026_06_12" FOR VALUES FROM ('2026-06-12 00:00:00') TO ('2026-06-13 00:00:00');
 
 
 --
@@ -5102,30 +5167,6 @@ ALTER TABLE ONLY "realtime"."messages"
 
 
 --
--- Name: messages_2026_06_03 messages_2026_06_03_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY "realtime"."messages_2026_06_03"
-    ADD CONSTRAINT "messages_2026_06_03_pkey" PRIMARY KEY ("id", "inserted_at");
-
-
---
--- Name: messages_2026_06_04 messages_2026_06_04_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY "realtime"."messages_2026_06_04"
-    ADD CONSTRAINT "messages_2026_06_04_pkey" PRIMARY KEY ("id", "inserted_at");
-
-
---
--- Name: messages_2026_06_05 messages_2026_06_05_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
---
-
-ALTER TABLE ONLY "realtime"."messages_2026_06_05"
-    ADD CONSTRAINT "messages_2026_06_05_pkey" PRIMARY KEY ("id", "inserted_at");
-
-
---
 -- Name: messages_2026_06_06 messages_2026_06_06_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
 --
 
@@ -5155,6 +5196,30 @@ ALTER TABLE ONLY "realtime"."messages_2026_06_08"
 
 ALTER TABLE ONLY "realtime"."messages_2026_06_09"
     ADD CONSTRAINT "messages_2026_06_09_pkey" PRIMARY KEY ("id", "inserted_at");
+
+
+--
+-- Name: messages_2026_06_10 messages_2026_06_10_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY "realtime"."messages_2026_06_10"
+    ADD CONSTRAINT "messages_2026_06_10_pkey" PRIMARY KEY ("id", "inserted_at");
+
+
+--
+-- Name: messages_2026_06_11 messages_2026_06_11_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY "realtime"."messages_2026_06_11"
+    ADD CONSTRAINT "messages_2026_06_11_pkey" PRIMARY KEY ("id", "inserted_at");
+
+
+--
+-- Name: messages_2026_06_12 messages_2026_06_12_pkey; Type: CONSTRAINT; Schema: realtime; Owner: -
+--
+
+ALTER TABLE ONLY "realtime"."messages_2026_06_12"
+    ADD CONSTRAINT "messages_2026_06_12_pkey" PRIMARY KEY ("id", "inserted_at");
 
 
 --
@@ -5758,27 +5823,6 @@ CREATE INDEX "messages_inserted_at_topic_index" ON ONLY "realtime"."messages" US
 
 
 --
--- Name: messages_2026_06_03_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX "messages_2026_06_03_inserted_at_topic_idx" ON "realtime"."messages_2026_06_03" USING "btree" ("inserted_at" DESC, "topic") WHERE (("extension" = 'broadcast'::"text") AND ("private" IS TRUE));
-
-
---
--- Name: messages_2026_06_04_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX "messages_2026_06_04_inserted_at_topic_idx" ON "realtime"."messages_2026_06_04" USING "btree" ("inserted_at" DESC, "topic") WHERE (("extension" = 'broadcast'::"text") AND ("private" IS TRUE));
-
-
---
--- Name: messages_2026_06_05_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
---
-
-CREATE INDEX "messages_2026_06_05_inserted_at_topic_idx" ON "realtime"."messages_2026_06_05" USING "btree" ("inserted_at" DESC, "topic") WHERE (("extension" = 'broadcast'::"text") AND ("private" IS TRUE));
-
-
---
 -- Name: messages_2026_06_06_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
 --
 
@@ -5804,6 +5848,27 @@ CREATE INDEX "messages_2026_06_08_inserted_at_topic_idx" ON "realtime"."messages
 --
 
 CREATE INDEX "messages_2026_06_09_inserted_at_topic_idx" ON "realtime"."messages_2026_06_09" USING "btree" ("inserted_at" DESC, "topic") WHERE (("extension" = 'broadcast'::"text") AND ("private" IS TRUE));
+
+
+--
+-- Name: messages_2026_06_10_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX "messages_2026_06_10_inserted_at_topic_idx" ON "realtime"."messages_2026_06_10" USING "btree" ("inserted_at" DESC, "topic") WHERE (("extension" = 'broadcast'::"text") AND ("private" IS TRUE));
+
+
+--
+-- Name: messages_2026_06_11_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX "messages_2026_06_11_inserted_at_topic_idx" ON "realtime"."messages_2026_06_11" USING "btree" ("inserted_at" DESC, "topic") WHERE (("extension" = 'broadcast'::"text") AND ("private" IS TRUE));
+
+
+--
+-- Name: messages_2026_06_12_inserted_at_topic_idx; Type: INDEX; Schema: realtime; Owner: -
+--
+
+CREATE INDEX "messages_2026_06_12_inserted_at_topic_idx" ON "realtime"."messages_2026_06_12" USING "btree" ("inserted_at" DESC, "topic") WHERE (("extension" = 'broadcast'::"text") AND ("private" IS TRUE));
 
 
 --
@@ -5870,48 +5935,6 @@ CREATE UNIQUE INDEX "vector_indexes_name_bucket_id_idx" ON "storage"."vector_ind
 
 
 --
--- Name: messages_2026_06_03_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX "realtime"."messages_inserted_at_topic_index" ATTACH PARTITION "realtime"."messages_2026_06_03_inserted_at_topic_idx";
-
-
---
--- Name: messages_2026_06_03_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX "realtime"."messages_pkey" ATTACH PARTITION "realtime"."messages_2026_06_03_pkey";
-
-
---
--- Name: messages_2026_06_04_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX "realtime"."messages_inserted_at_topic_index" ATTACH PARTITION "realtime"."messages_2026_06_04_inserted_at_topic_idx";
-
-
---
--- Name: messages_2026_06_04_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX "realtime"."messages_pkey" ATTACH PARTITION "realtime"."messages_2026_06_04_pkey";
-
-
---
--- Name: messages_2026_06_05_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX "realtime"."messages_inserted_at_topic_index" ATTACH PARTITION "realtime"."messages_2026_06_05_inserted_at_topic_idx";
-
-
---
--- Name: messages_2026_06_05_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
---
-
-ALTER INDEX "realtime"."messages_pkey" ATTACH PARTITION "realtime"."messages_2026_06_05_pkey";
-
-
---
 -- Name: messages_2026_06_06_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
 --
 
@@ -5965,6 +5988,48 @@ ALTER INDEX "realtime"."messages_inserted_at_topic_index" ATTACH PARTITION "real
 --
 
 ALTER INDEX "realtime"."messages_pkey" ATTACH PARTITION "realtime"."messages_2026_06_09_pkey";
+
+
+--
+-- Name: messages_2026_06_10_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX "realtime"."messages_inserted_at_topic_index" ATTACH PARTITION "realtime"."messages_2026_06_10_inserted_at_topic_idx";
+
+
+--
+-- Name: messages_2026_06_10_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX "realtime"."messages_pkey" ATTACH PARTITION "realtime"."messages_2026_06_10_pkey";
+
+
+--
+-- Name: messages_2026_06_11_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX "realtime"."messages_inserted_at_topic_index" ATTACH PARTITION "realtime"."messages_2026_06_11_inserted_at_topic_idx";
+
+
+--
+-- Name: messages_2026_06_11_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX "realtime"."messages_pkey" ATTACH PARTITION "realtime"."messages_2026_06_11_pkey";
+
+
+--
+-- Name: messages_2026_06_12_inserted_at_topic_idx; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX "realtime"."messages_inserted_at_topic_index" ATTACH PARTITION "realtime"."messages_2026_06_12_inserted_at_topic_idx";
+
+
+--
+-- Name: messages_2026_06_12_pkey; Type: INDEX ATTACH; Schema: realtime; Owner: -
+--
+
+ALTER INDEX "realtime"."messages_pkey" ATTACH PARTITION "realtime"."messages_2026_06_12_pkey";
 
 
 --
@@ -7285,5 +7350,5 @@ CREATE EVENT TRIGGER "pgrst_drop_watch" ON "sql_drop"
 -- PostgreSQL database dump complete
 --
 
-\unrestrict x1KhLYd9vAtf7KDP8lwCl9H5rEC3teUy4VZnfW6msxSwIKK4LnsTNse76h7CNgo
+\unrestrict 1wZ2qus0f2bzezUI82FCSDLQDhjvyd9H2tLFVH0fAufRbNkg38cwvW9e4mFXq2e
 

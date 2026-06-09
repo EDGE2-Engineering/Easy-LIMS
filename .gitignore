@@ -14,4 +14,4 @@ blob-report/
 playwright/.cache/
 .vscode/ 
 
-.dump
+*.dump
