@@ -1956,7 +1956,7 @@ const NewQuotationPage = () => {
                               </h3>
                               <p className="text-gray-500 mt-1 text-xs break-all">
                                 {quoteDetails.quoteNumber ? (
-                                  `#${quoteDetails.quoteNumber}`
+                                  `${quoteDetails.quoteNumber}`
                                 ) : (
                                   <span className="text-red-500 italic">Pending</span>
                                 )}
@@ -2068,7 +2068,7 @@ const NewQuotationPage = () => {
                         <div className="border-b pb-3 mb-4">
                           <h3 className="text-lg font-bold text-gray-900">
                             {documentType}{' '}
-                            {quoteDetails.quoteNumber ? `#${quoteDetails.quoteNumber}` : ''}{' '}
+                            {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : ''}{' '}
                             (Continued)
                           </h3>
                         </div>
@@ -2376,7 +2376,7 @@ const NewQuotationPage = () => {
                       <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
                       <span>
                         {documentType}{' '}
-                        {quoteDetails.quoteNumber ? `#${quoteDetails.quoteNumber}` : '#Pending'} |
+                        {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
                         Page {page.pageNumber} of {totalPages}
                       </span>
                     </div>
@@ -2542,7 +2542,7 @@ const NewQuotationPage = () => {
                       <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
                       <span>
                         {documentType}{' '}
-                        {quoteDetails.quoteNumber ? `#${quoteDetails.quoteNumber}` : '#Pending'} |
+                        {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
                         Page {totalItemPages + 1} of {totalPages}
                       </span>
                     </div>
@@ -2620,7 +2620,7 @@ const NewQuotationPage = () => {
                       <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
                       <span>
                         {documentType}{' '}
-                        {quoteDetails.quoteNumber ? `#${quoteDetails.quoteNumber}` : '#Pending'} |
+                        {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
                         Page {totalItemPages + 2 + tcIndex} of {totalPages}
                       </span>
                     </div>
@@ -2686,7 +2686,7 @@ const NewQuotationPage = () => {
                       <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
                       <span>
                         {documentType}{' '}
-                        {quoteDetails.quoteNumber ? `#${quoteDetails.quoteNumber}` : '#Pending'} |
+                        {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
                         Page {totalItemPages + tcPages.length + (techIndex + 1)} of {totalPages}
                       </span>
                     </div>
