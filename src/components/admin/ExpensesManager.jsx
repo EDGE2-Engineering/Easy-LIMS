@@ -187,6 +187,7 @@ const ExpensesManager = () => {
       remarks: '',
       projectName: '',
       siteAddress: '',
+      paidBy: '',
       createdBy: user?.fullName || 'Admin',
       createdById: user?.id,
     });
@@ -261,7 +262,9 @@ const ExpensesManager = () => {
       'Date',
       'Description',
       'Amount',
+      'Paid By',
       'Created By',
+      'Added On',
       'Project Name',
       'Site Address',
       'Remarks',
@@ -270,9 +273,11 @@ const ExpensesManager = () => {
     // Map data to rows
     const rows = filteredExpenses.map((e) => [
       new Date(e.date).toLocaleDateString('en-IN'),
-      `"${e.description?.replace(/"/g, '""') || ''}"`, // Escape quotes and wrap in quotes
+      `"${e.description?.replace(/"/g, '""') || ''}"`,
       e.amount,
+      `"${e.paidBy?.replace(/"/g, '""') || ''}"`,
       `"${e.createdBy?.replace(/"/g, '""') || ''}"`,
+      e.createdAt ? new Date(e.createdAt).toLocaleString('en-IN') : '',
       `"${e.projectName?.replace(/"/g, '""') || ''}"`,
       `"${e.siteAddress?.replace(/"/g, '""') || ''}"`,
       `"${e.remarks?.replace(/"/g, '""') || ''}"`,
@@ -325,87 +330,90 @@ const ExpensesManager = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-gray-700">Project Name</Label>
-              <Textarea
-                rows={2}
-                value={editingExpense.projectName || ''}
-                onChange={(e) =>
-                  setEditingExpense((prev) => ({ ...prev, projectName: e.target.value }))
-                }
-                placeholder="Which project is this for?"
-                className="rounded-xl resize-none"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-gray-700">Description</Label>
-              <Textarea
-                rows={2}
-                value={editingExpense.description || ''}
-                onChange={(e) =>
-                  setEditingExpense((prev) => ({ ...prev, description: e.target.value }))
-                }
-                placeholder="What was the expense for?"
-                className="rounded-xl resize-none"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-gray-700">Amount (₹)</Label>
-                <Input
-                  type="number"
-                  value={editingExpense.amount || ''}
+                <Label className="text-sm font-semibold text-gray-700">Project Name</Label>
+                <Textarea
+                  rows={2}
+                  value={editingExpense.projectName || ''}
                   onChange={(e) =>
-                    setEditingExpense((prev) => ({ ...prev, amount: e.target.value }))
+                    setEditingExpense((prev) => ({ ...prev, projectName: e.target.value }))
                   }
-                  placeholder="0.00"
-                  className="rounded-xl"
+                  placeholder="Which project is this for?"
+                  className="rounded-xl resize-none"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-gray-700">Date</Label>
-                <AppDatePicker
-                  value={editingExpense.date || ''}
-                  max={new Date().toISOString().split('T')[0]}
-                  onChange={(e) => setEditingExpense((prev) => ({ ...prev, date: e.target.value }))}
-                  className="rounded-xl"
+                <Label className="text-sm font-semibold text-gray-700">Description</Label>
+                <Textarea
+                  rows={2}
+                  value={editingExpense.description || ''}
+                  onChange={(e) =>
+                    setEditingExpense((prev) => ({ ...prev, description: e.target.value }))
+                  }
+                  placeholder="What was the expense for?"
+                  className="rounded-xl resize-none"
                 />
               </div>
             </div>
-            <div className="space-y-2" hidden={true}>
-              <Label className="text-sm font-semibold text-gray-700">Created By</Label>
-              <Input
-                value={editingExpense.createdBy || ''}
-                disabled
-                className="bg-gray-50 rounded-xl"
-              />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-gray-700">Site Address</Label>
+                <Textarea
+                  rows={2}
+                  value={editingExpense.siteAddress || ''}
+                  onChange={(e) =>
+                    setEditingExpense((prev) => ({ ...prev, siteAddress: e.target.value }))
+                  }
+                  placeholder="Site address..."
+                  className="rounded-xl resize-none"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-gray-700">Remarks</Label>
+                <Textarea
+                  rows={2}
+                  value={editingExpense.remarks || ''}
+                  onChange={(e) =>
+                    setEditingExpense((prev) => ({ ...prev, remarks: e.target.value }))
+                  }
+                  placeholder="Additional details..."
+                  className="rounded-xl resize-none"
+                />
+              </div>
             </div>
           </div>
-          <div className="space-y-4">
+
+          {/* Full-width bottom row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-gray-700">Site Address</Label>
-              <Textarea
-                rows={2}
-                value={editingExpense.siteAddress || ''}
-                onChange={(e) =>
-                  setEditingExpense((prev) => ({ ...prev, siteAddress: e.target.value }))
-                }
-                placeholder="Site address..."
-                className="rounded-xl resize-none"
+              <Label className="text-sm font-semibold text-gray-700">Amount (₹)</Label>
+              <Input
+                type="number"
+                value={editingExpense.amount || ''}
+                onChange={(e) => setEditingExpense((prev) => ({ ...prev, amount: e.target.value }))}
+                placeholder="0.00"
+                className="rounded-xl"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-gray-700">Remarks</Label>
-              <Textarea
-                rows={2}
-                value={editingExpense.remarks || ''}
-                onChange={(e) =>
-                  setEditingExpense((prev) => ({ ...prev, remarks: e.target.value }))
-                }
-                placeholder="Additional details..."
-                className="rounded-xl resize-none"
+              <Label className="text-sm font-semibold text-gray-700">Paid By</Label>
+              <Input
+                value={editingExpense.paidBy || ''}
+                onChange={(e) => setEditingExpense((prev) => ({ ...prev, paidBy: e.target.value }))}
+                placeholder="Who paid for this expense?"
+                className="rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-gray-700">Date</Label>
+              <AppDatePicker
+                value={editingExpense.date || ''}
+                max={new Date().toISOString().split('T')[0]}
+                onChange={(e) => setEditingExpense((prev) => ({ ...prev, date: e.target.value }))}
+                className="rounded-xl"
               />
             </div>
           </div>
@@ -700,7 +708,13 @@ const ExpensesManager = () => {
                 Amount
               </th>
               <th className="text-center py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] hidden md:table-cell">
+                Paid By
+              </th>
+              <th className="text-center py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] hidden md:table-cell">
                 Created By
+              </th>
+              <th className="text-center py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] hidden lg:table-cell">
+                Added On
               </th>
               <th className="text-center py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
                 Actions
@@ -752,9 +766,39 @@ const ExpensesManager = () => {
                     </div>
                   </td>
                   <td className="py-5 px-2 text-center hidden md:table-cell">
+                    {expense.paidBy ? (
+                      <div className="text-xs font-semibold text-gray-700 tracking-tight">
+                        {expense.paidBy}
+                      </div>
+                    ) : (
+                      <span className="text-gray-300 text-xs">—</span>
+                    )}
+                  </td>
+                  <td className="py-5 px-2 text-center hidden md:table-cell">
                     <div className="text-xs font-semibold text-gray-500 tracking-tight">
                       {expense.createdBy}
                     </div>
+                  </td>
+                  <td className="py-5 px-2 text-center hidden lg:table-cell">
+                    {expense.createdAt ? (
+                      <div className="text-xs text-gray-500">
+                        <div className="font-mono">
+                          {new Date(expense.createdAt).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </div>
+                        <div className="text-gray-400 text-[10px]">
+                          {new Date(expense.createdAt).toLocaleTimeString('en-IN', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-300 text-xs">—</span>
+                    )}
                   </td>
 
                   <td className="py-5 px-2 text-center">
@@ -781,7 +825,7 @@ const ExpensesManager = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="py-12 text-center">
+                <td colSpan="8" className="py-12 text-center">
                   <div className="flex flex-col items-center justify-center text-gray-400">
                     <IndianRupee className="w-12 h-12 mb-4 opacity-20" />
                     <p className="font-medium text-lg">No expenses found</p>

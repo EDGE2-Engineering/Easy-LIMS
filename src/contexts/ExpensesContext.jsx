@@ -21,6 +21,7 @@ const ExpensesProvider = ({ children }) => {
       createdBy: e.users?.full_name || e.created_by_name || 'Unknown',
       createdById: e.created_by,
       createdAt: e.created_at || new Date().toISOString(),
+      paidBy: e.paid_by || '',
     }),
     []
   );
@@ -34,6 +35,7 @@ const ExpensesProvider = ({ children }) => {
       remarks: e.remarks,
       project_name: e.projectName || null,
       site_address: e.siteAddress || null,
+      paid_by: e.paidBy || null,
       created_by: e.createdById,
     }),
     []
