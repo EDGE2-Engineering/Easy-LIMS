@@ -2880,11 +2880,11 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                   </p>
                   <p className="text-2xl font-black font-mono tabular-nums mt-1 text-primary">
                     Sf = {fmtDec(result)}
-                    <span className="text-sm font-normal text-gray-400 ml-2">m / kN/m²</span>
+                    <span className="text-sm font-normal text-gray-400 ml-2">m</span>
                   </p>
                   <p className="text-base font-bold font-mono tabular-nums text-gray-500 mt-0.5">
                     = {(result * 1000).toFixed(4)}
-                    <span className="text-xs font-normal text-gray-400 ml-2">mm / kN/m²</span>
+                    <span className="text-xs font-normal text-gray-400 ml-2">mm</span>
                   </p>
                 </div>
 
@@ -2953,7 +2953,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                         n0 !== n1
                           ? `  = ${fmtDec(r0)} + (${nVal} - ${n0})/(${n1} - ${n0}) × (${fmtDec(r1)} - ${fmtDec(r0)})`
                           : `  N is exactly on row ${n0}, no N-interpolation needed`,
-                        `  Sf = ${fmtDec(result)} m / kN/m²`,
+                        `  Sf = ${fmtDec(result)} m`,
                       ].join('\n');
                     })()}
                   </div>
@@ -3719,9 +3719,9 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                       Interpolated from ABC table at N={N}, B={B} m
                     </p>
                     <p className="text-xl font-black font-mono tabular-nums mt-1 text-gray-800">
-                      {Sf !== null ? fmtDec(Sf) : '—'}
+                      {Sf !== null ? fmtDec(Sf * 1000) : '—'}
                     </p>
-                    <p className="text-[10px] text-gray-400 font-mono">m / kN/m²</p>
+                    <p className="text-[10px] text-gray-400 font-mono">mm</p>
                   </div>
 
                   {/* If */}
@@ -3763,9 +3763,9 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                       Si = Sf × I<sub>f</sub> × R<sub>f</sub>
                     </p>
                     <p className="text-xl font-black font-mono tabular-nums mt-1 text-gray-700">
-                      {Si !== null ? fmtDec(Si) : '—'}
+                      {Si !== null ? fmtDec(Si * 1000) : '—'}
                     </p>
-                    <p className="text-[10px] text-gray-400 font-mono">m / kN/m²</p>
+                    <p className="text-[10px] text-gray-400 font-mono">mm</p>
                   </div>
 
                   {/* Allowable settlement */}
@@ -3788,8 +3788,8 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                       Allowable Bearing Capacity — qa
                     </p>
                     <p className="text-xs font-mono text-gray-500 mt-0.5">
-                      qa = S<sub>allow</sub> / Si = {allowSettlement_m.toFixed(3)} /{' '}
-                      {Si !== null ? fmtDec(Si) : '—'}
+                      qa = S<sub>allow</sub> / Si = {allowSettlement_mm} /{' '}
+                      {Si !== null ? fmtDec(Si * 1000) : '—'} mm
                     </p>
                     <p className="text-2xl font-black font-mono tabular-nums mt-1 text-primary">
                       {qa_kgcm2 !== null ? qa_kgcm2.toFixed(4) : '—'}
@@ -3813,7 +3813,8 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                       `Step 1 — Settlement per Unit Pressure (Sf)`,
                       `  From Allowable Bearing Capacity table, interpolated at:`,
                       `  N = ${N},  B = ${Math.min(B, 6.0).toFixed(2)} m${B > 6.0 ? ` (B clamped from ${B} m — table max 6.0 m)` : ''}`,
-                      `  Sf = ${Sf !== null ? fmtDec(Sf) : 'NA'} m / kN/m²`,
+                      `  Sf = ${Sf !== null ? fmtDec(Sf) : 'NA'} m`,
+                      `     = ${Sf !== null ? fmtDec(Sf * 1000) : 'NA'} mm`,
                       ``,
                       `Step 2 — Depth Factor / Fox's Correction (If)`,
                       ifRes
@@ -3842,12 +3843,12 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                       ``,
                       `Step 3 — Corrected Immediate Settlement (Si)`,
                       `  Si = Sf × If × Rf`,
-                      `     = ${Sf !== null ? fmtDec(Sf) : 'NA'} × ${If_val !== null ? If_val.toFixed(4) : 'NA'} × ${RIGIDITY_FACTOR}`,
-                      `     = ${Si !== null ? fmtDec(Si) : 'NA'} m / kN/m²`,
+                      `     = ${Sf !== null ? fmtDec(Sf * 1000) : 'NA'} mm × ${If_val !== null ? If_val.toFixed(4) : 'NA'} × ${RIGIDITY_FACTOR}`,
+                      `     = ${Si !== null ? fmtDec(Si * 1000) : 'NA'} mm`,
                       ``,
                       `Step 4 — Allowable Bearing Capacity (qa)`,
                       `  qa = S_allow / Si`,
-                      `     = ${allowSettlement_m.toFixed(3)} m / ${Si !== null ? fmtDec(Si) : 'NA'}`,
+                      `     = ${allowSettlement_mm} mm / ${Si !== null ? fmtDec(Si * 1000) : 'NA'} mm`,
                       `     = ${qa_m !== null ? qa_m.toFixed(4) : 'NA'} kN/m²`,
                       `     = ${qa_kgcm2 !== null ? qa_kgcm2.toFixed(4) : 'NA'} kg/cm²`,
                     ].join('\n')}
@@ -3863,8 +3864,8 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
             {/* Formula reference */}
             <div className="text-[10px] text-gray-400 space-y-0.5 border-t border-gray-100 pt-3">
               <p>
-                Sf — settlement per unit pressure (m/kN/m²), interpolated from Allowable Bearing
-                Capacity table
+                Sf — settlement per unit pressure (mm), interpolated from Allowable Bearing Capacity
+                table and converted from m to mm (× 1000)
               </p>
               <p>
                 If — depth factor from Fox's Correction curves (IS:8009 Fig.9) · Rf = 0.8 (rigidity
