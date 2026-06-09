@@ -10,6 +10,7 @@ import AdminUnitWeightsManager from './AdminUnitWeightsManager';
 import {
   Chart,
   LinearScale,
+  LogarithmicScale,
   PointElement,
   LineElement,
   Tooltip as ChartTooltip,
@@ -17,7 +18,15 @@ import {
   LineController,
 } from 'chart.js';
 
-Chart.register(LinearScale, PointElement, LineElement, ChartTooltip, Legend, LineController);
+Chart.register(
+  LinearScale,
+  LogarithmicScale,
+  PointElement,
+  LineElement,
+  ChartTooltip,
+  Legend,
+  LineController
+);
 
 const SETTING_KEY = 'bearing_capacity_factors_data';
 
@@ -306,9 +315,18 @@ const AdminBearingCapacityManager = () => {
   // W′ (Water Table Correction) is a system-defined constant of 0.5
   const W_CONSTANT = 0.5;
   const [fosInput, setFosInput] = useState(''); // factor of safety
+  const [foxDepthInput, setFoxDepthInput] = useState(''); // Fox interpolation calculator — D
+  const [foxLengthInput, setFoxLengthInput] = useState(''); // Fox interpolation calculator — L
+  const [foxWidthInput, setFoxWidthInput] = useState(''); // Fox interpolation calculator — B
 
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
+  const settlementChartRef = useRef(null);
+  const settlementChartInstanceRef = useRef(null);
+  const foxChartRef = useRef(null);
+  const foxChartInstanceRef = useRef(null);
+  const sptSettlementChartRef = useRef(null);
+  const sptSettlementChartInstanceRef = useRef(null);
 
   useEffect(() => {
     const obs = new MutationObserver(() =>
@@ -487,6 +505,534 @@ const AdminBearingCapacityManager = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chartDataKey, isDark]);
+
+  // ── Allowable Bearing Capacity chart ─────────────────────────────────────────────
+  const SETTLEMENT_DATA = [
+    { n: 5, vals: [0.12, 0.14, 0.16, 0.17, 0.18, 0.18] },
+    { n: 10, vals: [0.03, 0.032, 0.037, 0.039, 0.04, 0.04] },
+    { n: 15, vals: [0.017, 0.018, 0.021, 0.022, 0.023, 0.023] },
+    { n: 20, vals: [0.013, 0.014, 0.016, 0.016, 0.017, 0.017] },
+    { n: 25, vals: [0.009, 0.01, 0.012, 0.013, 0.014, 0.014] },
+    { n: 30, vals: [0.0075, 0.008, 0.009, 0.0094, 0.01, 0.01] },
+    { n: 35, vals: [0.006, 0.0068, 0.0075, 0.008, 0.0082, 0.0085] },
+    { n: 40, vals: [0.0054, 0.0059, 0.0065, 0.0069, 0.007, 0.007] },
+    { n: 45, vals: [null, 0.0054, 0.0058, 0.006, 0.0061, 0.0062] },
+    { n: 50, vals: [null, 0.0048, 0.0052, 0.0055, 0.0057, 0.0058] },
+    { n: 55, vals: [null, 0.0043, 0.0047, 0.0049, 0.005, 0.005] },
+    { n: 60, vals: [null, 0.0038, 0.0042, 0.0045, 0.0046, 0.0046] },
+  ];
+  const FOOTING_WIDTHS = [1.5, 2.0, 3.0, 4.0, 5.0, 6.0];
+
+  useEffect(() => {
+    if (!settlementChartRef.current) return;
+    if (settlementChartInstanceRef.current) {
+      settlementChartInstanceRef.current.destroy();
+      settlementChartInstanceRef.current = null;
+    }
+
+    const colors = buildChartColors();
+    const lineColors = [
+      colors.primary,
+      colors.blue,
+      colors.orange,
+      colors.teal,
+      colors.violet,
+      colors.rose,
+    ];
+
+    const datasets = FOOTING_WIDTHS.map((w, i) => ({
+      label: `B = ${w} m`,
+      data: SETTLEMENT_DATA.filter((row) => row.vals[i] !== null).map((row) => ({
+        x: row.n,
+        y: row.vals[i],
+      })),
+      parsing: false,
+      borderColor: lineColors[i],
+      backgroundColor: 'transparent',
+      pointBackgroundColor: lineColors[i],
+      pointBorderColor: colors.card,
+      pointBorderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      borderWidth: 2,
+      tension: 0.3,
+    }));
+
+    settlementChartInstanceRef.current = new Chart(settlementChartRef.current, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 400 },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              color: colors.foreground,
+              font: { size: 11, weight: '600' },
+              boxWidth: 14,
+              padding: 14,
+              generateLabels(chart) {
+                return chart.data.datasets.map((ds, idx) => ({
+                  text: ds.label,
+                  fillStyle: 'transparent',
+                  strokeStyle: ds.borderColor,
+                  lineWidth: ds.borderWidth,
+                  lineDash: [],
+                  hidden: !chart.isDatasetVisible(idx),
+                  datasetIndex: idx,
+                  fontColor: colors.foreground,
+                }));
+              },
+            },
+          },
+          tooltip: {
+            enabled: true,
+            backgroundColor: colors.foreground,
+            titleColor: colors.card,
+            bodyColor: colors.card,
+            borderColor: colors.primary,
+            borderWidth: 1.5,
+            padding: 8,
+            callbacks: {
+              title: (items) => `N = ${items[0].parsed.x}`,
+              label: (item) => ` ${item.dataset.label}: ${item.parsed.y}`,
+            },
+          },
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            min: 5,
+            max: 60,
+            ticks: {
+              color: colors.muted,
+              font: { size: 10 },
+              stepSize: 5,
+              callback: (v) => `N=${v}`,
+            },
+            title: {
+              display: true,
+              text: 'SPT N-value  \u2192',
+              color: colors.muted,
+              font: { size: 11, weight: '600' },
+              padding: { top: 8 },
+            },
+            grid: { color: colors.border, lineWidth: 1 },
+            border: { color: colors.border },
+          },
+          y: {
+            type: 'linear',
+            min: 0,
+            ticks: {
+              color: colors.muted,
+              font: { size: 10 },
+              callback: (v) => v.toFixed(3),
+            },
+            title: {
+              display: true,
+              text: 'Allowable Settlement (m/kN/m\u00b2)  \u2192',
+              color: colors.muted,
+              font: { size: 11, weight: '600' },
+              padding: { bottom: 8 },
+            },
+            grid: { color: colors.border, lineWidth: 1 },
+            border: { color: colors.border },
+          },
+        },
+      },
+    });
+
+    return () => {
+      if (settlementChartInstanceRef.current) {
+        settlementChartInstanceRef.current.destroy();
+        settlementChartInstanceRef.current = null;
+      }
+    };
+  }, [isDark]);
+
+  // ── Settlement per Unit Pressure chart — uses Allowable Bearing Capacity table data ──
+  // B on X-axis, one curve per N-value (transposed from SETTLEMENT_DATA rows)
+  const SPT_SETTLEMENT_COLORS = [
+    '#e6194b',
+    '#3cb44b',
+    '#b5a800',
+    '#4363d8',
+    '#f58231',
+    '#911eb4',
+    '#0097a7',
+    '#f032e6',
+    '#a9a9a9',
+    '#00bcd4',
+    '#ff5722',
+    '#8bc34a',
+  ];
+
+  useEffect(() => {
+    if (!sptSettlementChartRef.current) return;
+    if (sptSettlementChartInstanceRef.current) {
+      sptSettlementChartInstanceRef.current.destroy();
+      sptSettlementChartInstanceRef.current = null;
+    }
+
+    const colors = buildChartColors();
+
+    // Build one dataset per N-value row in SETTLEMENT_DATA.
+    // X = footing width B (from FOOTING_WIDTHS), Y = settlement value.
+    // Skip null entries (NA) when plotting.
+    const datasets = SETTLEMENT_DATA.map((row, rowIdx) => ({
+      label: `N = ${row.n}`,
+      data: FOOTING_WIDTHS.map((b, i) =>
+        row.vals[i] !== null ? { x: b, y: row.vals[i] } : null
+      ).filter(Boolean),
+      parsing: false,
+      borderColor: SPT_SETTLEMENT_COLORS[rowIdx % SPT_SETTLEMENT_COLORS.length],
+      backgroundColor: 'transparent',
+      pointBackgroundColor: SPT_SETTLEMENT_COLORS[rowIdx % SPT_SETTLEMENT_COLORS.length],
+      pointBorderColor: colors.card,
+      pointBorderWidth: 2,
+      pointRadius: 3,
+      pointHoverRadius: 6,
+      borderWidth: 2,
+      tension: 0.3,
+      showLine: true,
+    }));
+
+    sptSettlementChartInstanceRef.current = new Chart(sptSettlementChartRef.current, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 400 },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'right',
+            labels: {
+              color: colors.foreground,
+              font: { size: 11, weight: '600' },
+              boxWidth: 14,
+              padding: 14,
+              generateLabels(chart) {
+                return chart.data.datasets.map((ds, idx) => ({
+                  text: ds.label,
+                  fillStyle: 'transparent',
+                  strokeStyle: ds.borderColor,
+                  lineWidth: ds.borderWidth,
+                  lineDash: [],
+                  hidden: !chart.isDatasetVisible(idx),
+                  datasetIndex: idx,
+                  fontColor: colors.foreground,
+                }));
+              },
+            },
+          },
+          tooltip: {
+            enabled: true,
+            backgroundColor: colors.foreground,
+            titleColor: colors.card,
+            bodyColor: colors.card,
+            borderColor: colors.primary,
+            borderWidth: 1.5,
+            padding: 8,
+            callbacks: {
+              title: (items) => `B = ${items[0].parsed.x} m`,
+              label: (item) => {
+                const v = item.parsed.y;
+                return ` ${item.dataset.label}: ${v.toFixed(4)} m  (${(v * 1000).toFixed(1)} mm)`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            min: 1.0,
+            max: 6.5,
+            ticks: {
+              color: colors.muted,
+              font: { size: 10 },
+              stepSize: 0.5,
+              callback: (v) => `${v} m`,
+            },
+            title: {
+              display: true,
+              text: "Width 'B' of Footing (Meters)  →",
+              color: colors.muted,
+              font: { size: 11, weight: '600' },
+              padding: { top: 8 },
+            },
+            grid: { color: colors.border, lineWidth: 1 },
+            border: { color: colors.border },
+          },
+          y: {
+            type: 'logarithmic',
+            min: 0.001,
+            max: 0.5,
+            ticks: {
+              color: colors.muted,
+              font: { size: 10 },
+              callback: (v) => {
+                // Show labels at notable values
+                if (v === 0.1) return '10⁻¹';
+                if (v === 0.01) return '10⁻²';
+                if (v === 0.001) return '10⁻³';
+                return null;
+              },
+            },
+            title: {
+              display: true,
+              text: 'Settlement per Unit Pressure (m / kN/m²)  →',
+              color: colors.muted,
+              font: { size: 11, weight: '600' },
+              padding: { bottom: 8 },
+            },
+            grid: { color: colors.border, lineWidth: 1 },
+            border: { color: colors.border },
+          },
+        },
+      },
+    });
+
+    return () => {
+      if (sptSettlementChartInstanceRef.current) {
+        sptSettlementChartInstanceRef.current.destroy();
+        sptSettlementChartInstanceRef.current = null;
+      }
+    };
+  }, [isDark]);
+
+  // ── Fox's Correction Curves chart ────────────────────────────────────────
+  const FOX_DATASETS = [
+    {
+      label: 'L/B = 1',
+      color: '#ef4444',
+      data: [
+        { x: 1.0, y: 0.0 },
+        { x: 0.94, y: 0.2 },
+        { x: 0.87, y: 0.4 },
+        { x: 0.81, y: 0.6 },
+        { x: 0.76, y: 0.8 },
+        { x: 0.72, y: 1.0 },
+        { x: 0.67, y: 1.2 },
+        { x: 0.62, y: 1.4 },
+        { x: 0.57, y: 1.6 },
+        { x: 0.53, y: 1.8 },
+        { x: 0.5, y: 2.0 },
+      ],
+    },
+    {
+      label: 'L/B = 9',
+      color: '#22c55e',
+      data: [
+        { x: 1.0, y: 0.0 },
+        { x: 0.91, y: 0.2 },
+        { x: 0.83, y: 0.4 },
+        { x: 0.77, y: 0.6 },
+        { x: 0.73, y: 0.8 },
+        { x: 0.72, y: 1.0 },
+        { x: 0.7, y: 1.2 },
+        { x: 0.67, y: 1.4 },
+        { x: 0.63, y: 1.6 },
+        { x: 0.58, y: 1.8 },
+        { x: 0.5, y: 2.0 },
+      ],
+    },
+    {
+      label: 'L/B = 25',
+      color: '#3b82f6',
+      data: [
+        { x: 1.0, y: 0.0 },
+        { x: 0.88, y: 0.2 },
+        { x: 0.8, y: 0.4 },
+        { x: 0.75, y: 0.6 },
+        { x: 0.72, y: 0.8 },
+        { x: 0.72, y: 1.0 },
+        { x: 0.71, y: 1.2 },
+        { x: 0.69, y: 1.4 },
+        { x: 0.66, y: 1.6 },
+        { x: 0.61, y: 1.8 },
+        { x: 0.5, y: 2.0 },
+      ],
+    },
+    {
+      label: 'L/B = 100',
+      color: '#a855f7',
+      data: [
+        { x: 1.0, y: 0.0 },
+        { x: 0.85, y: 0.2 },
+        { x: 0.77, y: 0.4 },
+        { x: 0.73, y: 0.6 },
+        { x: 0.72, y: 0.8 },
+        { x: 0.72, y: 1.0 },
+        { x: 0.72, y: 1.2 },
+        { x: 0.71, y: 1.4 },
+        { x: 0.68, y: 1.6 },
+        { x: 0.63, y: 1.8 },
+        { x: 0.5, y: 2.0 },
+      ],
+    },
+  ];
+
+  useEffect(() => {
+    if (!foxChartRef.current) return;
+    if (foxChartInstanceRef.current) {
+      foxChartInstanceRef.current.destroy();
+      foxChartInstanceRef.current = null;
+    }
+
+    const colors = buildChartColors();
+
+    const datasets = FOX_DATASETS.map((ds) => ({
+      label: ds.label,
+      data: ds.data,
+      parsing: false,
+      borderColor: ds.color,
+      backgroundColor: 'transparent',
+      pointBackgroundColor: ds.color,
+      pointBorderColor: colors.card,
+      pointBorderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      borderWidth: 2,
+      tension: 0.2,
+      showLine: true,
+    }));
+
+    // Custom plugin: thick horizontal line at y = 1.0 (the mid-axis crossover)
+    const midLinePlugin = {
+      id: 'foxMidLine',
+      afterDraw(chart) {
+        const { ctx, chartArea, scales } = chart;
+        const yPx = scales.y.getPixelForValue(1.0);
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = colors.foreground;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.moveTo(chartArea.left, yPx);
+        ctx.lineTo(chartArea.right, yPx);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      },
+    };
+
+    foxChartInstanceRef.current = new Chart(foxChartRef.current, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 400 },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              color: colors.foreground,
+              font: { size: 11, weight: '600' },
+              boxWidth: 14,
+              padding: 14,
+              generateLabels(chart) {
+                return chart.data.datasets.map((d, i) => ({
+                  text: d.label,
+                  fillStyle: 'transparent',
+                  strokeStyle: d.borderColor,
+                  lineWidth: d.borderWidth,
+                  lineDash: [],
+                  hidden: !chart.isDatasetVisible(i),
+                  datasetIndex: i,
+                  fontColor: colors.foreground,
+                }));
+              },
+            },
+          },
+          tooltip: {
+            enabled: true,
+            backgroundColor: colors.foreground,
+            titleColor: colors.card,
+            bodyColor: colors.card,
+            borderColor: colors.primary,
+            borderWidth: 1.5,
+            padding: 8,
+            callbacks: {
+              title: () => '',
+              label: (item) => {
+                const depthFactor = item.parsed.x.toFixed(2);
+                const yRaw = item.parsed.y;
+                const scaleLabel =
+                  yRaw <= 1.0
+                    ? `D/\u221aLB = ${yRaw.toFixed(1)}`
+                    : `LB/\u221aD = ${(2.0 - yRaw).toFixed(1)}`;
+                return ` ${item.dataset.label}  \u2502  Depth factor: ${depthFactor}  \u2502  ${scaleLabel}`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            position: 'top',
+            min: 0.5,
+            max: 1.0,
+            ticks: {
+              color: colors.muted,
+              font: { size: 10 },
+              stepSize: 0.1,
+            },
+            title: {
+              display: true,
+              text: 'Depth Factor (If)  \u2192',
+              color: colors.muted,
+              font: { size: 11, weight: '600' },
+              padding: { bottom: 8 },
+            },
+            grid: { color: colors.border, lineWidth: 1 },
+            border: { color: colors.border },
+          },
+          y: {
+            type: 'linear',
+            min: 0.0,
+            max: 2.0,
+            reverse: true,
+            ticks: {
+              color: colors.muted,
+              font: { size: 10 },
+              stepSize: 0.2,
+              callback: (value) => {
+                if (value <= 1.0) return value.toFixed(1);
+                return (2.0 - value).toFixed(1);
+              },
+            },
+            title: {
+              display: false,
+            },
+            grid: {
+              color: (ctx) => (ctx.tick.value === 1.0 ? colors.foreground : colors.border),
+              lineWidth: (ctx) => (ctx.tick.value === 1.0 ? 1.5 : 1),
+            },
+            border: { color: colors.border },
+          },
+        },
+      },
+      plugins: [midLinePlugin],
+    });
+
+    return () => {
+      if (foxChartInstanceRef.current) {
+        foxChartInstanceRef.current.destroy();
+        foxChartInstanceRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDark]);
 
   const handleChange = useCallback((id, field, value) => {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
@@ -2050,6 +2596,619 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                 </p>
               </div>
             </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Allowable Bearing Capacity ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        {/* Header */}
+        <div className="px-6 pt-5 pb-4 border-b border-gray-100">
+          <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
+            Allowable Bearing Capacity
+          </h2>
+          <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest font-medium">
+            Allowable bearing pressure (kN/m²) for 25 mm settlement — Teng&apos;s formula (IS:8009)
+          </p>
+        </div>
+
+        {/* Table */}
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className="py-2" />
+              <th
+                colSpan={6}
+                className="py-2 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400"
+              >
+                Width of Footing (B) in m
+              </th>
+            </tr>
+            <tr className="bg-gray-50 border-b border-gray-100">
+              <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
+                <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                  Standard Penetration Test
+                </span>
+                N-value
+              </th>
+              {['1.5', '2.0', '3.0', '4.0', '5.0', '6.0'].map((w) => (
+                <th
+                  key={w}
+                  className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]"
+                >
+                  {w} m
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {[
+              { n: 5, vals: ['0.120', '0.140', '0.160', '0.170', '0.180', '0.180'] },
+              { n: 10, vals: ['0.030', '0.032', '0.037', '0.039', '0.040', '0.040'] },
+              { n: 15, vals: ['0.017', '0.018', '0.021', '0.022', '0.023', '0.023'] },
+              { n: 20, vals: ['0.013', '0.014', '0.016', '0.016', '0.017', '0.017'] },
+              { n: 25, vals: ['0.009', '0.010', '0.012', '0.013', '0.014', '0.014'] },
+              { n: 30, vals: ['0.0075', '0.008', '0.009', '0.0094', '0.010', '0.010'] },
+              { n: 35, vals: ['0.006', '0.0068', '0.0075', '0.008', '0.0082', '0.0085'] },
+              { n: 40, vals: ['0.0054', '0.0059', '0.0065', '0.0069', '0.007', '0.007'] },
+              { n: 45, vals: ['NA', '0.0054', '0.0058', '0.006', '0.0061', '0.0062'] },
+              { n: 50, vals: ['NA', '0.0048', '0.0052', '0.0055', '0.0057', '0.0058'] },
+              { n: 55, vals: ['NA', '0.0043', '0.0047', '0.0049', '0.005', '0.005'] },
+              { n: 60, vals: ['NA', '0.0038', '0.0042', '0.0045', '0.0046', '0.0046'] },
+            ].map(({ n, vals }) => (
+              <tr key={n} className="hover:bg-gray-50/50 transition-colors">
+                <td className="py-3 px-4 text-center text-xs font-mono font-bold text-gray-700 border-r border-gray-100">
+                  {n}
+                </td>
+                {vals.map((v, i) => (
+                  <td
+                    key={i}
+                    className={`py-3 px-4 text-center text-xs font-mono tabular-nums ${
+                      v === 'NA' ? 'text-gray-300 italic' : 'text-gray-700'
+                    }`}
+                  >
+                    {v}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50">
+          <p className="text-xs text-gray-500 italic">
+            For any width of footing &gt; 6.0 m, settlement values that correspond to 6.0 m will be
+            taken.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Settlement per Unit Pressure — Chart ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+        <div>
+          <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+            Settlement per Unit Pressure Curves
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            IS : 8009 Part I – 1976 &nbsp;·&nbsp; Figure 9 &nbsp;·&nbsp; Settlement vs. footing
+            width &apos;B&apos; for varying N-values &nbsp;·&nbsp; Hover for interpolated values
+          </p>
+        </div>
+        <div className="relative w-full" style={{ height: 420 }}>
+          <canvas ref={sptSettlementChartRef} />
+        </div>
+        <p className="text-xs text-gray-500 italic border-t border-gray-100 pt-3">
+          Y-axis (log scale): settlement per unit pressure in m per kN/m². X-axis: width of footing
+          B in metres. Each curve represents a constant SPT N-value. Data from the Allowable Bearing
+          Capacity table above.
+        </p>
+      </div>
+
+      {/* ── Allowable Bearing Capacity Chart ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+        <div>
+          <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+            Allowable Bearing Capacity Curves
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Allowable bearing pressure vs. SPT N-value for each footing width &nbsp;·&nbsp; Hover
+            for interpolated values
+          </p>
+        </div>
+        <div className="relative w-full" style={{ height: 380 }}>
+          <canvas ref={settlementChartRef} />
+        </div>
+      </div>
+
+      {/* ── Fox's Correction — Data Table ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        {/* Header */}
+        <div className="px-6 pt-5 pb-4 border-b border-gray-100">
+          <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
+            Depth Factor — Fox&apos;s Correction
+          </h2>
+          <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest font-medium">
+            I<sub>f</sub> values vs. depth ratio &nbsp;·&nbsp; IS:8009 Part I – 1976
+          </p>
+        </div>
+
+        <table className="w-full text-sm">
+          <thead>
+            {/* Group label row */}
+            <tr className="border-b border-gray-100">
+              <th className="py-2" colSpan={2} />
+              <th
+                colSpan={4}
+                className="py-2 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400"
+              >
+                Depth Factor I<sub>f</sub> — by L/B ratio
+              </th>
+            </tr>
+            {/* Column headers */}
+            <tr className="bg-gray-50 border-b border-gray-100">
+              <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
+                <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                  Scale
+                </span>
+                Region
+              </th>
+              <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
+                <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                  D/√LB &nbsp;(top) &nbsp;/&nbsp; LB/√D &nbsp;(bottom)
+                </span>
+                Depth Ratio
+              </th>
+              {['L/B = 1', 'L/B = 9', 'L/B = 25', 'L/B = 100'].map((lbl) => (
+                <th
+                  key={lbl}
+                  className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]"
+                >
+                  <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                    Depth Factor
+                  </span>
+                  {lbl}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {/* ── Upper half: D/√LB ── */}
+            {[
+              { ratio: '0.0', vals: [1.0, 1.0, 1.0, 1.0] },
+              { ratio: '0.2', vals: [0.94, 0.91, 0.88, 0.85] },
+              { ratio: '0.4', vals: [0.87, 0.83, 0.8, 0.77] },
+              { ratio: '0.6', vals: [0.81, 0.77, 0.75, 0.73] },
+              { ratio: '0.8', vals: [0.76, 0.73, 0.72, 0.72] },
+              { ratio: '1.0', vals: [0.72, 0.72, 0.72, 0.72] },
+            ].map(({ ratio, vals }, i) => (
+              <tr key={`top-${i}`} className="hover:bg-gray-50/50 transition-colors">
+                {i === 0 && (
+                  <td
+                    rowSpan={6}
+                    className="py-3 px-4 text-center text-xs font-mono font-bold text-gray-700 border-r border-gray-100 align-middle"
+                  >
+                    <span className="block font-sans text-[10px] uppercase tracking-widest text-gray-400 font-bold">
+                      Upper
+                    </span>
+                    <span className="block font-mono text-gray-500 mt-1 normal-case text-[11px]">
+                      D / &radic;LB
+                    </span>
+                  </td>
+                )}
+                <td className="py-3 px-4 text-center text-xs font-mono tabular-nums text-gray-700 border-r border-gray-100">
+                  {ratio}
+                </td>
+                {vals.map((v, j) => (
+                  <td
+                    key={j}
+                    className="py-3 px-4 text-center text-xs font-mono tabular-nums text-gray-700"
+                  >
+                    {v.toFixed(2)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+
+            {/* ── Divider row ── */}
+            <tr className="bg-gray-100/60">
+              <td
+                colSpan={6}
+                className="py-1.5 px-4 text-center text-[10px] uppercase tracking-widest font-bold text-gray-400 border-y border-gray-200"
+              >
+                ── mid-point crossover ──
+              </td>
+            </tr>
+
+            {/* ── Lower half: LB/√D ── */}
+            {[
+              { ratio: '0.8', vals: [0.67, 0.7, 0.71, 0.72] },
+              { ratio: '0.6', vals: [0.62, 0.67, 0.69, 0.71] },
+              { ratio: '0.4', vals: [0.57, 0.63, 0.66, 0.68] },
+              { ratio: '0.2', vals: [0.53, 0.58, 0.61, 0.63] },
+              { ratio: '0.0', vals: [0.5, 0.5, 0.5, 0.5] },
+            ].map(({ ratio, vals }, i) => (
+              <tr key={`bot-${i}`} className="hover:bg-gray-50/50 transition-colors">
+                {i === 0 && (
+                  <td
+                    rowSpan={5}
+                    className="py-3 px-4 text-center text-xs font-mono font-bold text-gray-700 border-r border-gray-100 align-middle"
+                  >
+                    <span className="block font-sans text-[10px] uppercase tracking-widest text-gray-400 font-bold">
+                      Lower
+                    </span>
+                    <span className="block font-mono text-gray-500 mt-1 normal-case text-[11px]">
+                      LB / &radic;D
+                    </span>
+                  </td>
+                )}
+                <td className="py-3 px-4 text-center text-xs font-mono tabular-nums text-gray-700 border-r border-gray-100">
+                  {ratio}
+                </td>
+                {vals.map((v, j) => (
+                  <td
+                    key={j}
+                    className="py-3 px-4 text-center text-xs font-mono tabular-nums text-gray-700"
+                  >
+                    {v.toFixed(2)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50">
+          <p className="text-xs text-gray-500 italic">
+            Upper half: depth ratio = D/&radic;LB (depth ÷ square root of plan area). Lower half:
+            depth ratio = LB/&radic;D (inverted scale). At the crossover (ratio = 1.0 / 0.0) all
+            curves converge at I<sub>f</sub> ≈ 0.72. At zero depth, I<sub>f</sub> = 1.00; at maximum
+            depth ratio, I<sub>f</sub> = 0.50.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Fox's Correction Curves ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+        <div>
+          <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+            Depth Factor Curves
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Fox&apos;s Correction Curves &nbsp;·&nbsp; IS:8009 Part I – 1976 &nbsp;·&nbsp; Depth
+            factor (I<sub>f</sub>) vs. depth ratio for varying L/B
+          </p>
+        </div>
+
+        {/* Dual Y-axis labels rendered alongside the canvas */}
+        <div className="flex gap-3 items-stretch">
+          {/* Left label column */}
+          <div className="flex flex-col justify-between items-end text-right w-20 shrink-0 pb-8">
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 leading-tight">
+                Top half
+              </p>
+              <p className="text-[10px] font-mono text-gray-500 mt-0.5">D / &radic;LB</p>
+            </div>
+            <div className="flex flex-col items-end gap-0.5">
+              {[0, 0.2, 0.4, 0.6, 0.8].map((v) => (
+                <span key={v} className="text-[9px] font-mono text-gray-400 leading-none">
+                  {v.toFixed(1)}
+                </span>
+              ))}
+            </div>
+            <div className="border-t border-gray-300 w-full my-1" />
+            <div className="flex flex-col items-end gap-0.5">
+              {[0.8, 0.6, 0.4, 0.2, 0].map((v) => (
+                <span key={v} className="text-[9px] font-mono text-gray-400 leading-none">
+                  {v.toFixed(1)}
+                </span>
+              ))}
+            </div>
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 leading-tight">
+                Bottom half
+              </p>
+              <p className="text-[10px] font-mono text-gray-500 mt-0.5">LB / &radic;D</p>
+            </div>
+          </div>
+
+          {/* Chart */}
+          <div className="relative flex-1" style={{ height: 440 }}>
+            <canvas ref={foxChartRef} />
+          </div>
+        </div>
+
+        <p className="text-xs text-gray-500 italic border-t border-gray-100 pt-3">
+          Upper half of chart: ordinate is D/&radic;LB (depth to equivalent square root of plan
+          area). Lower half: ordinate is LB/&radic;D (inverted). The dashed horizontal line marks
+          the crossover at the mid-point (value = 1.0 on both scales). Depth factor I<sub>f</sub> is
+          read on the top axis.
+        </p>
+      </div>
+
+      {/* ── Depth Factor Interpolation Calculator ── */}
+      {(() => {
+        // FOX_DATASETS is already defined above in this component scope.
+        // Re-use the same data for interpolation here.
+
+        // Interpolate If given a normalised y-axis value and L/B ratio.
+        // The chart stores data as { x: If, y: depthRatio } so we need to
+        // interpolate x (If) for a given y (depthRatio).
+        const interpFox = (ds, depthRatio) => {
+          // Sort by y ascending
+          const pts = [...ds.data].sort((a, b) => a.y - b.y);
+          if (pts.length === 0) return null;
+          if (depthRatio <= pts[0].y) return pts[0].x;
+          if (depthRatio >= pts[pts.length - 1].y) return pts[pts.length - 1].x;
+          for (let i = 0; i < pts.length - 1; i++) {
+            if (depthRatio >= pts[i].y && depthRatio <= pts[i + 1].y) {
+              const t = (depthRatio - pts[i].y) / (pts[i + 1].y - pts[i].y);
+              return pts[i].x + t * (pts[i + 1].x - pts[i].x);
+            }
+          }
+          return null;
+        };
+
+        // Interpolate between two L/B curves for a given L/B ratio
+        const interpBetweenCurves = (lbRatio, depthRatio) => {
+          const lbValues = [1, 9, 25, 100];
+          const clampedLB = Math.max(1, Math.min(100, lbRatio));
+
+          // Find bounding L/B curves
+          let loIdx = 0;
+          for (let i = 0; i < lbValues.length - 1; i++) {
+            if (clampedLB >= lbValues[i] && clampedLB <= lbValues[i + 1]) {
+              loIdx = i;
+              break;
+            }
+            if (clampedLB > lbValues[lbValues.length - 1]) loIdx = lbValues.length - 2;
+          }
+
+          const lbLo = lbValues[loIdx];
+          const lbHi = lbValues[loIdx + 1];
+          const dsLo = FOX_DATASETS[loIdx];
+          const dsHi = FOX_DATASETS[loIdx + 1];
+
+          const ifLo = interpFox(dsLo, depthRatio);
+          const ifHi = interpFox(dsHi, depthRatio);
+
+          if (ifLo === null || ifHi === null) return { value: null, lbLo, lbHi, ifLo, ifHi };
+
+          const t = (clampedLB - lbLo) / (lbHi - lbLo);
+          return { value: ifLo + t * (ifHi - ifLo), lbLo, lbHi, ifLo, ifHi, t };
+        };
+
+        const foxDInput = foxDepthInput ?? '';
+        const foxLInput = foxLengthInput ?? '';
+        const foxBInput = foxWidthInput ?? '';
+
+        const D_fox = parseFloat(foxDInput);
+        const L_fox = parseFloat(foxLInput);
+        const B_fox = parseFloat(foxBInput);
+
+        const hasD = !isNaN(D_fox) && foxDInput !== '';
+        const hasL = !isNaN(L_fox) && foxLInput !== '';
+        const hasB = !isNaN(B_fox) && foxBInput !== '';
+        const canCalcFox = hasD && hasL && hasB && L_fox > 0 && B_fox > 0;
+
+        // Compute depth ratio (normalised y) — upper half: D/√(L×B)
+        const sqrtLB = canCalcFox ? Math.sqrt(L_fox * B_fox) : null;
+        const depthRatioRaw = canCalcFox ? D_fox / sqrtLB : null;
+
+        // Chart y-axis: upper half 0→1 maps to D/√LB 0→1; lower half 1→2 maps to LB/√D 0→1
+        // For the upper half (D/√LB ≤ 1) the normalised y = depthRatio directly.
+        // For the lower half (D/√LB > 1) we use 2 - LB/√D mapping, but typically
+        // engineers read off the upper half when D/√LB ≤ 1.  Cap at the chart range.
+        const normalizedY = canCalcFox ? Math.min(depthRatioRaw, 2.0) : null;
+
+        const interpResult = canCalcFox ? interpBetweenCurves(L_fox / B_fox, normalizedY) : null;
+
+        const If_value = interpResult?.value ?? null;
+        const fmtIf = (v) => (v !== null && !isNaN(v) ? v.toFixed(3) : null);
+
+        // Curve colors matching the chart
+        const curveColors = { 1: '#ef4444', 9: '#22c55e', 25: '#3b82f6', 100: '#a855f7' };
+
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+              <div>
+                <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                  Depth Factor Interpolation Calculator
+                </h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Fox&apos;s Correction &nbsp;·&nbsp; Enter D, L, B to read I<sub>f</sub> from the
+                  chart curves
+                </p>
+              </div>
+
+              {/* Inputs */}
+              <div className="flex flex-wrap items-end gap-3 sm:ml-auto">
+                {[
+                  {
+                    label: 'Depth of Foundation',
+                    symbol: 'D',
+                    unit: 'm',
+                    val: foxDInput,
+                    set: setFoxDepthInput,
+                    placeholder: 'e.g. 1.5',
+                  },
+                  {
+                    label: 'Length of Foundation',
+                    symbol: 'L',
+                    unit: 'm',
+                    val: foxLInput,
+                    set: setFoxLengthInput,
+                    placeholder: 'e.g. 3.0',
+                  },
+                  {
+                    label: 'Width of Foundation',
+                    symbol: 'B',
+                    unit: 'm',
+                    val: foxBInput,
+                    set: setFoxWidthInput,
+                    placeholder: 'e.g. 2.0',
+                  },
+                ].map(({ label, symbol, unit, val, set, placeholder }) => (
+                  <div key={symbol} className="flex flex-col gap-1.5 w-36">
+                    <label className="text-xs text-gray-500 leading-tight break-words">
+                      {label}
+                      <span className="ml-1 font-bold text-gray-700">
+                        — {symbol} <span className="font-normal text-gray-400">({unit})</span>
+                      </span>
+                    </label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={val}
+                      onChange={(e) => set(e.target.value)}
+                      placeholder={placeholder}
+                      className="w-36 text-center rounded-xl h-9 text-sm font-mono"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {canCalcFox ? (
+              <div className="space-y-4">
+                {/* Result */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {/* D/√LB */}
+                  <div className="rounded-xl border bg-gray-50 border-gray-100 p-4 flex flex-col gap-1">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                      D / &radic;LB
+                    </p>
+                    <p className="text-xs font-mono text-gray-500 mt-0.5">
+                      {D_fox.toFixed(3)} / &radic;({L_fox.toFixed(3)} × {B_fox.toFixed(3)})
+                    </p>
+                    <p className="text-2xl font-black font-mono tabular-nums mt-1 text-gray-900">
+                      {depthRatioRaw.toFixed(4)}
+                    </p>
+                  </div>
+
+                  {/* L/B */}
+                  <div className="rounded-xl border bg-gray-50 border-gray-100 p-4 flex flex-col gap-1">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                      L / B ratio
+                    </p>
+                    <p className="text-xs font-mono text-gray-500 mt-0.5">
+                      {L_fox.toFixed(3)} / {B_fox.toFixed(3)}
+                    </p>
+                    <p className="text-2xl font-black font-mono tabular-nums mt-1 text-gray-900">
+                      {(L_fox / B_fox).toFixed(4)}
+                    </p>
+                  </div>
+
+                  {/* Depth factor If */}
+                  <div className="col-span-2 rounded-xl border bg-primary/5 border-primary/20 p-4 flex flex-col gap-1">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                      Depth Factor I<sub>f</sub>
+                    </p>
+                    <p className="text-xs font-mono text-gray-500 mt-0.5">
+                      Interpolated from Fox&apos;s chart at D/&radic;LB = {depthRatioRaw.toFixed(4)}
+                      , L/B = {(L_fox / B_fox).toFixed(2)}
+                    </p>
+                    {fmtIf(If_value) !== null ? (
+                      <p className="text-3xl font-black font-mono tabular-nums mt-1 text-primary">
+                        {fmtIf(If_value)}
+                      </p>
+                    ) : (
+                      <p className="text-2xl font-black font-mono tabular-nums mt-1 text-gray-300">
+                        —
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Step-by-step */}
+                <div className="space-y-2">
+                  <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
+                    Step-by-step computation
+                  </h3>
+
+                  <div className="space-y-2 text-xs font-mono text-gray-600">
+                    {/* Step 1: depth ratio */}
+                    <div className="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                      <p className="font-bold text-gray-500 mb-1 non-italic font-sans text-[10px] uppercase tracking-widest">
+                        Step 1 — Compute D / &radic;LB
+                      </p>
+                      <p>
+                        D / &radic;LB = {D_fox.toFixed(3)} / &radic;({L_fox.toFixed(3)} ×{' '}
+                        {B_fox.toFixed(3)}) = {D_fox.toFixed(3)} / {sqrtLB.toFixed(4)} ={' '}
+                        <strong>{depthRatioRaw.toFixed(4)}</strong>
+                        {depthRatioRaw > 1.0 && (
+                          <span className="ml-2 text-amber-600">
+                            ⚠ value &gt; 1 — reading from lower half of chart (LB/&radic;D scale)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+
+                    {/* Step 2: bounding curves */}
+                    {interpResult && (
+                      <div className="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                        <p className="font-bold text-gray-500 mb-1 non-italic font-sans text-[10px] uppercase tracking-widest">
+                          Step 2 — Identify bounding L/B curves
+                        </p>
+                        <p>
+                          L/B = {(L_fox / B_fox).toFixed(2)} lies between{' '}
+                          <span style={{ color: curveColors[interpResult.lbLo] }}>
+                            L/B = {interpResult.lbLo}
+                          </span>{' '}
+                          and{' '}
+                          <span style={{ color: curveColors[interpResult.lbHi] }}>
+                            L/B = {interpResult.lbHi}
+                          </span>
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Step 3: read off each curve */}
+                    {interpResult && interpResult.ifLo !== null && interpResult.ifHi !== null && (
+                      <div className="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                        <p className="font-bold text-gray-500 mb-1 non-italic font-sans text-[10px] uppercase tracking-widest">
+                          Step 3 — Read I<sub>f</sub> from each bounding curve at D/&radic;LB ={' '}
+                          {depthRatioRaw.toFixed(4)}
+                        </p>
+                        <p style={{ color: curveColors[interpResult.lbLo] }}>
+                          I<sub>f</sub> (L/B = {interpResult.lbLo}) = {interpResult.ifLo.toFixed(4)}
+                        </p>
+                        <p style={{ color: curveColors[interpResult.lbHi] }} className="mt-0.5">
+                          I<sub>f</sub> (L/B = {interpResult.lbHi}) = {interpResult.ifHi.toFixed(4)}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Step 4: linear interpolation between curves */}
+                    {interpResult && interpResult.value !== null && (
+                      <div className="p-3 rounded-xl bg-primary/5 border border-primary/20">
+                        <p className="font-bold text-primary mb-1 non-italic font-sans text-[10px] uppercase tracking-widest">
+                          Step 4 — Interpolate between curves
+                        </p>
+                        <p className="text-gray-600">
+                          t = (L/B − {interpResult.lbLo}) / ({interpResult.lbHi} −{' '}
+                          {interpResult.lbLo}) = ({(L_fox / B_fox).toFixed(4)} − {interpResult.lbLo}
+                          ) / {interpResult.lbHi - interpResult.lbLo} = {interpResult.t.toFixed(6)}
+                        </p>
+                        <p className="text-gray-600 mt-0.5">
+                          I<sub>f</sub> = {interpResult.ifLo.toFixed(4)} +{' '}
+                          {interpResult.t.toFixed(6)} × ({interpResult.ifHi.toFixed(4)} −{' '}
+                          {interpResult.ifLo.toFixed(4)}) ={' '}
+                          <strong className="text-primary">{fmtIf(If_value)}</strong>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400 text-sm">
+                Enter D, L, and B above to compute the depth factor I<sub>f</sub>.
+              </div>
+            )}
           </div>
         );
       })()}
