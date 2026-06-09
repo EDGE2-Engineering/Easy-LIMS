@@ -3549,7 +3549,8 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
           if (isNaN(D) || isNaN(L) || isNaN(B) || L <= 0 || B <= 0) return null;
           const lbRatio = L / B;
           const sqrtLB = Math.sqrt(L * B);
-          const depthRatio = Math.min(D / sqrtLB, 2.0);
+          const depthRatioRaw = D / sqrtLB;
+          const depthRatio = Math.min(depthRatioRaw, 2.0); // chart y-axis max is 2.0
           const lbValues = [1, 9, 25, 100];
           const clampedLB = Math.max(1, Math.min(100, lbRatio));
           let loIdx = lbValues.length - 2;
@@ -3565,7 +3566,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
           const ifHi = interpFoxLocal(FOX_DATASETS[loIdx + 1], depthRatio);
           if (ifLo === null || ifHi === null) return null;
           const t = (clampedLB - lbLo) / (lbHi - lbLo);
-          return { value: ifLo + t * (ifHi - ifLo), depthRatio, lbRatio, clampedLB };
+          return { value: ifLo + t * (ifHi - ifLo), depthRatio, depthRatioRaw, lbRatio, clampedLB };
         };
 
         // ── parse inputs ──────────────────────────────────────────────────
@@ -3586,9 +3587,11 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
         const ifRes = hasD && hasL && hasB ? computeIf(D, L, B) : null;
         const If_val = ifRes?.value ?? null;
         const Si = Sf !== null && If_val !== null ? Sf * If_val * RIGIDITY_FACTOR : null;
-        const qa_m = Si !== null && Si > 0 ? allowSettlement_m / Si : null;
-        // Convert qa from kN/m² basis to kg/cm²: 1 kN/m² = 0.0102 kg/cm²
-        const qa_kgcm2 = qa_m !== null ? qa_m * 0.0102 : null;
+        // Si is in m (same unit as Sf). Convert both to mm for the ratio:
+        // qa (kg/cm²) = S_allow (mm) / Si (mm/kg/cm²) — direct ratio since table Sf is mm per kg/cm²
+        const qa_kgcm2 = Si !== null && Si > 0 ? allowSettlement_mm / (Si * 1000) : null;
+        // Convert kg/cm² → kN/m²: 1 kg/cm² = 98.1 kN/m²
+        const qa_kNm2 = qa_kgcm2 !== null ? qa_kgcm2 * 98.1 : null;
 
         const canCompute = hasN && hasB && hasD && hasL;
         const fmt4 = (v) => (v !== null ? fmtDec(v) : '—');
@@ -3731,7 +3734,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                     </p>
                     <p className="text-xs font-mono text-gray-400 mt-0.5">
                       {ifRes
-                        ? `D/√LB = ${ifRes.depthRatio.toFixed(4)}, L/B = ${ifRes.lbRatio.toFixed(3)}`
+                        ? `D/√LB = ${ifRes.depthRatioRaw.toFixed(4)}${ifRes.depthRatioRaw > 2.0 ? ' (capped at 2.0 for chart)' : ''}, L/B = ${ifRes.lbRatio.toFixed(3)}`
                         : 'Enter D, L, B'}
                     </p>
                     <p className="text-xl font-black font-mono tabular-nums mt-1 text-gray-800">
@@ -3792,12 +3795,12 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                       {Si !== null ? fmtDec(Si * 1000) : '—'} mm
                     </p>
                     <p className="text-2xl font-black font-mono tabular-nums mt-1 text-primary">
-                      {qa_kgcm2 !== null ? qa_kgcm2.toFixed(4) : '—'}
+                      {qa_kNm2 !== null ? qa_kNm2.toFixed(4) : '—'}
                     </p>
-                    <p className="text-[10px] text-gray-400 font-mono">kg/cm²</p>
-                    {qa_m !== null && (
+                    <p className="text-[10px] text-gray-400 font-mono">kN/m²</p>
+                    {qa_kgcm2 !== null && (
                       <p className="text-xs text-gray-500 font-mono mt-0.5">
-                        = {qa_m.toFixed(4)} kN/m²
+                        = {qa_kgcm2.toFixed(4)} kg/cm²
                       </p>
                     )}
                   </div>
@@ -3833,7 +3836,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                             const hi = Math.min(lo + 1, lbValues.length - 1);
                             return [
                               `  √(L × B) = √(${L} × ${B}) = ${Math.sqrt(L * B).toFixed(4)} m`,
-                              `  Depth ratio D/√LB = ${D} / ${Math.sqrt(L * B).toFixed(4)} = ${ifRes.depthRatio.toFixed(4)}`,
+                              `  Depth ratio D/√LB = ${D} / ${Math.sqrt(L * B).toFixed(4)} = ${ifRes.depthRatioRaw.toFixed(4)}${ifRes.depthRatioRaw > 2.0 ? ` → capped to 2.0 (chart max)` : ''}`,
                               `  L/B = ${L} / ${B} = ${ifRes.lbRatio.toFixed(4)}`,
                               `  Interpolated between L/B = ${lbValues[lo]} and L/B = ${lbValues[hi]}`,
                               `  If = ${If_val !== null ? If_val.toFixed(4) : 'NA'}`,
@@ -3849,8 +3852,11 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                       `Step 4 — Allowable Bearing Capacity (qa)`,
                       `  qa = S_allow / Si`,
                       `     = ${allowSettlement_mm} mm / ${Si !== null ? fmtDec(Si * 1000) : 'NA'} mm`,
-                      `     = ${qa_m !== null ? qa_m.toFixed(4) : 'NA'} kN/m²`,
                       `     = ${qa_kgcm2 !== null ? qa_kgcm2.toFixed(4) : 'NA'} kg/cm²`,
+                      ``,
+                      `  Convert to kN/m²: qa × 98.1`,
+                      `     = ${qa_kgcm2 !== null ? qa_kgcm2.toFixed(4) : 'NA'} × 98.1`,
+                      `     = ${qa_kNm2 !== null ? qa_kNm2.toFixed(4) : 'NA'} kN/m²`,
                     ].join('\n')}
                   </div>
                 </div>
