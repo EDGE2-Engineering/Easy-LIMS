@@ -99,6 +99,7 @@ export const normalizeReportData = (formData) => ({
   latitudes: formData.latitudes || [],
   longitudes: formData.longitudes || [],
   methodOfBoring: formData.methodOfBoring || '',
+  rlValuesNote: formData.rlValuesNote || '',
   labTestResults: formData.labTestResults || [],
   grainSizeAnalysis: formData.grainSizeAnalysis || [],
   sbcDetails: formData.sbcDetails || [],

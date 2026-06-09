@@ -537,6 +537,20 @@ export default function GeotechTestForm({ value, onChange }) {
     if (!newSbc[boreholeIndex]) newSbc[boreholeIndex] = [];
     if (!newSbc[boreholeIndex][entryIndex]) newSbc[boreholeIndex][entryIndex] = {};
     newSbc[boreholeIndex][entryIndex][field] = val;
+
+    // For square footings, keep width === footingLength automatically
+    const shape = newSbc[boreholeIndex][entryIndex].shapeOfFooting;
+    if (shape === 'Square') {
+      if (field === 'width') newSbc[boreholeIndex][entryIndex].footingLength = val;
+      if (field === 'footingLength') newSbc[boreholeIndex][entryIndex].width = val;
+    }
+
+    // When shape changes to Square, equalise the two dimension fields
+    if (field === 'shapeOfFooting' && val === 'Square') {
+      const existing = newSbc[boreholeIndex][entryIndex].width || '';
+      newSbc[boreholeIndex][entryIndex].footingLength = existing;
+    }
+
     setFormData({ ...formData, sbcDetails: newSbc });
   };
 
@@ -1156,6 +1170,143 @@ export default function GeotechTestForm({ value, onChange }) {
                           )}
                         </div>
                         <div className="grid grid-cols-4 gap-x-4 gap-y-2">
+                          {/* ── Footing Shape & Dimensions Group ── */}
+                          {(() => {
+                            const shape = sbcData.shapeOfFooting || '';
+                            const isCircle = shape === 'Circle';
+                            const isStrip = shape === 'Continous Strip';
+                            const isSquare = shape === 'Square';
+                            const isRectangle = shape === 'Rectangle';
+
+                            // Determine dynamic label for the "width" dimension
+                            const widthLabel = isCircle
+                              ? 'Diameter of Foundation'
+                              : isStrip
+                                ? 'Strip Width'
+                                : 'Width of Foundation';
+                            const widthSymbol = isCircle
+                              ? 'd \u00a0|\u00a0 m'
+                              : 'B \u00a0|\u00a0 m';
+                            const widthPlaceholder = 'm';
+
+                            const showLength = !isCircle && !isStrip;
+
+                            return (
+                              <div className="col-span-4 border border-primary/20 bg-primary/5 rounded-lg p-3 mb-1">
+                                <p className="text-[11px] font-semibold text-primary uppercase tracking-wider mb-2">
+                                  Footing Shape &amp; Dimensions
+                                </p>
+                                <div className="grid grid-cols-4 gap-x-4 gap-y-2">
+                                  {/* Shape selector — always first */}
+                                  <div className="flex flex-col gap-1">
+                                    <Label className="text-xs text-gray-500">
+                                      Shape of Footing
+                                    </Label>
+                                    <Select
+                                      value={shape}
+                                      onValueChange={(val) =>
+                                        handleSbcChange(
+                                          boreholeIndex,
+                                          entryIndex,
+                                          'shapeOfFooting',
+                                          val
+                                        )
+                                      }
+                                    >
+                                      <SelectTrigger className="h-8 w-full">
+                                        <SelectValue placeholder="Select shape" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Rectangle">Rectangle</SelectItem>
+                                        <SelectItem value="Square">Square</SelectItem>
+                                        <SelectItem value="Circle">Circle</SelectItem>
+                                        <SelectItem value="Continous Strip">
+                                          Continuous Strip
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+
+                                  {/* Width / Diameter / Strip Width */}
+                                  {shape && (
+                                    <div className="flex flex-col gap-1">
+                                      <Label className="text-xs text-gray-500 flex flex-col">
+                                        <span>{widthLabel}</span>
+                                        <span className="text-[10px] text-gray-400 italic">
+                                          {widthSymbol}
+                                        </span>
+                                      </Label>
+                                      <Input
+                                        value={sbcData.width || ''}
+                                        onChange={(e) =>
+                                          handleSbcChange(
+                                            boreholeIndex,
+                                            entryIndex,
+                                            'width',
+                                            e.target.value
+                                          )
+                                        }
+                                        className="h-8"
+                                        type="number"
+                                        min="0"
+                                        step="0.1"
+                                        placeholder={widthPlaceholder}
+                                      />
+                                    </div>
+                                  )}
+
+                                  {/* Length — only for Rectangle or Square */}
+                                  {showLength && shape && (
+                                    <div className="flex flex-col gap-1">
+                                      <Label className="text-xs text-gray-500 flex flex-col">
+                                        <span>Length of Foundation</span>
+                                        <span className="text-[10px] text-gray-400 italic">
+                                          L &nbsp;|&nbsp; m
+                                        </span>
+                                      </Label>
+                                      <Input
+                                        value={sbcData.footingLength || ''}
+                                        onChange={(e) =>
+                                          handleSbcChange(
+                                            boreholeIndex,
+                                            entryIndex,
+                                            'footingLength',
+                                            e.target.value
+                                          )
+                                        }
+                                        className={`h-8 ${isSquare ? 'bg-gray-50' : ''}`}
+                                        type="number"
+                                        min="0"
+                                        step="0.1"
+                                        placeholder={
+                                          isSquare ? 'Same as width (auto)' : 'Length (m)'
+                                        }
+                                        readOnly={isSquare}
+                                        title={
+                                          isSquare
+                                            ? 'Square footing: length equals width automatically'
+                                            : undefined
+                                        }
+                                      />
+                                      {isSquare && (
+                                        <span className="text-[10px] text-amber-600 italic">
+                                          Square footing — length equals width
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* Footing size note when nothing selected */}
+                                  {!shape && (
+                                    <div className="col-span-3 flex items-center text-[11px] text-gray-400 italic">
+                                      Select a shape to enter dimensions
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
                           <div className="flex flex-col gap-1">
                             <Label className="text-xs text-gray-500">Foundation</Label>
                             <Select
@@ -1209,7 +1360,9 @@ export default function GeotechTestForm({ value, onChange }) {
                           <div className="flex flex-col gap-1">
                             <Label className="text-xs text-gray-500 flex flex-col">
                               <span>Foundation Depth from GL</span>
-                              <span className="text-[10px] text-gray-400 italic">Symbol: D</span>
+                              <span className="text-[10px] text-gray-400 italic">
+                                D &nbsp;|&nbsp; m
+                              </span>
                             </Label>
                             <Input
                               value={sbcData.depthFromGL || ''}
@@ -1225,11 +1378,14 @@ export default function GeotechTestForm({ value, onChange }) {
                               type="number"
                               min="0"
                               step="0.1"
-                              placeholder="Foundation Depth from GL"
+                              placeholder="m"
                             />
                           </div>
                           <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500">Foundation RL</Label>
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Foundation RL</span>
+                              <span className="text-[10px] text-gray-400 italic">m</span>
+                            </Label>
                             <Input
                               value={sbcData.scourDepthFromGL || ''}
                               onChange={(e) =>
@@ -1244,7 +1400,7 @@ export default function GeotechTestForm({ value, onChange }) {
                               type="number"
                               min="0"
                               step="0.1"
-                              placeholder="Foundation RL"
+                              placeholder="m"
                             />
                           </div>
                           <div className="flex flex-col gap-1">
@@ -1259,7 +1415,12 @@ export default function GeotechTestForm({ value, onChange }) {
                             />
                           </div>
                           <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500">Field N Value</Label>
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Field N Value</span>
+                              <span className="text-[10px] text-gray-400 italic">
+                                dimensionless
+                              </span>
+                            </Label>
                             <Input
                               value={sbcData.fieldNValue || ''}
                               onChange={(e) =>
@@ -1313,8 +1474,11 @@ export default function GeotechTestForm({ value, onChange }) {
                             return (
                               <>
                                 <div className="flex flex-col gap-1">
-                                  <Label className="text-xs text-gray-500">
-                                    Correction Factor (CF)
+                                  <Label className="text-xs text-gray-500 flex flex-col">
+                                    <span>Correction Factor (CF)</span>
+                                    <span className="text-[10px] text-gray-400 italic">
+                                      dimensionless
+                                    </span>
                                   </Label>
                                   {hasN && cfFormula && (
                                     <span className="text-[10px] text-gray-400 italic">
@@ -1328,8 +1492,11 @@ export default function GeotechTestForm({ value, onChange }) {
                                   </div>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <Label className="text-xs text-gray-500">
-                                    Corrected SPT N Value (NR)
+                                  <Label className="text-xs text-gray-500 flex flex-col">
+                                    <span>Corrected SPT N Value (NR)</span>
+                                    <span className="text-[10px] text-gray-400 italic">
+                                      dimensionless
+                                    </span>
                                   </Label>
                                   {formula && (
                                     <span className="text-[10px] text-gray-400 italic">
@@ -1346,7 +1513,10 @@ export default function GeotechTestForm({ value, onChange }) {
                             );
                           })()}
                           <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500">CP Layer Thickness</Label>
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>CP Layer Thickness</span>
+                              <span className="text-[10px] text-gray-400 italic">m</span>
+                            </Label>
                             <Input
                               value={sbcData.cpLayerThickness || ''}
                               onChange={(e) =>
@@ -1361,11 +1531,14 @@ export default function GeotechTestForm({ value, onChange }) {
                               type="number"
                               min="0"
                               step="0.1"
-                              placeholder="CP Layer Thickness"
+                              placeholder="m"
                             />
                           </div>
                           <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500">Liquid Limit</Label>
+                            <Label className="text-xs text-gray-500 flex flex-col">
+                              <span>Liquid Limit</span>
+                              <span className="text-[10px] text-gray-400 italic">%</span>
+                            </Label>
                             <Input
                               value={sbcData.liquidLimit || ''}
                               onChange={(e) =>
@@ -1380,52 +1553,15 @@ export default function GeotechTestForm({ value, onChange }) {
                               type="number"
                               min="0"
                               step="0.1"
-                              placeholder="Liquid Limit"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500 flex flex-col">
-                              <span>Width of Foundation (m)</span>
-                              <span className="text-[10px] text-gray-400 italic">Symbol: B</span>
-                            </Label>
-                            <Input
-                              value={sbcData.width || ''}
-                              onChange={(e) =>
-                                handleSbcChange(boreholeIndex, entryIndex, 'width', e.target.value)
-                              }
-                              className="h-8"
-                              type="number"
-                              min="0"
-                              step="0.1"
-                              placeholder="Width of Foundation (m)"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500 flex flex-col">
-                              <span>Length of Foundation (m)</span>
-                              <span className="text-[10px] text-gray-400 italic">Symbol: L</span>
-                            </Label>
-                            <Input
-                              value={sbcData.footingLength || ''}
-                              onChange={(e) =>
-                                handleSbcChange(
-                                  boreholeIndex,
-                                  entryIndex,
-                                  'footingLength',
-                                  e.target.value
-                                )
-                              }
-                              className="h-8"
-                              type="number"
-                              min="0"
-                              step="0.1"
-                              placeholder="Length of Foundation (m)"
+                              placeholder="%"
                             />
                           </div>
                           <div className="flex flex-col gap-1">
                             <Label className="text-xs text-gray-500 flex flex-col">
                               <span>Angle of Inclination of Foundation</span>
-                              <span className="text-[10px] text-gray-400 italic">Symbol: α</span>
+                              <span className="text-[10px] text-gray-400 italic">
+                                α &nbsp;|&nbsp; deg
+                              </span>
                             </Label>
                             <Input
                               value={sbcData.foundationInclinationAngle || ''}
@@ -1442,13 +1578,15 @@ export default function GeotechTestForm({ value, onChange }) {
                               min="-90"
                               max="90"
                               step="0.1"
-                              placeholder="Angle of Inclination of Foundation"
+                              placeholder="deg"
                             />
                           </div>
                           <div>
                             <Label className="text-xs text-gray-500 flex flex-col">
                               <span>Scour Depth from Ground Level</span>
-                              <span className="text-[10px] text-gray-400 italic">Symbol: ds</span>
+                              <span className="text-[10px] text-gray-400 italic">
+                                ds &nbsp;|&nbsp; m
+                              </span>
                             </Label>
                             <Input
                               value={sbcData.scourDepth || ''}
@@ -1464,13 +1602,15 @@ export default function GeotechTestForm({ value, onChange }) {
                               type="number"
                               min="0"
                               step="0.1"
-                              placeholder="Scour Depth from Ground Level"
+                              placeholder="m"
                             />
                           </div>
                           <div className="flex flex-col gap-1">
                             <Label className="text-xs text-gray-500 flex flex-col">
                               <span>Depth of Ground Water Level</span>
-                              <span className="text-[10px] text-gray-400 italic">Symbol: Dw</span>
+                              <span className="text-[10px] text-gray-400 italic">
+                                Dw &nbsp;|&nbsp; m
+                              </span>
                             </Label>
                             <Input
                               value={sbcData.depthOfGroundWaterLevel || ''}
@@ -1486,13 +1626,15 @@ export default function GeotechTestForm({ value, onChange }) {
                               type="number"
                               min="0"
                               step="0.1"
-                              placeholder="Depth of Ground Water Level"
+                              placeholder="m"
                             />
                           </div>
                           <div className="flex flex-col gap-1">
                             <Label className="text-xs text-gray-500 flex flex-col">
-                              <span>Considered angle of Friction</span>
-                              <span className="text-[10px] text-gray-400 italic">Symbol: φ</span>
+                              <span>Considered Angle of Friction</span>
+                              <span className="text-[10px] text-gray-400 italic">
+                                ϕ &nbsp;|&nbsp; deg
+                              </span>
                             </Label>
                             <Input
                               value={sbcData.consideredAngleOfFriction || ''}
@@ -1508,13 +1650,15 @@ export default function GeotechTestForm({ value, onChange }) {
                               type="number"
                               min="0"
                               step="0.1"
-                              placeholder="Considered angle of Friction"
+                              placeholder="deg"
                             />
                           </div>
                           <div className="flex flex-col gap-1">
                             <Label className="text-xs text-gray-500 flex flex-col">
                               <span>Bulk Unit Weight</span>
-                              <span className="text-[10px] text-gray-400 italic">Symbol: γ</span>
+                              <span className="text-[10px] text-gray-400 italic">
+                                γ &nbsp;|&nbsp; kN/m³
+                              </span>
                             </Label>
                             <Input
                               value={sbcData.bulkUnitWeight || ''}
@@ -1530,13 +1674,15 @@ export default function GeotechTestForm({ value, onChange }) {
                               type="number"
                               min="0"
                               step="0.1"
-                              placeholder="Bulk Unit Weight"
+                              placeholder="kN/m³"
                             />
                           </div>
                           <div className="flex flex-col gap-1">
                             <Label className="text-xs text-gray-500 flex flex-col">
                               <span>Effective Unit Weight</span>
-                              <span className="text-[10px] text-gray-400 italic">Symbol: γ'</span>
+                              <span className="text-[10px] text-gray-400 italic">
+                                γ<sub>sub</sub> &nbsp;|&nbsp; kN/m³
+                              </span>
                             </Label>
                             {sbcData.bulkUnitWeight !== '' && sbcData.bulkUnitWeight != null && (
                               <span className="text-[10px] text-gray-400 italic">
@@ -1549,26 +1695,10 @@ export default function GeotechTestForm({ value, onChange }) {
                                   ? Math.max(0, parseFloat(sbcData.bulkUnitWeight) - 10).toFixed(3)
                                   : '-'}
                               </span>
+                              {sbcData.bulkUnitWeight !== '' && sbcData.bulkUnitWeight != null && (
+                                <span className="ml-1 text-[10px] text-gray-400">kN/m³</span>
+                              )}
                             </div>
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500">Shape of Footing</Label>
-                            <Select
-                              value={sbcData.shapeOfFooting || ''}
-                              onValueChange={(val) =>
-                                handleSbcChange(boreholeIndex, entryIndex, 'shapeOfFooting', val)
-                              }
-                            >
-                              <SelectTrigger className="h-8 w-full">
-                                <SelectValue placeholder="Select shape" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Rectangle">Rectangle</SelectItem>
-                                <SelectItem value="Square">Square</SelectItem>
-                                <SelectItem value="Circle">Circle</SelectItem>
-                                <SelectItem value="Continous Strip">Continous Strip</SelectItem>
-                              </SelectContent>
-                            </Select>
                           </div>
                           {/* Computed fields */}
                           {(() => {
@@ -1584,9 +1714,9 @@ export default function GeotechTestForm({ value, onChange }) {
                               <>
                                 <div className="flex flex-col gap-1">
                                   <Label className="text-xs text-gray-500 flex flex-col">
-                                    <span>Depth of Foundation Below Scour Level (m)</span>
+                                    <span>Depth of Foundation Below Scour Level</span>
                                     <span className="text-[10px] text-gray-400 italic">
-                                      Symbol: Df
+                                      Df &nbsp;|&nbsp; m
                                     </span>
                                   </Label>
                                   {dfFormula && (
@@ -1598,13 +1728,16 @@ export default function GeotechTestForm({ value, onChange }) {
                                     <span className="text-sm font-semibold text-primary tabular-nums">
                                       {dfVal}
                                     </span>
+                                    {dfVal !== '-' && (
+                                      <span className="ml-1 text-[10px] text-gray-400">m</span>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="flex flex-col gap-1">
                                   <Label className="text-xs text-gray-500 flex flex-col">
-                                    <span>Depth of Failure Zone (m)</span>
+                                    <span>Depth of Failure Zone</span>
                                     <span className="text-[10px] text-gray-400 italic">
-                                      Symbol: Dfz
+                                      Dfz &nbsp;|&nbsp; m
                                     </span>
                                   </Label>
                                   {dfzFormula && (
@@ -1616,13 +1749,16 @@ export default function GeotechTestForm({ value, onChange }) {
                                     <span className="text-sm font-semibold text-primary tabular-nums">
                                       {dfzVal}
                                     </span>
+                                    {dfzVal !== '-' && (
+                                      <span className="ml-1 text-[10px] text-gray-400">m</span>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="flex flex-col gap-1">
                                   <Label className="text-xs text-gray-500 flex flex-col">
-                                    <span>Reduced Angle of Friction (deg)</span>
+                                    <span>Reduced Angle of Friction</span>
                                     <span className="text-[10px] text-gray-400 italic">
-                                      Symbol: ϕ&apos;
+                                      ϕ&apos; &nbsp;|&nbsp; deg
                                     </span>
                                   </Label>
                                   {phiPrimeFormula && (
@@ -1634,13 +1770,16 @@ export default function GeotechTestForm({ value, onChange }) {
                                     <span className="text-sm font-semibold text-primary tabular-nums">
                                       {phiPrimeVal}
                                     </span>
+                                    {phiPrimeVal !== '-' && (
+                                      <span className="ml-1 text-[10px] text-gray-400">deg</span>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="flex flex-col gap-1">
                                   <Label className="text-xs text-gray-500 flex flex-col">
                                     <span>Effective Overburden Pressure</span>
                                     <span className="text-[10px] text-gray-400 italic">
-                                      Symbol: q &nbsp;|&nbsp; Unit: kN/m²
+                                      q &nbsp;|&nbsp; kN/m²
                                     </span>
                                   </Label>
                                   {qFormula && (
@@ -1652,6 +1791,9 @@ export default function GeotechTestForm({ value, onChange }) {
                                     <span className="text-sm font-semibold text-primary tabular-nums">
                                       {qVal}
                                     </span>
+                                    {qVal !== '-' && (
+                                      <span className="ml-1 text-[10px] text-gray-400">kN/m²</span>
+                                    )}
                                   </div>
                                 </div>
                               </>

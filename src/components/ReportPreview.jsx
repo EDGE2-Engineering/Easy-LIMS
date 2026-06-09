@@ -356,7 +356,10 @@ const ProjectDetailsBlock = ({ data }) => {
           </tbody>
         </table>
         <p className="text-[9px] text-gray-500 mt-1 italic">
-          *Ground R.L values are assumed as 100.000m
+          *
+          {data.rlValuesNote
+            ? `Ground R.L. values — ${data.rlValuesNote}`
+            : 'Ground R.L values are assumed as 100.000m'}
         </p>
       </div>
 

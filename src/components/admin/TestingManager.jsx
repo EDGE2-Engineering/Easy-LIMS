@@ -69,6 +69,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
   const [techCapabilities, setTechCapabilities] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [entryMode, setEntryMode] = useState('Drilling'); // 'Manual' or 'Drilling'
+  const [rlValuesNote, setRlValuesNote] = useState('R.L. Values are assumed.');
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
   const { canAction } = usePermissions();
@@ -78,11 +79,13 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
     if (initialJobId) fetchData();
   }, [initialJobId]);
 
-  // Restore saved entryMode from GeotechData when opening a geotech category dialog
+  // Restore saved entryMode and rlValuesNote from GeotechData when opening a geotech category dialog
   useEffect(() => {
     if (selectedCategory && GEOTECH_NAMES.includes(selectedCategory)) {
       const saved = testResults[selectedCategory]?.GeotechData?.methodOfBoring;
       if (saved) setEntryMode(saved);
+      const savedRl = testResults[selectedCategory]?.GeotechData?.rlValuesNote;
+      if (savedRl) setRlValuesNote(savedRl);
     }
   }, [selectedCategory]);
 
@@ -170,6 +173,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
             GeotechData: {
               ...testResults[category].GeotechData,
               methodOfBoring: entryMode,
+              ...(entryMode === 'Manual Augering' && { rlValuesNote }),
             },
           }),
         },
@@ -1031,6 +1035,33 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                             </SelectItem>
                           </SelectContent>
                         </Select>
+
+                        {entryMode === 'Manual Augering' && (
+                          <>
+                            <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                              R.L. Values
+                            </Label>
+                            <Select value={rlValuesNote} onValueChange={setRlValuesNote}>
+                              <SelectTrigger className="h-8 w-[360px] bg-white border-gray-200 text-xs px-2">
+                                <SelectValue placeholder="Select R.L. note" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem
+                                  className="text-xs py-1 min-h-0"
+                                  value="R.L. Values are assumed."
+                                >
+                                  R.L. Values are assumed.
+                                </SelectItem>
+                                <SelectItem
+                                  className="text-xs py-1 min-h-0"
+                                  value="R.L. Values are provided as furnished by the client."
+                                >
+                                  R.L. Values are provided as furnished by the client.
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </>
+                        )}
                       </div>
                     )}
 
