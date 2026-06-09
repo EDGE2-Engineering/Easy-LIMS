@@ -318,6 +318,8 @@ const AdminBearingCapacityManager = () => {
   const [foxDepthInput, setFoxDepthInput] = useState(''); // Fox interpolation calculator — D
   const [foxLengthInput, setFoxLengthInput] = useState(''); // Fox interpolation calculator — L
   const [foxWidthInput, setFoxWidthInput] = useState(''); // Fox interpolation calculator — B
+  const [suptNInput, setSuptNInput] = useState(''); // Settlement per Unit Pressure calc — N
+  const [suptBInput, setSuptBInput] = useState(''); // Settlement per Unit Pressure calc — B
 
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
@@ -2725,8 +2727,238 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
         </p>
       </div>
 
-      {/* ── Allowable Bearing Capacity Chart ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+      {/* ── Settlement per Unit Pressure — Interpolation Calculator ── */}
+      {(() => {
+        const nVal = parseFloat(suptNInput);
+        const bVal = parseFloat(suptBInput);
+
+        // Bilinear interpolation on SETTLEMENT_DATA (rows = N, cols = FOOTING_WIDTHS)
+        const computeSupt = (n, b) => {
+          if (isNaN(n) || isNaN(b) || n <= 0 || b <= 0) return null;
+
+          // Clamp B to table range [1.5, 6.0] — per table note, use 6.0 for B > 6.0
+          const bClamped = Math.min(b, FOOTING_WIDTHS[FOOTING_WIDTHS.length - 1]);
+
+          // Find surrounding B column indices
+          let bLowIdx = 0;
+          for (let i = 0; i < FOOTING_WIDTHS.length - 1; i++) {
+            if (bClamped >= FOOTING_WIDTHS[i] && bClamped <= FOOTING_WIDTHS[i + 1]) {
+              bLowIdx = i;
+              break;
+            }
+            if (bClamped >= FOOTING_WIDTHS[FOOTING_WIDTHS.length - 1]) {
+              bLowIdx = FOOTING_WIDTHS.length - 1;
+            }
+          }
+          const bHighIdx = Math.min(bLowIdx + 1, FOOTING_WIDTHS.length - 1);
+          const b0 = FOOTING_WIDTHS[bLowIdx];
+          const b1 = FOOTING_WIDTHS[bHighIdx];
+
+          // Find surrounding N row indices
+          const nRows = SETTLEMENT_DATA.map((r) => r.n);
+          let nLowIdx = 0;
+          for (let i = 0; i < nRows.length - 1; i++) {
+            if (n >= nRows[i] && n <= nRows[i + 1]) {
+              nLowIdx = i;
+              break;
+            }
+          }
+          if (n <= nRows[0]) nLowIdx = 0;
+          if (n >= nRows[nRows.length - 1]) nLowIdx = nRows.length - 2;
+          const nHighIdx = Math.min(nLowIdx + 1, nRows.length - 1);
+          const n0 = nRows[nLowIdx];
+          const n1 = nRows[nHighIdx];
+
+          // Get the four corner values (skip null — treat as extrapolation edge)
+          const getVal = (rowIdx, colIdx) => SETTLEMENT_DATA[rowIdx].vals[colIdx] ?? null;
+          const v00 = getVal(nLowIdx, bLowIdx);
+          const v01 = getVal(nLowIdx, bHighIdx);
+          const v10 = getVal(nHighIdx, bLowIdx);
+          const v11 = getVal(nHighIdx, bHighIdx);
+
+          // Fall back to available edges if any corner is null (B=1.5 NA for N≥45)
+          const safeV0 =
+            v00 !== null && v01 !== null
+              ? b0 === b1
+                ? v00
+                : v00 + ((bClamped - b0) / (b1 - b0)) * (v01 - v00)
+              : (v00 ?? v01);
+          const safeV1 =
+            v10 !== null && v11 !== null
+              ? b0 === b1
+                ? v10
+                : v10 + ((bClamped - b0) / (b1 - b0)) * (v11 - v10)
+              : (v10 ?? v11);
+
+          if (safeV0 === null || safeV1 === null) return null;
+
+          // Interpolate over N
+          return n0 === n1 ? safeV0 : safeV0 + ((n - n0) / (n1 - n0)) * (safeV1 - safeV0);
+        };
+
+        const result = computeSupt(nVal, bVal);
+        const hasResult = result !== null;
+        const bClamped = bVal > 6.0 ? 6.0 : bVal;
+        const wasClamped = !isNaN(bVal) && bVal > 6.0;
+
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+            {/* Header */}
+            <div>
+              <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                Settlement per Unit Pressure — Interpolation Calculator
+              </h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Bilinear interpolation on the Allowable Bearing Capacity table &nbsp;·&nbsp; Enter
+                SPT N-value and footing width B to get settlement per unit pressure
+              </p>
+            </div>
+
+            {/* Inputs */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-gray-500 leading-tight">
+                  SPT N-value
+                  <span className="ml-1 font-bold text-gray-700"> — N</span>
+                  <span className="ml-1 font-normal text-gray-400 text-[10px]">(5 – 60)</span>
+                </label>
+                <Input
+                  type="number"
+                  step="1"
+                  min="5"
+                  max="60"
+                  value={suptNInput}
+                  onChange={(e) => setSuptNInput(e.target.value)}
+                  placeholder="e.g. 22"
+                  className="w-full text-center rounded-xl h-9 text-sm font-mono"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-gray-500 leading-tight">
+                  Width of Footing
+                  <span className="ml-1 font-bold text-gray-700"> — B</span>
+                  <span className="ml-1 font-normal text-gray-400 text-[10px]">(m, ≥ 1.5)</span>
+                </label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="1.5"
+                  value={suptBInput}
+                  onChange={(e) => setSuptBInput(e.target.value)}
+                  placeholder="e.g. 2.5"
+                  className="w-full text-center rounded-xl h-9 text-sm font-mono"
+                />
+              </div>
+            </div>
+
+            {/* Result */}
+            {hasResult ? (
+              <div className="space-y-3">
+                <div className="rounded-xl border bg-primary/5 border-primary/20 p-4 flex flex-col gap-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                    Settlement per Unit Pressure — Sf
+                  </p>
+                  <p className="text-xs font-mono text-gray-500 leading-relaxed mt-0.5">
+                    Bilinear interpolation at N = {nVal.toFixed(1)}, B = {bClamped.toFixed(2)} m
+                    {wasClamped ? ' (clamped from ' + bVal.toFixed(2) + ' m)' : ''}
+                  </p>
+                  <p className="text-2xl font-black font-mono tabular-nums mt-1 text-primary">
+                    Sf = {result.toExponential(4)}
+                    <span className="text-sm font-normal text-gray-400 ml-2">m / kN/m²</span>
+                  </p>
+                  <p className="text-base font-bold font-mono tabular-nums text-gray-500 mt-0.5">
+                    = {(result * 1000).toFixed(4)}
+                    <span className="text-xs font-normal text-gray-400 ml-2">mm / kN/m²</span>
+                  </p>
+                </div>
+
+                {/* Step-by-step */}
+                <div className="space-y-2">
+                  <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
+                    Interpolation steps
+                  </h3>
+                  <div className="p-3 rounded-xl bg-gray-50 border border-gray-100 text-xs font-mono text-gray-600 whitespace-pre-line leading-relaxed">
+                    {(() => {
+                      const nRows = SETTLEMENT_DATA.map((r) => r.n);
+                      let nLowIdx = 0;
+                      for (let i = 0; i < nRows.length - 1; i++) {
+                        if (nVal >= nRows[i] && nVal <= nRows[i + 1]) {
+                          nLowIdx = i;
+                          break;
+                        }
+                      }
+                      if (nVal <= nRows[0]) nLowIdx = 0;
+                      if (nVal >= nRows[nRows.length - 1]) nLowIdx = nRows.length - 2;
+                      const nHighIdx = Math.min(nLowIdx + 1, nRows.length - 1);
+
+                      let bLowIdx = 0;
+                      for (let i = 0; i < FOOTING_WIDTHS.length - 1; i++) {
+                        if (bClamped >= FOOTING_WIDTHS[i] && bClamped <= FOOTING_WIDTHS[i + 1]) {
+                          bLowIdx = i;
+                          break;
+                        }
+                      }
+                      if (bClamped >= FOOTING_WIDTHS[FOOTING_WIDTHS.length - 1])
+                        bLowIdx = FOOTING_WIDTHS.length - 2;
+                      const bHighIdx = Math.min(bLowIdx + 1, FOOTING_WIDTHS.length - 1);
+
+                      const n0 = nRows[nLowIdx],
+                        n1 = nRows[nHighIdx];
+                      const b0 = FOOTING_WIDTHS[bLowIdx],
+                        b1 = FOOTING_WIDTHS[bHighIdx];
+                      const v00 = SETTLEMENT_DATA[nLowIdx].vals[bLowIdx];
+                      const v01 = SETTLEMENT_DATA[nLowIdx].vals[bHighIdx];
+                      const v10 = SETTLEMENT_DATA[nHighIdx].vals[bLowIdx];
+                      const v11 = SETTLEMENT_DATA[nHighIdx].vals[bHighIdx];
+                      const r0 =
+                        v00 !== null && v01 !== null && b0 !== b1
+                          ? v00 + ((bClamped - b0) / (b1 - b0)) * (v01 - v00)
+                          : (v00 ?? v01);
+                      const r1 =
+                        v10 !== null && v11 !== null && b0 !== b1
+                          ? v10 + ((bClamped - b0) / (b1 - b0)) * (v11 - v10)
+                          : (v10 ?? v11);
+
+                      return [
+                        `Bracket N:  N₀ = ${n0},  N₁ = ${n1}`,
+                        `Bracket B:  B₀ = ${b0} m,  B₁ = ${b1} m`,
+                        ``,
+                        `Table values at N = ${n0}:`,
+                        `  Sf(N=${n0}, B=${b0}) = ${v00 ?? 'NA'}`,
+                        `  Sf(N=${n0}, B=${b1}) = ${v01 ?? 'NA'}`,
+                        `  → Interpolate B: Sf₀ = ${r0 !== null ? r0.toExponential(4) : 'NA'}`,
+                        ``,
+                        `Table values at N = ${n1}:`,
+                        `  Sf(N=${n1}, B=${b0}) = ${v10 ?? 'NA'}`,
+                        `  Sf(N=${n1}, B=${b1}) = ${v11 ?? 'NA'}`,
+                        `  → Interpolate B: Sf₁ = ${r1 !== null ? r1.toExponential(4) : 'NA'}`,
+                        ``,
+                        `Interpolate N: Sf = Sf₀ + (N - N₀)/(N₁ - N₀) × (Sf₁ - Sf₀)`,
+                        n0 !== n1
+                          ? `  = ${r0?.toExponential(4)} + (${nVal} - ${n0})/(${n1} - ${n0}) × (${r1?.toExponential(4)} - ${r0?.toExponential(4)})`
+                          : `  N is exactly on row ${n0}, no N-interpolation needed`,
+                        `  Sf = ${result.toExponential(4)} m / kN/m²`,
+                      ].join('\n');
+                    })()}
+                  </div>
+                </div>
+
+                {wasClamped && (
+                  <p className="text-[10px] text-amber-500 italic">
+                    ⚠ B = {bVal.toFixed(2)} m exceeds table maximum of 6.0 m — settlement value for
+                    B = 6.0 m was used as per IS:8009 note.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 text-center py-4 italic">
+                Enter N-value (5–60) and footing width B (≥ 1.5 m) to compute.
+              </p>
+            )}
+          </div>
+        );
+      })()}
+      {/* <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
         <div>
           <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
             Allowable Bearing Capacity Curves
@@ -2739,7 +2971,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
         <div className="relative w-full" style={{ height: 380 }}>
           <canvas ref={settlementChartRef} />
         </div>
-      </div>
+      </div> */}
 
       {/* ── Fox's Correction — Data Table ── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -2831,10 +3063,10 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
             ))}
 
             {/* ── Divider row ── */}
-            <tr className="bg-gray-100/60">
+            <tr className="bg-gray-100/20">
               <td
                 colSpan={6}
-                className="py-1.5 px-4 text-center text-[10px] uppercase tracking-widest font-bold text-gray-400 border-y border-gray-200"
+                className="py-0 px-4 text-center text-[10px] uppercase tracking-widest font-bold text-gray-400 border-y border-gray-200"
               >
                 ── mid-point crossover ──
               </td>
