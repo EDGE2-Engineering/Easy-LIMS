@@ -17,6 +17,13 @@ import {
   Legend,
   LineController,
 } from 'chart.js';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 Chart.register(
   LinearScale,
@@ -308,6 +315,7 @@ const AdminBearingCapacityManager = () => {
   const [phiInput, setPhiInput] = useState('');
   const [bInput, setBInput] = useState('');
   const [lInput, setLInput] = useState('');
+  const [shapeInput, setShapeInput] = useState('rectangle'); // rectangle | square | circle | strip
   const [dfInput, setDfInput] = useState('');
   const [alphaInput, setAlphaInput] = useState('');
   const [cInput, setCInput] = useState(''); // cohesion kN/m²
@@ -331,10 +339,14 @@ const AdminBearingCapacityManager = () => {
   const [suptNInput, setSuptNInput] = useState(''); // Settlement per Unit Pressure calc — N
   const [suptBInput, setSuptBInput] = useState(''); // Settlement per Unit Pressure calc — B
   // Bearing Capacity Tester for Settlement
-  const [bctNInput, setBctNInput] = useState(''); // SPT N-value
-  const [bctBInput, setBctBInput] = useState(''); // Footing width B (m)
+  const [bctNInput, setBctNInput] = useState(''); // Field SPT N-value
+  const [bctCorrectionType, setBctCorrectionType] = useState('none'); // none | overburden | dilatency | both
+  const [bctGammaInput, setBctGammaInput] = useState(''); // Bulk unit weight γ (kN/m³)
+  const [bctDsInput, setBctDsInput] = useState(''); // Scour depth ds (m)
+  const [bctBInput, setBctBInput] = useState(''); // Footing width / diameter B (m)
   const [bctDInput, setBctDInput] = useState(''); // Depth of footing D (m)
   const [bctLInput, setBctLInput] = useState(''); // Footing length L (m)
+  const [bctShape, setBctShape] = useState('rectangle'); // rectangle | square | circle | strip
   const [bctFootingType, setBctFootingType] = useState('isolated'); // 'isolated' | 'raft'
 
   const chartRef = useRef(null);
@@ -1468,7 +1480,7 @@ const AdminBearingCapacityManager = () => {
               <div className="flex flex-col sm:flex-row sm:items-end gap-4">
                 <div>
                   <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                    Bearing Capacity Interpolation Calculator
+                    Bearing Capacity - Interpolation Calculator
                   </h2>
                   <p className="text-xs text-gray-400 mt-0.5">
                     Enter any φ to compute all factors with step-by-step formulae
@@ -1629,10 +1641,24 @@ const AdminBearingCapacityManager = () => {
 
       {/* ── Table: Shape Factors ── */}
       {(() => {
+        // Derive effective B and L the same way as the IS 6403 calculator
         const B = parseFloat(bInput);
-        const L = parseFloat(lInput);
+        const L_raw = parseFloat(lInput);
         const hasB = !isNaN(B) && bInput !== '';
-        const hasL = !isNaN(L) && lInput !== '';
+        const L = (() => {
+          if (!hasB) return null;
+          switch (shapeInput) {
+            case 'square':
+              return B;
+            case 'circle':
+              return B;
+            case 'strip':
+              return 100 * B;
+            default:
+              return !isNaN(L_raw) && lInput !== '' ? L_raw : null;
+          }
+        })();
+        const hasL = L !== null && L !== 0;
         const hasBL = hasB && hasL && L !== 0;
         const ratio = hasBL ? B / L : null;
 
@@ -1702,37 +1728,24 @@ const AdminBearingCapacityManager = () => {
               <div className="flex flex-col sm:flex-row items-end gap-3 flex-wrap">
                 <div className="flex flex-col gap-1.5 w-40">
                   <label className="text-xs text-gray-500 leading-tight w-40 break-words">
-                    Width of Foundation
-                    <span className="ml-1 font-bold text-gray-700 dark:text-gray-200">
-                      — B <span className="font-normal text-gray-400">(m)</span>
-                    </span>
+                    Width — B <span className="font-normal text-gray-400">(m)</span>
                   </label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={bInput}
-                    onChange={(e) => setBInput(e.target.value)}
-                    placeholder="e.g. 2.0"
-                    className="w-40 text-center rounded-xl h-9 text-sm font-mono"
-                  />
+                  <div className="w-40 text-center rounded-xl h-9 text-sm font-mono border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-600">
+                    {hasB ? B.toFixed(2) : '—'}
+                  </div>
                 </div>
                 <div className="flex flex-col gap-1.5 w-40">
                   <label className="text-xs text-gray-500 leading-tight w-40 break-words">
-                    Length of Foundation
-                    <span className="ml-1 font-bold text-gray-700 dark:text-gray-200">
-                      — L <span className="font-normal text-gray-400">(m)</span>
-                    </span>
+                    Length — L <span className="font-normal text-gray-400">(m)</span>
+                    {shapeInput !== 'rectangle' && (
+                      <span className="ml-1 text-[10px] text-primary capitalize">
+                        ({shapeInput})
+                      </span>
+                    )}
                   </label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={lInput}
-                    onChange={(e) => setLInput(e.target.value)}
-                    placeholder="e.g. 3.0"
-                    className="w-40 text-center rounded-xl h-9 text-sm font-mono"
-                  />
+                  <div className="w-40 text-center rounded-xl h-9 text-sm font-mono border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-600">
+                    {hasL ? (shapeInput === 'strip' ? `100 × B` : L.toFixed(2)) : '—'}
+                  </div>
                 </div>
                 {hasBL && (
                   <span className="text-xs font-mono text-gray-500 shrink-0 pb-2">
@@ -2180,460 +2193,6 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
               <p className="text-xs text-gray-500 italic">
                 where α = angle of inclination of the resultant load with the vertical (degrees)
               </p>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* ── Bearing Capacity ── */}
-      {(() => {
-        // ── Pull all shared computed values ──────────────────────────────────
-        const phi = parseFloat(phiInput);
-        const B = parseFloat(bInput);
-        const alpha = parseFloat(alphaInput);
-
-        const hasPhi = !isNaN(phi) && phiInput !== '';
-        const hasB = !isNaN(B) && bInput !== '';
-        const hasAlpha = !isNaN(alpha) && alphaInput !== '';
-
-        // Interpolated factors (from base table)
-        const phiPrime = hasPhi ? derivePhiPrime(phi) : null;
-        const Nc = hasPhi ? interpolateY(ncPts, phi) : null;
-        const Nq = hasPhi ? interpolateY(nqPts, phi) : null;
-        const Ng = hasPhi ? interpolateY(ngPts, phi) : null;
-        const NcP = hasPhi ? interpolateY(ncPts, phiPrime) : null;
-        const NqP = hasPhi ? interpolateY(nqPts, phiPrime) : null;
-        const NgP = hasPhi ? interpolateY(ngPts, phiPrime) : null; // N′γ
-
-        // Shape factors (Rectangle formula — most general; fixed for Sq/Sc, user provides B/L)
-        const L = parseFloat(lInput);
-        const hasL = !isNaN(L) && lInput !== '' && L !== 0;
-        const ratio = hasB && hasL ? B / L : null;
-        const Sc = ratio !== null ? 1 + 0.2 * ratio : null;
-        const Sq = ratio !== null ? 1 + 0.2 * ratio : null;
-        const Sg = ratio !== null ? 1 - 0.4 * ratio : null;
-
-        // Depth factors
-        const Df = parseFloat(dfInput);
-        const hasDf = !isNaN(Df) && dfInput !== '';
-        const tanT = hasPhi && hasB && hasDf ? Math.tan(((45 + phi / 2) * Math.PI) / 180) : null;
-        const dfbR = hasB && hasDf ? Df / B : null;
-        const dc_v = tanT !== null ? 1 + 0.2 * dfbR * tanT : null;
-        const dqdg_v = tanT !== null ? (phi <= 10 ? 1 : 1 + 0.1 * dfbR * tanT) : null;
-
-        // Inclination factors
-        const ic_v = hasAlpha ? Math.pow(1 - alpha / 90, 2) : null;
-        const iq_v = hasAlpha ? Math.pow(1 - alpha / 90, 2) : null;
-        const ig_v = hasAlpha && hasPhi && phi !== 0 ? Math.pow(1 - alpha / phi, 2) : null;
-
-        // Additional inputs specific to bearing capacity
-        const c = parseFloat(cInput);
-        const gamma = parseFloat(gammaInput);
-        const fos = parseFloat(fosInput);
-
-        const hasC = !isNaN(c) && cInput !== '';
-        const hasGamma = !isNaN(gamma) && gammaInput !== '';
-        const hasFos = !isNaN(fos) && fosInput !== '' && fos > 0;
-
-        // Derived: effective unit weight and effective overburden pressure
-        const gammaSub = hasGamma ? Math.max(0, gamma - 10) : null;
-        const q = hasGamma && hasDf ? gammaSub * Df : null;
-        const hasQ = q !== null;
-
-        // W′ — system-defined constant 0.5; capped to 0.75 when q > 200 kN/m²
-        const W = hasQ && q > 200 ? 0.75 : W_CONSTANT;
-        const hasW = true;
-
-        // All factors present for a full calculation
-        const allFactors =
-          hasPhi &&
-          hasB &&
-          hasL &&
-          hasDf &&
-          hasAlpha &&
-          hasC &&
-          hasQ &&
-          hasGamma &&
-          hasW &&
-          Nc !== null &&
-          Nq !== null &&
-          Ng !== null &&
-          NcP !== null &&
-          NgP !== null &&
-          Sc !== null &&
-          Sq !== null &&
-          Sg !== null &&
-          dc_v !== null &&
-          dqdg_v !== null &&
-          ic_v !== null &&
-          iq_v !== null &&
-          ig_v !== null;
-
-        // ── Formula terms ────────────────────────────────────────────────────
-        // Local shear (uses N′ factors):
-        //   (2/3)·c·N′c·Sc·dc·ic + q·(N′q−1)·Sq·dq·iq + 0.5·γ·B·N′γ·Sγ·dγ·iγ·W′
-        // General shear (uses N factors):
-        //   c·Nc·Sc·dc·ic + q·(Nq−1)·Sq·dq·iq + 0.5·γ·B·Nγ·Sγ·dγ·iγ·W′
-
-        const localTerm1 = allFactors ? (2 / 3) * c * NcP * Sc * dc_v * ic_v : null;
-        const localTerm2 = allFactors ? q * (NqP - 1) * Sq * dqdg_v * iq_v : null;
-        const localTerm3 = allFactors ? 0.5 * gamma * B * NgP * Sg * dqdg_v * ig_v * W : null;
-        const qdLocal = allFactors
-          ? (2 / 3) * c * NcP * Sc * dc_v * ic_v +
-            q * (NqP - 1) * Sq * dqdg_v * iq_v +
-            0.5 * gamma * B * NgP * Sg * dqdg_v * ig_v * W
-          : null;
-
-        const genTerm1 = allFactors ? c * Nc * Sc * dc_v * ic_v : null;
-        const genTerm2 = allFactors ? q * (Nq - 1) * Sq * dqdg_v * iq_v : null;
-        const genTerm3 = allFactors ? 0.5 * gamma * B * Ng * Sg * dqdg_v * ig_v * W : null;
-        const qdGeneral = allFactors ? genTerm1 + genTerm2 + genTerm3 : null;
-
-        const qdIntermed = allFactors ? 0.5 * (qdLocal + qdGeneral) : null;
-
-        // Which formula applies?
-        const regime = hasPhi
-          ? phi <= 28
-            ? 'local'
-            : phi >= 36
-              ? 'general'
-              : 'intermediate'
-          : null;
-
-        const qd =
-          regime === 'local'
-            ? qdLocal
-            : regime === 'general'
-              ? qdGeneral
-              : regime === 'intermediate'
-                ? qdIntermed
-                : null;
-
-        const qs = qd !== null && hasFos ? qd / fos : null;
-
-        const fmtV4 = (v) => (v !== null && !isNaN(v) ? v.toFixed(4) : '—');
-        const fmtV2 = (v) => (v !== null && !isNaN(v) ? v.toFixed(2) : '—');
-
-        const regimeLabel = {
-          local: 'Local Shear Failure (φ ≤ 28°)',
-          intermediate: 'Intermediate Shear Failure (28° < φ < 36°)',
-          general: 'General Shear Failure (φ ≥ 36°)',
-        };
-
-        const regimeColor = {
-          local:
-            'bg-amber-50/60 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800 text-amber-700 dark:text-amber-300',
-          intermediate:
-            'bg-blue-50/60 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300',
-          general:
-            'bg-green-50/60 dark:bg-green-900/20 border-green-100 dark:border-green-800 text-green-700 dark:text-green-300',
-        };
-
-        return (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            {/* Header */}
-            <div className="px-6 pt-5 pb-4 border-b border-gray-100">
-              <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
-                Bearing Capacity Tester
-              </h2>
-              <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest font-medium">
-                Ultimate q<sub>d</sub> and safe q<sub>s</sub> per IS 6403
-              </p>
-            </div>
-
-            <div className="px-6 py-5 space-y-6">
-              {/* ── Input grid ── */}
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
-                  Inputs — shared values auto-filled from above
-                </p>
-                <div
-                  className="grid gap-4"
-                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}
-                >
-                  <BcInputRow
-                    description="Considered Angle of Friction"
-                    symbol="φ"
-                    unit="°"
-                    value={phiInput}
-                    onChange={setPhiInput}
-                    placeholder="e.g. 30"
-                  />
-                  <BcInputRow
-                    description="Width of Foundation"
-                    symbol="B"
-                    unit="m"
-                    value={bInput}
-                    onChange={setBInput}
-                    placeholder="e.g. 2.0"
-                  />
-                  <BcInputRow
-                    description="Length of Foundation"
-                    symbol="L"
-                    unit="m"
-                    value={lInput}
-                    onChange={setLInput}
-                    placeholder="e.g. 3.0"
-                  />
-                  <BcInputRow
-                    description="Depth of Foundation Below Scour Level"
-                    symbol="Df"
-                    unit="m"
-                    value={dfInput}
-                    onChange={setDfInput}
-                    placeholder="e.g. 1.5"
-                  />
-                  <BcInputRow
-                    description="Angle of Inclination of Foundation"
-                    symbol="α"
-                    unit="°"
-                    value={alphaInput}
-                    onChange={setAlphaInput}
-                    placeholder="e.g. 15"
-                  />
-                  <BcInputRow
-                    description="Cohesion"
-                    symbol="c"
-                    unit="kN/m²"
-                    value={cInput}
-                    onChange={setCInput}
-                    placeholder="e.g. 20"
-                  />
-                  <BcInputRow
-                    description="Bulk Unit Weight"
-                    symbol="γ"
-                    unit="kN/m³"
-                    value={gammaInput}
-                    onChange={setGammaInput}
-                    placeholder="e.g. 18"
-                  />
-                  {/* Computed: Effective Unit Weight */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-gray-500 leading-tight break-words">
-                      Effective Unit Weight
-                      <span className="ml-1 font-bold text-gray-700">
-                        — γ<sub>sub</sub> <span className="font-normal text-gray-400">(kN/m³)</span>
-                      </span>
-                    </label>
-                    <div className="h-10 px-3 flex items-center rounded-xl border border-gray-200 bg-gray-50 select-none">
-                      <span className="text-sm font-semibold text-primary tabular-nums font-mono">
-                        {hasGamma ? `${Math.max(0, gamma - 10).toFixed(3)} kN/m³` : '—'}
-                      </span>
-                    </div>
-                    {hasGamma && (
-                      <span className="text-[10px] text-gray-400 italic">
-                        γ − 10 = {gamma} − 10
-                      </span>
-                    )}
-                  </div>
-                  {/* Computed: Effective Overburden Pressure */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-gray-500 leading-tight break-words">
-                      Effective Overburden Pressure
-                      <span className="ml-1 font-bold text-gray-700">
-                        — q <span className="font-normal text-gray-400">(kN/m²)</span>
-                      </span>
-                    </label>
-                    <div className="h-10 px-3 flex items-center rounded-xl border border-gray-200 bg-gray-50 select-none">
-                      <span className="text-sm font-semibold text-primary tabular-nums font-mono">
-                        {hasQ ? `${q.toFixed(3)} kN/m²` : '—'}
-                      </span>
-                    </div>
-                    {hasQ && (
-                      <span className="text-[10px] text-gray-400 italic">
-                        γ<sub>sub</sub> × Df = {gammaSub.toFixed(3)} × {Df.toFixed(3)}
-                      </span>
-                    )}
-                  </div>
-                  {/* System constant: Water Table Correction */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-gray-500 leading-tight break-words">
-                      Water Table Correction
-                      <span className="ml-1 font-bold text-gray-700">
-                        — W′ <span className="font-normal text-gray-400">(-)</span>
-                      </span>
-                    </label>
-                    <div className="h-10 px-3 flex items-center rounded-xl border border-primary/20 bg-primary/5 select-none">
-                      <span className="text-sm font-semibold text-primary tabular-nums font-mono">
-                        {W}
-                        {hasQ && q > 200 && (
-                          <span className="ml-2 text-[10px] text-amber-600 font-sans">
-                            ↑ capped (q &gt; 200 kN/m²)
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-gray-400 italic">
-                      System constant: 0.5 {hasQ && q > 200 ? '→ 0.75 (q > 200)' : ''}
-                    </span>
-                  </div>
-                  <BcInputRow
-                    description="Factor of Safety"
-                    symbol="FOS"
-                    unit="-"
-                    value={fosInput}
-                    onChange={setFosInput}
-                    placeholder="e.g. 3"
-                  />
-                </div>
-              </div>
-
-              {/* ── Regime badge ── */}
-              {hasPhi && (
-                <div
-                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold ${regimeColor[regime]}`}
-                >
-                  <span>Regime:</span>
-                  <span>{regimeLabel[regime]}</span>
-                </div>
-              )}
-
-              {/* ── Intermediate factors summary ── */}
-              {allFactors && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono">
-                  {[
-                    ['Nc', fmtV4(Nc)],
-                    ['Nq', fmtV4(Nq)],
-                    ['Nγ', fmtV4(Ng)],
-                    ['N′c', fmtV4(NcP)],
-                    ['N′q', fmtV4(NqP)],
-                    ['N′γ', fmtV4(NgP)],
-                    ['Sc', fmtV4(Sc)],
-                    ['Sq', fmtV4(Sq)],
-                    ['Sγ', fmtV4(Sg)],
-                    ['dc', fmtV4(dc_v)],
-                    ['dq', fmtV4(dqdg_v)],
-                    ['dγ', fmtV4(dqdg_v)],
-                    ['ic', fmtV4(ic_v)],
-                    ['iq', fmtV4(iq_v)],
-                    ['iγ', fmtV4(ig_v)],
-                  ].map(([k, v]) => (
-                    <div
-                      key={k}
-                      className="flex justify-between gap-1 px-2 py-1 rounded-lg bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700"
-                    >
-                      <span className="text-gray-500">{k}</span>
-                      <span className="font-semibold text-gray-800 dark:text-gray-200">{v}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* ── Result cards ── */}
-              {allFactors ? (
-                <div className="space-y-3">
-                  {/* Local shear */}
-                  {(regime === 'local' || regime === 'intermediate') && (
-                    <BcResultCard
-                      label="qd (Local)"
-                      formula="(2/3)·c·N′c·Sc·dc·ic + q·(N′q−1)·Sq·dq·iq + 0.5·γ·B·N′γ·Sγ·dγ·iγ·W′"
-                      value={`${fmtV2(qdLocal)} kN/m²`}
-                      highlight={regime === 'local'}
-                    />
-                  )}
-                  {/* General shear */}
-                  {(regime === 'general' || regime === 'intermediate') && (
-                    <BcResultCard
-                      label="qd (General)"
-                      formula="c·Nc·Sc·dc·ic + q·(Nq−1)·Sq·dq·iq + 0.5·γ·B·Nγ·Sγ·dγ·iγ·W′"
-                      value={`${fmtV2(qdGeneral)} kN/m²`}
-                      highlight={regime === 'general'}
-                    />
-                  )}
-                  {/* Intermediate */}
-                  {regime === 'intermediate' && (
-                    <BcResultCard
-                      label="qd (Intermediate) — Final"
-                      formula="½ × (qd_local + qd_general)"
-                      value={`${fmtV2(qdIntermed)} kN/m²`}
-                      highlight
-                    />
-                  )}
-                  {/* Safe bearing capacity */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <BcResultCard
-                      label="Ultimate Bearing Capacity - qd"
-                      formula={`Applicable to: ${regimeLabel[regime]}`}
-                      value={`${fmtV2(qd)} kN/m²`}
-                      highlight
-                    />
-                    <BcResultCard
-                      label="Safe Bearing Capacity - qs"
-                      formula={`qs = qd / FOS = ${fmtV2(qd)} / ${fos}`}
-                      value={hasFos ? `${fmtV2(qs)} kN/m²` : '— (enter FOS)'}
-                      highlight={hasFos}
-                    />
-                  </div>
-
-                  {/* Step-by-step */}
-                  <div className="space-y-2 pt-1">
-                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
-                      Step-by-step computation
-                    </h3>
-                    <div className="space-y-2 text-xs font-mono text-gray-600 dark:text-gray-300">
-                      {(regime === 'local' || regime === 'intermediate') && (
-                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700 whitespace-pre-line leading-relaxed">
-                          <p className="font-sans font-bold text-[10px] uppercase tracking-widest text-gray-400 mb-1 not-italic">
-                            qd (Local Shear)
-                          </p>
-                          {`= (2/3) × ${fmtV4(c)} × ${fmtV4(NcP)} × ${fmtV4(Sc)} × ${fmtV4(dc_v)} × ${fmtV4(ic_v)}
-  + ${fmtV4(q)} × (${fmtV4(NqP)} − 1) × ${fmtV4(Sq)} × ${fmtV4(dqdg_v)} × ${fmtV4(iq_v)}
-  + 0.5 × ${fmtV4(gamma)} × ${fmtV4(B)} × ${fmtV4(NgP)} × ${fmtV4(Sg)} × ${fmtV4(dqdg_v)} × ${fmtV4(ig_v)} × ${fmtV4(W)}
-= ${fmtV4((2 / 3) * c * NcP * Sc * dc_v * ic_v)} + ${fmtV4(q * (NqP - 1) * Sq * dqdg_v * iq_v)} + ${fmtV4(0.5 * gamma * B * NgP * Sg * dqdg_v * ig_v * W)}
-= ${fmtV2(qdLocal)} kN/m²`}
-                        </div>
-                      )}
-                      {(regime === 'general' || regime === 'intermediate') && (
-                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700 whitespace-pre-line leading-relaxed">
-                          <p className="font-sans font-bold text-[10px] uppercase tracking-widest text-gray-400 mb-1 not-italic">
-                            qd (General Shear)
-                          </p>
-                          {`= ${fmtV4(c)} × ${fmtV4(Nc)} × ${fmtV4(Sc)} × ${fmtV4(dc_v)} × ${fmtV4(ic_v)}
-  + ${fmtV4(q)} × (${fmtV4(Nq)} − 1) × ${fmtV4(Sq)} × ${fmtV4(dqdg_v)} × ${fmtV4(iq_v)}
-  + 0.5 × ${fmtV4(gamma)} × ${fmtV4(B)} × ${fmtV4(Ng)} × ${fmtV4(Sg)} × ${fmtV4(dqdg_v)} × ${fmtV4(ig_v)} × ${fmtV4(W)}
-= ${fmtV4(genTerm1)} + ${fmtV4(genTerm2)} + ${fmtV4(genTerm3)}
-= ${fmtV2(qdGeneral)} kN/m²`}
-                        </div>
-                      )}
-                      {regime === 'intermediate' && (
-                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700 whitespace-pre-line leading-relaxed">
-                          <p className="font-sans font-bold text-[10px] uppercase tracking-widest text-gray-400 mb-1 not-italic">
-                            qd (Intermediate)
-                          </p>
-                          {`= ½ × (${fmtV2(qdLocal)} + ${fmtV2(qdGeneral)})
-= ½ × ${fmtV2(qdLocal + qdGeneral)}
-= ${fmtV2(qdIntermed)} kN/m²`}
-                        </div>
-                      )}
-                      {hasFos && (
-                        <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 whitespace-pre-line leading-relaxed">
-                          <p className="font-sans font-bold text-[10px] uppercase tracking-widest text-primary mb-1 not-italic">
-                            qs (Safe Bearing Capacity)
-                          </p>
-                          {`qs = qd / FOS
-   = ${fmtV2(qd)} / ${fos}
-   = ${fmtV2(qs)} kN/m²`}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs text-gray-400 text-center py-4">
-                  Fill all inputs above (φ, B, L, Df, α, c, γ) to compute bearing capacity.
-                </p>
-              )}
-
-              <div className="text-[10px] text-gray-400 space-y-0.5 border-t border-gray-100 pt-3">
-                <p>
-                  c = cohesion (kN/m²) · q = γ<sub>sub</sub> × Df = effective overburden pressure
-                  (kN/m²) · γ = bulk unit weight of soil (kN/m³)
-                </p>
-                <p>
-                  W′ = water table correction factor (system constant: 0.5; 0.75 when q &gt; 200
-                  kN/m²) · FOS = factor of safety
-                </p>
-              </div>
             </div>
           </div>
         );
@@ -3284,7 +2843,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
             <div className="flex flex-col sm:flex-row sm:items-end gap-4">
               <div>
                 <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                  Depth Factor Interpolation Calculator
+                  Depth Factor - Interpolation Calculator
                 </h2>
                 <p className="text-xs text-gray-400 mt-0.5">
                   Fox&apos;s Correction &nbsp;·&nbsp; Enter D, L, B to read I<sub>f</sub> from the
@@ -3481,6 +3040,533 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
           </div>
         );
       })()}
+      {/* ── Bearing Capacity ── */}
+      {(() => {
+        // ── Pull all shared computed values ──────────────────────────────────
+        const phi = parseFloat(phiInput);
+        const B_raw = parseFloat(bInput);
+        const alpha = parseFloat(alphaInput);
+
+        const hasPhi = !isNaN(phi) && phiInput !== '';
+        const hasB_raw = !isNaN(B_raw) && bInput !== '';
+        const hasAlpha = !isNaN(alpha) && alphaInput !== '';
+
+        // Derive effective L from shape
+        const L_raw = parseFloat(lInput);
+        const hasL_raw = !isNaN(L_raw) && lInput !== '' && L_raw !== 0;
+        const B = hasB_raw ? B_raw : null;
+        const L = (() => {
+          if (B === null) return null;
+          switch (shapeInput) {
+            case 'square':
+              return B;
+            case 'circle':
+              return B;
+            case 'strip':
+              return 100 * B;
+            default:
+              return hasL_raw ? L_raw : null;
+          }
+        })();
+        const hasB = B !== null;
+        const hasL = L !== null && L !== 0;
+
+        // Interpolated factors (from base table)
+        const phiPrime = hasPhi ? derivePhiPrime(phi) : null;
+        const Nc = hasPhi ? interpolateY(ncPts, phi) : null;
+        const Nq = hasPhi ? interpolateY(nqPts, phi) : null;
+        const Ng = hasPhi ? interpolateY(ngPts, phi) : null;
+        const NcP = hasPhi ? interpolateY(ncPts, phiPrime) : null;
+        const NqP = hasPhi ? interpolateY(nqPts, phiPrime) : null;
+        const NgP = hasPhi ? interpolateY(ngPts, phiPrime) : null; // N′γ
+
+        // Shape factors
+        const ratio = hasB && hasL ? B / L : null;
+        const Sc = ratio !== null ? 1 + 0.2 * ratio : null;
+        const Sq = ratio !== null ? 1 + 0.2 * ratio : null;
+        const Sg = ratio !== null ? 1 - 0.4 * ratio : null;
+
+        // Depth factors
+        const Df = parseFloat(dfInput);
+        const hasDf = !isNaN(Df) && dfInput !== '';
+        const tanT = hasPhi && hasB && hasDf ? Math.tan(((45 + phi / 2) * Math.PI) / 180) : null;
+        const dfbR = hasB && hasDf ? Df / B : null;
+        const dc_v = tanT !== null ? 1 + 0.2 * dfbR * tanT : null;
+        const dqdg_v = tanT !== null ? (phi <= 10 ? 1 : 1 + 0.1 * dfbR * tanT) : null;
+
+        // Inclination factors
+        const ic_v = hasAlpha ? Math.pow(1 - alpha / 90, 2) : null;
+        const iq_v = hasAlpha ? Math.pow(1 - alpha / 90, 2) : null;
+        const ig_v = hasAlpha && hasPhi && phi !== 0 ? Math.pow(1 - alpha / phi, 2) : null;
+
+        // Additional inputs specific to bearing capacity
+        const c = parseFloat(cInput);
+        const gamma = parseFloat(gammaInput);
+        const fos = parseFloat(fosInput);
+
+        const hasC = !isNaN(c) && cInput !== '';
+        const hasGamma = !isNaN(gamma) && gammaInput !== '';
+        const hasFos = !isNaN(fos) && fosInput !== '' && fos > 0;
+
+        // Derived: effective unit weight and effective overburden pressure
+        const gammaSub = hasGamma ? Math.max(0, gamma - 10) : null;
+        const q = hasGamma && hasDf ? gammaSub * Df : null;
+        const hasQ = q !== null;
+
+        // W′ — system-defined constant 0.5; capped to 0.75 when q > 200 kN/m²
+        const W = hasQ && q > 200 ? 0.75 : W_CONSTANT;
+        const hasW = true;
+
+        // All factors present for a full calculation
+        const allFactors =
+          hasPhi &&
+          hasB &&
+          hasL &&
+          hasDf &&
+          hasAlpha &&
+          hasC &&
+          hasQ &&
+          hasGamma &&
+          hasW &&
+          Nc !== null &&
+          Nq !== null &&
+          Ng !== null &&
+          NcP !== null &&
+          NgP !== null &&
+          Sc !== null &&
+          Sq !== null &&
+          Sg !== null &&
+          dc_v !== null &&
+          dqdg_v !== null &&
+          ic_v !== null &&
+          iq_v !== null &&
+          ig_v !== null;
+
+        // ── Formula terms ────────────────────────────────────────────────────
+        // Local shear (uses N′ factors):
+        //   (2/3)·c·N′c·Sc·dc·ic + q·(N′q−1)·Sq·dq·iq + 0.5·γ·B·N′γ·Sγ·dγ·iγ·W′
+        // General shear (uses N factors):
+        //   c·Nc·Sc·dc·ic + q·(Nq−1)·Sq·dq·iq + 0.5·γ·B·Nγ·Sγ·dγ·iγ·W′
+
+        const localTerm1 = allFactors ? (2 / 3) * c * NcP * Sc * dc_v * ic_v : null;
+        const localTerm2 = allFactors ? q * (NqP - 1) * Sq * dqdg_v * iq_v : null;
+        const localTerm3 = allFactors ? 0.5 * gamma * B * NgP * Sg * dqdg_v * ig_v * W : null;
+        const qdLocal = allFactors
+          ? (2 / 3) * c * NcP * Sc * dc_v * ic_v +
+            q * (NqP - 1) * Sq * dqdg_v * iq_v +
+            0.5 * gamma * B * NgP * Sg * dqdg_v * ig_v * W
+          : null;
+
+        const genTerm1 = allFactors ? c * Nc * Sc * dc_v * ic_v : null;
+        const genTerm2 = allFactors ? q * (Nq - 1) * Sq * dqdg_v * iq_v : null;
+        const genTerm3 = allFactors ? 0.5 * gamma * B * Ng * Sg * dqdg_v * ig_v * W : null;
+        const qdGeneral = allFactors ? genTerm1 + genTerm2 + genTerm3 : null;
+
+        const qdIntermed = allFactors ? 0.5 * (qdLocal + qdGeneral) : null;
+
+        // Which formula applies?
+        const regime = hasPhi
+          ? phi <= 28
+            ? 'local'
+            : phi >= 36
+              ? 'general'
+              : 'intermediate'
+          : null;
+
+        const qd =
+          regime === 'local'
+            ? qdLocal
+            : regime === 'general'
+              ? qdGeneral
+              : regime === 'intermediate'
+                ? qdIntermed
+                : null;
+
+        const qs = qd !== null && hasFos ? qd / fos : null;
+
+        const fmtV4 = (v) => (v !== null && !isNaN(v) ? v.toFixed(4) : '—');
+        const fmtV2 = (v) => (v !== null && !isNaN(v) ? v.toFixed(2) : '—');
+
+        const regimeLabel = {
+          local: 'Local Shear Failure (φ ≤ 28°)',
+          intermediate: 'Intermediate Shear Failure (28° < φ < 36°)',
+          general: 'General Shear Failure (φ ≥ 36°)',
+        };
+
+        const regimeColor = {
+          local:
+            'bg-amber-50/60 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800 text-amber-700 dark:text-amber-300',
+          intermediate:
+            'bg-blue-50/60 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300',
+          general:
+            'bg-green-50/60 dark:bg-green-900/20 border-green-100 dark:border-green-800 text-green-700 dark:text-green-300',
+        };
+
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            {/* Header */}
+            <div className="px-6 pt-5 pb-4 border-b border-gray-100">
+              <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
+                Bearing Capacity Tester
+              </h2>
+              <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest font-medium">
+                Ultimate q<sub>d</sub> and safe q<sub>s</sub> per IS 6403
+              </p>
+            </div>
+
+            <div className="px-6 py-5 space-y-6">
+              {/* ── Input grid ── */}
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+                  Inputs — shared values auto-filled from above
+                </p>
+                <div
+                  className="grid gap-4"
+                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}
+                >
+                  <BcInputRow
+                    description="Considered Angle of Friction"
+                    symbol="φ"
+                    unit="°"
+                    value={phiInput}
+                    onChange={setPhiInput}
+                    placeholder="e.g. 30"
+                  />
+
+                  {/* Shape of Footing — full-width row */}
+                  <div className="col-span-full flex flex-col gap-1.5">
+                    <label className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                      Shape of Footing
+                    </label>
+                    <Select value={shapeInput} onValueChange={setShapeInput}>
+                      <SelectTrigger className="w-full rounded-xl h-9 text-sm font-mono">
+                        <SelectValue placeholder="Select shape" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="rectangle">Rectangle</SelectItem>
+                        <SelectItem value="square">Square</SelectItem>
+                        <SelectItem value="circle">Circle</SelectItem>
+                        <SelectItem value="strip">Continuous Strip</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Shape-aware B / L inputs */}
+                  {shapeInput === 'circle' ? (
+                    <BcInputRow
+                      description="Diameter of Foundation"
+                      symbol="d"
+                      unit="m"
+                      value={bInput}
+                      onChange={setBInput}
+                      placeholder="e.g. 1.5"
+                    />
+                  ) : shapeInput === 'strip' ? (
+                    <BcInputRow
+                      description="Strip Width"
+                      symbol="B"
+                      unit="m"
+                      value={bInput}
+                      onChange={setBInput}
+                      placeholder="e.g. 2.0"
+                    />
+                  ) : (
+                    <>
+                      <BcInputRow
+                        description="Width of Foundation"
+                        symbol="B"
+                        unit="m"
+                        value={bInput}
+                        onChange={setBInput}
+                        placeholder="e.g. 2.0"
+                      />
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs text-gray-500 dark:text-gray-400 leading-tight break-words">
+                          Length of Foundation
+                          <span className="ml-1 font-bold text-gray-700 dark:text-gray-200">
+                            — L<span className="font-normal text-gray-400 ml-0.5">(m)</span>
+                          </span>
+                          {shapeInput === 'square' && (
+                            <span className="ml-1 text-[10px] text-primary">(= B)</span>
+                          )}
+                        </label>
+                        <Input
+                          type="number"
+                          step="any"
+                          min="0"
+                          value={shapeInput === 'square' ? bInput : lInput}
+                          onChange={(e) => shapeInput !== 'square' && setLInput(e.target.value)}
+                          readOnly={shapeInput === 'square'}
+                          placeholder={shapeInput === 'square' ? 'same as B' : 'e.g. 3.0'}
+                          className={`w-full text-center rounded-xl h-9 text-sm font-mono ${shapeInput === 'square' ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : ''}`}
+                        />
+                      </div>
+                    </>
+                  )}
+                  <BcInputRow
+                    description="Depth of Foundation Below Scour Level"
+                    symbol="Df"
+                    unit="m"
+                    value={dfInput}
+                    onChange={setDfInput}
+                    placeholder="e.g. 1.5"
+                  />
+                  <BcInputRow
+                    description="Angle of Inclination of Foundation"
+                    symbol="α"
+                    unit="°"
+                    value={alphaInput}
+                    onChange={setAlphaInput}
+                    placeholder="e.g. 15"
+                  />
+                  <BcInputRow
+                    description="Cohesion"
+                    symbol="c"
+                    unit="kN/m²"
+                    value={cInput}
+                    onChange={setCInput}
+                    placeholder="e.g. 20"
+                  />
+                  <BcInputRow
+                    description="Bulk Unit Weight"
+                    symbol="γ"
+                    unit="kN/m³"
+                    value={gammaInput}
+                    onChange={setGammaInput}
+                    placeholder="e.g. 18"
+                  />
+                  {/* Computed: Effective Unit Weight */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 leading-tight break-words">
+                      Effective Unit Weight
+                      <span className="ml-1 font-bold text-gray-700">
+                        — γ<sub>sub</sub> <span className="font-normal text-gray-400">(kN/m³)</span>
+                      </span>
+                    </label>
+                    <div className="h-10 px-3 flex items-center rounded-xl border border-gray-200 bg-gray-50 select-none">
+                      <span className="text-sm font-semibold text-primary tabular-nums font-mono">
+                        {hasGamma ? `${Math.max(0, gamma - 10).toFixed(3)} kN/m³` : '—'}
+                      </span>
+                    </div>
+                    {hasGamma && (
+                      <span className="text-[10px] text-gray-400 italic">
+                        γ − 10 = {gamma} − 10
+                      </span>
+                    )}
+                  </div>
+                  {/* Computed: Effective Overburden Pressure */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 leading-tight break-words">
+                      Effective Overburden Pressure
+                      <span className="ml-1 font-bold text-gray-700">
+                        — q <span className="font-normal text-gray-400">(kN/m²)</span>
+                      </span>
+                    </label>
+                    <div className="h-10 px-3 flex items-center rounded-xl border border-gray-200 bg-gray-50 select-none">
+                      <span className="text-sm font-semibold text-primary tabular-nums font-mono">
+                        {hasQ ? `${q.toFixed(3)} kN/m²` : '—'}
+                      </span>
+                    </div>
+                    {hasQ && (
+                      <span className="text-[10px] text-gray-400 italic">
+                        γ<sub>sub</sub> × Df = {gammaSub.toFixed(3)} × {Df.toFixed(3)}
+                      </span>
+                    )}
+                  </div>
+                  {/* System constant: Water Table Correction */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 leading-tight break-words">
+                      Water Table Correction
+                      <span className="ml-1 font-bold text-gray-700">
+                        — W′ <span className="font-normal text-gray-400">(-)</span>
+                      </span>
+                    </label>
+                    <div className="h-10 px-3 flex items-center rounded-xl border border-primary/20 bg-primary/5 select-none">
+                      <span className="text-sm font-semibold text-primary tabular-nums font-mono">
+                        {W}
+                        {hasQ && q > 200 && (
+                          <span className="ml-2 text-[10px] text-amber-600 font-sans">
+                            ↑ capped (q &gt; 200 kN/m²)
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-gray-400 italic">
+                      System constant: 0.5 {hasQ && q > 200 ? '→ 0.75 (q > 200)' : ''}
+                    </span>
+                  </div>
+                  <BcInputRow
+                    description="Factor of Safety"
+                    symbol="FOS"
+                    unit="-"
+                    value={fosInput}
+                    onChange={setFosInput}
+                    placeholder="e.g. 3"
+                  />
+                </div>
+              </div>
+
+              {/* ── Regime badge ── */}
+              {hasPhi && (
+                <div
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold ${regimeColor[regime]}`}
+                >
+                  <span>Regime:</span>
+                  <span>{regimeLabel[regime]}</span>
+                </div>
+              )}
+
+              {/* ── Intermediate factors summary ── */}
+              {allFactors && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono">
+                  {[
+                    ['Nc', fmtV4(Nc)],
+                    ['Nq', fmtV4(Nq)],
+                    ['Nγ', fmtV4(Ng)],
+                    ['N′c', fmtV4(NcP)],
+                    ['N′q', fmtV4(NqP)],
+                    ['N′γ', fmtV4(NgP)],
+                    ['Sc', fmtV4(Sc)],
+                    ['Sq', fmtV4(Sq)],
+                    ['Sγ', fmtV4(Sg)],
+                    ['dc', fmtV4(dc_v)],
+                    ['dq', fmtV4(dqdg_v)],
+                    ['dγ', fmtV4(dqdg_v)],
+                    ['ic', fmtV4(ic_v)],
+                    ['iq', fmtV4(iq_v)],
+                    ['iγ', fmtV4(ig_v)],
+                  ].map(([k, v]) => (
+                    <div
+                      key={k}
+                      className="flex justify-between gap-1 px-2 py-1 rounded-lg bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700"
+                    >
+                      <span className="text-gray-500">{k}</span>
+                      <span className="font-semibold text-gray-800 dark:text-gray-200">{v}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ── Result cards ── */}
+              {allFactors ? (
+                <div className="space-y-3">
+                  {/* Local shear */}
+                  {(regime === 'local' || regime === 'intermediate') && (
+                    <BcResultCard
+                      label="qd (Local)"
+                      formula="(2/3)·c·N′c·Sc·dc·ic + q·(N′q−1)·Sq·dq·iq + 0.5·γ·B·N′γ·Sγ·dγ·iγ·W′"
+                      value={`${fmtV2(qdLocal)} kN/m²`}
+                      highlight={regime === 'local'}
+                    />
+                  )}
+                  {/* General shear */}
+                  {(regime === 'general' || regime === 'intermediate') && (
+                    <BcResultCard
+                      label="qd (General)"
+                      formula="c·Nc·Sc·dc·ic + q·(Nq−1)·Sq·dq·iq + 0.5·γ·B·Nγ·Sγ·dγ·iγ·W′"
+                      value={`${fmtV2(qdGeneral)} kN/m²`}
+                      highlight={regime === 'general'}
+                    />
+                  )}
+                  {/* Intermediate */}
+                  {regime === 'intermediate' && (
+                    <BcResultCard
+                      label="qd (Intermediate) — Final"
+                      formula="½ × (qd_local + qd_general)"
+                      value={`${fmtV2(qdIntermed)} kN/m²`}
+                      highlight
+                    />
+                  )}
+                  {/* Safe bearing capacity */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <BcResultCard
+                      label="Ultimate Bearing Capacity - qd"
+                      formula={`Applicable to: ${regimeLabel[regime]}`}
+                      value={`${fmtV2(qd)} kN/m²`}
+                      highlight
+                    />
+                    <BcResultCard
+                      label="Safe Bearing Capacity - qs"
+                      formula={`qs = qd / FOS = ${fmtV2(qd)} / ${fos}`}
+                      value={hasFos ? `${fmtV2(qs)} kN/m²` : '— (enter FOS)'}
+                      highlight={hasFos}
+                    />
+                  </div>
+
+                  {/* Step-by-step */}
+                  <div className="space-y-2 pt-1">
+                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
+                      Step-by-step computation
+                    </h3>
+                    <div className="space-y-2 text-xs font-mono text-gray-600 dark:text-gray-300">
+                      {(regime === 'local' || regime === 'intermediate') && (
+                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700 whitespace-pre-line leading-relaxed">
+                          <p className="font-sans font-bold text-[10px] uppercase tracking-widest text-gray-400 mb-1 not-italic">
+                            qd (Local Shear)
+                          </p>
+                          {`= (2/3) × ${fmtV4(c)} × ${fmtV4(NcP)} × ${fmtV4(Sc)} × ${fmtV4(dc_v)} × ${fmtV4(ic_v)}
+  + ${fmtV4(q)} × (${fmtV4(NqP)} − 1) × ${fmtV4(Sq)} × ${fmtV4(dqdg_v)} × ${fmtV4(iq_v)}
+  + 0.5 × ${fmtV4(gamma)} × ${fmtV4(B)} × ${fmtV4(NgP)} × ${fmtV4(Sg)} × ${fmtV4(dqdg_v)} × ${fmtV4(ig_v)} × ${fmtV4(W)}
+= ${fmtV4((2 / 3) * c * NcP * Sc * dc_v * ic_v)} + ${fmtV4(q * (NqP - 1) * Sq * dqdg_v * iq_v)} + ${fmtV4(0.5 * gamma * B * NgP * Sg * dqdg_v * ig_v * W)}
+= ${fmtV2(qdLocal)} kN/m²`}
+                        </div>
+                      )}
+                      {(regime === 'general' || regime === 'intermediate') && (
+                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700 whitespace-pre-line leading-relaxed">
+                          <p className="font-sans font-bold text-[10px] uppercase tracking-widest text-gray-400 mb-1 not-italic">
+                            qd (General Shear)
+                          </p>
+                          {`= ${fmtV4(c)} × ${fmtV4(Nc)} × ${fmtV4(Sc)} × ${fmtV4(dc_v)} × ${fmtV4(ic_v)}
+  + ${fmtV4(q)} × (${fmtV4(Nq)} − 1) × ${fmtV4(Sq)} × ${fmtV4(dqdg_v)} × ${fmtV4(iq_v)}
+  + 0.5 × ${fmtV4(gamma)} × ${fmtV4(B)} × ${fmtV4(Ng)} × ${fmtV4(Sg)} × ${fmtV4(dqdg_v)} × ${fmtV4(ig_v)} × ${fmtV4(W)}
+= ${fmtV4(genTerm1)} + ${fmtV4(genTerm2)} + ${fmtV4(genTerm3)}
+= ${fmtV2(qdGeneral)} kN/m²`}
+                        </div>
+                      )}
+                      {regime === 'intermediate' && (
+                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700 whitespace-pre-line leading-relaxed">
+                          <p className="font-sans font-bold text-[10px] uppercase tracking-widest text-gray-400 mb-1 not-italic">
+                            qd (Intermediate)
+                          </p>
+                          {`= ½ × (${fmtV2(qdLocal)} + ${fmtV2(qdGeneral)})
+= ½ × ${fmtV2(qdLocal + qdGeneral)}
+= ${fmtV2(qdIntermed)} kN/m²`}
+                        </div>
+                      )}
+                      {hasFos && (
+                        <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 whitespace-pre-line leading-relaxed">
+                          <p className="font-sans font-bold text-[10px] uppercase tracking-widest text-primary mb-1 not-italic">
+                            qs (Safe Bearing Capacity)
+                          </p>
+                          {`qs = qd / FOS
+   = ${fmtV2(qd)} / ${fos}
+   = ${fmtV2(qs)} kN/m²`}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 text-center py-4">
+                  Fill all inputs above (φ, B, L, Df, α, c, γ) to compute bearing capacity.
+                </p>
+              )}
+
+              <div className="text-[10px] text-gray-400 space-y-0.5 border-t border-gray-100 pt-3">
+                <p>
+                  c = cohesion (kN/m²) · q = γ<sub>sub</sub> × Df = effective overburden pressure
+                  (kN/m²) · γ = bulk unit weight of soil (kN/m³)
+                </p>
+                <p>
+                  W′ = water table correction factor (system constant: 0.5; 0.75 when q &gt; 200
+                  kN/m²) · FOS = factor of safety
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Bearing Capacity Tester for Settlement ── */}
       {(() => {
         const RIGIDITY_FACTOR = 0.8;
@@ -3570,30 +3656,115 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
         };
 
         // ── parse inputs ──────────────────────────────────────────────────
-        const N = parseFloat(bctNInput);
-        const B = parseFloat(bctBInput);
+        const N = parseFloat(bctNInput); // field SPT N
+        const gamma = parseFloat(bctGammaInput); // bulk unit weight kN/m³
+        const ds = parseFloat(bctDsInput); // scour depth m
+        const B_raw = parseFloat(bctBInput);
+        const L_raw = parseFloat(bctLInput);
         const D = parseFloat(bctDInput);
-        const L = parseFloat(bctLInput);
+        // Derive effective B and L from shape
+        // circle: B = L = diameter (√(LB) = d for Fox depth ratio)
+        // square: L = B
+        // strip:  L = 100 × B (effectively infinite for interpolation; Fox caps L/B at 100)
+        // rectangle: B and L independent
+        const B = !isNaN(B_raw) ? B_raw : null;
+        const L = (() => {
+          if (B === null) return null;
+          switch (bctShape) {
+            case 'square':
+              return B;
+            case 'circle':
+              return B;
+            case 'strip':
+              return 100 * B;
+            default:
+              return !isNaN(L_raw) ? L_raw : null; // rectangle
+          }
+        })();
         const allowSettlement_mm = ALLOWABLE_SETTLEMENT[bctFootingType]; // mm
         const allowSettlement_m = allowSettlement_mm / 1000; // m
 
         const hasN = !isNaN(N) && bctNInput !== '';
-        const hasB = !isNaN(B) && bctBInput !== '';
+        const hasGamma = !isNaN(gamma) && bctGammaInput !== '';
+        // ds defaults to 0 when blank (no scour)
+        const ds_val = bctDsInput !== '' && !isNaN(ds) ? ds : 0;
+        const hasB = B !== null && !isNaN(B);
         const hasD = !isNaN(D) && bctDInput !== '';
-        const hasL = !isNaN(L) && bctLInput !== '';
+        const hasL = L !== null && !isNaN(L);
+
+        const needsQ = bctCorrectionType === 'overburden' || bctCorrectionType === 'both';
+
+        // ── Overburden pressure derivation chain ──────────────────────────
+        // γsub = γ − 10  (effective/submerged unit weight)
+        // Df  = D − ds   (depth below scour level; ds defaults to 0)
+        // q   = γsub × Df
+        const gammaSub = hasGamma ? Math.max(0, gamma - 10) : null;
+        const Df = hasD ? Math.max(0, D - ds_val) : null;
+        const Q = gammaSub !== null && Df !== null ? gammaSub * Df : null;
+        const hasQ = Q !== null;
+        const obRows = (() => {
+          const raw = settings?.['overburden_correction_data'];
+          if (!raw) return [];
+          try {
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        })();
+        const obPoints = obRows
+          .filter(
+            (r) =>
+              r.pressure !== '' &&
+              r.correction !== '' &&
+              !isNaN(parseFloat(r.pressure)) &&
+              !isNaN(parseFloat(r.correction))
+          )
+          .map((r) => ({ x: parseFloat(r.pressure), y: parseFloat(r.correction) }))
+          .sort((a, b) => a.x - b.x);
+
+        // ── Overburden correction factor from settings table ──────────────
+        // Interpolate CF from overburden_correction_data using computed Q
+        const corrFactor =
+          needsQ && hasQ && obPoints.length >= 2 ? interpolateY(obPoints, Q) : null;
+        const hasCorrFactor = corrFactor !== null;
+
+        // ── Corrected SPT N value (NR) per spec ───────────────────────────
+        // none       → NR = N
+        // overburden → NR = N × CF  (CF interpolated from table)
+        // dilatency  → NR = (N + 15) / 2
+        // both       → NR = (N × CF + 15) / 2
+        const NR_raw = (() => {
+          if (!hasN) return null;
+          switch (bctCorrectionType) {
+            case 'none':
+              return N;
+            case 'overburden':
+              return hasCorrFactor ? N * corrFactor : null;
+            case 'dilatency':
+              return (N + 15) / 2;
+            case 'both':
+              return hasCorrFactor ? (N * corrFactor + 15) / 2 : null;
+            default:
+              return N;
+          }
+        })();
+        // Clamp NR to table range [5, 60]
+        const NR = NR_raw !== null ? Math.min(60, Math.max(5, NR_raw)) : null;
+        const hasNR = NR !== null;
 
         // ── computed values ───────────────────────────────────────────────
-        const Sf = hasN && hasB ? computeSf(N, B) : null;
+        const Sf = hasNR && hasB ? computeSf(NR, B) : null;
         const ifRes = hasD && hasL && hasB ? computeIf(D, L, B) : null;
         const If_val = ifRes?.value ?? null;
         const Si = Sf !== null && If_val !== null ? Sf * If_val * RIGIDITY_FACTOR : null;
         // Si is in m (same unit as Sf). Convert both to mm for the ratio:
-        // qa (kg/cm²) = S_allow (mm) / Si (mm/kg/cm²) — direct ratio since table Sf is mm per kg/cm²
+        // qa (kg/cm²) = S_allow (mm) / Si (mm) — direct ratio since table Sf is mm per kg/cm²
         const qa_kgcm2 = Si !== null && Si > 0 ? allowSettlement_mm / (Si * 1000) : null;
         // Convert kg/cm² → kN/m²: 1 kg/cm² = 98.1 kN/m²
         const qa_kNm2 = qa_kgcm2 !== null ? qa_kgcm2 * 98.1 : null;
 
-        const canCompute = hasN && hasB && hasD && hasL;
+        const canCompute = hasNR && hasB && hasD && hasL;
         const fmt4 = (v) => (v !== null ? fmtDec(v) : '—');
         const fmt3 = (v) => (v !== null ? v.toFixed(3) : '—');
         const fmt2 = (v) => (v !== null ? v.toFixed(4) : '—');
@@ -3616,55 +3787,115 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                 Inputs
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {/* N */}
+                {/* Field N */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs text-gray-500 leading-tight">
-                    SPT N-value<span className="ml-1 font-bold text-gray-700"> — N</span>
-                    <span className="ml-1 text-[10px] text-gray-400">(5–60)</span>
+                    Field SPT N-value<span className="ml-1 font-bold text-gray-700"> — N</span>
                   </label>
                   <Input
                     type="number"
                     step="1"
-                    min="5"
-                    max="60"
+                    min="1"
                     value={bctNInput}
                     onChange={(e) => setBctNInput(e.target.value)}
                     placeholder="e.g. 20"
                     className="w-full text-center rounded-xl h-9 text-sm font-mono"
                   />
                 </div>
-                {/* B */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-gray-500 leading-tight">
-                    Footing width<span className="ml-1 font-bold text-gray-700"> — B</span>
-                    <span className="ml-1 text-[10px] text-gray-400">(m)</span>
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="1.5"
-                    value={bctBInput}
-                    onChange={(e) => setBctBInput(e.target.value)}
-                    placeholder="e.g. 2.0"
-                    className="w-full text-center rounded-xl h-9 text-sm font-mono"
-                  />
+                {/* Shape of Footing */}
+                <div className="flex flex-col gap-1.5 col-span-2 sm:col-span-4">
+                  <label className="text-xs text-gray-500 leading-tight">Shape of Footing</label>
+                  <Select value={bctShape} onValueChange={setBctShape}>
+                    <SelectTrigger className="w-full rounded-xl h-9 text-sm font-mono">
+                      <SelectValue placeholder="Select shape" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="rectangle">Rectangle</SelectItem>
+                      <SelectItem value="square">Square</SelectItem>
+                      <SelectItem value="circle">Circle</SelectItem>
+                      <SelectItem value="strip">Continuous Strip</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                {/* L */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-gray-500 leading-tight">
-                    Footing length<span className="ml-1 font-bold text-gray-700"> — L</span>
-                    <span className="ml-1 text-[10px] text-gray-400">(m)</span>
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={bctLInput}
-                    onChange={(e) => setBctLInput(e.target.value)}
-                    placeholder="e.g. 2.0"
-                    className="w-full text-center rounded-xl h-9 text-sm font-mono"
-                  />
-                </div>
+
+                {/* Dimension inputs — shape-aware */}
+                {bctShape === 'circle' ? (
+                  /* Circle: single diameter field */
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs text-gray-500 leading-tight">
+                      Diameter of Foundation
+                      <span className="ml-1 font-bold text-gray-700"> — d</span>
+                      <span className="ml-1 text-[10px] text-gray-400">(m)</span>
+                    </label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={bctBInput}
+                      onChange={(e) => setBctBInput(e.target.value)}
+                      placeholder="e.g. 1.5"
+                      className="w-full text-center rounded-xl h-9 text-sm font-mono"
+                    />
+                  </div>
+                ) : bctShape === 'strip' ? (
+                  /* Strip: single width field */
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs text-gray-500 leading-tight">
+                      Strip Width
+                      <span className="ml-1 font-bold text-gray-700"> — B</span>
+                      <span className="ml-1 text-[10px] text-gray-400">(m)</span>
+                    </label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={bctBInput}
+                      onChange={(e) => setBctBInput(e.target.value)}
+                      placeholder="e.g. 2.0"
+                      className="w-full text-center rounded-xl h-9 text-sm font-mono"
+                    />
+                  </div>
+                ) : (
+                  /* Rectangle / Square: B + L */
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs text-gray-500 leading-tight">
+                        Width of Foundation
+                        <span className="ml-1 font-bold text-gray-700"> — B</span>
+                        <span className="ml-1 text-[10px] text-gray-400">(m)</span>
+                      </label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={bctBInput}
+                        onChange={(e) => setBctBInput(e.target.value)}
+                        placeholder="e.g. 2.0"
+                        className="w-full text-center rounded-xl h-9 text-sm font-mono"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs text-gray-500 leading-tight">
+                        Length of Foundation
+                        <span className="ml-1 font-bold text-gray-700"> — L</span>
+                        <span className="ml-1 text-[10px] text-gray-400">(m)</span>
+                        {bctShape === 'square' && (
+                          <span className="ml-1 text-[10px] text-primary">(= B)</span>
+                        )}
+                      </label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={bctShape === 'square' ? bctBInput : bctLInput}
+                        onChange={(e) => bctShape !== 'square' && setBctLInput(e.target.value)}
+                        readOnly={bctShape === 'square'}
+                        placeholder={bctShape === 'square' ? 'same as B' : 'e.g. 2.0'}
+                        className={`w-full text-center rounded-xl h-9 text-sm font-mono ${bctShape === 'square' ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : ''}`}
+                      />
+                    </div>
+                  </>
+                )}
                 {/* D */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs text-gray-500 leading-tight">
@@ -3681,26 +3912,152 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                     className="w-full text-center rounded-xl h-9 text-sm font-mono"
                   />
                 </div>
+                {/* Correction Type — full width row */}
+                <div className="flex flex-col gap-1.5 col-span-2 sm:col-span-4">
+                  <label className="text-xs text-gray-500 leading-tight">SPT Correction Type</label>
+                  <Select value={bctCorrectionType} onValueChange={setBctCorrectionType}>
+                    <SelectTrigger className="w-full rounded-xl h-9 text-sm font-mono">
+                      <SelectValue placeholder="Select correction type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Correction</SelectItem>
+                      <SelectItem value="overburden">Overburden Correction</SelectItem>
+                      <SelectItem value="dilatency">Dilatency Correction</SelectItem>
+                      <SelectItem value="both">Both Corrections</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Overburden inputs — only shown when overburden or both */}
+                {needsQ && (
+                  <>
+                    {/* γ — bulk unit weight */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs text-gray-500 leading-tight">
+                        Bulk Unit Weight
+                        <span className="ml-1 font-bold text-gray-700"> — γ</span>
+                        <span className="ml-1 text-[10px] text-gray-400">(kN/m³)</span>
+                      </label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={bctGammaInput}
+                        onChange={(e) => setBctGammaInput(e.target.value)}
+                        placeholder="e.g. 18"
+                        className="w-full text-center rounded-xl h-9 text-sm font-mono"
+                      />
+                    </div>
+                    {/* ds — scour depth */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs text-gray-500 leading-tight">
+                        Scour Depth
+                        <span className="ml-1 font-bold text-gray-700">
+                          {' '}
+                          — d<sub>s</sub>
+                        </span>
+                        <span className="ml-1 text-[10px] text-gray-400">(m)</span>
+                      </label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={bctDsInput}
+                        onChange={(e) => setBctDsInput(e.target.value)}
+                        placeholder="0 (no scour)"
+                        className="w-full text-center rounded-xl h-9 text-sm font-mono"
+                      />
+                    </div>
+                    {/* Computed intermediates: γsub, Df, q — read-only display */}
+                    <div className="col-span-2 sm:col-span-4 grid grid-cols-3 gap-3">
+                      {[
+                        {
+                          label: (
+                            <>
+                              Effective Unit Weight — γ<sub>sub</sub> = γ − 10
+                            </>
+                          ),
+                          value: gammaSub !== null ? `${fmtDec(gammaSub)} kN/m³` : '— (enter γ)',
+                        },
+                        {
+                          label: (
+                            <>
+                              Depth Below Scour — D<sub>f</sub> = D − d<sub>s</sub>
+                            </>
+                          ),
+                          value: Df !== null ? `${fmtDec(Df)} m` : !hasD ? '— (enter D)' : '—',
+                        },
+                        {
+                          label: (
+                            <>
+                              Effective Overburden Pressure — q = γ<sub>sub</sub> × D<sub>f</sub>
+                            </>
+                          ),
+                          value:
+                            Q !== null
+                              ? `${fmtDec(Q)} kN/m²`
+                              : !hasGamma && !hasD
+                                ? '— (need γ & D)'
+                                : !hasGamma
+                                  ? '— (need γ)'
+                                  : !hasD
+                                    ? '— (need D)'
+                                    : '—',
+                          highlight: true,
+                        },
+                      ].map(({ label, value, highlight }, i) => (
+                        <div
+                          key={i}
+                          className={`rounded-xl border p-3 flex flex-col gap-0.5 ${highlight ? 'bg-primary/5 border-primary/20' : 'bg-gray-50 border-gray-100'}`}
+                        >
+                          <p className="text-[10px] text-gray-400 leading-tight">{label}</p>
+                          <p
+                            className={`font-mono tabular-nums ${value.startsWith('—') ? 'text-xs text-gray-300 italic font-normal' : `text-sm font-bold ${highlight ? 'text-primary' : 'text-gray-700'}`}`}
+                          >
+                            {value}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {/* NR — computed display */}
+                <div className="flex flex-col gap-1.5 col-span-2 sm:col-span-4">
+                  <label className="text-xs text-gray-500 leading-tight">
+                    Corrected SPT N-value
+                    <span className="ml-1 font-bold text-gray-700">
+                      {' '}
+                      — N<sub>R</sub>
+                    </span>
+                    <span className="ml-1 text-[10px] text-gray-400">(computed)</span>
+                  </label>
+                  <div
+                    className={`w-full text-center rounded-xl h-9 text-sm font-mono flex items-center justify-center border ${hasNR ? 'bg-primary/5 border-primary/20 text-primary font-bold' : 'bg-gray-50 border-gray-200 text-gray-400'}`}
+                  >
+                    {hasNR
+                      ? `${fmtDec(NR_raw)}${NR_raw !== NR ? ` → ${NR} (clamped)` : ''}`
+                      : needsQ && (!hasGamma || !hasD)
+                        ? 'Enter γ & D for overburden correction'
+                        : needsQ && !hasCorrFactor
+                          ? 'No CF in overburden table — check settings'
+                          : !hasN
+                            ? 'Enter N'
+                            : '—'}
+                  </div>
+                </div>
               </div>
 
-              {/* Footing type toggle */}
+              {/* Footing type */}
               <div className="flex items-center gap-3 pt-1">
-                <span className="text-xs text-gray-500">Footing type:</span>
-                <div className="flex rounded-xl border border-gray-200 overflow-hidden text-xs font-medium">
-                  {['isolated', 'raft'].map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setBctFootingType(type)}
-                      className={`px-4 py-1.5 transition-colors ${
-                        bctFootingType === type
-                          ? 'bg-primary text-white'
-                          : 'bg-white text-gray-500 hover:bg-gray-50'
-                      }`}
-                    >
-                      {type === 'isolated' ? 'Isolated (25 mm)' : 'Raft (50 mm)'}
-                    </button>
-                  ))}
-                </div>
+                <label className="text-xs text-gray-500 shrink-0">Footing type:</label>
+                <Select value={bctFootingType} onValueChange={setBctFootingType}>
+                  <SelectTrigger className="w-52 rounded-xl h-9 text-sm font-mono">
+                    <SelectValue placeholder="Select footing type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="isolated">Isolated (25 mm)</SelectItem>
+                    <SelectItem value="raft">Raft (50 mm)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -3719,7 +4076,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                       Settlement per Unit Pressure — Sf
                     </p>
                     <p className="text-xs font-mono text-gray-400 mt-0.5">
-                      Interpolated from ABC table at N={N}, B={B} m
+                      Interpolated from ABC table at N<sub>R</sub>={NR ?? '—'}, B={B} m
                     </p>
                     <p className="text-xl font-black font-mono tabular-nums mt-1 text-gray-800">
                       {Sf !== null ? fmtDec(Sf * 1000) : '—'}
@@ -3813,13 +4170,67 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                   </h3>
                   <div className="p-3 rounded-xl bg-gray-50 border border-gray-100 text-xs font-mono text-gray-600 whitespace-pre-line leading-relaxed">
                     {[
-                      `Step 1 — Settlement per Unit Pressure (Sf)`,
+                      `Step 1 — Corrected SPT N-value (NR)`,
+                      (() => {
+                        const corrLabel = {
+                          none: 'No Correction → NR = N',
+                          overburden: `Overburden Correction → NR = N × CF`,
+                          dilatency: `Dilatency Correction → NR = (N + 15) / 2`,
+                          both: `Both Corrections → NR = (N × CF + 15) / 2`,
+                        }[bctCorrectionType];
+                        const lines = [
+                          `  Field N = ${hasN ? N : 'NA'},  Correction: ${
+                            bctCorrectionType === 'none'
+                              ? 'None'
+                              : bctCorrectionType === 'overburden'
+                                ? 'Overburden'
+                                : bctCorrectionType === 'dilatency'
+                                  ? 'Dilatency'
+                                  : 'Both'
+                          }`,
+                        ];
+                        if (needsQ) {
+                          lines.push(`  γ = ${hasGamma ? gamma : '?'} kN/m³`);
+                          lines.push(
+                            `  γsub = γ − 10 = ${gammaSub !== null ? fmtDec(gammaSub) : '?'} kN/m³`
+                          );
+                          lines.push(
+                            `  Df = D − ds = ${hasD ? D : '?'} − ${ds_val} = ${Df !== null ? fmtDec(Df) : '?'} m`
+                          );
+                          lines.push(
+                            `  q = γsub × Df = ${gammaSub !== null ? fmtDec(gammaSub) : '?'} × ${Df !== null ? fmtDec(Df) : '?'} = ${Q !== null ? fmtDec(Q) : '?'} kN/m²`
+                          );
+                          lines.push(
+                            `  Overburden Correction Factor CF = ${hasCorrFactor ? fmtDec(corrFactor) : 'NA (check overburden table)'}`
+                          );
+                        }
+                        lines.push(`  ${corrLabel}`);
+                        if (bctCorrectionType === 'overburden')
+                          lines.push(
+                            `     = ${hasN ? N : '?'} × ${hasCorrFactor ? fmtDec(corrFactor) : '?'} = ${NR_raw !== null ? fmtDec(NR_raw) : 'NA'}`
+                          );
+                        else if (bctCorrectionType === 'dilatency')
+                          lines.push(
+                            `     = (${hasN ? N : '?'} + 15) / 2 = ${NR_raw !== null ? fmtDec(NR_raw) : 'NA'}`
+                          );
+                        else if (bctCorrectionType === 'both')
+                          lines.push(
+                            `     Overburden step: ${hasN ? N : '?'} × ${hasCorrFactor ? fmtDec(corrFactor) : '?'} = ${hasCorrFactor && hasN ? fmtDec(N * corrFactor) : 'NA'}`,
+                            `     Dilatency step:  (${hasCorrFactor && hasN ? fmtDec(N * corrFactor) : '?'} + 15) / 2 = ${NR_raw !== null ? fmtDec(NR_raw) : 'NA'}`
+                          );
+                        lines.push(
+                          `  NR = ${NR_raw !== null ? fmtDec(NR_raw) : 'NA'}${NR_raw !== null && NR_raw !== NR ? ` → clamped to ${NR} (table range 5–60)` : ''}`
+                        );
+                        return lines.join('\n');
+                      })(),
+                      ``,
+                      `Step 2 — Settlement per Unit Pressure (Sf)`,
                       `  From Allowable Bearing Capacity table, interpolated at:`,
-                      `  N = ${N},  B = ${Math.min(B, 6.0).toFixed(2)} m${B > 6.0 ? ` (B clamped from ${B} m — table max 6.0 m)` : ''}`,
+                      `  NR = ${NR ?? 'NA'},  B = ${Math.min(B, 6.0).toFixed(2)} m${B > 6.0 ? ` (B clamped from ${B} m — table max 6.0 m)` : ''}`,
                       `  Sf = ${Sf !== null ? fmtDec(Sf) : 'NA'} m`,
                       `     = ${Sf !== null ? fmtDec(Sf * 1000) : 'NA'} mm`,
                       ``,
-                      `Step 2 — Depth Factor / Fox's Correction (If)`,
+                      `Step 3 — Depth Factor / Fox's Correction (If)`,
                       ifRes
                         ? (() => {
                             const lbValues = [1, 9, 25, 100];
@@ -3844,12 +4255,12 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                           })()
                         : `  Insufficient input`,
                       ``,
-                      `Step 3 — Corrected Immediate Settlement (Si)`,
+                      `Step 4 — Corrected Immediate Settlement (Si)`,
                       `  Si = Sf × If × Rf`,
                       `     = ${Sf !== null ? fmtDec(Sf * 1000) : 'NA'} mm × ${If_val !== null ? If_val.toFixed(4) : 'NA'} × ${RIGIDITY_FACTOR}`,
                       `     = ${Si !== null ? fmtDec(Si * 1000) : 'NA'} mm`,
                       ``,
-                      `Step 4 — Allowable Bearing Capacity (qa)`,
+                      `Step 5 — Allowable Bearing Capacity (qa)`,
                       `  qa = S_allow / Si`,
                       `     = ${allowSettlement_mm} mm / ${Si !== null ? fmtDec(Si * 1000) : 'NA'} mm`,
                       `     = ${qa_kgcm2 !== null ? qa_kgcm2.toFixed(4) : 'NA'} kg/cm²`,
@@ -3863,7 +4274,10 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
               </div>
             ) : (
               <p className="text-xs text-gray-400 text-center py-6 italic">
-                Enter N, B, L, and D above to compute bearing capacity based on settlement criteria.
+                Enter Field N, correction type, B, L, and D above to compute bearing capacity based
+                on settlement criteria.
+                {needsQ &&
+                  ' Also enter bulk unit weight γ and scour depth ds for the overburden correction.'}
               </p>
             )}
 

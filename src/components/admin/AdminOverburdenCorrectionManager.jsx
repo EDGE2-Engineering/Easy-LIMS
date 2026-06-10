@@ -558,7 +558,7 @@ const AdminOverburdenCorrectionManager = () => {
           <div className="flex flex-col sm:flex-row sm:items-end gap-4">
             <div>
               <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                Interpolation Calculator
+                Correction Factor (CF) - Interpolation Calculator
               </h2>
               <p className="text-xs text-gray-400 mt-0.5">
                 Enter Q to compute the interpolated Correction Factor with step-by-step formula
