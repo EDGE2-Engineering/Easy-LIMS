@@ -3207,7 +3207,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
             {/* Header */}
             <div className="px-6 pt-5 pb-4 border-b border-gray-100">
               <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
-                Bearing Capacity Tester
+                Part 1. Bearing Capacity - Shear Critiria
               </h2>
               <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest font-medium">
                 Ultimate q<sub>d</sub> and safe q<sub>s</sub> per IS 6403
@@ -3217,9 +3217,9 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
             <div className="px-6 py-5 space-y-6">
               {/* ── Input grid ── */}
               <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+                {/* <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
                   Inputs — shared values auto-filled from above
-                </p>
+                </p> */}
                 <div
                   className="grid gap-4"
                   style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}
@@ -3774,7 +3774,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
             {/* Header */}
             <div>
               <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
-                Bearing Capacity Tester for Settlement
+                Part 2. Bearing Capacity - Settlement Criteria
               </h2>
               <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest font-medium">
                 IS:8009 Part I – 1976 &nbsp;·&nbsp; Corrected immediate settlement method
@@ -3783,9 +3783,9 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
 
             {/* Inputs */}
             <div className="space-y-3">
-              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
+              {/* <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
                 Inputs
-              </h3>
+              </h3> */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {/* Field N */}
                 <div className="flex flex-col gap-1.5">
