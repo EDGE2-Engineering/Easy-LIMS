@@ -303,6 +303,51 @@ const BcResultCard = ({ label, labelSub, formula, value, highlight }) => (
   </div>
 );
 
+// ─── Part 3 sub-components (module-level to preserve focus on re-render) ─────
+const CsInputField = ({ label, symbol, unit, value, onChange, placeholder, error, note }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-xs text-gray-500 leading-tight">
+      {label}
+      {symbol && <span className="ml-1 font-bold text-gray-700"> — {symbol}</span>}
+      {unit && <span className="ml-1 text-[10px] text-gray-400">({unit})</span>}
+    </label>
+    <Input
+      type="number"
+      step="any"
+      min="0"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={`w-full text-center rounded-xl h-9 text-sm font-mono ${error ? 'border-red-400 bg-red-50' : ''}`}
+    />
+    {error && <p className="text-[10px] text-red-500">{error}</p>}
+    {note && <p className="text-[10px] text-gray-400 italic">{note}</p>}
+  </div>
+);
+
+const CsComputedRow = ({ label, symbol, unit, displayValue, formula, highlight }) => (
+  <div
+    className={`rounded-xl border p-3 flex flex-col gap-0.5 ${highlight ? 'bg-primary/5 border-primary/20' : 'bg-gray-50 border-gray-100'}`}
+  >
+    <p className="text-[10px] text-gray-400 leading-tight">
+      {label}
+      {symbol && (
+        <>
+          {' '}
+          — <span className="font-bold text-gray-600">{symbol}</span>
+        </>
+      )}
+      {unit && <span className="ml-1 font-normal text-gray-400">({unit})</span>}
+    </p>
+    {formula && <p className="text-[9px] text-gray-400 font-mono italic">{formula}</p>}
+    <p
+      className={`text-sm font-bold font-mono tabular-nums mt-0.5 ${highlight ? 'text-primary' : displayValue !== '—' ? 'text-gray-800' : 'text-gray-300'}`}
+    >
+      {displayValue}
+    </p>
+  </div>
+);
+
 // ─── Component ────────────────────────────────────────────────────────────────
 const AdminBearingCapacityManager = () => {
   const { settings, updateSetting, loading } = useSettings();
@@ -348,6 +393,13 @@ const AdminBearingCapacityManager = () => {
   const [bctLInput, setBctLInput] = useState(''); // Footing length L (m)
   const [bctShape, setBctShape] = useState('rectangle'); // rectangle | square | circle | strip
   const [bctFootingType, setBctFootingType] = useState('isolated'); // 'isolated' | 'raft'
+  // Part 3 — Consolidation Settlement inputs
+  const [csD, setCsD] = useState(''); // Depth of foundation (m)
+  const [csB, setCsB] = useState(''); // Width of foundation (m)
+  const [csL, setCsL] = useState(''); // Length of foundation (m)
+  const [csP, setCsP] = useState(''); // Pressure due to imposed load qs (kN/m²)
+  const [csHt, setCsHt] = useState(''); // Height of compressible layer (m)
+  const [csWL, setCsWL] = useState(''); // Liquid Limit (%)
 
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
@@ -3777,7 +3829,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                 Part 2. Bearing Capacity - Settlement Criteria
               </h2>
               <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest font-medium">
-                IS:8009 Part I – 1976 &nbsp;·&nbsp; Corrected immediate settlement method
+                Corrected immediate settlement method
               </p>
             </div>
 
@@ -4295,6 +4347,494 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                 Si = Sf × If × Rf &nbsp;·&nbsp; qa = S<sub>allow</sub> / Si &nbsp;·&nbsp; S
                 <sub>allow</sub>: 25 mm (isolated), 50 mm (raft)
               </p>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Part 3: Bearing Capacity — Consolidation Settlement Criteria ── */}
+      {(() => {
+        const EO = 0.8; // constant void ratio
+        const RIGIDITY_FACTOR = 0.8;
+
+        // ── parse Part 3 inputs ───────────────────────────────────────────
+        const D3 = parseFloat(csD);
+        const B3 = parseFloat(csB);
+        const L3 = parseFloat(csL);
+        const P3 = parseFloat(csP);
+        const Ht3 = parseFloat(csHt);
+        const WL3 = parseFloat(csWL);
+
+        const hasD3 = !isNaN(D3) && csD !== '';
+        const hasB3 = !isNaN(B3) && csB !== '';
+        const hasL3 = !isNaN(L3) && csL !== '';
+        const hasP3 = !isNaN(P3) && csP !== '';
+        const hasHt3 = !isNaN(Ht3) && csHt !== '';
+        const hasWL3 = !isNaN(WL3) && csWL !== '' && WL3 >= 10;
+        const wlError = csWL !== '' && !isNaN(WL3) && WL3 < 10;
+
+        // ── re-derive Part 2 values (If, Rf, Si, γsub) ──────────────────
+        // Re-use Part 2 state: bctGammaInput, bctDsInput, bctDInput, bctBInput, bctLInput,
+        // bctNInput, bctCorrectionType, bctGammaInput
+        const p2gamma = parseFloat(bctGammaInput);
+        const p2ds =
+          bctDsInput !== '' && !isNaN(parseFloat(bctDsInput)) ? parseFloat(bctDsInput) : 0;
+        const p2D = parseFloat(bctDInput);
+        const p2B = parseFloat(bctBInput);
+        const p2L_raw = parseFloat(bctLInput);
+        const p2N = parseFloat(bctNInput);
+
+        const p2hasGamma = !isNaN(p2gamma) && bctGammaInput !== '';
+        const p2hasD = !isNaN(p2D) && bctDInput !== '';
+        const p2hasB = !isNaN(p2B) && bctBInput !== '';
+
+        const p2gammaSub = p2hasGamma ? Math.max(0, p2gamma - 10) : null;
+        const p2Df = p2hasD ? Math.max(0, p2D - p2ds) : null;
+        const p2Q = p2gammaSub !== null && p2Df !== null ? p2gammaSub * p2Df : null;
+
+        // Overburden correction factor for Part 2 NR
+        const obRowsP2 = (() => {
+          const raw = settings?.['overburden_correction_data'];
+          if (!raw) return [];
+          try {
+            const p = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            return Array.isArray(p) ? p : [];
+          } catch {
+            return [];
+          }
+        })();
+        const obPointsP2 = obRowsP2
+          .filter(
+            (r) =>
+              r.pressure !== '' &&
+              r.correction !== '' &&
+              !isNaN(parseFloat(r.pressure)) &&
+              !isNaN(parseFloat(r.correction))
+          )
+          .map((r) => ({ x: parseFloat(r.pressure), y: parseFloat(r.correction) }))
+          .sort((a, b) => a.x - b.x);
+
+        const needsQp2 = bctCorrectionType === 'overburden' || bctCorrectionType === 'both';
+        const p2CF =
+          needsQp2 && p2Q !== null && obPointsP2.length >= 2 ? interpolateY(obPointsP2, p2Q) : null;
+
+        const p2NR_raw = (() => {
+          if (isNaN(p2N)) return null;
+          switch (bctCorrectionType) {
+            case 'none':
+              return p2N;
+            case 'overburden':
+              return p2CF !== null ? p2N * p2CF : null;
+            case 'dilatency':
+              return (p2N + 15) / 2;
+            case 'both':
+              return p2CF !== null ? (p2N * p2CF + 15) / 2 : null;
+            default:
+              return p2N;
+          }
+        })();
+        const p2NR = p2NR_raw !== null ? Math.min(60, Math.max(5, p2NR_raw)) : null;
+
+        // Sf from Part 2
+        const p2L = (() => {
+          if (!p2hasB) return null;
+          switch (bctShape) {
+            case 'square':
+              return p2B;
+            case 'circle':
+              return p2B;
+            case 'strip':
+              return 100 * p2B;
+            default:
+              return !isNaN(p2L_raw) && bctLInput !== '' ? p2L_raw : null;
+          }
+        })();
+        const computeSfP2 = (n, b) => {
+          if (!n || !b || isNaN(n) || isNaN(b)) return null;
+          const bC = Math.min(b, FOOTING_WIDTHS[FOOTING_WIDTHS.length - 1]);
+          let bLi = FOOTING_WIDTHS.length - 2;
+          for (let i = 0; i < FOOTING_WIDTHS.length - 1; i++) {
+            if (bC >= FOOTING_WIDTHS[i] && bC <= FOOTING_WIDTHS[i + 1]) {
+              bLi = i;
+              break;
+            }
+          }
+          const bHi = Math.min(bLi + 1, FOOTING_WIDTHS.length - 1);
+          const b0 = FOOTING_WIDTHS[bLi],
+            b1 = FOOTING_WIDTHS[bHi];
+          const nRows = SETTLEMENT_DATA.map((r) => r.n);
+          let nLi = 0;
+          for (let i = 0; i < nRows.length - 1; i++) {
+            if (n >= nRows[i] && n <= nRows[i + 1]) {
+              nLi = i;
+              break;
+            }
+          }
+          if (n <= nRows[0]) nLi = 0;
+          if (n >= nRows[nRows.length - 1]) nLi = nRows.length - 2;
+          const nHi = Math.min(nLi + 1, nRows.length - 1);
+          const v00 = SETTLEMENT_DATA[nLi].vals[bLi],
+            v01 = SETTLEMENT_DATA[nLi].vals[bHi];
+          const v10 = SETTLEMENT_DATA[nHi].vals[bLi],
+            v11 = SETTLEMENT_DATA[nHi].vals[bHi];
+          const r0 =
+            v00 !== null && v01 !== null && b0 !== b1
+              ? v00 + ((bC - b0) / (b1 - b0)) * (v01 - v00)
+              : (v00 ?? v01);
+          const r1 =
+            v10 !== null && v11 !== null && b0 !== b1
+              ? v10 + ((bC - b0) / (b1 - b0)) * (v11 - v10)
+              : (v10 ?? v11);
+          if (r0 === null || r1 === null) return null;
+          const n0 = nRows[nLi],
+            n1 = nRows[nHi];
+          return n0 === n1 ? r0 : r0 + ((n - n0) / (n1 - n0)) * (r1 - r0);
+        };
+        const p2Sf = p2NR !== null && p2hasB ? computeSfP2(p2NR, p2B) : null;
+
+        // If from Fox's correction (Part 2 D, L, B)
+        const interpFoxP2 = (ds, dr) => {
+          const pts = [...ds.data].sort((a, b) => a.y - b.y);
+          if (!pts.length) return null;
+          if (dr <= pts[0].y) return pts[0].x;
+          if (dr >= pts[pts.length - 1].y) return pts[pts.length - 1].x;
+          for (let i = 0; i < pts.length - 1; i++) {
+            if (dr >= pts[i].y && dr <= pts[i + 1].y) {
+              const t = (dr - pts[i].y) / (pts[i + 1].y - pts[i].y);
+              return pts[i].x + t * (pts[i + 1].x - pts[i].x);
+            }
+          }
+          return null;
+        };
+        const p2If = (() => {
+          if (!p2hasD || !p2hasB || p2L === null) return null;
+          const sqrtLB = Math.sqrt(p2L * p2B);
+          if (sqrtLB === 0) return null;
+          const dr = Math.min(p2D / sqrtLB, 2.0);
+          const lbR = Math.max(1, Math.min(100, p2L / p2B));
+          const lbVals = [1, 9, 25, 100];
+          let lo = lbVals.length - 2;
+          for (let i = 0; i < lbVals.length - 1; i++) {
+            if (lbR >= lbVals[i] && lbR <= lbVals[i + 1]) {
+              lo = i;
+              break;
+            }
+          }
+          const hi = Math.min(lo + 1, lbVals.length - 1);
+          const ifLo = interpFoxP2(FOX_DATASETS[lo], dr);
+          const ifHi = interpFoxP2(FOX_DATASETS[hi], dr);
+          if (ifLo === null || ifHi === null) return null;
+          const t = (lbR - lbVals[lo]) / (lbVals[hi] - lbVals[lo]);
+          return ifLo + t * (ifHi - ifLo);
+        })();
+        const p2Si = p2Sf !== null && p2If !== null ? p2Sf * p2If * RIGIDITY_FACTOR * 1000 : null; // mm
+
+        // ── Part 3 computed chain ─────────────────────────────────────────
+        const depthZoneInfluence = hasD3 && hasB3 ? D3 + 1.5 * B3 : null;
+        const Cc = hasWL3 ? WL3 - 10 : null;
+        const Po = p2gammaSub !== null && hasD3 && hasHt3 ? p2gammaSub * (D3 + Ht3 / 2) : null;
+        const A = hasB3 && hasL3 ? B3 * L3 : null;
+        const Bo = hasB3 && hasHt3 ? B3 + 2 * (Ht3 / 4) : null;
+        const Lo = hasL3 && hasHt3 ? L3 + 2 * (Ht3 / 4) : null;
+        const Ao = Bo !== null && Lo !== null ? Bo * Lo : null;
+        const dP = hasP3 && A !== null && Ao !== null && Ao > 0 ? (P3 * A) / Ao : null;
+        const Scon =
+          Cc !== null && Po !== null && dP !== null && Ht3 > 0 && Po > 0
+            ? (Ht3 / (1 + EO)) * Cc * Math.log10((Po + dP) / Po) * 1000 // mm
+            : null;
+        const Stot = Scon !== null && p2If !== null ? Scon * p2If * RIGIDITY_FACTOR : null;
+        const Sfinal = Stot !== null && p2Si !== null ? Stot + p2Si : null;
+        const qSafe = Sfinal !== null && Sfinal > 0 && hasP3 ? (P3 / Sfinal) * 25 : null;
+
+        const canCompute = hasD3 && hasB3 && hasL3 && hasP3 && hasHt3 && hasWL3;
+
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-6">
+            {/* Header */}
+            <div>
+              <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
+                Part 3. Bearing Capacity — Consolidation Settlement Criteria
+              </h2>
+              {/* <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest font-medium">
+                IS:8009 Part I – 1976
+              </p> */}
+            </div>
+
+            {/* Inputs */}
+            <div className="space-y-3">
+              {/* <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
+                Inputs
+              </h3> */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <CsInputField
+                  label="Depth of foundation"
+                  symbol="D"
+                  unit="m"
+                  value={csD}
+                  onChange={setCsD}
+                  placeholder="e.g. 1.5"
+                />
+                <CsInputField
+                  label="Width of foundation"
+                  symbol="B"
+                  unit="m"
+                  value={csB}
+                  onChange={setCsB}
+                  placeholder="e.g. 2.0"
+                />
+                <CsInputField
+                  label="Length of foundation"
+                  symbol="L"
+                  unit="m"
+                  value={csL}
+                  onChange={setCsL}
+                  placeholder="e.g. 2.0"
+                />
+                <CsInputField
+                  label="Pressure due to imposed load"
+                  symbol="P = qs"
+                  unit="kN/m²"
+                  value={csP}
+                  onChange={setCsP}
+                  placeholder="e.g. 100"
+                />
+                <CsInputField
+                  label="Height of compressible layer"
+                  symbol="Ht"
+                  unit="m"
+                  value={csHt}
+                  onChange={setCsHt}
+                  placeholder="e.g. 3.0"
+                />
+                <CsInputField
+                  label="Liquid Limit"
+                  symbol="WL"
+                  unit="%"
+                  value={csWL}
+                  onChange={setCsWL}
+                  placeholder="e.g. 40"
+                  error={wlError ? 'WL must be ≥ 10%' : null}
+                  note="Must be ≥ 10%"
+                />
+              </div>
+            </div>
+
+            {/* Constants */}
+            <div className="space-y-2">
+              {/* <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
+                Constants
+              </h3> */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <CsComputedRow
+                  label="Void ratio"
+                  symbol="e₀"
+                  displayValue={fmtDec(EO)}
+                  formula="constant"
+                />
+                <CsComputedRow
+                  label="Rigidity Factor"
+                  symbol="Rf"
+                  displayValue={fmtDec(RIGIDITY_FACTOR)}
+                  formula="constant (IS:8009)"
+                />
+              </div>
+            </div>
+
+            {/* From Part 2 */}
+            <div className="space-y-2">
+              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
+                Values from Part 2 — Settlement Criteria
+              </h3>
+              {(p2Si === null || p2If === null || p2gammaSub === null) && (
+                <p className="text-xs text-amber-500 italic">
+                  ⚠ Fill in Part 2 (Bearing Capacity Tester for Settlement) to populate these
+                  values.
+                </p>
+              )}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <CsComputedRow
+                  label="Depth Factor"
+                  symbol="If"
+                  displayValue={p2If !== null ? p2If.toFixed(4) : '—'}
+                  formula="Fox's Correction (IS:8009)"
+                />
+                <CsComputedRow
+                  label="Rigidity Factor"
+                  symbol="Rf"
+                  displayValue={fmtDec(RIGIDITY_FACTOR)}
+                  formula="constant 0.8"
+                />
+                <CsComputedRow
+                  label="Corrected Immediate Settlement"
+                  symbol="Si"
+                  unit="mm"
+                  displayValue={p2Si !== null ? p2Si.toFixed(4) : '—'}
+                  formula="Sf × If × Rf"
+                />
+                <CsComputedRow
+                  label="Submerged unit weight"
+                  symbol="γsub"
+                  unit="kN/m³"
+                  displayValue={p2gammaSub !== null ? fmtDec(p2gammaSub) : '—'}
+                  formula="γ − 10"
+                />
+              </div>
+            </div>
+
+            {/* Computed chain */}
+            <div className="space-y-2">
+              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
+                Computed Values
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <CsComputedRow
+                  label="Depth of zone of influence"
+                  unit="m"
+                  displayValue={depthZoneInfluence !== null ? fmtDec(depthZoneInfluence) : '—'}
+                  formula="D + 1.5 × B"
+                />
+                <CsComputedRow
+                  label="Compression Index"
+                  symbol="Cc"
+                  displayValue={Cc !== null ? fmtDec(Cc) : '—'}
+                  formula="WL − 10"
+                />
+                <CsComputedRow
+                  label="Initial Pressure"
+                  symbol="Po"
+                  unit="kN/m²"
+                  displayValue={Po !== null ? fmtDec(Po) : '—'}
+                  formula="γsub × (D + Ht/2)"
+                />
+                <CsComputedRow
+                  label="Area of footing"
+                  symbol="A"
+                  unit="m²"
+                  displayValue={A !== null ? fmtDec(A) : '—'}
+                  formula="B × L"
+                />
+                <CsComputedRow
+                  label="Width of spread"
+                  symbol="Bo"
+                  unit="m"
+                  displayValue={Bo !== null ? fmtDec(Bo) : '—'}
+                  formula="B + 2 × (Ht/4)"
+                />
+                <CsComputedRow
+                  label="Length of spread"
+                  symbol="Lo"
+                  unit="m"
+                  displayValue={Lo !== null ? fmtDec(Lo) : '—'}
+                  formula="L + 2 × (Ht/4)"
+                />
+                <CsComputedRow
+                  label="Area of spread"
+                  symbol="Ao"
+                  unit="m²"
+                  displayValue={Ao !== null ? fmtDec(Ao) : '—'}
+                  formula="Lo × Bo"
+                />
+                <CsComputedRow
+                  label="Pressure Intensity"
+                  symbol="ΔP"
+                  unit="kN/m²"
+                  displayValue={dP !== null ? fmtDec(dP) : '—'}
+                  formula="(P × A) / Ao"
+                />
+                <CsComputedRow
+                  label="Consolidation settlement"
+                  symbol="Scon"
+                  unit="mm"
+                  displayValue={Scon !== null ? Scon.toFixed(4) : '—'}
+                  formula="(Ht/(1+e₀)) × Cc × log₁₀((Po+ΔP)/Po)"
+                />
+                <CsComputedRow
+                  label="Total consolidation settlement"
+                  symbol="Stot"
+                  unit="mm"
+                  displayValue={Stot !== null ? Stot.toFixed(4) : '—'}
+                  formula="Scon × If × Rf"
+                />
+                <CsComputedRow
+                  label="Total immediate settlement (Si)"
+                  symbol="Si"
+                  unit="mm"
+                  displayValue={p2Si !== null ? p2Si.toFixed(4) : '—'}
+                  formula="from Part 2"
+                />
+                <CsComputedRow
+                  label="Final settlement"
+                  symbol="Sfinal"
+                  unit="mm"
+                  displayValue={Sfinal !== null ? Sfinal.toFixed(4) : '—'}
+                  formula="Stot + Si"
+                  highlight
+                />
+              </div>
+
+              {/* Safe Bearing Pressure — prominent card */}
+              <div className="rounded-xl border bg-primary/5 border-primary/20 p-4 flex flex-col gap-1 mt-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                  Safe Bearing Pressure for 25 mm settlement — q<sub>safe</sub>
+                </p>
+                <p className="text-xs font-mono text-gray-500 mt-0.5">
+                  q<sub>safe</sub> = (P / S<sub>final</sub>) × 25
+                  {hasP3 && Sfinal !== null && (
+                    <>
+                      {' '}
+                      = ({P3} / {fmtDec(Sfinal)}) × 25
+                    </>
+                  )}
+                </p>
+                <p className="text-2xl font-black font-mono tabular-nums mt-1 text-primary">
+                  {qSafe !== null ? fmtDec(qSafe) : '—'}
+                  {qSafe !== null && (
+                    <span className="text-sm font-normal text-gray-400 ml-2">kN/m²</span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Step-by-step */}
+            {canCompute && Scon !== null && (
+              <div className="space-y-2">
+                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
+                  Step-by-step computation
+                </h3>
+                <div className="p-3 rounded-xl bg-gray-50 border border-gray-100 text-xs font-mono text-gray-600 whitespace-pre-line leading-relaxed">
+                  {[
+                    `Constants: e₀ = ${EO},  Rf = ${RIGIDITY_FACTOR}`,
+                    `From Part 2: If = ${p2If !== null ? p2If.toFixed(4) : 'NA'},  Si = ${p2Si !== null ? p2Si.toFixed(4) : 'NA'} mm,  γsub = ${p2gammaSub !== null ? fmtDec(p2gammaSub) : 'NA'} kN/m³`,
+                    ``,
+                    `Compression Index:  Cc = WL − 10 = ${WL3} − 10 = ${fmtDec(Cc)}`,
+                    `Initial Pressure:   Po = γsub × (D + Ht/2) = ${p2gammaSub !== null ? fmtDec(p2gammaSub) : '?'} × (${D3} + ${Ht3}/2) = ${Po !== null ? fmtDec(Po) : 'NA'} kN/m²`,
+                    `Area of footing:    A  = B × L = ${B3} × ${L3} = ${A !== null ? fmtDec(A) : 'NA'} m²`,
+                    `Width of spread:    Bo = B + 2×(Ht/4) = ${B3} + ${Ht3 !== null ? fmtDec(Ht3 / 2) : '?'} = ${Bo !== null ? fmtDec(Bo) : 'NA'} m`,
+                    `Length of spread:   Lo = L + 2×(Ht/4) = ${L3} + ${Ht3 !== null ? fmtDec(Ht3 / 2) : '?'} = ${Lo !== null ? fmtDec(Lo) : 'NA'} m`,
+                    `Area of spread:     Ao = Bo × Lo = ${Bo !== null ? fmtDec(Bo) : '?'} × ${Lo !== null ? fmtDec(Lo) : '?'} = ${Ao !== null ? fmtDec(Ao) : 'NA'} m²`,
+                    `Pressure intensity: ΔP = (P × A) / Ao = (${P3} × ${A !== null ? fmtDec(A) : '?'}) / ${Ao !== null ? fmtDec(Ao) : '?'} = ${dP !== null ? fmtDec(dP) : 'NA'} kN/m²`,
+                    ``,
+                    `Consolidation settlement:`,
+                    `  Scon = (Ht/(1+e₀)) × Cc × log₁₀((Po+ΔP)/Po)`,
+                    `       = (${Ht3}/(1+${EO})) × ${fmtDec(Cc)} × log₁₀((${Po !== null ? fmtDec(Po) : '?'} + ${dP !== null ? fmtDec(dP) : '?'}) / ${Po !== null ? fmtDec(Po) : '?'})`,
+                    `       = ${Scon !== null ? fmtDec(Scon) : 'NA'} mm`,
+                    ``,
+                    `Total consolidation: Stot = Scon × If × Rf = ${fmtDec(Scon)} × ${p2If !== null ? p2If.toFixed(4) : '?'} × ${RIGIDITY_FACTOR} = ${Stot !== null ? fmtDec(Stot) : 'NA'} mm`,
+                    `Final settlement:    Sfinal = Stot + Si = ${Stot !== null ? fmtDec(Stot) : '?'} + ${p2Si !== null ? fmtDec(p2Si) : '?'} = ${Sfinal !== null ? fmtDec(Sfinal) : 'NA'} mm`,
+                    `Safe bearing pressure: q_safe = (P / Sfinal) × 25 = (${P3} / ${Sfinal !== null ? fmtDec(Sfinal) : '?'}) × 25 = ${qSafe !== null ? fmtDec(qSafe) : 'NA'} kN/m²`,
+                  ].join('\n')}
+                </div>
+              </div>
+            )}
+
+            {/* Notes */}
+            <div className="text-[10px] text-gray-400 space-y-0.5 border-t border-gray-100 pt-3">
+              <p>
+                Po is the effective overburden pressure at the midpoint of the compression layer (D
+                + Ht/2).
+              </p>
+              <p>If and Si are taken from Part 2 — ensure Part 2 inputs are filled.</p>
+              <p>e₀ = 0.8 (constant) · Rf = 0.8 (constant) · Cc = WL − 10 (WL ≥ 10%)</p>
             </div>
           </div>
         );
