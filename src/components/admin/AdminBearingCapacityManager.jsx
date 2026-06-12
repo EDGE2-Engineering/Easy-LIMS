@@ -4951,7 +4951,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
         const sFos = parseFloat(sbcFos);
         const sHt = parseFloat(sbcHt);
         const sWL = parseFloat(sbcWL);
-        const sP = parseFloat(sbcP);
+        // sP is derived from Part 1 qs — declared after qs_p1 below
 
         const hasB_raw = !isNaN(sB_raw) && sbcB !== '';
         const sB = hasB_raw ? sB_raw : null;
@@ -4980,7 +4980,6 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
         const hasHt = !isNaN(sHt) && sbcHt !== '';
         const hasWL = !isNaN(sWL) && sbcWL !== '' && sWL >= 10;
         const wlErr = sbcWL !== '' && !isNaN(sWL) && sWL < 10;
-        const hasP = !isNaN(sP) && sbcP !== '';
         const hasB = sB !== null;
         const hasL = sL !== null;
 
@@ -5115,6 +5114,10 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                 ? qdIntermed
                 : null;
         const qs_p1 = qd !== null && hasFos ? qd / sFos : null;
+
+        // P (pressure from imposed load) is taken directly from Part 1 qs
+        const sP = qs_p1;
+        const hasP = sP !== null;
 
         // ── Part 2: Settlement Criteria ───────────────────────────────────
         const computeSfSBC = (n, b) => {
@@ -5457,12 +5460,14 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <SbcInputRow
-                  label="Pressure from Imposed Load"
+                  label="Pressure from Imposed Load (from Part 1 qs)"
                   symbol="P"
                   unit="kN/m²"
-                  value={sbcP}
-                  onChange={setSbcP}
-                  placeholder="e.g. 150"
+                  value={qs_p1 !== null ? fmtV(qs_p1, 2) : ''}
+                  onChange={() => {}}
+                  readOnly
+                  placeholder="— computed from Part 1"
+                  note={qs_p1 === null ? 'Enter φ, c, α, FOS in Part 1 to derive qs' : null}
                 />
                 <SbcInputRow
                   label="Height of Compressible Layer"
@@ -5743,7 +5748,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                   {hasP && sSfinal !== null && (
                     <>
                       {' '}
-                      = ({sbcP} / {fmt(sSfinal)}) × 25
+                      = ({fmtV(sP, 2)} / {fmt(sSfinal)}) × 25
                     </>
                   )}
                 </p>
@@ -5771,7 +5776,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                       `Bo = B + 2×(Ht/4) = ${sbcB} + ${sHt > 0 ? fmt(sHt / 2) : '?'} = ${fmt(sBo)} m`,
                       `Lo = L + 2×(Ht/4) = ${sL !== null ? fmt(sL) : '?'} + ${sHt > 0 ? fmt(sHt / 2) : '?'} = ${fmt(sLo)} m`,
                       `Ao = Bo × Lo = ${fmt(sBo)} × ${fmt(sLo)} = ${fmt(sAo)} m²`,
-                      `ΔP = (P × A) / Ao = (${sbcP} × ${fmt(sA)}) / ${fmt(sAo)} = ${fmt(sdP)} kN/m²`,
+                      `ΔP = (P × A) / Ao = (${fmtV(sP, 2)} × ${fmt(sA)}) / ${fmt(sAo)} = ${fmt(sdP)} kN/m²`,
                       '',
                       `Scon = (Ht/(1+e₀)) × Cc × log₁₀((Po+ΔP)/Po)`,
                       `     = (${sbcHt}/(1+${EO})) × ${fmt(sCc)} × log₁₀((${fmt(sPo)} + ${fmt(sdP)}) / ${fmt(sPo)})`,
@@ -5780,7 +5785,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                       `Stot   = Scon × If × Rf = ${sScon !== null ? fmtV(sScon, 4) : '?'} × ${sIf !== null ? fmtV(sIf, 4) : '?'} × ${RIGIDITY_FACTOR} = ${sStot !== null ? fmtV(sStot, 4) : 'NA'} mm`,
                       `Sfinal = Stot + Si = ${sStot !== null ? fmtV(sStot, 4) : '?'} + ${sSi_mm !== null ? fmtV(sSi_mm, 4) : '?'} = ${sSfinal !== null ? fmtV(sSfinal, 4) : 'NA'} mm`,
                       sqSafe !== null
-                        ? `q_safe = (P / Sfinal) × 25 = (${sbcP} / ${fmt(sSfinal)}) × 25 = ${fmt(sqSafe)} kN/m²`
+                        ? `q_safe = (P / Sfinal) × 25 = (${fmtV(sP, 2)} / ${fmt(sSfinal)}) × 25 = ${fmt(sqSafe)} kN/m²`
                         : '',
                     ]
                       .filter((l) => l !== undefined)
