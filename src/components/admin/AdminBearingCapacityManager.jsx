@@ -3208,9 +3208,19 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
 
         // Shape factors
         const ratio = hasB && hasL ? B / L : null;
-        const Sc = ratio !== null ? 1 + 0.2 * ratio : null;
-        const Sq = ratio !== null ? 1 + 0.2 * ratio : null;
-        const Sg = ratio !== null ? 1 - 0.4 * ratio : null;
+        const Sc = (() => {
+          if (shapeInput === 'square' || shapeInput === 'circle') return 1.3;
+          return ratio !== null ? 1 + 0.2 * ratio : null;
+        })();
+        const Sq = (() => {
+          if (shapeInput === 'square' || shapeInput === 'circle') return 1.2;
+          return ratio !== null ? 1 + 0.2 * ratio : null;
+        })();
+        const Sg = (() => {
+          if (shapeInput === 'square') return 0.8;
+          if (shapeInput === 'circle') return 0.6;
+          return ratio !== null ? 1 - 0.4 * ratio : null;
+        })();
 
         // Depth factors
         const Df = parseFloat(dfInput);
@@ -3232,7 +3242,9 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
 
         const hasC = !isNaN(c) && cInput !== '';
         const hasGamma = !isNaN(gamma) && gammaInput !== '';
-        const hasFos = !isNaN(fos) && fosInput !== '' && fos > 0;
+        const fosInRange = !isNaN(fos) && fos >= 2 && fos <= 3;
+        const fosOutOfRange = !isNaN(fos) && fosInput !== '' && (fos < 2 || fos > 3);
+        const hasFos = !isNaN(fos) && fosInput !== '' && fosInRange;
 
         // Derived: effective unit weight and effective overburden pressure
         const gammaSub = hasGamma ? Math.max(0, gamma - 10) : null;
@@ -3529,6 +3541,11 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                     onChange={setFosInput}
                     placeholder="e.g. 3"
                   />
+                  {fosOutOfRange && (
+                    <p className="text-[10px] text-red-500 mt-0.5">
+                      FOS must be between 2.0 and 3.0
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -4605,7 +4622,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
 
         // ── Part 3 computed chain ─────────────────────────────────────────
         const depthZoneInfluence = hasD3 && hasB3 ? D3 + 1.5 * B3 : null;
-        const Cc = hasWL3 ? WL3 - 10 : null;
+        const Cc = hasWL3 ? 0.009 * (WL3 - 10) : null;
         const Po = p2gammaSub !== null && hasD3 && hasHt3 ? p2gammaSub * (D3 + Ht3 / 2) : null;
         const A = hasB3 && hasL3 ? B3 * L3 : null;
         const Bo = hasB3 && hasHt3 ? B3 + 2 * (Ht3 / 4) : null;
@@ -4623,7 +4640,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
         const canCompute = hasD3 && hasB3 && hasL3 && hasP3 && hasHt3 && hasWL3;
 
         return (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-6">
+          <div className="hidden bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-6">
             {/* Header */}
             <div>
               <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
@@ -4771,7 +4788,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                   label="Compression Index"
                   symbol="Cc"
                   displayValue={Cc !== null ? fmtDec(Cc) : '—'}
-                  formula="WL − 10"
+                  formula="0.009 × (WL − 10)"
                 />
                 <CsComputedRow
                   label="Initial Pressure"
@@ -4880,7 +4897,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                     `Constants: e₀ = ${EO},  Rf = ${RIGIDITY_FACTOR}`,
                     `From Part 2: If = ${p2If !== null ? p2If.toFixed(4) : 'NA'},  Si = ${p2Si !== null ? p2Si.toFixed(4) : 'NA'} mm,  γsub = ${p2gammaSub !== null ? fmtDec(p2gammaSub) : 'NA'} kN/m³`,
                     ``,
-                    `Compression Index:  Cc = WL − 10 = ${WL3} − 10 = ${fmtDec(Cc)}`,
+                    `Compression Index:  Cc = 0.009 × (WL − 10) = 0.009 × (${WL3} − 10) = ${fmtDec(Cc)}`,
                     `Initial Pressure:   Po = γsub × (D + Ht/2) = ${p2gammaSub !== null ? fmtDec(p2gammaSub) : '?'} × (${D3} + ${Ht3}/2) = ${Po !== null ? fmtDec(Po) : 'NA'} kN/m²`,
                     `Area of footing:    A  = B × L = ${B3} × ${L3} = ${A !== null ? fmtDec(A) : 'NA'} m²`,
                     `Width of spread:    Bo = B + 2×(Ht/4) = ${B3} + ${Ht3 !== null ? fmtDec(Ht3 / 2) : '?'} = ${Bo !== null ? fmtDec(Bo) : 'NA'} m`,
@@ -4908,7 +4925,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                 + Ht/2).
               </p>
               <p>If and Si are taken from Part 2 — ensure Part 2 inputs are filled.</p>
-              <p>e₀ = 0.8 (constant) · Rf = 0.8 (constant) · Cc = WL − 10 (WL ≥ 10%)</p>
+              <p>e₀ = 0.8 (constant) · Rf = 0.8 (constant) · Cc = 0.009 × (WL − 10) (WL ≥ 10%)</p>
             </div>
           </div>
         );
@@ -4957,7 +4974,9 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
         const hasPhi = !isNaN(sPhi) && sbcPhi !== '';
         const hasC = !isNaN(sC) && sbcC !== '';
         const hasAlpha = !isNaN(sAlpha) && sbcAlpha !== '';
-        const hasFos = !isNaN(sFos) && sbcFos !== '' && sFos > 0;
+        const fosInRange = !isNaN(sFos) && sFos >= 2 && sFos <= 3;
+        const fosOutOfRange = !isNaN(sFos) && sbcFos !== '' && (sFos < 2 || sFos > 3);
+        const hasFos = !isNaN(sFos) && sbcFos !== '' && fosInRange;
         const hasHt = !isNaN(sHt) && sbcHt !== '';
         const hasWL = !isNaN(sWL) && sbcWL !== '' && sWL >= 10;
         const wlErr = sbcWL !== '' && !isNaN(sWL) && sWL < 10;
@@ -5024,9 +5043,19 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
         const NgP = hasPhi ? interpolateY(ngPts, phiPrime) : null;
 
         const ratio = hasB && hasL ? sB / sL : null;
-        const Sc = ratio !== null ? 1 + 0.2 * ratio : null;
-        const Sq = ratio !== null ? 1 + 0.2 * ratio : null;
-        const Sg = ratio !== null ? 1 - 0.4 * ratio : null;
+        const Sc = (() => {
+          if (sbcShape === 'square' || sbcShape === 'circle') return 1.3;
+          return ratio !== null ? 1 + 0.2 * ratio : null;
+        })();
+        const Sq = (() => {
+          if (sbcShape === 'square' || sbcShape === 'circle') return 1.2;
+          return ratio !== null ? 1 + 0.2 * ratio : null;
+        })();
+        const Sg = (() => {
+          if (sbcShape === 'square') return 0.8;
+          if (sbcShape === 'circle') return 0.6;
+          return ratio !== null ? 1 - 0.4 * ratio : null;
+        })();
 
         const tanT = hasPhi && hasB && hasD ? Math.tan(((45 + sPhi / 2) * Math.PI) / 180) : null;
         const dfbR = hasB && hasD ? sD / sB : null;
@@ -5173,7 +5202,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
         const qa_kNm2 = qa_kgcm2 !== null ? qa_kgcm2 * 98.1 : null;
 
         // ── Part 3: Consolidation Settlement ─────────────────────────────
-        const sCc = hasWL ? sWL - 10 : null;
+        const sCc = hasWL ? 0.009 * (sWL - 10) : null;
         const sPo = gammaSub !== null && hasD && hasHt ? gammaSub * (sD + sHt / 2) : null;
         const sA = hasB && hasL ? sB * sL : null;
         const sBo = hasB && hasHt ? sB + 2 * (sHt / 4) : null;
@@ -5373,6 +5402,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                   value={sbcFos}
                   onChange={setSbcFos}
                   placeholder="e.g. 3"
+                  error={fosOutOfRange ? 'FOS must be between 2.0 and 3.0' : null}
                 />
               </div>
             </div>
@@ -5628,7 +5658,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                   symbol="Cc"
                   unit="-"
                   value={sCc !== null ? fmt(sCc) : '—'}
-                  formula="WL − 10"
+                  formula="0.009 × (WL − 10)"
                 />
                 <SbcResult
                   label="Initial Overburden Pressure"
@@ -5735,7 +5765,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                       `Constants: e₀ = ${EO},  Rf = ${RIGIDITY_FACTOR}`,
                       `If = ${sIf !== null ? fmtV(sIf, 4) : 'NA'},  Si = ${sSi_mm !== null ? fmtV(sSi_mm, 4) : 'NA'} mm,  γsub = ${gammaSub !== null ? fmt(gammaSub) : 'NA'} kN/m³`,
                       '',
-                      `Cc = WL − 10 = ${sbcWL} − 10 = ${fmt(sCc)}`,
+                      `Cc = 0.009 × (WL − 10) = 0.009 × (${sbcWL} − 10) = ${fmt(sCc)}`,
                       `Po = γsub × (D + Ht/2) = ${fmt(gammaSub)} × (${sbcD} + ${sbcHt}/2) = ${fmt(sPo)} kN/m²`,
                       `A  = B × L = ${sbcB} × ${sL !== null ? fmt(sL) : '?'} = ${fmt(sA)} m²`,
                       `Bo = B + 2×(Ht/4) = ${sbcB} + ${sHt > 0 ? fmt(sHt / 2) : '?'} = ${fmt(sBo)} m`,
@@ -5764,10 +5794,10 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
             <div className="text-[10px] text-gray-400 space-y-0.5 border-t border-gray-100 pt-3">
               <p>All three parts share B, L, D, γ, shape, and ds from Common Inputs above.</p>
               <p>
-                Part 1 additionally needs: φ, c, α, FOS · Part 2: N, correction type, footing type ·
-                Part 3: P, Ht, WL
+                Part 1 additionally needs: φ, c, α, FOS (2.0–3.0) · Part 2: N, correction type,
+                footing type · Part 3: P, Ht, WL
               </p>
-              <p>e₀ = 0.8 (constant) · Rf = 0.8 (constant) · Cc = WL − 10 (WL ≥ 10%)</p>
+              <p>e₀ = 0.8 (constant) · Rf = 0.8 (constant) · Cc = 0.009 × (WL − 10) (WL ≥ 10%)</p>
             </div>
           </div>
         );
