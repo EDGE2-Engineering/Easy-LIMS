@@ -3341,7 +3341,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
         };
 
         return (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="hidden bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             {/* Header */}
             <div className="px-6 pt-5 pb-4 border-b border-gray-100">
               <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
@@ -3913,7 +3913,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
         const fmt2 = (v) => (v !== null ? v.toFixed(4) : '—');
 
         return (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-6">
+          <div className="hidden bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-6">
             {/* Header */}
             <div>
               <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
@@ -5230,11 +5230,11 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
           <div className="bg-white rounded-2xl border-2 border-primary/20 shadow-sm p-6 space-y-6">
             {/* Header */}
             <div>
-              <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-primary/10 mb-2">
+              {/* <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-primary/10 mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                   New
                 </span>
-              </div>
+              </div> */}
               <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
                 SBC Calculator
               </h2>
