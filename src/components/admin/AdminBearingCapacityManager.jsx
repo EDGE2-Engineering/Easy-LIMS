@@ -474,6 +474,7 @@ const AdminBearingCapacityManager = () => {
   const [sbcHt, setSbcHt] = useState(''); // Height of compressible layer Ht (m)
   const [sbcWL, setSbcWL] = useState(''); // Liquid Limit WL (%)
   const [sbcP, setSbcP] = useState(''); // Pressure from imposed load P (kN/m²)
+  const [soilTypeInput, setSoilTypeInput] = useState('non-clay'); // 'clay' | 'non-clay'
 
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
@@ -3371,6 +3372,25 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                     placeholder="e.g. 30"
                   />
 
+                  <div className="col-span-full flex flex-col gap-1.5">
+                    <label className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                      Type of Soil
+                    </label>
+                    <Select value={soilTypeInput} onValueChange={setSoilTypeInput}>
+                      <SelectTrigger className="w-full rounded-xl h-9 text-sm font-mono">
+                        <SelectValue placeholder="Select type of soil" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="clay">Clay</SelectItem>
+                        <SelectItem value="silt">Silt</SelectItem>
+                        <SelectItem value="sand">Sand</SelectItem>
+                        <SelectItem value="gravel">Gravel</SelectItem>
+                        <SelectItem value="rock">Rock</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   {/* Shape of Footing — full-width row */}
                   <div className="col-span-full flex flex-col gap-1.5">
                     <label className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
@@ -5252,20 +5272,48 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                 Common Inputs
               </h3> */}
 
-              {/* Shape selector */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-gray-500">Shape of Footing</label>
-                <Select value={sbcShape} onValueChange={setSbcShape}>
-                  <SelectTrigger className="rounded-xl h-9 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="rectangle">Rectangle</SelectItem>
-                    <SelectItem value="square">Square</SelectItem>
-                    <SelectItem value="circle">Circle</SelectItem>
-                    <SelectItem value="strip">Strip</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* Shape + Soil Type selectors */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-gray-500">Shape of Footing</label>
+                  <Select value={sbcShape} onValueChange={setSbcShape}>
+                    <SelectTrigger className="rounded-xl h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="rectangle">Rectangle</SelectItem>
+                      <SelectItem value="square">Square</SelectItem>
+                      <SelectItem value="circle">Circle</SelectItem>
+                      <SelectItem value="strip">Strip</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-gray-500">Type of Soil</label>
+                  <Select value={soilTypeInput} onValueChange={setSoilTypeInput}>
+                    <SelectTrigger className="rounded-xl h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="clay">Clay</SelectItem>
+                      <SelectItem value="aggregate-coarse">Aggregate (Coarse)</SelectItem>
+                      <SelectItem value="aggregate-fine">Aggregate (Fine)</SelectItem>
+                      <SelectItem value="cement">Cement</SelectItem>
+                      <SelectItem value="concrete">Concrete</SelectItem>
+                      <SelectItem value="soil">Soil</SelectItem>
+                      <SelectItem value="rock">Rock</SelectItem>
+                      <SelectItem value="bitumen">Bitumen</SelectItem>
+                      <SelectItem value="steel">Steel</SelectItem>
+                      <SelectItem value="water">Water</SelectItem>
+                      <SelectItem value="tiles">Tiles</SelectItem>
+                      <SelectItem value="bricks">Bricks</SelectItem>
+                      <SelectItem value="soil-and-rock">Soil and Rock</SelectItem>
+                      <SelectItem value="sand-and-silt">Sand and Silt</SelectItem>
+                      <SelectItem value="gravel">Gravel</SelectItem>
+                      <SelectItem value="weathered-rock">Weathered Rock</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -5795,7 +5843,6 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
               )}
             </div>
 
-            {/* Notes */}
             <div className="text-[10px] text-gray-400 space-y-0.5 border-t border-gray-100 pt-3">
               <p>All three parts share B, L, D, γ, shape, and ds from Common Inputs above.</p>
               <p>
@@ -5804,6 +5851,133 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
               </p>
               <p>e₀ = 0.8 (constant) · Rf = 0.8 (constant) · Cc = 0.009 × (WL − 10) (WL ≥ 10%)</p>
             </div>
+
+            {/* ── Recommended Design SBC ── */}
+            {(() => {
+              const isClay = soilTypeInput === 'clay';
+
+              // Part 1: SBC based on shear criteria
+              const shearSBC = qs_p1; // kN/m²
+
+              // Part 2/3: SBC based on settlement criteria
+              // For clay: use sqSafe (Part 3 — consolidation settlement governs)
+              // For non-clay: use qa_kNm2 (Part 2 — immediate settlement only)
+              const settlementSBC = isClay ? sqSafe : qa_kNm2;
+
+              // Recommended = 85% of the lesser of the two
+              const recommended =
+                shearSBC !== null && settlementSBC !== null
+                  ? 0.85 * Math.min(shearSBC, settlementSBC)
+                  : null;
+
+              const fmtSBC = (v) => (v !== null && !isNaN(v) ? `${v.toFixed(2)} kN/m²` : '—');
+
+              const ValueCell = ({ val, label, highlight }) => (
+                <td
+                  className={`py-4 px-4 text-center border-r border-gray-100 ${highlight ? 'bg-primary/5' : ''}`}
+                >
+                  <span
+                    className={`block text-base font-black font-mono tabular-nums ${highlight ? 'text-primary' : val !== null ? 'text-gray-800' : 'text-gray-300'}`}
+                  >
+                    {fmtSBC(val)}
+                  </span>
+                  {label && <span className="block text-[10px] text-gray-400 mt-0.5">{label}</span>}
+                </td>
+              );
+
+              return (
+                <div className="mt-6 rounded-xl border border-gray-100 overflow-hidden">
+                  <div className="px-4 pt-3 pb-2 bg-gray-50 border-b border-gray-100">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                      Recommended Design SBC — IS 6403
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      Soil type:{' '}
+                      <strong className="text-gray-600">
+                        {isClay ? 'Clay' : 'Any soil other than clay'}
+                      </strong>
+                      {' · '}Settlement criteria uses{' '}
+                      {isClay ? 'Part 3 (consolidation Sf)' : 'Part 2 (immediate Si only)'}
+                    </p>
+                  </div>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-100">
+                        <th className="text-center py-2 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
+                          <span className="block normal-case font-normal text-[9px] text-gray-400 mb-0.5">
+                            SBC based on Shear Criteria
+                          </span>
+                          q<sub>s</sub> — Part 1
+                        </th>
+                        <th className="text-center py-2 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
+                          <span className="block normal-case font-normal text-[9px] text-gray-400 mb-0.5">
+                            SBC based on Settlement Criteria
+                          </span>
+                          q<sub>a</sub> — {isClay ? 'Part 3' : 'Part 2'}
+                        </th>
+                        <th className="text-center py-2 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
+                          <span className="block normal-case font-normal text-[9px] text-gray-400 mb-0.5">
+                            Lesser of SBC based on Shear Criteria & SBC based on Settlement Criteria
+                          </span>
+                          minimum(q<sub>s</sub>, q<sub>a</sub>)
+                        </th>
+                        <th className="text-center py-2 px-3 font-bold text-primary uppercase tracking-widest text-[10px] bg-primary/5">
+                          <span className="block normal-case font-normal text-[9px] text-primary/70 mb-0.5">
+                            85% × minimum(SBC based on Shear Criteria, SBC based on Settlement
+                            Criteria)
+                          </span>
+                          Recommended SBC
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <ValueCell val={shearSBC} label="from Part 1 qs" />
+                        <ValueCell
+                          val={settlementSBC}
+                          label={isClay ? 'from Part 3 qsafe' : 'from Part 2 qa'}
+                        />
+                        <ValueCell
+                          val={
+                            shearSBC !== null && settlementSBC !== null
+                              ? Math.min(shearSBC, settlementSBC)
+                              : null
+                          }
+                          label={
+                            shearSBC !== null && settlementSBC !== null
+                              ? shearSBC <= settlementSBC
+                                ? 'shear governs'
+                                : 'settlement governs'
+                              : null
+                          }
+                        />
+                        <td className="py-4 px-4 text-center bg-primary/5">
+                          <span
+                            className={`block text-xl font-black font-mono tabular-nums ${recommended !== null ? 'text-primary' : 'text-gray-300'}`}
+                          >
+                            {fmtSBC(recommended)}
+                          </span>
+                          <span className="block text-[10px] text-primary/70 mt-0.5 font-mono">
+                            {recommended !== null
+                              ? `= 0.85 × ${Math.min(shearSBC, settlementSBC).toFixed(2)}`
+                              : 'fill Parts 1 & 2/3'}
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  {(shearSBC === null || settlementSBC === null) && (
+                    <p className="px-4 py-2 text-[10px] text-amber-600 dark:text-amber-400 italic bg-amber-50 dark:bg-amber-950/40 border-t border-amber-200 dark:border-amber-800">
+                      {shearSBC === null && settlementSBC === null
+                        ? '⚠ Fill Part 1 (shear) and Part 2/3 (settlement) inputs to compute.'
+                        : shearSBC === null
+                          ? '⚠ Part 1 result missing — enter φ, c, α, FOS.'
+                          : `⚠ ${isClay ? 'Part 3' : 'Part 2'} result missing — enter ${isClay ? 'Ht, WL' : 'N'} and required fields.`}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         );
       })()}
