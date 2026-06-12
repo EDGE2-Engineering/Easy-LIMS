@@ -5926,7 +5926,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                             85% × minimum(SBC based on Shear Criteria, SBC based on Settlement
                             Criteria)
                           </span>
-                          Recommended SBC
+                          Recommended Design SBC
                         </th>
                       </tr>
                     </thead>
