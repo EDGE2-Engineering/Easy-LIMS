@@ -638,6 +638,9 @@ const DocumentsManager = () => {
                   Total Amount
                 </th>
                 <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                  Document Date
+                </th>
+                <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
                   Created On
                 </th>
                 <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
@@ -687,6 +690,14 @@ const DocumentsManager = () => {
                         <Rupee />
                         {Math.floor(calculateRecordTotal(record)).toLocaleString('en-IN')}
                       </span>
+                    </td>
+
+                    <td className="py-5 px-6 text-right">
+                      <div className="text-xs text-gray-500 mt-1">
+                        {record.content?.quoteDetails?.date
+                          ? format(new Date(record.content.quoteDetails.date), 'dd MMM yyyy')
+                          : '-'}
+                      </div>
                     </td>
 
                     <td className="py-5 px-6 text-right">

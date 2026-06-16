@@ -5308,7 +5308,8 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                       <SelectItem value="tiles">Tiles</SelectItem>
                       <SelectItem value="bricks">Bricks</SelectItem>
                       <SelectItem value="soil-and-rock">Soil and Rock</SelectItem>
-                      <SelectItem value="sand-and-silt">Sand and Silt</SelectItem>
+                      <SelectItem value="sand">Sand</SelectItem>
+                      <SelectItem value="silt">Silt</SelectItem>
                       <SelectItem value="gravel">Gravel</SelectItem>
                       <SelectItem value="weathered-rock">Weathered Rock</SelectItem>
                     </SelectContent>
@@ -6411,7 +6412,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                                 {!hasLoad && (
                                   <text
                                     x={cx + 8}
-                                    y={aTail + 6}
+                                    y={aTail + 16}
                                     fontSize="9"
                                     fill="#15803d"
                                     fontFamily="monospace"
@@ -6886,6 +6887,606 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
           </div>
         );
       })()}
+
+      {/* ══════════════════════════════════════════════════════════════
+           FORMULAE REFERENCE
+      ══════════════════════════════════════════════════════════════ */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        {/* Header */}
+        <div className="px-6 pt-5 pb-4 border-b border-gray-100">
+          <h2 className="text-sm font-black text-gray-900 tracking-tight uppercase">
+            Formulae Reference
+          </h2>
+          <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest font-medium">
+            All parameters, symbols, units and formulae used across Bearing Capacity calculations —
+            IS 6403 / IS 8009
+          </p>
+        </div>
+
+        {/* ── Section helper ── */}
+        {[
+          /* ── Inputs ── */
+          {
+            section: 'Input Parameters',
+            color: 'bg-gray-50',
+            rows: [
+              {
+                param: 'Foundation Depth from Ground Level',
+                sym: 'D',
+                unit: 'm',
+                source: 'Input',
+                formula: '—',
+              },
+              { param: 'Width of Foundation', sym: 'B', unit: 'm', source: 'Input', formula: '—' },
+              { param: 'Length of Foundation', sym: 'L', unit: 'm', source: 'Input', formula: '—' },
+              {
+                param: 'Angle of Inclination of Resultant Load',
+                sym: 'α',
+                unit: '°',
+                source: 'Input',
+                formula: '—',
+              },
+              {
+                param: 'Standard Penetration Number',
+                sym: 'N',
+                unit: '—',
+                source: 'Input',
+                formula: '—',
+              },
+              {
+                param: 'Scour Depth from Ground Level',
+                sym: 'dₛ',
+                unit: 'm',
+                source: 'Input',
+                formula: '—',
+              },
+              {
+                param: 'Depth of Ground Water Level',
+                sym: 'Dw',
+                unit: 'm',
+                source: 'Input',
+                formula: '—',
+              },
+              {
+                param: 'Considered Angle of Friction',
+                sym: 'φ',
+                unit: '°',
+                source: 'Input',
+                formula: '—',
+              },
+              { param: 'Cohesion', sym: 'c', unit: 'kN/m²', source: 'Input', formula: '—' },
+              { param: 'Bulk Unit Weight', sym: 'γ', unit: 'kN/m³', source: 'Input', formula: '—' },
+              {
+                param: 'Constant Value for Safer Design (Water Table Correction)',
+                sym: 'W′',
+                unit: '—',
+                source: 'Constant',
+                formula: '0.5  (capped at 0.75 when q > 200 kN/m²)',
+              },
+              {
+                param: 'Factor of Safety',
+                sym: 'FOS',
+                unit: '—',
+                source: 'Input',
+                formula: '2 to 3',
+              },
+              {
+                param: 'Footing Type',
+                sym: '—',
+                unit: '—',
+                source: 'Input',
+                formula: 'Isolated (S_allow = 25 mm) | Raft (S_allow = 50 mm)',
+              },
+            ],
+          },
+
+          /* ── Computed intermediates ── */
+          {
+            section: 'Computed Intermediate Values',
+            color: 'bg-blue-50/30',
+            rows: [
+              {
+                param: 'Effective Unit Weight',
+                sym: 'γsub',
+                unit: 'kN/m³',
+                source: 'Computed',
+                formula: 'γ − 10',
+              },
+              {
+                param: 'Depth of Foundation Below Scour Level',
+                sym: 'Df',
+                unit: 'm',
+                source: 'Computed',
+                formula: 'D − dₛ',
+              },
+              {
+                param: 'Effective Overburden Pressure',
+                sym: 'q',
+                unit: 'kN/m²',
+                source: 'Computed',
+                formula: 'γsub × Df',
+              },
+              {
+                param: 'Depth of Failure Zone',
+                sym: 'Dfz',
+                unit: 'm',
+                source: 'Computed',
+                formula: '0.5 × B × tan(45° + φ/2)',
+              },
+              {
+                param: 'Reduced Angle of Friction',
+                sym: 'φ′',
+                unit: '°',
+                source: 'Computed',
+                formula: 'tan⁻¹(0.67 × tan φ)',
+              },
+              {
+                param: 'B/L ratio',
+                sym: 'B/L',
+                unit: '—',
+                source: 'Computed',
+                formula: 'B ÷ L  (1 for square/circle; ≈ 0 for strip)',
+              },
+              {
+                param: 'Df/B ratio',
+                sym: 'Df/B',
+                unit: '—',
+                source: 'Computed',
+                formula: 'Df ÷ B',
+              },
+            ],
+          },
+
+          /* ── BC Factors ── */
+          {
+            section: 'Bearing Capacity Factors  (from Settings Table)',
+            color: 'bg-teal-50/30',
+            rows: [
+              {
+                param: 'BC factor — cohesion (general shear)',
+                sym: 'Nc',
+                unit: '—',
+                source: 'Settings',
+                formula: 'Interpolated from Bearing Capacity Factors table at φ',
+              },
+              {
+                param: 'BC factor — surcharge (general shear)',
+                sym: 'Nq',
+                unit: '—',
+                source: 'Settings',
+                formula: 'Interpolated from Bearing Capacity Factors table at φ',
+              },
+              {
+                param: 'BC factor — unit weight (general shear)',
+                sym: 'Nγ',
+                unit: '—',
+                source: 'Settings',
+                formula: 'Interpolated from Bearing Capacity Factors table at φ',
+              },
+              {
+                param: 'Reduced BC factor — cohesion (local shear)',
+                sym: 'N′c',
+                unit: '—',
+                source: 'Settings',
+                formula: 'Interpolated from Bearing Capacity Factors table at φ′',
+              },
+              {
+                param: 'Reduced BC factor — surcharge (local shear)',
+                sym: 'N′q',
+                unit: '—',
+                source: 'Settings',
+                formula: 'Interpolated from Bearing Capacity Factors table at φ′',
+              },
+              {
+                param: 'Reduced BC factor — unit weight (local shear)',
+                sym: 'N′γ',
+                unit: '—',
+                source: 'Settings',
+                formula: 'Interpolated from Bearing Capacity Factors table at φ′',
+              },
+            ],
+          },
+
+          /* ── Shape factors ── */
+          {
+            section: 'Shape Factors  (IS 6403)',
+            color: 'bg-purple-50/30',
+            rows: [
+              {
+                param: 'Shape factor — cohesion term',
+                sym: 'Sc',
+                unit: '—',
+                source: 'Computed',
+                formula: 'Strip: 1.00  |  Rectangle: 1 + 0.2·(B/L)  |  Square: 1.3  |  Circle: 1.3',
+              },
+              {
+                param: 'Shape factor — surcharge term',
+                sym: 'Sq',
+                unit: '—',
+                source: 'Computed',
+                formula: 'Strip: 1.00  |  Rectangle: 1 + 0.2·(B/L)  |  Square: 1.2  |  Circle: 1.2',
+              },
+              {
+                param: 'Shape factor — unit weight term',
+                sym: 'Sγ',
+                unit: '—',
+                source: 'Computed',
+                formula: 'Strip: 1.00  |  Rectangle: 1 − 0.4·(B/L)  |  Square: 0.8  |  Circle: 0.6',
+              },
+            ],
+          },
+
+          /* ── Depth factors ── */
+          {
+            section: 'Depth Factors  (IS 6403)',
+            color: 'bg-amber-50/30',
+            rows: [
+              {
+                param: 'Depth factor — cohesion term',
+                sym: 'dc',
+                unit: '—',
+                source: 'Computed',
+                formula: '1 + 0.2 × (Df/B) × tan(45° + φ/2)',
+              },
+              {
+                param: 'Depth factor — surcharge term',
+                sym: 'dq',
+                unit: '—',
+                source: 'Computed',
+                formula: 'φ ≤ 10°: 1.0   |   φ > 10°: 1 + 0.1 × (Df/B) × tan(45° + φ/2)',
+              },
+              {
+                param: 'Depth factor — unit weight term',
+                sym: 'dγ',
+                unit: '—',
+                source: 'Computed',
+                formula: 'φ ≤ 10°: 1.0   |   φ > 10°: 1 + 0.1 × (Df/B) × tan(45° + φ/2)',
+              },
+            ],
+          },
+
+          /* ── Inclination factors ── */
+          {
+            section: 'Inclination Factors  (IS 6403)',
+            color: 'bg-rose-50/30',
+            rows: [
+              {
+                param: 'Inclination factor — cohesion term',
+                sym: 'ic',
+                unit: '—',
+                source: 'Computed',
+                formula: '(1 − α/90)²',
+              },
+              {
+                param: 'Inclination factor — surcharge term',
+                sym: 'iq',
+                unit: '—',
+                source: 'Computed',
+                formula: '(1 − α/90)²',
+              },
+              {
+                param: 'Inclination factor — unit weight term',
+                sym: 'iγ',
+                unit: '—',
+                source: 'Computed',
+                formula: '(1 − α/φ)²',
+              },
+            ],
+          },
+
+          /* ── Ultimate Bearing Capacity ── */
+          {
+            section: 'Ultimate Bearing Capacity  qd  (IS 6403)',
+            color: 'bg-green-50/30',
+            rows: [
+              {
+                param: 'Local Shear Failure  (φ ≤ 28°)',
+                sym: 'qd',
+                unit: 'kN/m²',
+                source: 'Computed',
+                formula: '(2/3)·c·N′c·Sc·dc·ic + q·(N′q−1)·Sq·dq·iq + 0.5·γ·B·N′γ·Sγ·dγ·iγ·W′',
+              },
+              {
+                param: 'Intermediate Shear Failure  (28° < φ < 36°)',
+                sym: 'qd',
+                unit: 'kN/m²',
+                source: 'Computed',
+                formula: '½ × (qd_local + qd_general)',
+              },
+              {
+                param: 'General Shear Failure  (φ ≥ 36°)',
+                sym: 'qd',
+                unit: 'kN/m²',
+                source: 'Computed',
+                formula: 'c·Nc·Sc·dc·ic + q·(Nq−1)·Sq·dq·iq + 0.5·γ·B·Nγ·Sγ·dγ·iγ·W′',
+              },
+              {
+                param: 'Safe Bearing Capacity',
+                sym: 'qs',
+                unit: 'kN/m²',
+                source: 'Computed',
+                formula: 'qd ÷ FOS',
+              },
+            ],
+          },
+
+          /* ── SPT Corrections ── */
+          {
+            section: 'SPT Corrections  (IS 2131)',
+            color: 'bg-orange-50/30',
+            rows: [
+              {
+                param: 'Overburden Correction Factor',
+                sym: 'CF',
+                unit: '—',
+                source: 'Settings',
+                formula:
+                  'Interpolated from Overburden Correction table at Q  (fixed 0.75 when Q > 200 kN/m²)',
+              },
+              {
+                param: 'Corrected SPT — No Correction',
+                sym: 'NR',
+                unit: '—',
+                source: 'Computed',
+                formula: 'NR = N',
+              },
+              {
+                param: 'Corrected SPT — Overburden only',
+                sym: 'NR',
+                unit: '—',
+                source: 'Computed',
+                formula: 'NR = N × CF',
+              },
+              {
+                param: 'Corrected SPT — Dilatency only',
+                sym: 'NR',
+                unit: '—',
+                source: 'Computed',
+                formula: 'NR = (N + 15) / 2',
+              },
+              {
+                param: 'Corrected SPT — Both corrections',
+                sym: 'NR',
+                unit: '—',
+                source: 'Computed',
+                formula: 'NR = (N × CF + 15) / 2',
+              },
+              {
+                param: 'Clamped range',
+                sym: 'NR',
+                unit: '—',
+                source: 'Computed',
+                formula: 'Clamped to table range [5, 60]',
+              },
+            ],
+          },
+
+          /* ── Settlement Criteria (Part 2) ── */
+          {
+            section: 'Settlement Criteria — Part 2  (IS 8009)',
+            color: 'bg-sky-50/30',
+            rows: [
+              {
+                param: 'Settlement per Unit Pressure',
+                sym: 'Sf',
+                unit: 'm / (kN/m²)',
+                source: 'Settings',
+                formula: 'Bilinear interpolation from Allowable Bearing Capacity table at NR and B',
+              },
+              {
+                param: "Fox's Depth Factor",
+                sym: 'If',
+                unit: '—',
+                source: 'Settings',
+                formula: "Interpolated from Fox's Correction curves at D/√(L×B) and L/B",
+              },
+              {
+                param: 'Rigidity Factor',
+                sym: 'Rf',
+                unit: '—',
+                source: 'Constant',
+                formula: '0.8',
+              },
+              {
+                param: 'Corrected Immediate Settlement',
+                sym: 'Si',
+                unit: 'm',
+                source: 'Computed',
+                formula: 'Sf × If × Rf',
+              },
+              {
+                param: 'Allowable Settlement',
+                sym: 'Sallow',
+                unit: 'mm',
+                source: 'Constant',
+                formula: '25 mm (isolated footing)  |  50 mm (raft footing)',
+              },
+              {
+                param: 'Allowable Bearing Capacity (settlement)',
+                sym: 'qa',
+                unit: 'kN/m²',
+                source: 'Computed',
+                formula: 'Sallow ÷ (Si × 1000)  ×  98.1  [converts kg/cm² → kN/m²]',
+              },
+            ],
+          },
+
+          /* ── Consolidation Settlement (Part 3) ── */
+          {
+            section: 'Consolidation Settlement — Part 3  (IS 8009)',
+            color: 'bg-indigo-50/30',
+            rows: [
+              {
+                param: 'Compression Index',
+                sym: 'Cc',
+                unit: '—',
+                source: 'Computed',
+                formula: '0.009 × (WL − 10)  [WL = liquid limit %, must be ≥ 10]',
+              },
+              {
+                param: 'Initial Overburden Pressure at mid-layer',
+                sym: 'Po',
+                unit: 'kN/m²',
+                source: 'Computed',
+                formula: 'γsub × (D + Ht/2)',
+              },
+              {
+                param: 'Area of Footing',
+                sym: 'A',
+                unit: 'm²',
+                source: 'Computed',
+                formula: 'B × L',
+              },
+              {
+                param: 'Width of Stress Spread',
+                sym: 'Bo',
+                unit: 'm',
+                source: 'Computed',
+                formula: 'B + 2 × (Ht/4)  =  B + Ht/2',
+              },
+              {
+                param: 'Length of Stress Spread',
+                sym: 'Lo',
+                unit: 'm',
+                source: 'Computed',
+                formula: 'L + 2 × (Ht/4)  =  L + Ht/2',
+              },
+              {
+                param: 'Spread Area at Mid-layer',
+                sym: 'Ao',
+                unit: 'm²',
+                source: 'Computed',
+                formula: 'Bo × Lo',
+              },
+              {
+                param: 'Pressure Intensity at Mid-layer',
+                sym: 'ΔP',
+                unit: 'kN/m²',
+                source: 'Computed',
+                formula: '(P × A) / Ao',
+              },
+              {
+                param: 'Consolidation Settlement',
+                sym: 'Scon',
+                unit: 'mm',
+                source: 'Computed',
+                formula: '[Ht / (1 + e₀)] × Cc × log₁₀[(Po + ΔP) / Po]  ×  1000  (e₀ = 0.8)',
+              },
+              {
+                param: 'Total Consolidation Settlement',
+                sym: 'Stot',
+                unit: 'mm',
+                source: 'Computed',
+                formula: 'Scon × If × Rf',
+              },
+              {
+                param: 'Final Total Settlement',
+                sym: 'Sfinal',
+                unit: 'mm',
+                source: 'Computed',
+                formula: 'Stot + Si',
+              },
+              {
+                param: 'Safe Bearing Pressure for 25 mm',
+                sym: 'qsafe',
+                unit: 'kN/m²',
+                source: 'Computed',
+                formula: '(P / Sfinal) × 25',
+              },
+            ],
+          },
+
+          /* ── Recommended SBC ── */
+          {
+            section: 'Recommended Design SBC  (IS 6403)',
+            color: 'bg-emerald-50/40',
+            rows: [
+              {
+                param: 'Governing Settlement BC (Clay)',
+                sym: 'qa',
+                unit: 'kN/m²',
+                source: 'Computed',
+                formula: 'qsafe from Part 3 (consolidation settlement governs)',
+              },
+              {
+                param: 'Governing Settlement BC (Non-clay)',
+                sym: 'qa',
+                unit: 'kN/m²',
+                source: 'Computed',
+                formula: 'qa from Part 2 (immediate settlement only)',
+              },
+              {
+                param: 'Recommended Design SBC',
+                sym: 'SBC',
+                unit: 'kN/m²',
+                source: 'Computed',
+                formula: '0.85 × min(qs, qa)',
+              },
+            ],
+          },
+        ].map(({ section, color, rows }) => (
+          <div key={section}>
+            {/* Section header */}
+            <div className={`px-4 py-2 border-b border-gray-100 ${color}`}>
+              <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">
+                {section}
+              </p>
+            </div>
+            {/* Rows */}
+            <table className="w-full text-xs">
+              <tbody className="divide-y divide-gray-50">
+                {rows.map(({ param, sym, unit, source, formula }) => {
+                  const sourceBadge =
+                    {
+                      Input: 'bg-blue-50 text-blue-700 border-blue-200',
+                      Computed: 'bg-amber-50 text-amber-700 border-amber-200',
+                      Settings: 'bg-teal-50 text-teal-700 border-teal-200',
+                      Constant: 'bg-purple-50 text-purple-700 border-purple-200',
+                    }[source] ?? 'bg-gray-50 text-gray-500 border-gray-200';
+                  return (
+                    <tr key={param} className="hover:bg-gray-50/60 transition-colors group">
+                      {/* Parameter name */}
+                      <td className="py-2.5 px-4 text-gray-700 font-medium leading-snug w-72">
+                        {param}
+                      </td>
+                      {/* Symbol */}
+                      <td className="py-2.5 px-3 text-center font-mono font-bold text-gray-800 w-16">
+                        {sym}
+                      </td>
+                      {/* Unit */}
+                      <td className="py-2.5 px-3 text-center font-mono text-gray-400 w-24">
+                        {unit}
+                      </td>
+                      {/* Source badge */}
+                      <td className="py-2.5 px-3 text-center w-24">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-full border text-[10px] font-semibold ${sourceBadge}`}
+                        >
+                          {source}
+                        </span>
+                      </td>
+                      {/* Formula */}
+                      <td className="py-2.5 px-4 font-mono text-gray-600 leading-relaxed">
+                        {formula}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ))}
+
+        {/* Footer */}
+        <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50">
+          <p className="text-[10px] text-gray-400 italic">
+            References: IS 6403 : 1981 (Code of Practice for Determination of Bearing Capacity of
+            Shallow Foundations) · IS 8009 Part I : 1976 (Code of Practice for Calculation of
+            Settlements of Foundations) · IS 2131 : 1981 (Method for Standard Penetration Test for
+            Soils)
+          </p>
+        </div>
+      </div>
     </div>
   );
 };

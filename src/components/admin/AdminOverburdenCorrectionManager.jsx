@@ -231,9 +231,6 @@ const AdminOverburdenCorrectionManager = () => {
     if (chartData.length < 2) return;
 
     const colors = buildChartColors();
-    const fillColor = colors.primary.startsWith('hsl')
-      ? colors.primary.replace('hsl(', 'hsla(').replace(')', ', 0.10)')
-      : colors.primary + '1a';
 
     const xMax = Math.max(2.0, Math.ceil((chartData[chartData.length - 1]?.x ?? 2) * 10) / 10);
     const tickValues = new Set();
@@ -252,7 +249,7 @@ const AdminOverburdenCorrectionManager = () => {
             data: chartData,
             parsing: false,
             borderColor: colors.primary,
-            backgroundColor: fillColor,
+            backgroundColor: 'transparent',
             pointBackgroundColor: colors.primary,
             pointBorderColor: colors.card,
             pointBorderWidth: 2,
@@ -260,7 +257,7 @@ const AdminOverburdenCorrectionManager = () => {
             pointHoverRadius: 9,
             borderWidth: 2.5,
             tension: 0.4,
-            fill: true,
+            fill: false,
           },
         ],
       },
