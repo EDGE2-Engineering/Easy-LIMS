@@ -16,6 +16,7 @@ import { SamplingProvider } from '@/contexts/SamplingContext';
 import { ExpensesProvider } from '@/contexts/ExpensesContext';
 import { WorkflowProvider } from '@/contexts/WorkflowContext';
 import { BankAccountsProvider } from '@/contexts/BankAccountsContext';
+import { BankStatementsProvider } from '@/contexts/BankStatementsContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { getSiteContent } from '@/data/config';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -112,34 +113,36 @@ function App() {
                                 <TechnicalsProvider>
                                   <ExpensesProvider>
                                     <BankAccountsProvider>
-                                      <Helmet>
-                                        <title>{getSiteContent().global?.siteName}</title>
-                                        <link
-                                          rel="preconnect"
-                                          href="https://fonts.googleapis.com"
-                                        />
-                                        <link
-                                          rel="preconnect"
-                                          href="https://fonts.gstatic.com"
-                                          crossOrigin="anonymous"
-                                        />
-                                        <link
-                                          href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
-                                          rel="stylesheet"
-                                        />
-                                      </Helmet>
-                                      <div className="min-h-screen bg-background text-foreground">
-                                        <TooltipProvider>
-                                          <RouterProvider
-                                            router={router}
-                                            future={{
-                                              v7_startTransition: true,
-                                              v7_relativeSplatPath: true,
-                                            }}
+                                      <BankStatementsProvider>
+                                        <Helmet>
+                                          <title>{getSiteContent().global?.siteName}</title>
+                                          <link
+                                            rel="preconnect"
+                                            href="https://fonts.googleapis.com"
                                           />
-                                        </TooltipProvider>
-                                        <Toaster />
-                                      </div>
+                                          <link
+                                            rel="preconnect"
+                                            href="https://fonts.gstatic.com"
+                                            crossOrigin="anonymous"
+                                          />
+                                          <link
+                                            href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+                                            rel="stylesheet"
+                                          />
+                                        </Helmet>
+                                        <div className="min-h-screen bg-background text-foreground">
+                                          <TooltipProvider>
+                                            <RouterProvider
+                                              router={router}
+                                              future={{
+                                                v7_startTransition: true,
+                                                v7_relativeSplatPath: true,
+                                              }}
+                                            />
+                                          </TooltipProvider>
+                                          <Toaster />
+                                        </div>
+                                      </BankStatementsProvider>
                                     </BankAccountsProvider>
                                   </ExpensesProvider>
                                 </TechnicalsProvider>

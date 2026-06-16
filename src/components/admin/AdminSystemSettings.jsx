@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MermaidDiagram } from '@lightenna/react-mermaid-diagram';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,6 +29,7 @@ import {
   Calendar,
   ShieldCheck,
   Mountain,
+  Landmark,
 } from 'lucide-react';
 
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
@@ -41,9 +42,11 @@ import AdminCollectionCentersManager from './AdminCollectionCentersManager';
 import AdminMaterialsManager from './AdminMaterialsManager';
 import AdminUsersManager from './AdminUsersManager';
 import AdminBearingCapacityManager from './AdminBearingCapacityManager';
+import AdminBankStatementsManager from './AdminBankStatementsManager';
 
-import { enableInfoDiagramZoom, getSiteContent, SETTINGS_ITEM_IDS } from '../../data/config';
+import { enableInfoDiagramZoom, getSiteContent, ROLES, SETTINGS_ITEM_IDS } from '../../data/config';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Map of tab id → component (used for standalone rendering)
 const TAB_COMPONENTS = {
@@ -55,6 +58,7 @@ const TAB_COMPONENTS = {
   collection_centers: <AdminCollectionCentersManager />,
   bearing_capacity: <AdminBearingCapacityManager />,
   users: <AdminUsersManager />,
+  statements: <AdminBankStatementsManager />,
 };
 
 const AdminSystemSettings = ({ id }) => {
@@ -62,6 +66,18 @@ const AdminSystemSettings = ({ id }) => {
   const siteName = getSiteContent().global?.siteName;
   const activeTab = id || 'unit_types';
   const { canShowSettingsItem } = usePermissions();
+  const { user } = useAuth();
+
+  // Only admin and superadmin roles can access the statements tab
+  const canAccessStatements =
+    user?.role === ROLES.ADMIN.slug || user?.role === ROLES.SUPER_ADMIN.slug;
+
+  // Redirect non-authorised users who navigate directly to /settings/system/statements
+  useEffect(() => {
+    if (activeTab === 'statements' && !canAccessStatements) {
+      navigate('/settings/system/unit_types', { replace: true });
+    }
+  }, [activeTab, canAccessStatements, navigate]);
 
   const handleTabChange = (value) => {
     navigate(`/settings/system/${value}`);
@@ -70,6 +86,14 @@ const AdminSystemSettings = ({ id }) => {
   // Roles that don't have system settings access (e.g. analyst) get a
   // standalone view of just the requested tab — no tab bar shown.
   if (!canShowSettingsItem(SETTINGS_ITEM_IDS.SYSTEM)) {
+    // Block statements tab for non-admin roles even in standalone mode
+    if (activeTab === 'statements' && !canAccessStatements) {
+      return (
+        <div className="p-8 border border-dashed rounded-xl bg-muted text-center italic text-sm text-gray-400">
+          You do not have permission to access this section.
+        </div>
+      );
+    }
     const StandaloneComponent = TAB_COMPONENTS[activeTab];
     return (
       <div className="space-y-4">
@@ -216,6 +240,24 @@ const AdminSystemSettings = ({ id }) => {
                 </TooltipContent>
               </Tooltip>
             </TabsTrigger>
+
+            {canAccessStatements && (
+              <TabsTrigger
+                value="statements"
+                className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+              >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2">
+                      <Landmark className="w-4 h-4" /> Statements
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                    <p className="text-xs">Bank transaction statements</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TabsTrigger>
+            )}
           </TabsList>
         </div>
 
@@ -274,6 +316,15 @@ const AdminSystemSettings = ({ id }) => {
         >
           <AdminBearingCapacityManager />
         </TabsContent>
+
+        {canAccessStatements && (
+          <TabsContent
+            value="statements"
+            className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
+          >
+            <AdminBankStatementsManager />
+          </TabsContent>
+        )}
 
         <TabsContent
           value="info"

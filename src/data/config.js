@@ -219,6 +219,7 @@ export const SETTINGS_ITEM_IDS = {
   UTILITIES: 'utilities',
   SYSTEM: 'system',
   BEARING_CAPACITY: 'bearing_capacity',
+  STATEMENTS: 'statements',
 };
 
 export const DOCUMENT_ITEM_TYPE_KEYS = {
