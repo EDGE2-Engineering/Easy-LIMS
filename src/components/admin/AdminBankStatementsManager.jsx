@@ -23,6 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useAuth } from '@/contexts/AuthContext';
+import { ROLES } from '@/data/config';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -93,6 +95,17 @@ const countActive = (f) =>
 
 const AdminBankStatementsManager = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  const canAccess = user?.role === ROLES.ADMIN.slug || user?.role === ROLES.SUPER_ADMIN.slug;
+
+  if (!canAccess) {
+    return (
+      <div className="p-8 border border-dashed rounded-xl bg-muted text-center italic text-sm text-gray-400">
+        You do not have permission to access this section.
+      </div>
+    );
+  }
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [rows, setRows] = useState([]);
@@ -107,6 +120,8 @@ const AdminBankStatementsManager = () => {
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null); // { id, label }
+
+  const [sortKey, setSortKey] = useState('date_desc');
 
   const [filters, setFilters] = useState({
     type: 'all',
@@ -132,6 +147,7 @@ const AdminBankStatementsManager = () => {
       amountVal: '',
     });
     setSearchTerm('');
+    setSortKey('date_desc');
   };
 
   // Debounce search to avoid hammering DB on every keystroke
@@ -146,8 +162,14 @@ const AdminBankStatementsManager = () => {
   // ── Build query with active filters ──────────────────────────────────────
   const applyFilters = useCallback(
     (q) => {
-      if (filters.type === 'debit') q = q.not('debit_amt', 'is', null);
-      if (filters.type === 'credit') q = q.not('credit_amt', 'is', null);
+      if (filters.type === 'debit') {
+        q = q.gt('debit_amt', 0);
+        q = q.or('credit_amt.is.null,credit_amt.eq.0');
+      }
+      if (filters.type === 'credit') {
+        q = q.gt('credit_amt', 0);
+        q = q.or('debit_amt.is.null,debit_amt.eq.0');
+      }
       if (filters.source) q = q.eq('source', filters.source);
       if (filters.dateFrom) q = q.gte('date', filters.dateFrom);
       if (filters.dateTo) q = q.lte('date', filters.dateTo);
@@ -183,10 +205,24 @@ const AdminBankStatementsManager = () => {
       const from = (currentPage - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
 
+      // Determine sort column and direction
+      let sortCol = 'date';
+      let sortAscending = false;
+
+      if (sortKey) {
+        const parts = sortKey.split('_');
+        if (parts.length >= 2) {
+          const dir = parts[parts.length - 1];
+          sortCol = parts.slice(0, -1).join('_');
+          sortAscending = dir === 'asc';
+        }
+      }
+
       let q = supabase
         .from(TABLE)
         .select('*', { count: 'exact' })
-        .order('date', { ascending: false })
+        .order(sortCol, { ascending: sortAscending, nullsFirst: false })
+        .order('id', { ascending: false }) // secondary stable sort
         .range(from, to);
       q = applyFilters(q);
 
@@ -203,7 +239,7 @@ const AdminBankStatementsManager = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, itemsPerPage, applyFilters, toast]);
+  }, [currentPage, itemsPerPage, applyFilters, toast, sortKey]);
 
   // ── Fetch sources for filter dropdown ────────────────────────────────────
   const fetchSummaries = useCallback(async () => {
@@ -219,10 +255,10 @@ const AdminBankStatementsManager = () => {
   }, []);
 
   // ── Effects ───────────────────────────────────────────────────────────────
-  // Reset to page 1 whenever filters or search change
+  // Reset to page 1 whenever filters, sort or search change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters, debouncedSearch, itemsPerPage]);
+  }, [filters, debouncedSearch, itemsPerPage, sortKey]);
 
   useEffect(() => {
     fetchPage();
@@ -453,33 +489,56 @@ const AdminBankStatementsManager = () => {
           </Button>
         </div>
 
-        {/* Filters toggle */}
-        <div className="flex items-center gap-3">
-          <Button
-            variant={showFilters ? 'secondary' : 'outline'}
-            onClick={() => setShowFilters((v) => !v)}
-            className={`h-10 px-4 rounded-xl ${showFilters ? 'bg-primary/10 text-primary border-primary/20' : ''}`}
-          >
-            <Filter className="w-4 h-4 mr-2" />
-            <span className="text-sm font-bold uppercase tracking-widest leading-none">
-              Filters
-            </span>
-            {activeFilters > 0 && (
-              <span className="ml-2 bg-primary text-primary-foreground text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center">
-                {activeFilters}
-              </span>
-            )}
-          </Button>
-          {activeFilters > 0 && (
+        {/* Filters toggle + Sort by */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
             <Button
-              variant="ghost"
-              size="sm"
-              onClick={resetFilters}
-              className="h-9 px-3 text-xs text-muted-foreground hover:text-destructive font-bold uppercase tracking-widest"
+              variant={showFilters ? 'secondary' : 'outline'}
+              onClick={() => setShowFilters((v) => !v)}
+              className={`h-10 px-4 rounded-xl ${showFilters ? 'bg-primary/10 text-primary border-primary/20' : ''}`}
             >
-              <X className="w-3 h-3 mr-1" /> Clear all
+              <Filter className="w-4 h-4 mr-2" />
+              <span className="text-sm font-bold uppercase tracking-widest leading-none">
+                Filters
+              </span>
+              {activeFilters > 0 && (
+                <span className="ml-2 bg-primary text-primary-foreground text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center">
+                  {activeFilters}
+                </span>
+              )}
             </Button>
-          )}
+            {activeFilters > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetFilters}
+                className="h-9 px-3 text-xs text-muted-foreground hover:text-destructive font-bold uppercase tracking-widest"
+              >
+                <X className="w-3 h-3 mr-1" /> Clear all
+              </Button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+              Sort by
+            </span>
+            <Select value={sortKey} onValueChange={setSortKey}>
+              <SelectTrigger className="w-48 h-10 rounded-xl bg-card border border-border shadow-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date_desc">Date (Newest)</SelectItem>
+                <SelectItem value="date_asc">Date (Oldest)</SelectItem>
+                <SelectItem value="debit_amt_desc">Debit (Highest)</SelectItem>
+                <SelectItem value="debit_amt_asc">Debit (Lowest)</SelectItem>
+                <SelectItem value="credit_amt_desc">Credit (Highest)</SelectItem>
+                <SelectItem value="credit_amt_asc">Credit (Lowest)</SelectItem>
+                <SelectItem value="balance_amt_desc">Balance (Highest)</SelectItem>
+                <SelectItem value="balance_amt_asc">Balance (Lowest)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Filter Panel */}
@@ -724,7 +783,7 @@ const AdminBankStatementsManager = () => {
                     </td>
                     <td className="py-4 px-4 text-xs text-muted-foreground">{txt(row.ref_num)}</td>
                     <td className="py-4 px-4 text-xs text-foreground w-[220px] max-w-[220px]">
-                      <span className="block truncate" title={row.particulars}>
+                      <span className="block break-words whitespace-normal" title={row.particulars}>
                         {txt(row.particulars)}
                       </span>
                     </td>
