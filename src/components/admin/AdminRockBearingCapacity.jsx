@@ -368,7 +368,7 @@ const AdminRockBearingCapacity = () => {
                 description: 'Calculation state has been saved to your browser session.',
               });
             }}
-            className="bg-primary hover:bg-primary/90 text-white rounded-xl h-10 px-6 shadow-sm"
+            className="hidden bg-primary hover:bg-primary/90 text-white rounded-xl h-10 px-6 shadow-sm"
           >
             <Save className="w-4 h-4 mr-2" /> Save Calculator State
           </Button>
