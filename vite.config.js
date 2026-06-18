@@ -172,6 +172,11 @@ const addTransformIndexHtml = {
 		html = html.replace(/<title>.*?<\/title>/, `<title>${siteName}</title>`);
 		const tags = [
 			{
+				tag: 'meta',
+				attrs: { name: 'build-id', content: String(Date.now()) },
+				injectTo: 'head',
+			},
+			{
 				tag: 'script',
 				attrs: { type: 'module' },
 				children: configHorizonsRuntimeErrorHandler,

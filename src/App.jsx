@@ -26,6 +26,7 @@ import TestDetailPage from '@/pages/TestDetailPage.jsx';
 import AdminPage from '@/pages/AdminPage';
 import NewQuotationPage from '@/pages/NewQuotationPage.jsx';
 import DeviceRestriction from '@/components/DeviceRestriction';
+import UpdateDetector from '@/components/UpdateDetector';
 
 const router = createHashRouter(
   [
@@ -141,6 +142,7 @@ function App() {
                                             />
                                           </TooltipProvider>
                                           <Toaster />
+                                          <UpdateDetector />
                                         </div>
                                       </BankStatementsProvider>
                                     </BankAccountsProvider>
