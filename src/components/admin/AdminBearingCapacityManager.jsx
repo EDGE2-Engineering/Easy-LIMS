@@ -3,11 +3,12 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Plus, Trash2, Loader2, Mountain } from 'lucide-react';
+import { Save, Plus, Trash2, Loader2, Mountain, Gem } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import AdminOverburdenCorrectionManager from './AdminOverburdenCorrectionManager';
 import AdminUnitWeightsManager from './AdminUnitWeightsManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AdminRockBearingCapacity from './AdminRockBearingCapacity';
 import {
   Chart,
   LinearScale,
@@ -1264,6 +1265,12 @@ const AdminBearingCapacityManager = () => {
             className="px-4 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
           >
             <Mountain className="w-4 h-4" /> Soil
+          </TabsTrigger>
+          <TabsTrigger
+            value="rock"
+            className="px-4 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+          >
+            <Gem className="w-4 h-4" /> Rock
           </TabsTrigger>
         </TabsList>
       </div>
@@ -7593,6 +7600,10 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
             </div>
           </div>
         </div>
+      </TabsContent>
+
+      <TabsContent value="rock">
+        <AdminRockBearingCapacity />
       </TabsContent>
     </Tabs>
   );
