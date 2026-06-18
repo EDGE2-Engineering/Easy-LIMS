@@ -413,7 +413,7 @@ const AdminRockBearingCapacity = () => {
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-gray-400">Depth Df (m)</Label>
+            <Label className="text-xs text-gray-400">Depth of Foundation - Df (m)</Label>
             <Input
               type="number"
               step="any"
