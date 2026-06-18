@@ -915,6 +915,26 @@ const NewQuotationPage = () => {
     pageStyle: A4_PRINT_PAGE_STYLE,
   });
 
+  // Responsive preview: scale A4 pages to fit the available panel width at any screen resolution.
+  // CSS zoom (unlike transform: scale) adjusts layout dimensions, so pages + gaps all shrink
+  // proportionally — no overflow, no page merging, no horizontal scrollbar needed.
+  const previewWrapperRef = useRef(null);
+  const [previewScale, setPreviewScale] = useState(1);
+
+  useEffect(() => {
+    const A4_NATIVE_WIDTH = 794; // 210mm at 96 DPI CSS pixels
+    const SIDE_PADDING = 48; // combined horizontal padding of the preview wrapper
+    const recalcScale = () => {
+      if (!previewWrapperRef.current) return;
+      const available = previewWrapperRef.current.clientWidth - SIDE_PADDING;
+      setPreviewScale(parseFloat(Math.min(1, available / A4_NATIVE_WIDTH).toFixed(4)));
+    };
+    recalcScale();
+    const ro = new ResizeObserver(recalcScale);
+    if (previewWrapperRef.current) ro.observe(previewWrapperRef.current);
+    return () => ro.disconnect();
+  }, []);
+
   const triggerPrint = async () => {
     // Handle "Saving" state to prevent race conditions
     if (isSavingRecord) {
@@ -1096,60 +1116,140 @@ const NewQuotationPage = () => {
   // Always floor to nearest rupee (remove decimal portion)
   const roundAmount = (value) => Math.floor(value);
 
-  // Dynamic pagination: Split items across pages
-  const siteContent = getSiteContent();
-  const ITEMS_PER_FIRST_PAGE = siteContent.pagination?.itemsPerFirstPage || 6;
-  const ITEMS_PER_CONTINUATION_PAGE = siteContent.pagination?.itemsPerContinuationPage || 7;
-  const TC_ITEMS_PER_FIRST_PAGE = siteContent.pagination?.tcItemsFirstPage || 12;
-  const TC_ITEMS_PER_CONTINUATION_PAGE = siteContent.pagination?.tcItemsContinuationPage || 16;
-  const TECH_ITEMS_PER_FIRST_PAGE = siteContent.pagination?.techItemsFirstPage || 12;
-  const TECH_ITEMS_PER_CONTINUATION_PAGE = siteContent.pagination?.techItemsContinuationPage || 16;
+  // T&C and Technicals still use count-based pagination (fixed limits, no dynamic height needed for those)
+  const TC_ITEMS_PER_FIRST_PAGE = 12;
+  const TC_ITEMS_PER_CONTINUATION_PAGE = 16;
+  const TECH_ITEMS_PER_FIRST_PAGE = 12;
+  const TECH_ITEMS_PER_CONTINUATION_PAGE = 16;
+
+  const estimateItemHeight = (item) => {
+    // Description width is 30% of printable area.
+    // Printable area inside padding is 190mm ≈ 718px. 30% is 215px.
+    // Standard text-xs font size is 12px. An average character width is ~6px.
+    // So characters per line = Math.floor(215 / 6) ≈ 35.
+    const charsPerLine = 35;
+
+    const description = item.description || '';
+    const lines = description.split('\n');
+    let descriptionLineCount = 0;
+    lines.forEach((line) => {
+      descriptionLineCount += Math.max(1, Math.ceil(line.length / charsPerLine));
+    });
+
+    // 1 line for item type label ("Field Test", "Lab Test", etc.)
+    let totalLines = descriptionLineCount + 1;
+
+    // If it's a field test with additional details (Method, BHs, Measure)
+    const hasFieldDetails =
+      item.type === 'service' &&
+      ((item.methodOfSampling && item.methodOfSampling !== 'NA') ||
+        (typeof item.numBHs === 'number' && item.numBHs > 0) ||
+        (item.measure && item.measure !== 'NA'));
+    if (hasFieldDetails) {
+      totalLines += 1;
+    }
+
+    // Each line is 15px (line-height) + row vertical padding (py-2 is 8px top/bottom = 16px)
+    return totalLines * 15 + 16;
+  };
 
   const paginateItems = () => {
     const pages = [];
-
     if (items.length === 0) {
-      // No items, just show the main page
       pages.push({
         items: [],
         pageNumber: 1,
         isFirstPage: true,
         isContinuation: false,
       });
-    } else if (items.length <= ITEMS_PER_FIRST_PAGE) {
-      // All items fit on first page
-      pages.push({
-        items: items,
-        pageNumber: 1,
-        isFirstPage: true,
-        isContinuation: false,
-      });
-    } else {
-      // Need multiple pages
-      // First page
-      pages.push({
-        items: items.slice(0, ITEMS_PER_FIRST_PAGE),
-        pageNumber: 1,
-        isFirstPage: true,
-        isContinuation: false,
-      });
+      return pages;
+    }
 
-      // Continuation pages
-      let remainingItems = items.slice(ITEMS_PER_FIRST_PAGE);
-      let pageNum = 2;
+    // A4 inner content height: 297mm − 10mm top padding − 4mm bottom padding at 96 DPI ≈ 1070px
+    const PAGE_HEIGHT = 1070;
+    // a4-page-footer: font-size 10px + padding-top 12px ≈ 30px
+    const FOOTER_HEIGHT = 30;
+    // First page header: company/logo row (~100px) + client/project 3-col grid (~160px) + "created by" line (~16px) + borders/margins (~44px)
+    const FIRST_PAGE_HEADER_HEIGHT = 320;
+    // Continuation mini-header: h3 text-lg + border-b + pb-3 mb-4 ≈ 50px
+    const CONTINUATION_PAGE_HEADER_HEIGHT = 50;
+    // thead row: py-3 cells = 12px×2 padding + ~14px text ≈ 40px
+    const TABLE_HEADER_HEIGHT = 40;
+    // The <table> has mb-8 (32px margin-bottom) — must be subtracted from usable area on every page
+    const TABLE_BOTTOM_MARGIN = 32;
+    // Totals block: subtotal + CGST + SGST + total-tax + grand-total + amount-in-words + space-y-3 gaps ≈ 180px
+    const TOTALS_HEIGHT = 180;
 
-      while (remainingItems.length > 0) {
-        const pageItems = remainingItems.slice(0, ITEMS_PER_CONTINUATION_PAGE);
-        pages.push({
-          items: pageItems,
-          pageNumber: pageNum,
-          isFirstPage: false,
-          isContinuation: true,
-        });
-        remainingItems = remainingItems.slice(ITEMS_PER_CONTINUATION_PAGE);
-        pageNum++;
+    let currentPageItems = [];
+    let currentPageIndex = 1;
+    let currentHeight = 0;
+
+    const getPageCapacity = (pageIdx, isLastPage) => {
+      const headerH = pageIdx === 1 ? FIRST_PAGE_HEADER_HEIGHT : CONTINUATION_PAGE_HEADER_HEIGHT;
+      const baseCapacity =
+        PAGE_HEIGHT - headerH - TABLE_HEADER_HEIGHT - FOOTER_HEIGHT - TABLE_BOTTOM_MARGIN;
+      return isLastPage ? baseCapacity - TOTALS_HEIGHT : baseCapacity;
+    };
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const itemHeight = estimateItemHeight(item);
+      const isLastItem = i === items.length - 1;
+
+      const currentCapacityWithTotals = getPageCapacity(currentPageIndex, true);
+      const currentCapacityWithoutTotals = getPageCapacity(currentPageIndex, false);
+
+      if (currentPageItems.length === 0) {
+        // Always add at least one item per page to avoid infinite loops for oversized items
+        currentPageItems.push(item);
+        currentHeight += itemHeight;
+      } else if (isLastItem) {
+        // Last item: must fit together with the totals/summary block on the same page
+        if (currentHeight + itemHeight <= currentCapacityWithTotals) {
+          currentPageItems.push(item);
+          currentHeight += itemHeight;
+        } else {
+          // Doesn't fit with totals — close current page, open a new final page
+          pages.push({
+            items: currentPageItems,
+            pageNumber: currentPageIndex,
+            isFirstPage: currentPageIndex === 1,
+            isContinuation: currentPageIndex > 1,
+          });
+          currentPageIndex++;
+          currentPageItems = [item];
+          currentHeight = itemHeight;
+        }
+      } else {
+        // Non-last item: fill the full page (totals appear only on the final items page)
+        if (currentHeight + itemHeight <= currentCapacityWithoutTotals) {
+          currentPageItems.push(item);
+          currentHeight += itemHeight;
+        } else {
+          // Doesn't fit — start a new page
+          pages.push({
+            items: currentPageItems,
+            pageNumber: currentPageIndex,
+            isFirstPage: currentPageIndex === 1,
+            isContinuation: currentPageIndex > 1,
+          });
+          currentPageIndex++;
+          currentPageItems = [item];
+          currentHeight = itemHeight;
+        }
       }
     }
+
+    // Add the final page
+    if (currentPageItems.length > 0) {
+      pages.push({
+        items: currentPageItems,
+        pageNumber: currentPageIndex,
+        isFirstPage: currentPageIndex === 1,
+        isContinuation: currentPageIndex > 1,
+      });
+    }
+
     return pages;
   };
 
@@ -1315,7 +1415,7 @@ const NewQuotationPage = () => {
   const techPages = paginateTechnicals();
 
   // Total pages calculation
-  const totalPages = totalItemPages + tcPages.length + techPages.length;
+  const totalPages = totalItemPages + 1 + tcPages.length + techPages.length;
   const selectedDocumentItemType =
     DOCUMENT_ITEM_TYPE_OPTIONS.find((itemType) => itemType.key === newItemType) ||
     DOCUMENT_ITEM_TYPE_OPTIONS[0];
@@ -1916,779 +2016,851 @@ const NewQuotationPage = () => {
 
           {/* Right Column: Preview */}
           <div className="lg:col-span-2">
-            <div className="a4-preview-wrapper rounded-xl border border-gray-100 min-h-[600px] print-container shadow-inner">
+            <div
+              ref={previewWrapperRef}
+              className="a4-preview-wrapper rounded-xl border border-gray-100 min-h-[600px] print-container shadow-inner"
+            >
               {/* Printable Area Root */}
               <div ref={componentRef} id="printable-quote-root">
                 {/* Dynamically render quotation pages based on items */}
                 {itemPages.map((page, pageIndex) => (
                   <div
-                    key={`quote-page-${page.pageNumber}`}
-                    className="a4-container"
-                    id={pageIndex === 0 ? 'printable-quote' : undefined}
+                    key={`quote-page-wrapper-${page.pageNumber}`}
+                    className="a4-scale-wrapper mx-auto"
+                    style={{
+                      width: `${794 * previewScale}px`,
+                      height: `${1122.5 * previewScale}px`,
+                      marginBottom: `${48 * previewScale}px`,
+                    }}
                   >
-                    {/* Watermark */}
                     <div
-                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                      className="a4-container"
+                      id={pageIndex === 0 ? 'printable-quote' : undefined}
                       style={{
-                        transform: 'rotate(-55deg)',
-                        zIndex: 0,
+                        transform: `scale(${previewScale})`,
+                        transformOrigin: 'top left',
+                        margin: 0,
                       }}
                     >
-                      <span
+                      {/* Watermark */}
+                      <div
+                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
                         style={{
-                          fontSize: '42pt',
-                          fontWeight: 700,
-                          color: 'rgba(0,0,0,0.02)',
-                          whiteSpace: 'nowrap',
+                          transform: 'rotate(-55deg)',
+                          zIndex: 0,
                         }}
                       >
-                        EDGE2 Engineering Solutions India Pvt. Ltd.
-                      </span>
-                    </div>
-                    <div className="a4-page-content">
-                      {/* Header - only on first page */}
-                      {page.isFirstPage && (
-                        <>
-                          <div className="flex justify-between items-start gap-2 border-b pb-4 mb-2 min-w-0 max-w-full overflow-hidden">
-                            <div className="w-[30%] min-w-0 shrink">
-                              <h3 className="text-lg font-bold text-gray-900 tracking-tight">
-                                {documentType.toUpperCase()}
-                              </h3>
-                              <p className="text-gray-500 mt-1 text-xs break-all">
-                                {quoteDetails.quoteNumber ? (
-                                  `${quoteDetails.quoteNumber}`
-                                ) : (
-                                  <span className="text-red-500 italic">Pending</span>
-                                )}
-                              </p>
-                              <p className="text-gray-500 mt-1 text-xs">
-                                Date: {format(new Date(quoteDetails.date), 'dd MMM yyyy')}
-                              </p>
-                            </div>
-
-                            <div className="w-[70%] min-w-0 shrink flex items-center gap-2 text-right">
-                              <div className="text-right min-w-0 flex-1">
-                                <h2 className="font-bold text-lg">
-                                  EDGE2 Engineering Solutions India Pvt. Ltd.
-                                </h2>
-                                <p className="text-gray-600 text-xs">
-                                  Shivaganga Arcade, B35/130, 6th Cross, 6th Block, Vishweshwaraiah
-                                  Layout, Ullal Upanagar,
+                        <span
+                          style={{
+                            fontSize: '42pt',
+                            fontWeight: 700,
+                            color: 'rgba(0,0,0,0.02)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          EDGE2 Engineering Solutions India Pvt. Ltd.
+                        </span>
+                      </div>
+                      <div className="a4-page-content">
+                        {/* Header - only on first page */}
+                        {page.isFirstPage && (
+                          <>
+                            <div className="flex justify-between items-start gap-2 border-b pb-4 mb-2 min-w-0 max-w-full overflow-hidden">
+                              <div className="w-[30%] min-w-0 shrink">
+                                <h3 className="text-lg font-bold text-gray-900 tracking-tight">
+                                  {documentType.toUpperCase()}
+                                </h3>
+                                <p className="text-gray-500 mt-1 text-xs break-all">
+                                  {quoteDetails.quoteNumber ? (
+                                    `${quoteDetails.quoteNumber}`
+                                  ) : (
+                                    <span className="text-red-500 italic">Pending</span>
+                                  )}
                                 </p>
-                                <p className="text-gray-600 text-xs">
-                                  Bangalore - 560056, Karnataka
-                                </p>
-                                <p className="text-gray-600 text-xs">
-                                  <span className="font-bold">PAN:</span> AACCE1702A,{' '}
-                                  <span className="font-bold">GSTIN:</span> 29AACCE1702A1ZD
-                                </p>
-                                <p className="text-gray-600 text-xs">
-                                  <span className="font-bold">Phone:</span> 09448377127 /
-                                  09880973810 / 080-50056086
-                                </p>
-                                <p className="text-gray-600 text-xs flex justify-end gap-4">
-                                  <span>
-                                    <span className="font-bold">Email:</span> info@edge2.in
-                                  </span>
-                                  <span>
-                                    <span className="font-bold">Website:</span> https://edge2.in
-                                  </span>
+                                <p className="text-gray-500 mt-1 text-xs">
+                                  Date: {format(new Date(quoteDetails.date), 'dd MMM yyyy')}
                                 </p>
                               </div>
-                              <img
-                                src={`${import.meta.env.BASE_URL}edge2-logo.png`}
-                                alt="EDGE2 Logo"
-                                className="w-16 h-16 object-contain flex-shrink-0"
-                              />
-                            </div>
-                          </div>
 
-                          {/* Client, Contractor, Project Details - 3 Columns */}
-                          <div className="grid grid-cols-3 gap-6 mb-2 text-sm py-0 border-b">
-                            {/* Column 1: Client */}
-                            <div className="space-y-1">
-                              <h3 className="text-gray-500 font-semibold uppercase tracking-wide border-b pb-1 mb-2">
-                                Client
-                              </h3>
-                              <p className="font-bold text-gray-900 text-xs">
-                                {quoteDetails.clientName || '-'}
-                              </p>
-                              <p className="text-gray-600 whitespace-pre-wrap text-xs">
-                                {quoteDetails.clientAddress}
-                              </p>
-
-                              <p className="text-gray-600 mt-1 text-xs">
-                                Name: {quoteDetails.name || '-'}
-                              </p>
-                              <p className="text-gray-600 mt-1 text-xs">
-                                Email: {quoteDetails.email || '-'}
-                              </p>
-                              <p className="text-gray-600 text-xs">
-                                Phone: {quoteDetails.phone || '-'}
-                              </p>
-                              <p className="text-gray-600 mt-1 text-xs">
-                                GSTIN: {quoteDetails.gstin || '-'}
-                              </p>
-                            </div>
-
-                            {/* Column 2: Contractor */}
-                            <div className="space-y-1 border-l pl-2">
-                              <h3 className="text-gray-500 font-semibold uppercase tracking-wide border-b pb-1 mb-2">
-                                Contractor
-                              </h3>
-                              <p className="font-bold text-gray-900 text-xs">
-                                {quoteDetails.contractorName || '-'}
-                              </p>
-                              <p className="text-gray-600 whitespace-pre-wrap text-xs">
-                                {quoteDetails.contractorAddress}
-                              </p>
-                            </div>
-
-                            {/* Column 3: Project */}
-                            <div className="space-y-1 border-l pl-2">
-                              <h3 className="text-gray-500 font-semibold uppercase tracking-wide border-b pb-1 mb-2">
-                                Project Details
-                              </h3>
-                              <p className="font-bold text-gray-900 text-xs">
-                                {quoteDetails.projectName || '-'}
-                              </p>
-                              <p className="text-gray-600 whitespace-pre-wrap text-xs">
-                                {quoteDetails.projectAddress}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-xs text-right">
-                            Created by: {quoteDetails.generatedBy}
-                          </div>
-                        </>
-                      )}
-
-                      {/* Continuation page header */}
-                      {page.isContinuation && (
-                        <div className="border-b pb-3 mb-4">
-                          <h3 className="text-lg font-bold text-gray-900">
-                            {documentType}{' '}
-                            {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : ''}{' '}
-                            (Continued)
-                          </h3>
-                        </div>
-                      )}
-
-                      {/* Table */}
-                      <table className="quote-items-table w-full table-fixed mb-8 mt-2">
-                        <colgroup>
-                          <col style={{ width: '3%' }} />
-                          <col style={{ width: '30%' }} />
-                          <col style={{ width: '6%' }} />
-                          <col style={{ width: '6%' }} />
-                          <col style={{ width: '4%' }} />
-                          <col style={{ width: '3%' }} />
-                          <col style={{ width: '6%' }} />
-                          <col style={{ width: '7%' }} />
-                        </colgroup>
-                        <thead>
-                          <tr>
-                            <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
-                              Sl No.
-                            </th>
-                            <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
-                              Description
-                            </th>
-                            <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
-                              HSN / SAC
-                            </th>
-                            <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
-                              Price Per Unit
-                            </th>
-                            <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
-                              Unit
-                            </th>
-                            <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
-                              Qty
-                            </th>
-                            <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
-                              Total
-                            </th>
-                            <th className="print:hidden"></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {page.items.map((item, index) => {
-                            const slNo = page.isFirstPage
-                              ? index + 1
-                              : ITEMS_PER_FIRST_PAGE +
-                                (page.pageNumber - 2) * ITEMS_PER_CONTINUATION_PAGE +
-                                index +
-                                1;
-
-                            return (
-                              <tr key={item.id} className="border-b border-gray-50">
-                                <td className="py-3 px-1 text-gray-500 text-xs align-top border-r border-l border-gray-200">
-                                  {slNo}.
-                                </td>
-                                <td className="py-2 px-1 text-gray-900 align-top border-r border-l border-gray-200">
-                                  <p className="font-small text-xs">{item.description}</p>
-                                  <p
-                                    className="text-xs text-gray-500 capitalize italic"
-                                    style={{ fontSize: '10px' }}
-                                  >
-                                    {getDocumentItemTypeLabel(item.type)}
+                              <div className="w-[70%] min-w-0 shrink flex items-center gap-2 text-right">
+                                <div className="text-right min-w-0 flex-1">
+                                  <h2 className="font-bold text-lg">
+                                    EDGE2 Engineering Solutions India Pvt. Ltd.
+                                  </h2>
+                                  <p className="text-gray-600 text-xs">
+                                    Shivaganga Arcade, B35/130, 6th Cross, 6th Block,
+                                    Vishweshwaraiah Layout, Ullal Upanagar,
                                   </p>
-                                  {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS &&
-                                    (() => {
-                                      const values = [
-                                        item.methodOfSampling && item.methodOfSampling !== 'NA'
-                                          ? `Method: ${item.methodOfSampling}`
-                                          : null,
+                                  <p className="text-gray-600 text-xs">
+                                    Bangalore - 560056, Karnataka
+                                  </p>
+                                  <p className="text-gray-600 text-xs">
+                                    <span className="font-bold">PAN:</span> AACCE1702A,{' '}
+                                    <span className="font-bold">GSTIN:</span> 29AACCE1702A1ZD
+                                  </p>
+                                  <p className="text-gray-600 text-xs">
+                                    <span className="font-bold">Phone:</span> 09448377127 /
+                                    09880973810 / 080-50056086
+                                  </p>
+                                  <p className="text-gray-600 text-xs flex justify-end gap-4">
+                                    <span>
+                                      <span className="font-bold">Email:</span> info@edge2.in
+                                    </span>
+                                    <span>
+                                      <span className="font-bold">Website:</span> https://edge2.in
+                                    </span>
+                                  </p>
+                                </div>
+                                <img
+                                  src={`${import.meta.env.BASE_URL}edge2-logo.png`}
+                                  alt="EDGE2 Logo"
+                                  className="w-16 h-16 object-contain flex-shrink-0"
+                                />
+                              </div>
+                            </div>
 
-                                        typeof item.numBHs === 'number' && item.numBHs > 0
-                                          ? `BHs: ${item.numBHs}`
-                                          : null,
+                            {/* Client, Contractor, Project Details - 3 Columns */}
+                            <div className="grid grid-cols-3 gap-6 mb-2 text-sm py-0 border-b">
+                              {/* Column 1: Client */}
+                              <div className="space-y-1">
+                                <h3 className="text-gray-500 font-semibold uppercase tracking-wide border-b pb-1 mb-2">
+                                  Client
+                                </h3>
+                                <p className="font-bold text-gray-900 text-xs">
+                                  {quoteDetails.clientName || '-'}
+                                </p>
+                                <p className="text-gray-600 whitespace-pre-wrap text-xs">
+                                  {quoteDetails.clientAddress}
+                                </p>
 
-                                        item.measure && item.measure !== 'NA'
-                                          ? `Measure: ${item.measure}`
-                                          : null,
-                                      ].filter(Boolean);
+                                <p className="text-gray-600 mt-1 text-xs">
+                                  Name: {quoteDetails.name || '-'}
+                                </p>
+                                <p className="text-gray-600 mt-1 text-xs">
+                                  Email: {quoteDetails.email || '-'}
+                                </p>
+                                <p className="text-gray-600 text-xs">
+                                  Phone: {quoteDetails.phone || '-'}
+                                </p>
+                                <p className="text-gray-600 mt-1 text-xs">
+                                  GSTIN: {quoteDetails.gstin || '-'}
+                                </p>
+                              </div>
 
-                                      return values.length ? (
-                                        <p className="mt-1 text-xs text-gray-400">
-                                          {values.join('   |   ')}
-                                        </p>
-                                      ) : null;
-                                    })()}
-                                </td>
-                                <td className="py-2 px-1 text-left text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
-                                  {item.hsnCode || '—'}
-                                </td>
-                                <td className="py-2 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
-                                  <Rupee />
-                                  <span
-                                    contentEditable={!isReadOnly}
-                                    suppressContentEditableWarning
-                                    onBlur={(e) =>
-                                      handleUpdateItemPrice(
-                                        item.id,
-                                        e.currentTarget.textContent,
-                                        e.currentTarget
-                                      )
-                                    }
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        e.currentTarget.blur();
+                              {/* Column 2: Contractor */}
+                              <div className="space-y-1 border-l pl-2">
+                                <h3 className="text-gray-500 font-semibold uppercase tracking-wide border-b pb-1 mb-2">
+                                  Contractor
+                                </h3>
+                                <p className="font-bold text-gray-900 text-xs">
+                                  {quoteDetails.contractorName || '-'}
+                                </p>
+                                <p className="text-gray-600 whitespace-pre-wrap text-xs">
+                                  {quoteDetails.contractorAddress}
+                                </p>
+                              </div>
+
+                              {/* Column 3: Project */}
+                              <div className="space-y-1 border-l pl-2">
+                                <h3 className="text-gray-500 font-semibold uppercase tracking-wide border-b pb-1 mb-2">
+                                  Project Details
+                                </h3>
+                                <p className="font-bold text-gray-900 text-xs">
+                                  {quoteDetails.projectName || '-'}
+                                </p>
+                                <p className="text-gray-600 whitespace-pre-wrap text-xs">
+                                  {quoteDetails.projectAddress}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-xs text-right">
+                              Created by: {quoteDetails.generatedBy}
+                            </div>
+                          </>
+                        )}
+
+                        {/* Continuation page header */}
+                        {page.isContinuation && (
+                          <div className="pb-1 mb-2">
+                            <h3 className="text-sm font-bold text-gray-900">
+                              {documentType}{' '}
+                              {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : ''}{' '}
+                              (Continued)
+                            </h3>
+                          </div>
+                        )}
+
+                        {/* Table */}
+                        <table className="quote-items-table w-full table-fixed mb-8 mt-2">
+                          <colgroup>
+                            <col style={{ width: '3%' }} />
+                            <col style={{ width: '30%' }} />
+                            <col style={{ width: '6%' }} />
+                            <col style={{ width: '6%' }} />
+                            <col style={{ width: '4%' }} />
+                            <col style={{ width: '3%' }} />
+                            <col style={{ width: '6%' }} />
+                            <col style={{ width: '7%' }} />
+                          </colgroup>
+                          <thead>
+                            <tr>
+                              <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                                Sl No.
+                              </th>
+                              <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                                Description
+                              </th>
+                              <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                                HSN / SAC
+                              </th>
+                              <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                                Price Per Unit
+                              </th>
+                              <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                                Unit
+                              </th>
+                              <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                                Qty
+                              </th>
+                              <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                                Total
+                              </th>
+                              <th className="print:hidden"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {page.items.map((item, index) => {
+                              const slNo = items.findIndex((x) => x.id === item.id) + 1;
+
+                              return (
+                                <tr key={item.id} className="border-b border-gray-50">
+                                  <td className="py-0 px-1 text-gray-500 text-xs align-top border-r border-l border-gray-200">
+                                    {slNo}.
+                                  </td>
+                                  <td className="py-0 px-1 text-gray-900 align-top border-r border-l border-gray-200">
+                                    <p className="font-small text-xs">{item.description}</p>
+                                    <p
+                                      className="text-xs text-gray-500 capitalize italic"
+                                      style={{ fontSize: '10px' }}
+                                    >
+                                      {getDocumentItemTypeLabel(item.type)}
+                                    </p>
+                                    {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS &&
+                                      (() => {
+                                        const values = [
+                                          item.methodOfSampling && item.methodOfSampling !== 'NA'
+                                            ? `Method: ${item.methodOfSampling}`
+                                            : null,
+
+                                          typeof item.numBHs === 'number' && item.numBHs > 0
+                                            ? `BHs: ${item.numBHs}`
+                                            : null,
+
+                                          item.measure && item.measure !== 'NA'
+                                            ? `Measure: ${item.measure}`
+                                            : null,
+                                        ].filter(Boolean);
+
+                                        return values.length ? (
+                                          <p className="mt-1 text-xs text-gray-400">
+                                            {values.join('   |   ')}
+                                          </p>
+                                        ) : null;
+                                      })()}
+                                  </td>
+                                  <td className="py-0 px-1 text-left text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
+                                    {item.hsnCode || '—'}
+                                  </td>
+                                  <td className="py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
+                                    <Rupee />
+                                    <span
+                                      contentEditable={!isReadOnly}
+                                      suppressContentEditableWarning
+                                      onBlur={(e) =>
+                                        handleUpdateItemPrice(
+                                          item.id,
+                                          e.currentTarget.textContent,
+                                          e.currentTarget
+                                        )
                                       }
-                                    }}
-                                  >
-                                    {item.price}
-                                  </span>
-                                </td>
-                                <td className="py-2 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
-                                  {item.unit}
-                                </td>
-                                <td className="py-2 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
-                                  <span
-                                    contentEditable={!isReadOnly}
-                                    suppressContentEditableWarning
-                                    onBlur={(e) =>
-                                      handleUpdateItemQty(
-                                        item.id,
-                                        e.currentTarget.textContent,
-                                        e.currentTarget
-                                      )
-                                    }
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        e.currentTarget.blur();
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          e.currentTarget.blur();
+                                        }
+                                      }}
+                                    >
+                                      {item.price}
+                                    </span>
+                                  </td>
+                                  <td className="py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
+                                    {item.unit}
+                                  </td>
+                                  <td className="py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
+                                    <span
+                                      contentEditable={!isReadOnly}
+                                      suppressContentEditableWarning
+                                      onBlur={(e) =>
+                                        handleUpdateItemQty(
+                                          item.id,
+                                          e.currentTarget.textContent,
+                                          e.currentTarget
+                                        )
                                       }
-                                    }}
-                                  >
-                                    {item.qty}
-                                  </span>
-                                </td>
-                                <td className="py-2 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200">
-                                  <Rupee />
-                                  {item.total.toLocaleString()}
-                                </td>
-                                <td className="text-right print:hidden align-top">
-                                  {!isReadOnly && (
-                                    <div className="flex items-center justify-end gap-0">
-                                      <button
-                                        onClick={() => handleMoveItemUp(slNo - 1)}
-                                        disabled={slNo === 1}
-                                        className="text-gray-400 hover:text-gray-600 p-1 disabled:opacity-30 transition-colors"
-                                        title="Move Up"
-                                      >
-                                        <ChevronUp className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleMoveItemDown(slNo - 1)}
-                                        disabled={slNo === items.length}
-                                        className="text-gray-400 hover:text-gray-600 p-1 disabled:opacity-30 transition-colors"
-                                        title="Move Down"
-                                      >
-                                        <ChevronDown className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteItem(item.id)}
-                                        className="text-red-400 hover:text-red-600 p-1 transition-colors"
-                                        title="Delete"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  )}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          e.currentTarget.blur();
+                                        }
+                                      }}
+                                    >
+                                      {item.qty}
+                                    </span>
+                                  </td>
+                                  <td className="py-0 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200">
+                                    <Rupee />
+                                    {item.total.toLocaleString()}
+                                  </td>
+                                  <td className="text-right print:hidden align-top">
+                                    {!isReadOnly && (
+                                      <div className="flex items-center justify-end gap-0">
+                                        <button
+                                          onClick={() => handleMoveItemUp(slNo - 1)}
+                                          disabled={slNo === 1}
+                                          className="text-gray-400 hover:text-gray-600 p-1 disabled:opacity-30 transition-colors"
+                                          title="Move Up"
+                                        >
+                                          <ChevronUp className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleMoveItemDown(slNo - 1)}
+                                          disabled={slNo === items.length}
+                                          className="text-gray-400 hover:text-gray-600 p-1 disabled:opacity-30 transition-colors"
+                                          title="Move Down"
+                                        >
+                                          <ChevronDown className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteItem(item.id)}
+                                          className="text-red-400 hover:text-red-600 p-1 transition-colors"
+                                          title="Delete"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            {page.items.length === 0 && (
+                              <tr>
+                                <td colSpan="8" className="py-8 text-center text-gray-400 italic">
+                                  No items added yet.
                                 </td>
                               </tr>
-                            );
-                          })}
-                          {page.items.length === 0 && (
-                            <tr>
-                              <td colSpan="8" className="py-8 text-center text-gray-400 italic">
-                                No items added yet.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
+                            )}
+                          </tbody>
+                        </table>
 
-                      {/* Footer Totals, Bank Details, Payment Terms - only on last quotation page */}
-                      {pageIndex === itemPages.length - 1 && (
-                        <>
-                          {/* Footer Totals */}
-                          <div className="flex justify-left">
-                            <div className="w-full space-y-3">
-                              <div className="flex justify-between text-gray-600 text-xs">
-                                <span>Subtotal</span>
-                                <span>
-                                  <Rupee />
-                                  {calculateTotal().toLocaleString()}
-                                </span>
-                              </div>
-                              {discountShow && discount > 0 && (
-                                <div className="flex justify-between text-green-600 text-xs">
-                                  <span>Discount ({discount}%)</span>
+                        {/* Footer Totals, Bank Details, Payment Terms - only on last quotation page */}
+                        {pageIndex === itemPages.length - 1 && (
+                          <>
+                            {/* Footer Totals */}
+                            <div className="flex justify-left">
+                              <div className="w-full space-y-3">
+                                <div className="flex justify-between text-gray-600 text-xs">
+                                  <span>Subtotal</span>
                                   <span>
-                                    - <Rupee />
-                                    {(calculateTotal() * (discount / 100)).toLocaleString(
-                                      undefined,
-                                      { maximumFractionDigits: 2 }
-                                    )}
+                                    <Rupee />
+                                    {calculateTotal().toLocaleString()}
                                   </span>
                                 </div>
-                              )}
-                              <div className="flex justify-between text-gray-600 text-xs">
-                                <span>CGST ({taxCGST}%)</span>
-                                <span>
-                                  <Rupee />
-                                  {(
-                                    calculateTotal() *
-                                    (1 - discount / 100) *
-                                    (taxCGST / 100)
-                                  ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                </span>
-                              </div>
-                              <div className="flex justify-between text-gray-600 text-xs">
-                                <span>SGST ({taxSGST}%)</span>
-                                <span>
-                                  <Rupee />
-                                  {(
-                                    calculateTotal() *
-                                    (1 - discount / 100) *
-                                    (taxSGST / 100)
-                                  ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                </span>
-                              </div>
-                              <div className="flex justify-between text-gray-600 text-xs font-medium">
-                                <span>Total Tax Amount</span>
-                                <span>
-                                  <Rupee />
-                                  {(
-                                    calculateTotal() *
-                                    (1 - discount / 100) *
-                                    (taxTotalPercent / 100)
-                                  ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                </span>
-                              </div>
-                              <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
-                                <span>Total</span>
-                                <span>
-                                  <Rupee />
-                                  {roundAmount(
-                                    calculateTotal() *
-                                      (1 - discount / 100) *
-                                      (1 + taxTotalPercent / 100)
-                                  ).toLocaleString()}
-                                </span>
-                              </div>
-                              {documentType === 'Tax Invoice' && quoteDetails.paymentAmount > 0 && (
-                                <>
-                                  <div className="flex justify-between text-xs text-red-600">
-                                    <span>Less: Payment Received</span>
+                                {discountShow && discount > 0 && (
+                                  <div className="flex justify-between text-green-600 text-xs">
+                                    <span>Discount ({discount}%)</span>
                                     <span>
                                       - <Rupee />
-                                      {roundAmount(
-                                        Number(quoteDetails.paymentAmount)
-                                      ).toLocaleString()}
+                                      {(calculateTotal() * (discount / 100)).toLocaleString(
+                                        undefined,
+                                        { maximumFractionDigits: 2 }
+                                      )}
                                     </span>
                                   </div>
-                                  <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
-                                    <span>Balance Due</span>
-                                    <span>
-                                      <Rupee />
-                                      {roundAmount(
-                                        calculateTotal() *
-                                          (1 - discount / 100) *
-                                          (1 + taxTotalPercent / 100) -
-                                          Number(quoteDetails.paymentAmount)
-                                      ).toLocaleString()}
-                                    </span>
-                                  </div>
-                                </>
-                              )}
-                              <div className="mt-2 text-xs text-gray-600 italic">
-                                <span className="font-medium">Amount in Words: Rupees </span>
-                                <span>
-                                  {numberToWords(
-                                    roundAmount(
+                                )}
+                                <div className="flex justify-between text-gray-600 text-xs">
+                                  <span>CGST ({taxCGST}%)</span>
+                                  <span>
+                                    <Rupee />
+                                    {(
+                                      calculateTotal() *
+                                      (1 - discount / 100) *
+                                      (taxCGST / 100)
+                                    ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between text-gray-600 text-xs">
+                                  <span>SGST ({taxSGST}%)</span>
+                                  <span>
+                                    <Rupee />
+                                    {(
+                                      calculateTotal() *
+                                      (1 - discount / 100) *
+                                      (taxSGST / 100)
+                                    ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between text-gray-600 text-xs font-medium">
+                                  <span>Total Tax Amount</span>
+                                  <span>
+                                    <Rupee />
+                                    {(
+                                      calculateTotal() *
+                                      (1 - discount / 100) *
+                                      (taxTotalPercent / 100)
+                                    ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
+                                  <span>Total</span>
+                                  <span>
+                                    <Rupee />
+                                    {roundAmount(
                                       calculateTotal() *
                                         (1 - discount / 100) *
                                         (1 + taxTotalPercent / 100)
-                                    )
-                                  )}{' '}
-                                  /-
-                                </span>
-                              </div>
-                              {discount > 0 && (
-                                <div className="mt-2 text-xs text-gray-600 italic">
-                                  <span className="font-medium">
-                                    Note: Discount included in the above amount.
+                                    ).toLocaleString()}
                                   </span>
                                 </div>
-                              )}
+                                {documentType === 'Tax Invoice' &&
+                                  quoteDetails.paymentAmount > 0 && (
+                                    <>
+                                      <div className="flex justify-between text-xs text-red-600">
+                                        <span>Less: Payment Received</span>
+                                        <span>
+                                          - <Rupee />
+                                          {roundAmount(
+                                            Number(quoteDetails.paymentAmount)
+                                          ).toLocaleString()}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
+                                        <span>Balance Due</span>
+                                        <span>
+                                          <Rupee />
+                                          {roundAmount(
+                                            calculateTotal() *
+                                              (1 - discount / 100) *
+                                              (1 + taxTotalPercent / 100) -
+                                              Number(quoteDetails.paymentAmount)
+                                          ).toLocaleString()}
+                                        </span>
+                                      </div>
+                                    </>
+                                  )}
+                                <div className="mt-2 text-xs text-gray-600 italic">
+                                  <span className="font-medium">Amount in Words: Rupees </span>
+                                  <span>
+                                    {numberToWords(
+                                      roundAmount(
+                                        calculateTotal() *
+                                          (1 - discount / 100) *
+                                          (1 + taxTotalPercent / 100)
+                                      )
+                                    )}{' '}
+                                    /-
+                                  </span>
+                                </div>
+                                {discount > 0 && (
+                                  <div className="mt-2 text-xs text-gray-600 italic">
+                                    <span className="font-medium">
+                                      Note: Discount included in the above amount.
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    {/* Page Footer */}
-                    <div className="a4-page-footer">
-                      <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
-                      <span>
-                        {documentType}{' '}
-                        {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
-                        Page {page.pageNumber} of {totalPages}
-                      </span>
+                          </>
+                        )}
+                      </div>
+                      {/* Page Footer */}
+                      <div className="a4-page-footer">
+                        <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
+                        <span>
+                          {documentType}{' '}
+                          {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
+                          Page {page.pageNumber} of {totalPages}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
 
                 {/* Page 2: Bank */}
-                <div className="a4-container">
-                  {/* Watermark */}
+                <div
+                  className="a4-scale-wrapper mx-auto"
+                  style={{
+                    width: `${794 * previewScale}px`,
+                    height: `${1122.5 * previewScale}px`,
+                    marginBottom: `${48 * previewScale}px`,
+                  }}
+                >
                   <div
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    className="a4-container"
                     style={{
-                      transform: 'rotate(-55deg)',
-                      zIndex: 0,
+                      transform: `scale(${previewScale})`,
+                      transformOrigin: 'top left',
+                      margin: 0,
                     }}
                   >
-                    <span
+                    {/* Watermark */}
+                    <div
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
                       style={{
-                        fontSize: '42pt',
-                        fontWeight: 700,
-                        color: 'rgba(0,0,0,0.02)',
-                        whiteSpace: 'nowrap',
+                        transform: 'rotate(-55deg)',
+                        zIndex: 0,
                       }}
                     >
-                      EDGE2 Engineering Solutions India Pvt. Ltd.
-                    </span>
-                  </div>
-                  <div className="a4-page-content flex flex-col">
-                    <div className="text-gray-500 text-sm flex-1">
-                      {/* Bank + Signatory (Grid) */}
-                      <div className="grid grid-cols-2 gap-8 mt-2 text-left text-xs">
-                        {/* Bank Details */}
-                        <div>
-                          <h2 className="font-semibold mb-2 text-sm">Bank Details</h2>
-                          <table className="w-full text-sm border-collapse">
-                            <tbody>
-                              <tr>
-                                <td className="py-1 font-semibold w-32">Name:</td>
-                                <td className="py-1">
-                                  {selectedBank?.bank_account_holder_name ||
-                                    settings?.bank_account_holder_name ||
-                                    'EDGE2 Engineering Solutions India Pvt. Ltd.'}
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="py-1 font-semibold">A/c. No:</td>
-                                <td className="py-1">
-                                  {selectedBank?.bank_account_number ||
-                                    settings?.bank_account_number ||
-                                    '560321000022687'}
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="py-1 font-semibold">IFSC Code:</td>
-                                <td className="py-1">
-                                  {selectedBank?.ifsc_code || settings?.ifsc_code || 'UBIN0907634'}
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="py-1 font-semibold">Branch:</td>
-                                <td className="py-1">
-                                  {selectedBank?.branch_name ||
-                                    settings?.branch_name ||
-                                    'Bangalore - Peenya'}
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="py-1 font-semibold">Bank:</td>
-                                <td className="py-1">
-                                  {selectedBank?.bank_name ||
-                                    settings?.bank_name ||
-                                    'Union Bank of India'}
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-
-                        {/* Authorized Signatory */}
-                        <div className="flex flex-col items-center">
-                          <h2 className="font-semibold mb-20 text-sm">Authorized Signatory</h2>
-                          <table className="w-full text-sm border-collapse">
-                            <tbody>
-                              <tr>
-                                <td className="py-1">
-                                  For EDGE2 Engineering Solutions India Pvt. Ltd.
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="py-1 h-10"></td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      {/* Payment Received Details - Only for Tax Invoice */}
-                      {documentType === 'Tax Invoice' && quoteDetails.paymentDate && (
-                        <div className="mt-6 pt-4 border-t">
-                          <h2 className="font-semibold text-left mb-3 text-sm">
-                            Payment Received Details
-                          </h2>
-                          <table className="w-full text-xs border-collapse">
-                            <tbody>
-                              <tr>
-                                <td className="py-1 font-semibold w-40">Payment Received Date:</td>
-                                <td className="py-1">
-                                  {format(new Date(quoteDetails.paymentDate), 'dd MMM yyyy')}
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="py-1 font-semibold">Mode of Payment:</td>
-                                <td className="py-1">{quoteDetails.paymentMode}</td>
-                              </tr>
-                              {quoteDetails.paymentAmount && (
+                      <span
+                        style={{
+                          fontSize: '42pt',
+                          fontWeight: 700,
+                          color: 'rgba(0,0,0,0.02)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        EDGE2 Engineering Solutions India Pvt. Ltd.
+                      </span>
+                    </div>
+                    <div className="a4-page-content flex flex-col">
+                      <div className="text-gray-500 text-sm flex-1">
+                        {/* Bank + Signatory (Grid) */}
+                        <div className="grid grid-cols-2 gap-8 mt-2 text-left text-xs">
+                          {/* Bank Details */}
+                          <div>
+                            <h2 className="font-semibold mb-2 text-sm">Bank Details</h2>
+                            <table className="w-full text-sm border-collapse">
+                              <tbody>
                                 <tr>
-                                  <td className="py-1 font-semibold">Amount Received:</td>
+                                  <td className="py-1 font-semibold w-32">Name:</td>
                                   <td className="py-1">
-                                    <Rupee />
-                                    {Number(quoteDetails.paymentAmount).toLocaleString(undefined, {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    })}
+                                    {selectedBank?.bank_account_holder_name ||
+                                      settings?.bank_account_holder_name ||
+                                      'EDGE2 Engineering Solutions India Pvt. Ltd.'}
                                   </td>
                                 </tr>
-                              )}
-                              {quoteDetails.bankDetails && (
                                 <tr>
-                                  <td className="py-1 font-semibold">Transaction Details:</td>
-                                  <td className="py-1">{quoteDetails.bankDetails}</td>
+                                  <td className="py-1 font-semibold">A/c. No:</td>
+                                  <td className="py-1">
+                                    {selectedBank?.bank_account_number ||
+                                      settings?.bank_account_number ||
+                                      '560321000022687'}
+                                  </td>
                                 </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-
-                      {/* Payment Terms */}
-                      <div className="mt-6 pt-4 border-t">
-                        <h2 className="font-semibold text-left mb-3">Payment Terms:</h2>
-                        {settings?.payment_terms ? (
-                          <div className="text-xs whitespace-pre-wrap">
-                            {settings.payment_terms}
+                                <tr>
+                                  <td className="py-1 font-semibold">IFSC Code:</td>
+                                  <td className="py-1">
+                                    {selectedBank?.ifsc_code ||
+                                      settings?.ifsc_code ||
+                                      'UBIN0907634'}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td className="py-1 font-semibold">Branch:</td>
+                                  <td className="py-1">
+                                    {selectedBank?.branch_name ||
+                                      settings?.branch_name ||
+                                      'Bangalore - Peenya'}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td className="py-1 font-semibold">Bank:</td>
+                                  <td className="py-1">
+                                    {selectedBank?.bank_name ||
+                                      settings?.bank_name ||
+                                      'Union Bank of India'}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
                           </div>
-                        ) : (
-                          <ul className="list-disc pl-5 text-xs">
-                            <li>
-                              Advance Payment of 60% + GST ({taxTotalPercent}%) along with Work
-                              order as mobilization advance.
-                            </li>
-                            <li>
-                              Mobilization of Men and Machines shall be done in 3–5 days after the
-                              confirmation of Advance Payment.
-                            </li>
-                            <li>Balance Payment to be done after completion of field work.</li>
-                          </ul>
-                        )}
-                      </div>
-                    </div>
 
-                    {/* Page Footer */}
-                    <div className="a4-page-footer">
-                      <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
-                      <span>
-                        {documentType}{' '}
-                        {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
-                        Page {totalItemPages + 1} of {totalPages}
-                      </span>
+                          {/* Authorized Signatory */}
+                          <div className="flex flex-col items-center">
+                            <h2 className="font-semibold mb-20 text-sm">Authorized Signatory</h2>
+                            <table className="w-full text-sm border-collapse">
+                              <tbody>
+                                <tr>
+                                  <td className="py-1">
+                                    For EDGE2 Engineering Solutions India Pvt. Ltd.
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td className="py-1 h-10"></td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* Payment Received Details - Only for Tax Invoice */}
+                        {documentType === 'Tax Invoice' && quoteDetails.paymentDate && (
+                          <div className="mt-6 pt-4 border-t">
+                            <h2 className="font-semibold text-left mb-3 text-sm">
+                              Payment Received Details
+                            </h2>
+                            <table className="w-full text-xs border-collapse">
+                              <tbody>
+                                <tr>
+                                  <td className="py-1 font-semibold w-40">
+                                    Payment Received Date:
+                                  </td>
+                                  <td className="py-1">
+                                    {format(new Date(quoteDetails.paymentDate), 'dd MMM yyyy')}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td className="py-1 font-semibold">Mode of Payment:</td>
+                                  <td className="py-1">{quoteDetails.paymentMode}</td>
+                                </tr>
+                                {quoteDetails.paymentAmount && (
+                                  <tr>
+                                    <td className="py-1 font-semibold">Amount Received:</td>
+                                    <td className="py-1">
+                                      <Rupee />
+                                      {Number(quoteDetails.paymentAmount).toLocaleString(
+                                        undefined,
+                                        {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        }
+                                      )}
+                                    </td>
+                                  </tr>
+                                )}
+                                {quoteDetails.bankDetails && (
+                                  <tr>
+                                    <td className="py-1 font-semibold">Transaction Details:</td>
+                                    <td className="py-1">{quoteDetails.bankDetails}</td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {/* Payment Terms */}
+                        <div className="mt-6 pt-4 border-t">
+                          <h2 className="font-semibold text-left mb-3">Payment Terms:</h2>
+                          {settings?.payment_terms ? (
+                            <div className="text-xs whitespace-pre-wrap">
+                              {settings.payment_terms}
+                            </div>
+                          ) : (
+                            <ul className="list-disc pl-5 text-xs">
+                              <li>
+                                Advance Payment of 60% + GST ({taxTotalPercent}%) along with Work
+                                order as mobilization advance.
+                              </li>
+                              <li>
+                                Mobilization of Men and Machines shall be done in 3–5 days after the
+                                confirmation of Advance Payment.
+                              </li>
+                              <li>Balance Payment to be done after completion of field work.</li>
+                            </ul>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Page Footer */}
+                      <div className="a4-page-footer">
+                        <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
+                        <span>
+                          {documentType}{' '}
+                          {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
+                          Page {totalItemPages + 1} of {totalPages}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Page: Terms & Conditions (Dynamic Pagination) */}
+                {/* T&C Pages */}
                 {tcPages.map((tcPage, tcIndex) => (
-                  <div key={`tc-page-${tcIndex}`} className="a4-container">
-                    {/* Watermark */}
+                  <div
+                    key={`tc-page-wrapper-${tcIndex}`}
+                    className="a4-scale-wrapper mx-auto"
+                    style={{
+                      width: `${794 * previewScale}px`,
+                      height: `${1122.5 * previewScale}px`,
+                      marginBottom: `${48 * previewScale}px`,
+                    }}
+                  >
                     <div
-                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                      className="a4-container"
                       style={{
-                        transform: 'rotate(-55deg)',
-                        zIndex: 0,
+                        transform: `scale(${previewScale})`,
+                        transformOrigin: 'top left',
+                        margin: 0,
                       }}
                     >
-                      <span
+                      {/* Watermark */}
+                      <div
+                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
                         style={{
-                          fontSize: '42pt',
-                          fontWeight: 700,
-                          color: 'rgba(0,0,0,0.02)',
-                          whiteSpace: 'nowrap',
+                          transform: 'rotate(-55deg)',
+                          zIndex: 0,
                         }}
                       >
-                        EDGE2 Engineering Solutions India Pvt. Ltd.
-                      </span>
-                    </div>
-                    <div className="a4-page-content">
-                      <div className="text-left text-gray-500 text-sm">
-                        <h2 className="font-semibold text-lg mb-4 text-center">
-                          {tcIndex === 0 ? 'Terms & Conditions' : 'Terms & Conditions (Continued)'}
-                        </h2>
-
-                        {tcPage.items.length === 0 ? (
-                          <div className="text-center italic text-gray-400 py-10">
-                            No Terms & Conditions selected.
-                          </div>
-                        ) : (
-                          <div className="space-y-1">
-                            {tcPage.items.map((item, idx) => {
-                              if (item.type === 'header') {
-                                return (
-                                  // <h3 key={item.id} className="font-semibold text-gray-800 text-sm mt-4 mb-2">
-                                  //     {item.text}
-                                  // </h3>
-                                  <h3
-                                    key={item.id}
-                                    className="font-bold text-sm text-gray-800 border-l-4 border-primary pl-2 mb-2"
-                                  >
-                                    {item.text}
-                                  </h3>
-                                );
-                              } else if (item.type === 'term') {
-                                return (
-                                  <div
-                                    key={item.id}
-                                    className="flex gap-2 text-xs leading-relaxed mb-1"
-                                  >
-                                    <span className="whitespace-pre-line pl-2">{item.text}</span>
-                                  </div>
-                                );
-                              } else if (item.type === 'spacer') {
-                                return <div key={item.id} className="h-2"></div>;
-                              }
-                              return null;
-                            })}
-                          </div>
-                        )}
+                        <span
+                          style={{
+                            fontSize: '42pt',
+                            fontWeight: 700,
+                            color: 'rgba(0,0,0,0.02)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          EDGE2 Engineering Solutions India Pvt. Ltd.
+                        </span>
                       </div>
-                    </div>
+                      <div className="a4-page-content">
+                        <div className="text-left text-gray-500 text-sm">
+                          <h2 className="font-semibold text-lg mb-4 text-center">
+                            {tcIndex === 0
+                              ? 'Terms & Conditions'
+                              : 'Terms & Conditions (Continued)'}
+                          </h2>
 
-                    {/* Page Footer */}
-                    <div className="a4-page-footer">
-                      <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
-                      <span>
-                        {documentType}{' '}
-                        {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
-                        Page {totalItemPages + 2 + tcIndex} of {totalPages}
-                      </span>
+                          {tcPage.items.length === 0 ? (
+                            <div className="text-center italic text-gray-400 py-10">
+                              No Terms & Conditions selected.
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              {tcPage.items.map((item, idx) => {
+                                if (item.type === 'header') {
+                                  return (
+                                    <h3
+                                      key={item.id}
+                                      className="font-bold text-sm text-gray-800 border-l-4 border-primary pl-2 mb-2"
+                                    >
+                                      {item.text}
+                                    </h3>
+                                  );
+                                } else if (item.type === 'term') {
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      className="flex gap-2 text-xs leading-relaxed mb-1"
+                                    >
+                                      <span className="whitespace-pre-line pl-2">{item.text}</span>
+                                    </div>
+                                  );
+                                } else if (item.type === 'spacer') {
+                                  return <div key={item.id} className="h-2"></div>;
+                                }
+                                return null;
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Page Footer */}
+                      <div className="a4-page-footer">
+                        <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
+                        <span>
+                          {documentType}{' '}
+                          {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
+                          Page {totalItemPages + 2 + tcIndex} of {totalPages}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
 
-                {/* Dynamic Technicals Pages */}
+                {/* Technical Pages */}
                 {techPages.map((page, techIndex) => (
-                  <div key={`tech-page-${page.pageNumber}`} className="a4-container">
-                    {/* Watermark */}
+                  <div
+                    key={`tech-page-wrapper-${techIndex}`}
+                    className="a4-scale-wrapper mx-auto"
+                    style={{
+                      width: `${794 * previewScale}px`,
+                      height: `${1122.5 * previewScale}px`,
+                      marginBottom: `${48 * previewScale}px`,
+                    }}
+                  >
                     <div
-                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                      className="a4-container"
                       style={{
-                        transform: 'rotate(-55deg)',
-                        zIndex: 0,
+                        transform: `scale(${previewScale})`,
+                        transformOrigin: 'top left',
+                        margin: 0,
                       }}
                     >
-                      <span
+                      {/* Watermark */}
+                      <div
+                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
                         style={{
-                          fontSize: '42pt',
-                          fontWeight: 700,
-                          color: 'rgba(0,0,0,0.02)',
-                          whiteSpace: 'nowrap',
+                          transform: 'rotate(-55deg)',
+                          zIndex: 0,
                         }}
                       >
-                        EDGE2 Engineering Solutions India Pvt. Ltd.
-                      </span>
-                    </div>
-                    <div className="a4-page-content">
-                      {page.isFirstPage && (
-                        <h2 className="font-semibold text-lg mb-6 text-center pb-2">Technicals</h2>
-                      )}
-                      <div className="space-y-4">
-                        {page.items.map((item) => {
-                          if (item.type === 'header') {
-                            return (
-                              <h3
-                                key={item.id}
-                                className="font-bold text-sm text-gray-800 border-l-4 border-primary pl-2 mb-2"
-                              >
-                                {item.text}
-                              </h3>
-                            );
-                          } else if (item.type === 'tech') {
-                            return (
-                              <div
-                                key={item.id}
-                                className="text-xs text-gray-700 leading-relaxed mb-1 pl-2"
-                              >
-                                <p className="whitespace-pre-wrap">{item.text}</p>
-                              </div>
-                            );
-                          } else if (item.type === 'spacer') {
-                            return <div key={item.id} className="h-4"></div>;
-                          }
-                          return null;
-                        })}
+                        <span
+                          style={{
+                            fontSize: '42pt',
+                            fontWeight: 700,
+                            color: 'rgba(0,0,0,0.02)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          EDGE2 Engineering Solutions India Pvt. Ltd.
+                        </span>
                       </div>
-                    </div>
+                      <div className="a4-page-content">
+                        {page.isFirstPage && (
+                          <h2 className="font-semibold text-lg mb-6 text-center pb-2">
+                            Technicals
+                          </h2>
+                        )}
+                        <div className="space-y-4">
+                          {page.items.map((item) => {
+                            if (item.type === 'header') {
+                              return (
+                                <h3
+                                  key={item.id}
+                                  className="font-bold text-sm text-gray-800 border-l-4 border-primary pl-2 mb-2"
+                                >
+                                  {item.text}
+                                </h3>
+                              );
+                            } else if (item.type === 'tech') {
+                              return (
+                                <div
+                                  key={item.id}
+                                  className="text-xs text-gray-700 leading-relaxed mb-1 pl-2"
+                                >
+                                  <p className="whitespace-pre-wrap">{item.text}</p>
+                                </div>
+                              );
+                            } else if (item.type === 'spacer') {
+                              return <div key={item.id} className="h-4"></div>;
+                            }
+                            return null;
+                          })}
+                        </div>
+                      </div>
 
-                    {/* Page Footer */}
-                    <div className="a4-page-footer">
-                      <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
-                      <span>
-                        {documentType}{' '}
-                        {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
-                        Page {totalItemPages + tcPages.length + (techIndex + 1)} of {totalPages}
-                      </span>
+                      {/* Page Footer */}
+                      <div className="a4-page-footer">
+                        <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
+                        <span>
+                          {documentType}{' '}
+                          {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
+                          Page {totalItemPages + 1 + tcPages.length + (techIndex + 1)} of{' '}
+                          {totalPages}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}

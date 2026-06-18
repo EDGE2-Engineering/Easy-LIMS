@@ -341,6 +341,7 @@
     display: block !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
+    zoom: 1 !important;
   }
 
   /* Ensure children are visible and stay within the page width */
@@ -348,6 +349,14 @@
   #printable-report-root * {
     visibility: visible;
     box-sizing: border-box;
+  }
+
+  /* Reset responsive scaling wrappers for printing */
+  .a4-scale-wrapper {
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    display: block !important;
   }
 
   .a4-container {
