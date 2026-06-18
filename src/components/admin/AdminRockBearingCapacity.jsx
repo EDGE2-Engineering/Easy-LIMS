@@ -503,7 +503,7 @@ const AdminRockBearingCapacity = () => {
                   value={rockTypeNj}
                   onValueChange={(v) => updateField(setRockTypeNj, 'rockTypeNj', v)}
                 >
-                  <SelectTrigger className="h-9 rounded-xl">
+                  <SelectTrigger className="h-auto min-h-9 py-1.5 rounded-xl whitespace-normal text-left">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
