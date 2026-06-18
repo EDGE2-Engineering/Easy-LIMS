@@ -2652,35 +2652,57 @@ const NewQuotationPage = () => {
                         {/* Payment Terms */}
                         <div className="mt-6 pt-4 border-t">
                           <h2 className="font-semibold text-left mb-3">Payment Terms:</h2>
-                          {settings?.payment_terms ? (
-                            <div className="text-xs whitespace-pre-wrap">
-                              {settings.payment_terms}
-                            </div>
-                          ) : (
-                            <ul className="list-disc pl-5 text-xs">
-                              <li>
-                                Advance Payment of 60% + GST ({taxTotalPercent}%) along with Work
-                                order as mobilization advance.
-                              </li>
-                              <li>
-                                Mobilization of Men and Machines shall be done in 3–5 days after the
-                                confirmation of Advance Payment.
-                              </li>
-                              <li>Balance Payment to be done after completion of field work.</li>
-                            </ul>
-                          )}
+                          <div
+                            className={`text-xs whitespace-pre-wrap outline-none ${!isReadOnly ? 'hover:bg-[#f9fafb] focus:bg-[#ffffff] focus:ring-1 focus:ring-[#e5e7eb] rounded p-1 -ml-1 transition-colors' : ''}`}
+                            contentEditable={!isReadOnly}
+                            suppressContentEditableWarning
+                            onBlur={(e) => {
+                              setQuoteDetails((prev) => ({
+                                ...prev,
+                                paymentTerms: e.currentTarget.innerText,
+                              }));
+                            }}
+                          >
+                            {quoteDetails.paymentTerms !== undefined
+                              ? quoteDetails.paymentTerms
+                              : settings?.payment_terms
+                                ? settings.payment_terms
+                                : `• Advance Payment of 60% + GST (${taxTotalPercent}%) along with Work order as mobilization advance.\n• Mobilization of Men and Machines shall be done in 3–5 days after the confirmation of Advance Payment.\n• Balance Payment to be done after completion of field work.`}
+                          </div>
+                        </div>
+
+                        {/* General Terms & Conditions */}
+                        <div className="mt-6 pt-4 border-t">
+                          <h2 className="font-semibold text-left mb-3">
+                            General Terms & Conditions:
+                          </h2>
+                          <div
+                            className={`text-xs whitespace-pre-wrap outline-none ${!isReadOnly ? 'hover:bg-[#f9fafb] focus:bg-[#ffffff] focus:ring-1 focus:ring-[#e5e7eb] rounded p-1 -ml-1 transition-colors' : ''}`}
+                            contentEditable={!isReadOnly}
+                            suppressContentEditableWarning
+                            onBlur={(e) => {
+                              setQuoteDetails((prev) => ({
+                                ...prev,
+                                generalTerms: e.currentTarget.innerText,
+                              }));
+                            }}
+                          >
+                            {quoteDetails.generalTerms !== undefined
+                              ? quoteDetails.generalTerms
+                              : `1. This quotation is valid for 30 days only\n2. GST @ 18% as given above\n3. Billing will be made based on the actual quantity involved in work\n4. Any quantities exceeding the quantities mentioned above will be subject to additional charges\n5. The rates quoted in this offer are valid only for the quantum of this scope of quotation. If there is any reduction in the quantity, the rates are subject to an increase accordingly and present quotation stands invalid\n6. Reports will be issued only after confirmation of 100% full payment`}
+                          </div>
                         </div>
                       </div>
+                    </div>
 
-                      {/* Page Footer */}
-                      <div className="a4-page-footer">
-                        <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
-                        <span>
-                          {documentType}{' '}
-                          {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
-                          Page {totalItemPages + 1} of {totalPages}
-                        </span>
-                      </div>
+                    {/* Page Footer */}
+                    <div className="a4-page-footer">
+                      <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
+                      <span>
+                        {documentType}{' '}
+                        {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
+                        Page {totalItemPages + 1} of {totalPages}
+                      </span>
                     </div>
                   </div>
                 </div>
