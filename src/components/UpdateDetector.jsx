@@ -11,8 +11,8 @@ export default function UpdateDetector() {
     // Get current local build ID
     const currentBuildId = document.querySelector('meta[name="build-id"]')?.getAttribute('content');
 
-    if (!currentBuildId) {
-      console.warn('[UpdateDetector] No local build-id found in document meta tags.');
+    if (!currentBuildId || currentBuildId === 'development') {
+      // In development mode or if build-id is missing, skip the check
       return;
     }
 

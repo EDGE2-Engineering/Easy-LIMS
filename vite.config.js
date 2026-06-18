@@ -173,7 +173,7 @@ const addTransformIndexHtml = {
 		const tags = [
 			{
 				tag: 'meta',
-				attrs: { name: 'build-id', content: String(Date.now()) },
+				attrs: { name: 'build-id', content: isDev ? 'development' : String(Date.now()) },
 				injectTo: 'head',
 			},
 			{
