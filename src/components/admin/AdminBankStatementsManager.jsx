@@ -1,5 +1,16 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, Edit, Trash2, Save, Search, AlertCircle, X, Filter, RefreshCw } from 'lucide-react';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Save,
+  Search,
+  AlertCircle,
+  X,
+  Filter,
+  RefreshCw,
+  Download,
+} from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Button } from '@/components/ui/button';
@@ -120,6 +131,8 @@ const AdminBankStatementsManager = () => {
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null); // { id, label }
+  const [totals, setTotals] = useState({ debit: 0, credit: 0 });
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const [sortKey, setSortKey] = useState('date_desc');
 
@@ -226,13 +239,27 @@ const AdminBankStatementsManager = () => {
         .range(from, to);
       q = applyFilters(q);
 
-      const { data, error, count } = await q;
+      let tq = supabase.from(TABLE).select('debit_amt, credit_amt');
+      tq = applyFilters(tq);
+
+      const [{ data, error, count }, { data: tData }] = await Promise.all([q, tq]);
+
       if (error) throw error;
       if (data?.length > 0)
         console.log('[BankStatements] actual DB columns:', Object.keys(data[0]));
       if (data?.length > 0) console.log('[BankStatements] first row raw:', JSON.stringify(data[0]));
       setRows(data || []);
       setTotalCount(count ?? 0);
+
+      if (tData) {
+        let d = 0,
+          c = 0;
+        tData.forEach((r) => {
+          d += Number(r.debit_amt) || 0;
+          c += Number(r.credit_amt) || 0;
+        });
+        setTotals({ debit: d, credit: c });
+      }
     } catch (err) {
       console.error('fetchPage error:', err);
       toast({ title: 'Error loading data', description: err.message, variant: 'destructive' });
@@ -327,6 +354,86 @@ const AdminBankStatementsManager = () => {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
       setDeleteTarget(null);
+    }
+  };
+
+  const downloadCSV = async () => {
+    setIsDownloading(true);
+    try {
+      let sortCol = 'date';
+      let sortAscending = false;
+      if (sortKey) {
+        const parts = sortKey.split('_');
+        if (parts.length >= 2) {
+          const dir = parts[parts.length - 1];
+          sortCol = parts.slice(0, -1).join('_');
+          sortAscending = dir === 'asc';
+        }
+      }
+
+      let allData = [];
+      let page = 0;
+      const size = 1000;
+      while (true) {
+        let q = supabase
+          .from(TABLE)
+          .select('*')
+          .order(sortCol, { ascending: sortAscending, nullsFirst: false })
+          .order('id', { ascending: false })
+          .range(page * size, (page + 1) * size - 1);
+        q = applyFilters(q);
+
+        const { data, error } = await q;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < size) break;
+        page++;
+      }
+
+      if (allData.length === 0) {
+        toast({ title: 'No data to download' });
+        return;
+      }
+
+      const headers = [
+        'Date',
+        'Transaction ID',
+        'Ref Num',
+        'Particulars',
+        'Debit Amount',
+        'Credit Amount',
+        'Balance',
+        'Source',
+        'Sheet Number',
+      ];
+      const csvRows = allData.map((r) =>
+        [
+          r.date || '',
+          r.transaction_id || '',
+          r.ref_num || '',
+          `"${(r.particulars || '').replace(/"/g, '""')}"`,
+          r.debit_amt || '',
+          r.credit_amt || '',
+          r.balance_amt || '',
+          `"${(r.source || '').replace(/"/g, '""')}"`,
+          r.sheet_number || '',
+        ].join(',')
+      );
+
+      const csvContent = [headers.join(','), ...csvRows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `statements_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      toast({ title: 'Error downloading CSV', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -731,6 +838,39 @@ const AdminBankStatementsManager = () => {
             Next
           </Button>
         </div>
+      </div>
+
+      {/* Summary and CSV Download */}
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border shadow-sm">
+        <div className="flex gap-6">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+              Total Debit
+            </span>
+            <span className="text-xl font-black text-destructive">{fmt(totals.debit)}</span>
+          </div>
+          <div className="flex flex-col border-l border-border pl-6">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+              Total Credit
+            </span>
+            <span className="text-xl font-black text-green-600 dark:text-green-400">
+              {fmt(totals.credit)}
+            </span>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          onClick={downloadCSV}
+          disabled={isDownloading || rows.length === 0}
+          className="h-10 px-4 rounded-xl font-semibold text-xs border-primary/20 hover:bg-primary/5 text-primary"
+        >
+          {isDownloading ? (
+            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Download className="w-4 h-4 mr-2" />
+          )}
+          Download CSV
+        </Button>
       </div>
 
       {/* Table */}
