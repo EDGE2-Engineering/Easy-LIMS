@@ -2,10 +2,13 @@ import React, { createContext, useState, useEffect, useCallback, useMemo } from 
 import { supabase } from '@/lib/customSupabaseClient';
 import { STORAGE_KEYS } from '@/data/storageKeys';
 import { logAudit } from '@/lib/auditLog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ExpensesContext = createContext();
 
 const ExpensesProvider = ({ children }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -108,7 +111,7 @@ const ExpensesProvider = ({ children }) => {
           const added = mapFromDb(data[0]);
           setExpenses((prev) => prev.map((e) => (e.id === tempId ? added : e)));
           logAudit({
-            userId,
+            userId: userId || currentUserId,
             entityType: 'expense',
             entityId: added.id,
             entityName: added.description,
@@ -119,7 +122,7 @@ const ExpensesProvider = ({ children }) => {
         console.error('Add Expense Exception:', err);
       }
     },
-    [expenses, mapToDb, mapFromDb]
+    [expenses, mapToDb, mapFromDb, currentUserId]
   );
 
   const updateExpense = useCallback(
@@ -136,7 +139,7 @@ const ExpensesProvider = ({ children }) => {
           console.error('Supabase Update Failed (expenses):', error);
         } else {
           logAudit({
-            userId,
+            userId: userId || currentUserId,
             entityType: 'expense',
             entityId: updatedExpense.id,
             entityName: updatedExpense.description,
@@ -147,7 +150,7 @@ const ExpensesProvider = ({ children }) => {
         console.error('Update Expense Exception:', err);
       }
     },
-    [expenses, mapToDb]
+    [expenses, mapToDb, currentUserId]
   );
 
   const deleteExpense = useCallback(
@@ -163,7 +166,7 @@ const ExpensesProvider = ({ children }) => {
           console.error('Supabase Delete Failed (expenses):', error);
         } else {
           logAudit({
-            userId,
+            userId: userId || currentUserId,
             entityType: 'expense',
             entityId: id,
             entityName: expenseToDelete?.description,
@@ -174,7 +177,7 @@ const ExpensesProvider = ({ children }) => {
         console.error('Delete Expense Exception:', err);
       }
     },
-    [expenses]
+    [expenses, currentUserId]
   );
 
   const contextValue = useMemo(

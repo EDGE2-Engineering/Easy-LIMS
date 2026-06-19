@@ -1,10 +1,13 @@
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { logAudit } from '@/lib/auditLog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const HSNCodesContext = createContext();
 
 const HSNCodesProvider = ({ children }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const [hsnCodes, setHsnCodes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,7 +42,7 @@ const HSNCodesProvider = ({ children }) => {
       if (data) {
         setHsnCodes((prev) => [...prev, data[0]].sort((a, b) => a.code.localeCompare(b.code)));
         logAudit({
-          userId,
+          userId: userId || currentUserId,
           entityType: 'hsn_code',
           entityId: data[0]?.id,
           entityName: `${hsnData.code} — ${hsnData.description}`,
@@ -50,7 +53,7 @@ const HSNCodesProvider = ({ children }) => {
       console.error('Error adding HSN code:', error);
       throw error;
     }
-  }, []);
+  }, [currentUserId]);
 
   const updateHsnCode = useCallback(async (id, hsnData, userId = null) => {
     try {
@@ -66,7 +69,7 @@ const HSNCodesProvider = ({ children }) => {
           prev.map((h) => (h.id === id ? data[0] : h)).sort((a, b) => a.code.localeCompare(b.code))
         );
         logAudit({
-          userId,
+          userId: userId || currentUserId,
           entityType: 'hsn_code',
           entityId: id,
           entityName: `${hsnData.code} — ${hsnData.description}`,
@@ -77,7 +80,7 @@ const HSNCodesProvider = ({ children }) => {
       console.error('Error updating HSN code:', error);
       throw error;
     }
-  }, []);
+  }, [currentUserId]);
 
   const deleteHsnCode = useCallback(
     async (id, userId = null) => {
@@ -88,7 +91,7 @@ const HSNCodesProvider = ({ children }) => {
         if (error) throw error;
         setHsnCodes((prev) => prev.filter((h) => h.id !== id));
         logAudit({
-          userId,
+          userId: userId || currentUserId,
           entityType: 'hsn_code',
           entityId: id,
           entityName: toDelete?.code,
@@ -99,7 +102,7 @@ const HSNCodesProvider = ({ children }) => {
         throw error;
       }
     },
-    [hsnCodes]
+    [hsnCodes, currentUserId]
   );
 
   useEffect(() => {

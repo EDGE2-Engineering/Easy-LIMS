@@ -2,10 +2,13 @@ import React, { createContext, useState, useContext, useEffect, useCallback, use
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { logAudit } from '@/lib/auditLog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const TechnicalsContext = createContext();
 
 const TechnicalsProvider = ({ children }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const [technicals, setTechnicals] = useState([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -34,7 +37,7 @@ const TechnicalsProvider = ({ children }) => {
       if (error) throw error;
       setTechnicals((prev) => [...prev, ...data]);
       logAudit({
-        userId,
+        userId: userId || currentUserId,
         entityType: 'technical',
         entityId: data[0]?.id,
         entityName: text,
@@ -45,7 +48,7 @@ const TechnicalsProvider = ({ children }) => {
       console.error('Error adding technical:', error);
       throw error;
     }
-  }, []);
+  }, [currentUserId]);
 
   const updateTechnical = useCallback(async (id, text, type, userId = null) => {
     try {
@@ -58,7 +61,7 @@ const TechnicalsProvider = ({ children }) => {
       if (error) throw error;
       setTechnicals((prev) => prev.map((tech) => (tech.id === id ? data[0] : tech)));
       logAudit({
-        userId,
+        userId: userId || currentUserId,
         entityType: 'technical',
         entityId: id,
         entityName: text,
@@ -69,7 +72,7 @@ const TechnicalsProvider = ({ children }) => {
       console.error('Error updating technical:', error);
       throw error;
     }
-  }, []);
+  }, [currentUserId]);
 
   const deleteTechnical = useCallback(
     async (id, userId = null) => {
@@ -80,7 +83,7 @@ const TechnicalsProvider = ({ children }) => {
         if (error) throw error;
         setTechnicals((prev) => prev.filter((tech) => tech.id !== id));
         logAudit({
-          userId,
+          userId: userId || currentUserId,
           entityType: 'technical',
           entityId: id,
           entityName: toDelete?.text,
@@ -91,7 +94,7 @@ const TechnicalsProvider = ({ children }) => {
         throw error;
       }
     },
-    [technicals]
+    [technicals, currentUserId]
   );
 
   useEffect(() => {

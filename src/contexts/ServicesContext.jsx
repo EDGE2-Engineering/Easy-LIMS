@@ -3,10 +3,13 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { initialServices } from '@/data/services';
 import { STORAGE_KEYS } from '@/data/storageKeys';
 import { logAudit } from '@/lib/auditLog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ServicesContext = createContext();
 
 const ServicesProvider = ({ children }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const [services, setServices] = useState([]);
   const [clientServicePrices, setClientServicePrices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -198,7 +201,7 @@ const ServicesProvider = ({ children }) => {
         }
 
         logAudit({
-          userId,
+          userId: userId || currentUserId,
           entityType: 'service',
           entityId: updatedService.id,
           entityName: updatedService.serviceType,
@@ -211,7 +214,7 @@ const ServicesProvider = ({ children }) => {
         throw err;
       }
     },
-    [services, mapToDb, fetchServices]
+    [services, mapToDb, fetchServices, currentUserId]
   );
 
   const addService = useCallback(
@@ -261,7 +264,7 @@ const ServicesProvider = ({ children }) => {
           }
 
           logAudit({
-            userId,
+            userId: userId || currentUserId,
             entityType: 'service',
             entityId: id,
             entityName: newService.serviceType,
@@ -275,7 +278,7 @@ const ServicesProvider = ({ children }) => {
         throw err;
       }
     },
-    [services, mapToDb, fetchServices]
+    [services, mapToDb, fetchServices, currentUserId]
   );
 
   const deleteService = useCallback(
@@ -294,7 +297,7 @@ const ServicesProvider = ({ children }) => {
         }
 
         logAudit({
-          userId,
+          userId: userId || currentUserId,
           entityType: 'service',
           entityId: id,
           entityName: toDelete?.serviceType,
@@ -306,7 +309,7 @@ const ServicesProvider = ({ children }) => {
         throw err;
       }
     },
-    [services]
+    [services, currentUserId]
   );
 
   const updateClientServicePrice = useCallback(
@@ -337,7 +340,7 @@ const ServicesProvider = ({ children }) => {
             return [...filtered, data[0]];
           });
           logAudit({
-            userId,
+            userId: userId || currentUserId,
             entityType: 'client_pricing',
             entityId: `${clientId}_svc_${serviceId}`,
             entityName: `Client ${clientId} / Service ${serviceId}`,
@@ -350,26 +353,36 @@ const ServicesProvider = ({ children }) => {
         throw err;
       }
     },
-    []
+    [currentUserId]
   );
 
-  const deleteClientServicePrice = useCallback(async (clientId, serviceId) => {
-    try {
-      const { error } = await supabase
-        .from('client_service_prices')
-        .delete()
-        .eq('client_id', clientId)
-        .eq('service_id', serviceId);
+  const deleteClientServicePrice = useCallback(
+    async (clientId, serviceId, userId = null) => {
+      try {
+        const { error } = await supabase
+          .from('client_service_prices')
+          .delete()
+          .eq('client_id', clientId)
+          .eq('service_id', serviceId);
 
-      if (error) throw error;
-      setClientServicePrices((prev) =>
-        prev.filter((p) => !(p.client_id === clientId && p.service_id === serviceId))
-      );
-    } catch (err) {
-      console.error('Error deleting client service price:', err);
-      throw err;
-    }
-  }, []);
+        if (error) throw error;
+        setClientServicePrices((prev) =>
+          prev.filter((p) => !(p.client_id === clientId && p.service_id === serviceId))
+        );
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'client_pricing',
+          entityId: `${clientId}_svc_${serviceId}`,
+          entityName: `Client ${clientId} / Service ${serviceId}`,
+          action: 'DELETE',
+        });
+      } catch (err) {
+        console.error('Error deleting client service price:', err);
+        throw err;
+      }
+    },
+    [currentUserId]
+  );
 
   const contextValue = useMemo(
     () => ({

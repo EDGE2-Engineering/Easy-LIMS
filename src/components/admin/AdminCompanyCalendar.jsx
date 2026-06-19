@@ -31,6 +31,8 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/AuthContext';
+import { logAudit } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,6 +49,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Badge } from '@/components/ui/badge';
 
 const AdminCompanyCalendar = () => {
+  const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const [view, setView] = useState('calendar'); // 'calendar' or 'list'
   const [selectedYear, setSelectedYear] = useState(new Date());
@@ -178,10 +181,24 @@ const AdminCompanyCalendar = () => {
           .update(eventData)
           .eq('id', editingEvent.id);
         if (error) throw error;
+        logAudit({
+          userId: currentUser?.id,
+          entityType: 'calendar_event',
+          entityId: editingEvent.id,
+          entityName: eventData.event_name,
+          action: 'UPDATE',
+        });
         toast({ title: 'Event Updated', description: 'Calendar event updated successfully.' });
       } else {
-        const { error } = await supabase.from('company_calendar').insert([eventData]);
+        const { data, error } = await supabase.from('company_calendar').insert([eventData]).select();
         if (error) throw error;
+        logAudit({
+          userId: currentUser?.id,
+          entityType: 'calendar_event',
+          entityId: data?.[0]?.id,
+          entityName: eventData.event_name,
+          action: 'CREATE',
+        });
         toast({ title: 'Event Added', description: 'New event added to calendar.' });
       }
 
@@ -209,6 +226,14 @@ const AdminCompanyCalendar = () => {
       const { error } = await supabase.from('company_calendar').delete().eq('id', editingEvent.id);
 
       if (error) throw error;
+
+      logAudit({
+        userId: currentUser?.id,
+        entityType: 'calendar_event',
+        entityId: editingEvent.id,
+        entityName: editingEvent.event_name,
+        action: 'DELETE',
+      });
 
       toast({ title: 'Event Deleted', description: 'Calendar event removed.' });
       setIsModalOpen(false);

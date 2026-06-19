@@ -2,10 +2,14 @@ import React, { createContext, useState, useEffect, useCallback, useMemo } from 
 import { supabase } from '@/lib/customSupabaseClient';
 import { initialTests } from '@/data/tests';
 import { STORAGE_KEYS } from '@/data/storageKeys';
+import { logAudit } from '@/lib/auditLog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const TestsContext = createContext();
 
 const TestsProvider = ({ children }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const [tests, setTests] = useState([]);
   const [clientTestPrices, setClientTestPrices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -207,6 +211,13 @@ const TestsProvider = ({ children }) => {
           }
         }
 
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'test',
+          entityId: updatedTest.id,
+          entityName: updatedTest.testType,
+          action: 'UPDATE',
+        });
         await fetchTests();
       } catch (err) {
         console.error('Update Test Exception:', err);
@@ -214,7 +225,7 @@ const TestsProvider = ({ children }) => {
         throw err;
       }
     },
-    [tests, mapToDb, fetchTests]
+    [tests, mapToDb, fetchTests, currentUserId]
   );
 
   const addTest = useCallback(
@@ -251,6 +262,13 @@ const TestsProvider = ({ children }) => {
             }
           }
 
+          logAudit({
+            userId: userId || currentUserId,
+            entityType: 'test',
+            entityId: id,
+            entityName: newTest.testType,
+            action: 'CREATE',
+          });
           await fetchTests();
         }
       } catch (err) {
@@ -258,18 +276,32 @@ const TestsProvider = ({ children }) => {
         throw err;
       }
     },
-    [mapToDb, fetchTests]
+    [mapToDb, fetchTests, currentUserId]
   );
 
-  const deleteTest = useCallback(async (id) => {
-    setTests((prev) => prev.filter((t) => t.id !== id));
-    try {
-      const { error } = await supabase.from('tests').delete().eq('id', id);
-      if (error) console.warn('Supabase Delete Failed (tests):', error.message);
-    } catch (err) {
-      console.warn('Delete Test Exception:', err);
-    }
-  }, []);
+  const deleteTest = useCallback(
+    async (id, userId = null) => {
+      const toDelete = tests.find((t) => t.id === id);
+      setTests((prev) => prev.filter((t) => t.id !== id));
+      try {
+        const { error } = await supabase.from('tests').delete().eq('id', id);
+        if (error) {
+          console.warn('Supabase Delete Failed (tests):', error.message);
+        } else {
+          logAudit({
+            userId: userId || currentUserId,
+            entityType: 'test',
+            entityId: id,
+            entityName: toDelete?.testType,
+            action: 'DELETE',
+          });
+        }
+      } catch (err) {
+        console.warn('Delete Test Exception:', err);
+      }
+    },
+    [tests, currentUserId]
+  );
 
   const updateClientTestPrice = useCallback(async (clientId, testId, price) => {
     try {
@@ -293,30 +325,48 @@ const TestsProvider = ({ children }) => {
           const filtered = prev.filter((p) => !(p.client_id === clientId && p.test_id === testId));
           return [...filtered, data[0]];
         });
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'client_test_pricing',
+          entityId: `${clientId}_test_${testId}`,
+          entityName: `Client ${clientId} / Test ${testId}`,
+          action: 'UPDATE',
+          details: { price },
+        });
       }
     } catch (err) {
       console.error('Exception in updateClientTestPrice:', err);
       throw err;
     }
-  }, []);
+  }, [currentUserId]);
 
-  const deleteClientTestPrice = useCallback(async (clientId, testId) => {
-    try {
-      const { error } = await supabase
-        .from('client_test_prices')
-        .delete()
-        .eq('client_id', clientId)
-        .eq('test_id', testId);
+  const deleteClientTestPrice = useCallback(
+    async (clientId, testId, userId = null) => {
+      try {
+        const { error } = await supabase
+          .from('client_test_prices')
+          .delete()
+          .eq('client_id', clientId)
+          .eq('test_id', testId);
 
-      if (error) throw error;
-      setClientTestPrices((prev) =>
-        prev.filter((p) => !(p.client_id === clientId && p.test_id === testId))
-      );
-    } catch (err) {
-      console.error('Error deleting client test price:', err);
-      throw err;
-    }
-  }, []);
+        if (error) throw error;
+        setClientTestPrices((prev) =>
+          prev.filter((p) => !(p.client_id === clientId && p.test_id === testId))
+        );
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'client_test_pricing',
+          entityId: `${clientId}_test_${testId}`,
+          entityName: `Client ${clientId} / Test ${testId}`,
+          action: 'DELETE',
+        });
+      } catch (err) {
+        console.error('Error deleting client test price:', err);
+        throw err;
+      }
+    },
+    [currentUserId]
+  );
 
   const contextValue = useMemo(
     () => ({

@@ -2,10 +2,13 @@ import React, { createContext, useState, useContext, useEffect, useCallback, use
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { logAudit } from '@/lib/auditLog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const TermsAndConditionsContext = createContext();
 
 const TermsAndConditionsProvider = ({ children }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const [terms, setTerms] = useState([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -38,7 +41,7 @@ const TermsAndConditionsProvider = ({ children }) => {
       if (error) throw error;
       setTerms((prev) => [...prev, ...data]);
       logAudit({
-        userId,
+        userId: userId || currentUserId,
         entityType: 'terms_and_conditions',
         entityId: data[0]?.id,
         entityName: text.slice(0, 60),
@@ -49,7 +52,7 @@ const TermsAndConditionsProvider = ({ children }) => {
       console.error('Error adding term:', error);
       throw error;
     }
-  }, []);
+  }, [currentUserId]);
 
   const updateTerm = useCallback(async (id, text, type, userId = null) => {
     try {
@@ -62,7 +65,7 @@ const TermsAndConditionsProvider = ({ children }) => {
       if (error) throw error;
       setTerms((prev) => prev.map((term) => (term.id === id ? data[0] : term)));
       logAudit({
-        userId,
+        userId: userId || currentUserId,
         entityType: 'terms_and_conditions',
         entityId: id,
         entityName: text.slice(0, 60),
@@ -73,7 +76,7 @@ const TermsAndConditionsProvider = ({ children }) => {
       console.error('Error updating term:', error);
       throw error;
     }
-  }, []);
+  }, [currentUserId]);
 
   const deleteTerm = useCallback(
     async (id, userId = null) => {
@@ -84,7 +87,7 @@ const TermsAndConditionsProvider = ({ children }) => {
         if (error) throw error;
         setTerms((prev) => prev.filter((term) => term.id !== id));
         logAudit({
-          userId,
+          userId: userId || currentUserId,
           entityType: 'terms_and_conditions',
           entityId: id,
           entityName: toDelete?.text?.slice(0, 60),
@@ -95,7 +98,7 @@ const TermsAndConditionsProvider = ({ children }) => {
         throw error;
       }
     },
-    [terms]
+    [terms, currentUserId]
   );
 
   useEffect(() => {

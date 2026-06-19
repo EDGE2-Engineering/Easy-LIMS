@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useCallback, useMemo } from 
 import { supabase } from '@/lib/customSupabaseClient';
 import { STORAGE_KEYS } from '@/data/storageKeys';
 import { logAudit } from '@/lib/auditLog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ClientsContext = createContext();
 
@@ -49,6 +50,8 @@ const initialClients = [
 ];
 
 const ClientsProvider = ({ children }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -206,7 +209,7 @@ const ClientsProvider = ({ children }) => {
         }
 
         logAudit({
-          userId,
+          userId: userId || currentUserId,
           entityType: 'client',
           entityId: updatedClient.id,
           entityName: updatedClient.clientName,
@@ -218,7 +221,7 @@ const ClientsProvider = ({ children }) => {
         throw err;
       }
     },
-    [clients, mapToDb, mapFromDb]
+    [clients, mapToDb, mapFromDb, currentUserId]
   );
 
   const addClient = useCallback(
@@ -253,7 +256,7 @@ const ClientsProvider = ({ children }) => {
           const added = mapFromDb(data[0]);
           setClients((prev) => [...prev, added]);
           logAudit({
-            userId,
+            userId: userId || currentUserId,
             entityType: 'client',
             entityId: added.id,
             entityName: added.clientName,
@@ -266,7 +269,7 @@ const ClientsProvider = ({ children }) => {
         throw err;
       }
     },
-    [clients, mapToDb, mapFromDb]
+    [clients, mapToDb, mapFromDb, currentUserId]
   );
 
   const deleteClient = useCallback(
@@ -285,7 +288,7 @@ const ClientsProvider = ({ children }) => {
         }
 
         logAudit({
-          userId,
+          userId: userId || currentUserId,
           entityType: 'client',
           entityId: id,
           entityName: clientToDelete?.clientName,
@@ -297,7 +300,7 @@ const ClientsProvider = ({ children }) => {
         throw err;
       }
     },
-    [clients]
+    [clients, currentUserId]
   );
 
   const contextValue = useMemo(

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
+import { logAudit } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AppDatePicker } from '@/components/ui/AppDatePicker';
@@ -730,9 +731,23 @@ const JobsManager = ({ id }) => {
           .update(docPayload)
           .eq('id', existingReport.id);
         if (error) throw error;
+        logAudit({
+          userId,
+          entityType: 'document',
+          entityId: existingReport.id,
+          entityName: docPayload.quote_number,
+          action: 'UPDATE',
+        });
       } else {
-        const { error } = await supabase.from('documents').insert([docPayload]);
+        const { data, error } = await supabase.from('documents').insert([docPayload]).select();
         if (error) throw error;
+        logAudit({
+          userId,
+          entityType: 'document',
+          entityId: data?.[0]?.id,
+          entityName: docPayload.quote_number,
+          action: 'CREATE',
+        });
       }
 
       // Transition workflow → REPORT_GENERATED
@@ -842,8 +857,15 @@ const JobsManager = ({ id }) => {
           updated_by: userId,
         };
 
-        const { error } = await supabase.from('jobs').insert(insertData);
+        const { data, error } = await supabase.from('jobs').insert(insertData).select();
         if (error) throw error;
+        logAudit({
+          userId,
+          entityType: 'job',
+          entityId: data?.[0]?.id,
+          entityName: data?.[0]?.job_code,
+          action: 'CREATE',
+        });
       } else {
         let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
         if (isNaN(userId) && user.username) {
@@ -863,6 +885,13 @@ const JobsManager = ({ id }) => {
           })
           .eq('id', editingRecord.id);
         if (error) throw error;
+        logAudit({
+          userId,
+          entityType: 'job',
+          entityId: editingRecord.id,
+          entityName: editingRecord.job_code,
+          action: 'UPDATE',
+        });
       }
       toast({ title: 'Success', description: 'Job saved successfully' });
       // If we were adding a new job, return to the jobs list
@@ -920,6 +949,14 @@ const JobsManager = ({ id }) => {
       const { error } = await supabase.from('jobs').delete().eq('id', jobId);
 
       if (error) throw error;
+
+      logAudit({
+        userId: user?.id,
+        entityType: 'job',
+        entityId: jobId,
+        entityName: deleteConfirmation.jobCode,
+        action: 'DELETE',
+      });
 
       toast({ title: 'Success', description: 'Job and all related data deleted successfully' });
       fetchRecords();

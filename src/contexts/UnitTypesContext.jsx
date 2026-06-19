@@ -1,10 +1,13 @@
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { logAudit } from '@/lib/auditLog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const UnitTypesContext = createContext();
 
 const UnitTypesProvider = ({ children }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const [unitTypes, setUnitTypes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,7 +45,7 @@ const UnitTypesProvider = ({ children }) => {
       if (data) {
         setUnitTypes((prev) => [...prev, data[0]]);
         logAudit({
-          userId,
+          userId: userId || currentUserId,
           entityType: 'unit_type',
           entityId: data[0]?.id,
           entityName: unitType,
@@ -53,7 +56,7 @@ const UnitTypesProvider = ({ children }) => {
       console.error('Error adding unit type:', error);
       throw error;
     }
-  }, []);
+  }, [currentUserId]);
 
   const updateUnitType = useCallback(async (id, unitType, userId = null) => {
     try {
@@ -67,7 +70,7 @@ const UnitTypesProvider = ({ children }) => {
       if (data) {
         setUnitTypes((prev) => prev.map((u) => (u.id === id ? data[0] : u)));
         logAudit({
-          userId,
+          userId: userId || currentUserId,
           entityType: 'unit_type',
           entityId: id,
           entityName: unitType,
@@ -78,7 +81,7 @@ const UnitTypesProvider = ({ children }) => {
       console.error('Error updating unit type:', error);
       throw error;
     }
-  }, []);
+  }, [currentUserId]);
 
   const deleteUnitType = useCallback(
     async (id, userId = null) => {
@@ -89,7 +92,7 @@ const UnitTypesProvider = ({ children }) => {
         if (error) throw error;
         setUnitTypes((prev) => prev.filter((u) => u.id !== id));
         logAudit({
-          userId,
+          userId: userId || currentUserId,
           entityType: 'unit_type',
           entityId: id,
           entityName: toDelete?.unit_type,
@@ -100,7 +103,7 @@ const UnitTypesProvider = ({ children }) => {
         throw error;
       }
     },
-    [unitTypes]
+    [unitTypes, currentUserId]
   );
 
   useEffect(() => {

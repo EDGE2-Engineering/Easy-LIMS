@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
+import { logAudit } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AppDatePicker } from '@/components/ui/AppDatePicker';
@@ -154,6 +155,14 @@ const DocumentsManager = () => {
         .eq('id', deleteConfirmation.recordId);
 
       if (error) throw error;
+
+      logAudit({
+        userId: user?.id,
+        entityType: 'document',
+        entityId: deleteConfirmation.recordId,
+        entityName: deleteConfirmation.quoteNumber,
+        action: 'DELETE',
+      });
 
       toast({
         title: 'Document Deleted',

@@ -1,10 +1,14 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { STORAGE_KEYS } from '@/data/storageKeys';
+import { logAudit } from '@/lib/auditLog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SamplingContext = createContext();
 
 const SamplingProvider = ({ children }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const [samplingData, setSamplingData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -205,6 +209,13 @@ const SamplingProvider = ({ children }) => {
           }
         }
 
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'sampling',
+          entityId: updatedItem.id,
+          entityName: updatedItem.serviceType,
+          action: 'UPDATE',
+        });
         await fetchSamplingData();
       } catch (err) {
         console.error('Update Sampling Exception:', err);
@@ -212,7 +223,7 @@ const SamplingProvider = ({ children }) => {
         throw err;
       }
     },
-    [samplingData, mapToDb, fetchSamplingData]
+    [samplingData, mapToDb, fetchSamplingData, currentUserId]
   );
 
   const addSampling = useCallback(
@@ -262,6 +273,13 @@ const SamplingProvider = ({ children }) => {
             }
           }
 
+          logAudit({
+            userId: userId || currentUserId,
+            entityType: 'sampling',
+            entityId: id,
+            entityName: newItem.serviceType,
+            action: 'CREATE',
+          });
           await fetchSamplingData();
         }
       } catch (err) {
@@ -270,11 +288,12 @@ const SamplingProvider = ({ children }) => {
         throw err;
       }
     },
-    [samplingData, mapToDb, fetchSamplingData]
+    [samplingData, mapToDb, fetchSamplingData, currentUserId]
   );
 
   const deleteSampling = useCallback(
-    async (id) => {
+    async (id, userId = null) => {
+      const toDelete = samplingData.find((s) => s.id === id);
       const previousData = [...samplingData];
       setSamplingData((prev) => prev.filter((s) => s.id !== id));
 
@@ -286,13 +305,21 @@ const SamplingProvider = ({ children }) => {
           setSamplingData(previousData);
           throw new Error(`Failed to delete sampling: ${error.message}`);
         }
+
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'sampling',
+          entityId: id,
+          entityName: toDelete?.serviceType,
+          action: 'DELETE',
+        });
       } catch (err) {
         console.error('Delete Sampling Exception:', err);
         setSamplingData(previousData);
         throw err;
       }
     },
-    [samplingData]
+    [samplingData, currentUserId]
   );
 
   const contextValue = useMemo(

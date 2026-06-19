@@ -4,6 +4,7 @@ import { APP_CONFIG, WORKFLOW_STATES, ROLES } from '@/data/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkflowConfig } from '@/contexts/WorkflowContext';
 import { toast } from '@/components/ui/use-toast';
+import { logAudit } from '@/lib/auditLog';
 
 export const useWorkflow = (jobId, currentState) => {
   const { user } = useAuth();
@@ -75,6 +76,15 @@ export const useWorkflow = (jobId, currentState) => {
       });
       if (logError) throw logError;
 
+      logAudit({
+        userId,
+        entityType: 'job_workflow',
+        entityId: String(jobId),
+        entityName: `Transition to ${action.targetState}`,
+        action: 'UPDATE',
+        details: { from: currentState, to: action.targetState, actionId },
+      });
+
       toast({
         title: 'Success',
         description: `Job transitioned to ${workflow.states[action.targetState]?.label || action.targetState}`,
@@ -138,6 +148,15 @@ export const useWorkflow = (jobId, currentState) => {
         remarks,
       });
       if (logError) throw logError;
+
+      logAudit({
+        userId,
+        entityType: 'job_workflow',
+        entityId: String(jobId),
+        entityName: `Revert to ${previousState}`,
+        action: 'UPDATE',
+        details: { from: currentState, to: previousState, remarks },
+      });
 
       toast({
         title: 'Reverted',

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
+import { logAudit } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -189,9 +190,27 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
           .update(recordData)
           .eq('id', existing.id);
         error = updateError;
+        if (!error) {
+          logAudit({
+            userId,
+            entityType: 'job_test',
+            entityId: existing.id,
+            entityName: `${category} for Job ${initialJobId}`,
+            action: 'UPDATE',
+          });
+        }
       } else {
-        const { error: insertError } = await supabase.from('job_tests').insert([recordData]);
+        const { data, error: insertError } = await supabase.from('job_tests').insert([recordData]).select();
         error = insertError;
+        if (!error && data && data.length > 0) {
+          logAudit({
+            userId,
+            entityType: 'job_test',
+            entityId: data[0].id,
+            entityName: `${category} for Job ${initialJobId}`,
+            action: 'CREATE',
+          });
+        }
       }
 
       if (error) throw error;

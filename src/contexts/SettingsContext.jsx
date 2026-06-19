@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { logAudit } from '@/lib/auditLog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SettingsContext = createContext();
 
@@ -13,6 +14,8 @@ const useSettings = () => {
 };
 
 const SettingsProvider = ({ children }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const [settings, setSettings] = useState({
     tax_cgst: 9,
     tax_sgst: 9,
@@ -85,7 +88,7 @@ const SettingsProvider = ({ children }) => {
             [key]: { id: data[0].id },
           }));
           logAudit({
-            userId,
+            userId: userId || currentUserId,
             entityType: 'setting',
             entityId: data[0].id,
             entityName: key,
@@ -98,7 +101,7 @@ const SettingsProvider = ({ children }) => {
         throw err;
       }
     },
-    [fetchSettings, settingsMetadata]
+    [fetchSettings, settingsMetadata, currentUserId]
   );
 
   useEffect(() => {
