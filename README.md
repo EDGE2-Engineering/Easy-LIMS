@@ -5,7 +5,7 @@
 - Create a user in Supabase with email and password. This would be used for admin login. Go to your Supabase project -> Authentication -> Users -> Add User
 - Run `npm run dev` to start the development server
 - Login as admin using the credentials created in Supabase -->
-
+<!-- 
 ### Install `pg_dump`
 
 In *nix
@@ -60,4 +60,4 @@ source "$HOME/.sdkman/bin/sdkman-init.sh"
 
 # Install Gradle (latest stable)
 sdk install gradle
-```
+``` -->
