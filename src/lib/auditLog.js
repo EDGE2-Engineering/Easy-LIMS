@@ -40,9 +40,9 @@ export const logAudit = async ({
 
     await supabase.from('audit_logs').insert({
       performed_by: numericUserId,
-      entity_type:  entityType,
-      entity_id:    entityId !== null ? String(entityId) : null,
-      entity_name:  entityName || null,
+      entity_type: entityType,
+      entity_id: entityId !== null ? String(entityId) : null,
+      entity_name: entityName || null,
       action,
       details: details || null,
     });

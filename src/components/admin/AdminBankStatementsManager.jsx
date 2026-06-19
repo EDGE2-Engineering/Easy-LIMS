@@ -898,16 +898,36 @@ const AdminBankStatementsManager = () => {
             </colgroup>
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">Date</th>
-                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">Transaction ID</th>
-                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">Ref / Cheque No.</th>
-                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">Particulars</th>
-                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-right">Debit (₹)</th>
-                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-right">Credit (₹)</th>
-                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-right">Balance (₹)</th>
-                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">Source</th>
-                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">Sheet</th>
-                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-center">Actions</th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">
+                  Date
+                </th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">
+                  Transaction ID
+                </th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">
+                  Ref / Cheque No.
+                </th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">
+                  Particulars
+                </th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-right">
+                  Debit (₹)
+                </th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-right">
+                  Credit (₹)
+                </th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-right">
+                  Balance (₹)
+                </th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">
+                  Source
+                </th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">
+                  Sheet
+                </th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-center">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>

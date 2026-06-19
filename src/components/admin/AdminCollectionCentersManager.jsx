@@ -94,14 +94,23 @@ const AdminCollectionCentersManager = () => {
     setIsSaving(true);
     try {
       if (isAddingNew) {
-        const { data, error } = await supabase.from('collection_centers').insert([
-          {
-            name: editingCenter.name,
-            address: editingCenter.address,
-          },
-        ]).select();
+        const { data, error } = await supabase
+          .from('collection_centers')
+          .insert([
+            {
+              name: editingCenter.name,
+              address: editingCenter.address,
+            },
+          ])
+          .select();
         if (error) throw error;
-        logAudit({ userId: currentUser?.id, entityType: 'collection_center', entityId: data?.[0]?.id, entityName: editingCenter.name, action: 'CREATE' });
+        logAudit({
+          userId: currentUser?.id,
+          entityType: 'collection_center',
+          entityId: data?.[0]?.id,
+          entityName: editingCenter.name,
+          action: 'CREATE',
+        });
         toast({
           title: 'Collection Center Added',
           description: 'New collection center has been successfully added.',
@@ -116,7 +125,13 @@ const AdminCollectionCentersManager = () => {
           })
           .eq('id', editingCenter.id);
         if (error) throw error;
-        logAudit({ userId: currentUser?.id, entityType: 'collection_center', entityId: editingCenter.id, entityName: editingCenter.name, action: 'UPDATE' });
+        logAudit({
+          userId: currentUser?.id,
+          entityType: 'collection_center',
+          entityId: editingCenter.id,
+          entityName: editingCenter.name,
+          action: 'UPDATE',
+        });
         toast({
           title: 'Collection Center Updated',
           description: 'Collection center has been updated.',
@@ -153,7 +168,13 @@ const AdminCollectionCentersManager = () => {
           .delete()
           .eq('id', deleteConfirmation.id);
         if (error) throw error;
-        logAudit({ userId: currentUser?.id, entityType: 'collection_center', entityId: deleteConfirmation.id, entityName: deleteConfirmation.name, action: 'DELETE' });
+        logAudit({
+          userId: currentUser?.id,
+          entityType: 'collection_center',
+          entityId: deleteConfirmation.id,
+          entityName: deleteConfirmation.name,
+          action: 'DELETE',
+        });
         toast({
           title: 'Collection Center Deleted',
           description: 'The collection center has been removed.',

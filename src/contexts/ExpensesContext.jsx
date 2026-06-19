@@ -107,7 +107,13 @@ const ExpensesProvider = ({ children }) => {
         } else if (data && data.length > 0) {
           const added = mapFromDb(data[0]);
           setExpenses((prev) => prev.map((e) => (e.id === tempId ? added : e)));
-          logAudit({ userId, entityType: 'expense', entityId: added.id, entityName: added.description, action: 'CREATE' });
+          logAudit({
+            userId,
+            entityType: 'expense',
+            entityId: added.id,
+            entityName: added.description,
+            action: 'CREATE',
+          });
         }
       } catch (err) {
         console.error('Add Expense Exception:', err);
@@ -129,7 +135,13 @@ const ExpensesProvider = ({ children }) => {
         if (error) {
           console.error('Supabase Update Failed (expenses):', error);
         } else {
-          logAudit({ userId, entityType: 'expense', entityId: updatedExpense.id, entityName: updatedExpense.description, action: 'UPDATE' });
+          logAudit({
+            userId,
+            entityType: 'expense',
+            entityId: updatedExpense.id,
+            entityName: updatedExpense.description,
+            action: 'UPDATE',
+          });
         }
       } catch (err) {
         console.error('Update Expense Exception:', err);
@@ -150,7 +162,13 @@ const ExpensesProvider = ({ children }) => {
         if (error) {
           console.error('Supabase Delete Failed (expenses):', error);
         } else {
-          logAudit({ userId, entityType: 'expense', entityId: id, entityName: expenseToDelete?.description, action: 'DELETE' });
+          logAudit({
+            userId,
+            entityType: 'expense',
+            entityId: id,
+            entityName: expenseToDelete?.description,
+            action: 'DELETE',
+          });
         }
       } catch (err) {
         console.error('Delete Expense Exception:', err);

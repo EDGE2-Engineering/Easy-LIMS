@@ -84,7 +84,14 @@ const SettingsProvider = ({ children }) => {
             ...prev,
             [key]: { id: data[0].id },
           }));
-          logAudit({ userId, entityType: 'setting', entityId: data[0].id, entityName: key, action: 'UPDATE', details: { value } });
+          logAudit({
+            userId,
+            entityType: 'setting',
+            entityId: data[0].id,
+            entityName: key,
+            action: 'UPDATE',
+            details: { value },
+          });
         }
       } catch (err) {
         console.error('Update Setting Exception:', err);

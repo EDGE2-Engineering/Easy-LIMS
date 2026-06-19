@@ -33,7 +33,13 @@ const TechnicalsProvider = ({ children }) => {
 
       if (error) throw error;
       setTechnicals((prev) => [...prev, ...data]);
-      logAudit({ userId, entityType: 'technical', entityId: data[0]?.id, entityName: text, action: 'CREATE' });
+      logAudit({
+        userId,
+        entityType: 'technical',
+        entityId: data[0]?.id,
+        entityName: text,
+        action: 'CREATE',
+      });
       return data;
     } catch (error) {
       console.error('Error adding technical:', error);
@@ -51,7 +57,13 @@ const TechnicalsProvider = ({ children }) => {
 
       if (error) throw error;
       setTechnicals((prev) => prev.map((tech) => (tech.id === id ? data[0] : tech)));
-      logAudit({ userId, entityType: 'technical', entityId: id, entityName: text, action: 'UPDATE' });
+      logAudit({
+        userId,
+        entityType: 'technical',
+        entityId: id,
+        entityName: text,
+        action: 'UPDATE',
+      });
       return data;
     } catch (error) {
       console.error('Error updating technical:', error);
@@ -59,19 +71,28 @@ const TechnicalsProvider = ({ children }) => {
     }
   }, []);
 
-  const deleteTechnical = useCallback(async (id, userId = null) => {
-    try {
-      const toDelete = technicals.find((t) => t.id === id);
-      const { error } = await supabase.from('technicals').delete().eq('id', id);
+  const deleteTechnical = useCallback(
+    async (id, userId = null) => {
+      try {
+        const toDelete = technicals.find((t) => t.id === id);
+        const { error } = await supabase.from('technicals').delete().eq('id', id);
 
-      if (error) throw error;
-      setTechnicals((prev) => prev.filter((tech) => tech.id !== id));
-      logAudit({ userId, entityType: 'technical', entityId: id, entityName: toDelete?.text, action: 'DELETE' });
-    } catch (error) {
-      console.error('Error deleting technical:', error);
-      throw error;
-    }
-  }, [technicals]);
+        if (error) throw error;
+        setTechnicals((prev) => prev.filter((tech) => tech.id !== id));
+        logAudit({
+          userId,
+          entityType: 'technical',
+          entityId: id,
+          entityName: toDelete?.text,
+          action: 'DELETE',
+        });
+      } catch (error) {
+        console.error('Error deleting technical:', error);
+        throw error;
+      }
+    },
+    [technicals]
+  );
 
   useEffect(() => {
     fetchTechnicals();

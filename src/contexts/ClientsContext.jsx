@@ -205,7 +205,13 @@ const ClientsProvider = ({ children }) => {
           setClients((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
         }
 
-        logAudit({ userId, entityType: 'client', entityId: updatedClient.id, entityName: updatedClient.clientName, action: 'UPDATE' });
+        logAudit({
+          userId,
+          entityType: 'client',
+          entityId: updatedClient.id,
+          entityName: updatedClient.clientName,
+          action: 'UPDATE',
+        });
       } catch (err) {
         console.error('Update Client Exception:', err);
         setClients(previousClients);
@@ -246,7 +252,13 @@ const ClientsProvider = ({ children }) => {
         if (data && data.length > 0) {
           const added = mapFromDb(data[0]);
           setClients((prev) => [...prev, added]);
-          logAudit({ userId, entityType: 'client', entityId: added.id, entityName: added.clientName, action: 'CREATE' });
+          logAudit({
+            userId,
+            entityType: 'client',
+            entityId: added.id,
+            entityName: added.clientName,
+            action: 'CREATE',
+          });
         }
       } catch (err) {
         console.error('Add Client Exception:', err);
@@ -272,7 +284,13 @@ const ClientsProvider = ({ children }) => {
           throw new Error(`Failed to delete client: ${error.message}`);
         }
 
-        logAudit({ userId, entityType: 'client', entityId: id, entityName: clientToDelete?.clientName, action: 'DELETE' });
+        logAudit({
+          userId,
+          entityType: 'client',
+          entityId: id,
+          entityName: clientToDelete?.clientName,
+          action: 'DELETE',
+        });
       } catch (err) {
         console.error('Delete Client Exception:', err);
         setClients(previousClients);

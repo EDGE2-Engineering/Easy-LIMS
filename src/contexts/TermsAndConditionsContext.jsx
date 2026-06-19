@@ -37,7 +37,13 @@ const TermsAndConditionsProvider = ({ children }) => {
 
       if (error) throw error;
       setTerms((prev) => [...prev, ...data]);
-      logAudit({ userId, entityType: 'terms_and_conditions', entityId: data[0]?.id, entityName: text.slice(0, 60), action: 'CREATE' });
+      logAudit({
+        userId,
+        entityType: 'terms_and_conditions',
+        entityId: data[0]?.id,
+        entityName: text.slice(0, 60),
+        action: 'CREATE',
+      });
       return data;
     } catch (error) {
       console.error('Error adding term:', error);
@@ -55,7 +61,13 @@ const TermsAndConditionsProvider = ({ children }) => {
 
       if (error) throw error;
       setTerms((prev) => prev.map((term) => (term.id === id ? data[0] : term)));
-      logAudit({ userId, entityType: 'terms_and_conditions', entityId: id, entityName: text.slice(0, 60), action: 'UPDATE' });
+      logAudit({
+        userId,
+        entityType: 'terms_and_conditions',
+        entityId: id,
+        entityName: text.slice(0, 60),
+        action: 'UPDATE',
+      });
       return data;
     } catch (error) {
       console.error('Error updating term:', error);
@@ -63,19 +75,28 @@ const TermsAndConditionsProvider = ({ children }) => {
     }
   }, []);
 
-  const deleteTerm = useCallback(async (id, userId = null) => {
-    try {
-      const toDelete = terms.find((t) => t.id === id);
-      const { error } = await supabase.from('terms_and_conditions').delete().eq('id', id);
+  const deleteTerm = useCallback(
+    async (id, userId = null) => {
+      try {
+        const toDelete = terms.find((t) => t.id === id);
+        const { error } = await supabase.from('terms_and_conditions').delete().eq('id', id);
 
-      if (error) throw error;
-      setTerms((prev) => prev.filter((term) => term.id !== id));
-      logAudit({ userId, entityType: 'terms_and_conditions', entityId: id, entityName: toDelete?.text?.slice(0, 60), action: 'DELETE' });
-    } catch (error) {
-      console.error('Error deleting term:', error);
-      throw error;
-    }
-  }, [terms]);
+        if (error) throw error;
+        setTerms((prev) => prev.filter((term) => term.id !== id));
+        logAudit({
+          userId,
+          entityType: 'terms_and_conditions',
+          entityId: id,
+          entityName: toDelete?.text?.slice(0, 60),
+          action: 'DELETE',
+        });
+      } catch (error) {
+        console.error('Error deleting term:', error);
+        throw error;
+      }
+    },
+    [terms]
+  );
 
   useEffect(() => {
     fetchTerms();

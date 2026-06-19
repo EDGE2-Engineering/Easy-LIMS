@@ -93,8 +93,8 @@ const AuditLogsManager = () => {
   const [logs, setLogs] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState([]);     // for user filter dropdown
-  const [states, setStates] = useState([]);   // unique from/to states
+  const [users, setUsers] = useState([]); // for user filter dropdown
+  const [states, setStates] = useState([]); // unique from/to states
 
   // pagination
   const [page, setPage] = useState(1);
@@ -148,14 +148,14 @@ const AuditLogsManager = () => {
         .gte('created_at', todayStart.toISOString());
 
       // unique performers
-      const { data: performers } = await supabase
-        .from('job_workflow_logs')
-        .select('performed_by');
+      const { data: performers } = await supabase.from('job_workflow_logs').select('performed_by');
       const unique = new Set((performers || []).map((r) => r.performed_by)).size;
 
       setStats({ total: total || 0, today: todayCount || 0, uniqueUsers: unique });
-    } catch (_) {}
-    finally { setStatsLoading(false); }
+    } catch (_) {
+    } finally {
+      setStatsLoading(false);
+    }
   }, []);
 
   // ── fetch user list for dropdown ───────────────────────────────────────────
@@ -229,52 +229,78 @@ const AuditLogsManager = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, sortKey, sortDir, filterUser, filterState, filterDateFrom, filterDateTo, debouncedSearch]);
+  }, [
+    page,
+    sortKey,
+    sortDir,
+    filterUser,
+    filterState,
+    filterDateFrom,
+    filterDateTo,
+    debouncedSearch,
+  ]);
 
-  useEffect(() => { fetchStats(); fetchUsers(); }, [fetchStats, fetchUsers]);
-  useEffect(() => { fetchLogs(); }, [fetchLogs]);
+  useEffect(() => {
+    fetchStats();
+    fetchUsers();
+  }, [fetchStats, fetchUsers]);
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const toggleSort = (key) => {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    else { setSortKey(key); setSortDir('desc'); }
+    else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
     setPage(1);
   };
 
   const SortIcon = ({ col }) => {
     if (sortKey !== col) return <ChevronDown className="w-3 h-3 text-gray-300 ml-1 inline" />;
-    return sortDir === 'asc'
-      ? <ChevronUp className="w-3 h-3 text-primary ml-1 inline" />
-      : <ChevronDown className="w-3 h-3 text-primary ml-1 inline" />;
+    return sortDir === 'asc' ? (
+      <ChevronUp className="w-3 h-3 text-primary ml-1 inline" />
+    ) : (
+      <ChevronDown className="w-3 h-3 text-primary ml-1 inline" />
+    );
   };
 
-  const activeFilters = [filterUser, filterState, filterDateFrom, filterDateTo, filterActivityType].filter(Boolean).length;
+  const activeFilters = [
+    filterUser,
+    filterState,
+    filterDateFrom,
+    filterDateTo,
+    filterActivityType,
+  ].filter(Boolean).length;
 
   const applyDatePreset = (preset) => {
     const now = new Date();
     const fd = (d) => d.toISOString().split('T')[0];
-    let start = '', end = '';
+    let start = '',
+      end = '';
     switch (preset) {
       case 'this_month':
         start = fd(new Date(now.getFullYear(), now.getMonth(), 1));
-        end   = fd(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+        end = fd(new Date(now.getFullYear(), now.getMonth() + 1, 0));
         break;
       case 'last_month':
         start = fd(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-        end   = fd(new Date(now.getFullYear(), now.getMonth(), 0));
+        end = fd(new Date(now.getFullYear(), now.getMonth(), 0));
         break;
       case 'ytd':
         start = fd(new Date(now.getFullYear(), 0, 1));
-        end   = fd(now);
+        end = fd(now);
         break;
       case 'this_year':
         start = fd(new Date(now.getFullYear(), 0, 1));
-        end   = fd(new Date(now.getFullYear(), 11, 31));
+        end = fd(new Date(now.getFullYear(), 11, 31));
         break;
       case 'last_year':
         start = fd(new Date(now.getFullYear() - 1, 0, 1));
-        end   = fd(new Date(now.getFullYear() - 1, 11, 31));
+        end = fd(new Date(now.getFullYear() - 1, 11, 31));
         break;
       default:
         break;
@@ -286,11 +312,14 @@ const AuditLogsManager = () => {
   };
 
   const clearFilters = () => {
-    setFilterUser(''); setFilterState('');
-    setFilterDateFrom(''); setFilterDateTo('');
+    setFilterUser('');
+    setFilterState('');
+    setFilterDateFrom('');
+    setFilterDateTo('');
     setFilterActivityType('');
     setDatePreset('custom');
-    setSearch(''); setDebouncedSearch('');
+    setSearch('');
+    setDebouncedSearch('');
     setPage(1);
   };
 
@@ -300,14 +329,17 @@ const AuditLogsManager = () => {
     try {
       let q = supabase
         .from('job_workflow_logs')
-        .select('*, jobs(job_code, project_name), users!job_workflow_logs_performed_by_fkey(full_name, username)')
+        .select(
+          '*, jobs(job_code, project_name), users!job_workflow_logs_performed_by_fkey(full_name, username)'
+        )
         .order('created_at', { ascending: false });
 
       if (filterUser) q = q.eq('performed_by', filterUser);
       if (filterState) q = q.or(`from_state.eq.${filterState},to_state.eq.${filterState}`);
       if (filterDateFrom) q = q.gte('created_at', new Date(filterDateFrom).toISOString());
       if (filterDateTo) {
-        const end = new Date(filterDateTo); end.setHours(23, 59, 59, 999);
+        const end = new Date(filterDateTo);
+        end.setHours(23, 59, 59, 999);
         q = q.lte('created_at', end.toISOString());
       }
 
@@ -323,7 +355,16 @@ const AuditLogsManager = () => {
         );
       }
 
-      const headers = ['Date & Time', 'User', 'Job Code', 'Project', 'Action', 'From State', 'To State', 'Remarks'];
+      const headers = [
+        'Date & Time',
+        'User',
+        'Job Code',
+        'Project',
+        'Action',
+        'From State',
+        'To State',
+        'Remarks',
+      ];
       const csvRows = rows.map((r) => [
         fmt(r.created_at),
         r.users?.full_name || r.users?.username || 'System',
@@ -353,7 +394,6 @@ const AuditLogsManager = () => {
   // ── render ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6 pb-12">
-
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -371,7 +411,10 @@ const AuditLogsManager = () => {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => { fetchLogs(); fetchStats(); }}
+            onClick={() => {
+              fetchLogs();
+              fetchStats();
+            }}
             className="rounded-xl h-9 px-4 font-bold text-primary hover:bg-primary/10 border border-gray-100 bg-white shadow-sm"
           >
             <RefreshCw className="w-4 h-4 mr-2" /> Refresh
@@ -383,7 +426,11 @@ const AuditLogsManager = () => {
             disabled={exporting}
             className="rounded-xl h-9 px-4 font-bold text-emerald-700 hover:bg-emerald-50 border border-gray-100 bg-white shadow-sm"
           >
-            {exporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+            {exporting ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 mr-2" />
+            )}
             Export CSV
           </Button>
         </div>
@@ -392,9 +439,24 @@ const AuditLogsManager = () => {
       {/* ── Stats Strip ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { label: 'Total Log Entries', value: statsLoading ? '…' : stats.total.toLocaleString(), icon: Activity, color: 'text-primary bg-primary/10' },
-          { label: 'Activity Today', value: statsLoading ? '…' : stats.today.toLocaleString(), icon: Clock, color: 'text-amber-600 bg-amber-50' },
-          { label: 'Unique Users', value: statsLoading ? '…' : stats.uniqueUsers.toLocaleString(), icon: User, color: 'text-indigo-600 bg-indigo-50' },
+          {
+            label: 'Total Log Entries',
+            value: statsLoading ? '…' : stats.total.toLocaleString(),
+            icon: Activity,
+            color: 'text-primary bg-primary/10',
+          },
+          {
+            label: 'Activity Today',
+            value: statsLoading ? '…' : stats.today.toLocaleString(),
+            icon: Clock,
+            color: 'text-amber-600 bg-amber-50',
+          },
+          {
+            label: 'Unique Users',
+            value: statsLoading ? '…' : stats.uniqueUsers.toLocaleString(),
+            icon: User,
+            color: 'text-indigo-600 bg-indigo-50',
+          },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="border-none shadow-sm bg-white rounded-2xl">
             <CardContent className="p-4 flex items-center gap-3">
@@ -402,7 +464,9 @@ const AuditLogsManager = () => {
                 <Icon className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  {label}
+                </p>
                 <p className="text-2xl font-black text-gray-900 leading-tight">{value}</p>
               </div>
             </CardContent>
@@ -424,8 +488,14 @@ const AuditLogsManager = () => {
                 className="pl-9 h-10 rounded-xl border-gray-200 text-sm font-medium"
               />
               {search && (
-                <button onClick={() => { setSearch(''); setDebouncedSearch(''); setPage(1); }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <button
+                  onClick={() => {
+                    setSearch('');
+                    setDebouncedSearch('');
+                    setPage(1);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -464,7 +534,6 @@ const AuditLogsManager = () => {
             <div className="pt-3 border-t border-border space-y-4">
               {/* Row 1: Activity Type · User · Quick Date */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
                 {/* Activity Type */}
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
@@ -472,7 +541,11 @@ const AuditLogsManager = () => {
                   </Label>
                   <Select
                     value={filterActivityType || '__all__'}
-                    onValueChange={(v) => { setFilterActivityType(v === '__all__' ? '' : v); setFilterState(''); setPage(1); }}
+                    onValueChange={(v) => {
+                      setFilterActivityType(v === '__all__' ? '' : v);
+                      setFilterState('');
+                      setPage(1);
+                    }}
                   >
                     <SelectTrigger className="h-10 rounded-xl text-sm bg-muted/40 border-transparent">
                       <SelectValue placeholder="All Types" />
@@ -493,7 +566,10 @@ const AuditLogsManager = () => {
                   </Label>
                   <Select
                     value={filterUser || '__all__'}
-                    onValueChange={(v) => { setFilterUser(v === '__all__' ? '' : v); setPage(1); }}
+                    onValueChange={(v) => {
+                      setFilterUser(v === '__all__' ? '' : v);
+                      setPage(1);
+                    }}
                   >
                     <SelectTrigger className="h-10 rounded-xl text-sm bg-muted/40 border-transparent">
                       <SelectValue placeholder="All Users" />
@@ -532,7 +608,6 @@ const AuditLogsManager = () => {
 
               {/* Row 2: Workflow State (job only) · From Date · To Date */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
                 {/* Workflow State — only shown when Activity Type = job */}
                 {filterActivityType === 'job' ? (
                   <div className="space-y-1.5">
@@ -541,7 +616,10 @@ const AuditLogsManager = () => {
                     </Label>
                     <Select
                       value={filterState || '__all__'}
-                      onValueChange={(v) => { setFilterState(v === '__all__' ? '' : v); setPage(1); }}
+                      onValueChange={(v) => {
+                        setFilterState(v === '__all__' ? '' : v);
+                        setPage(1);
+                      }}
                     >
                       <SelectTrigger className="h-10 rounded-xl text-sm bg-muted/40 border-transparent">
                         <SelectValue placeholder="All States" />
@@ -568,7 +646,11 @@ const AuditLogsManager = () => {
                   <AppDatePicker
                     value={filterDateFrom}
                     max={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => { setFilterDateFrom(e.target.value); setDatePreset('custom'); setPage(1); }}
+                    onChange={(e) => {
+                      setFilterDateFrom(e.target.value);
+                      setDatePreset('custom');
+                      setPage(1);
+                    }}
                     className="h-10 text-sm bg-muted/40 border-transparent rounded-xl"
                     placeholder="From date"
                   />
@@ -582,7 +664,11 @@ const AuditLogsManager = () => {
                   <AppDatePicker
                     value={filterDateTo}
                     max={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => { setFilterDateTo(e.target.value); setDatePreset('custom'); setPage(1); }}
+                    onChange={(e) => {
+                      setFilterDateTo(e.target.value);
+                      setDatePreset('custom');
+                      setPage(1);
+                    }}
                     className="h-10 text-sm bg-muted/40 border-transparent rounded-xl"
                     placeholder="To date"
                   />
@@ -602,7 +688,9 @@ const AuditLogsManager = () => {
               Activity Log
             </CardTitle>
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              {loading ? 'Loading…' : `${totalCount.toLocaleString()} entries · page ${page} of ${totalPages}`}
+              {loading
+                ? 'Loading…'
+                : `${totalCount.toLocaleString()} entries · page ${page} of ${totalPages}`}
             </span>
           </div>
         </CardHeader>
@@ -653,10 +741,7 @@ const AuditLogsManager = () => {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {logs.map((log, idx) => (
-                  <tr
-                    key={log.id || idx}
-                    className="hover:bg-muted/40 transition-colors group"
-                  >
+                  <tr key={log.id || idx} className="hover:bg-muted/40 transition-colors group">
                     {/* Date */}
                     <td className="py-3.5 px-4 align-middle">
                       <div className="flex flex-col">
@@ -664,7 +749,10 @@ const AuditLogsManager = () => {
                           {fmtDateOnly(log.created_at)}
                         </span>
                         <span className="text-[10px] text-gray-400 font-medium">
-                          {new Date(log.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(log.created_at).toLocaleTimeString('en-IN', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
                         </span>
                       </div>
                     </td>
@@ -694,7 +782,9 @@ const AuditLogsManager = () => {
 
                     {/* From State */}
                     <td className="py-3.5 px-4 align-middle">
-                      {log.from_state ? stateBadge(log.from_state) : (
+                      {log.from_state ? (
+                        stateBadge(log.from_state)
+                      ) : (
                         <span className="text-gray-300 text-xs">—</span>
                       )}
                     </td>
@@ -702,7 +792,9 @@ const AuditLogsManager = () => {
                     {/* To State */}
                     <td className="py-3.5 px-4 align-middle">
                       <div className="flex items-center gap-1.5">
-                        {log.from_state && <ArrowRight className="w-3 h-3 text-gray-300 shrink-0" />}
+                        {log.from_state && (
+                          <ArrowRight className="w-3 h-3 text-gray-300 shrink-0" />
+                        )}
                         {stateBadge(log.to_state)}
                       </div>
                     </td>
@@ -717,7 +809,10 @@ const AuditLogsManager = () => {
                     {/* Remarks */}
                     <td className="py-3.5 px-4 align-middle">
                       {log.remarks ? (
-                        <span className="text-xs text-gray-500 italic truncate block max-w-[155px]" title={log.remarks}>
+                        <span
+                          className="text-xs text-gray-500 italic truncate block max-w-[155px]"
+                          title={log.remarks}
+                        >
                           {log.remarks}
                         </span>
                       ) : (
@@ -735,7 +830,8 @@ const AuditLogsManager = () => {
         {!loading && totalPages > 1 && (
           <div className="px-5 py-4 border-t border-gray-50 flex items-center justify-between flex-wrap gap-3">
             <p className="text-xs font-medium text-gray-400">
-              Showing {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, totalCount)} of {totalCount.toLocaleString()} entries
+              Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)} of{' '}
+              {totalCount.toLocaleString()} entries
             </p>
             <div className="flex items-center gap-1">
               <Button

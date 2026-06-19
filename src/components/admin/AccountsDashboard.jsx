@@ -109,8 +109,12 @@ const AccountsDashboard = () => {
 
       // 4. Expenses this month
       const now2 = new Date();
-      const firstOfMonth = new Date(now2.getFullYear(), now2.getMonth(), 1).toISOString().split('T')[0];
-      const lastOfMonth = new Date(now2.getFullYear(), now2.getMonth() + 1, 0).toISOString().split('T')[0];
+      const firstOfMonth = new Date(now2.getFullYear(), now2.getMonth(), 1)
+        .toISOString()
+        .split('T')[0];
+      const lastOfMonth = new Date(now2.getFullYear(), now2.getMonth() + 1, 0)
+        .toISOString()
+        .split('T')[0];
       const { data: expThisMonth } = await supabase
         .from('expenses')
         .select('amount')
@@ -345,7 +349,6 @@ const AccountsDashboard = () => {
 
           {/* Right column: Clients Today + Monthly Expenses */}
           <motion.div variants={item} className="space-y-6">
-
             {/* Clients Added Today */}
             <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
               <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-5">
@@ -403,14 +406,14 @@ const AccountsDashboard = () => {
                       ₹{monthlyExpenses.total.toLocaleString('en-IN')}
                     </h3>
                     <p className="text-xs text-gray-400 font-medium mt-1">
-                      {monthlyExpenses.count} {monthlyExpenses.count === 1 ? 'entry' : 'entries'} recorded
+                      {monthlyExpenses.count} {monthlyExpenses.count === 1 ? 'entry' : 'entries'}{' '}
+                      recorded
                     </p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-rose-400 transition-colors mt-1 shrink-0" />
                 </div>
               </CardContent>
             </Card>
-
           </motion.div>
         </div>
       </motion.div>

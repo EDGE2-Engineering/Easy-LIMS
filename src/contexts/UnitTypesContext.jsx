@@ -41,7 +41,13 @@ const UnitTypesProvider = ({ children }) => {
       if (error) throw error;
       if (data) {
         setUnitTypes((prev) => [...prev, data[0]]);
-        logAudit({ userId, entityType: 'unit_type', entityId: data[0]?.id, entityName: unitType, action: 'CREATE' });
+        logAudit({
+          userId,
+          entityType: 'unit_type',
+          entityId: data[0]?.id,
+          entityName: unitType,
+          action: 'CREATE',
+        });
       }
     } catch (error) {
       console.error('Error adding unit type:', error);
@@ -60,7 +66,13 @@ const UnitTypesProvider = ({ children }) => {
       if (error) throw error;
       if (data) {
         setUnitTypes((prev) => prev.map((u) => (u.id === id ? data[0] : u)));
-        logAudit({ userId, entityType: 'unit_type', entityId: id, entityName: unitType, action: 'UPDATE' });
+        logAudit({
+          userId,
+          entityType: 'unit_type',
+          entityId: id,
+          entityName: unitType,
+          action: 'UPDATE',
+        });
       }
     } catch (error) {
       console.error('Error updating unit type:', error);
@@ -68,19 +80,28 @@ const UnitTypesProvider = ({ children }) => {
     }
   }, []);
 
-  const deleteUnitType = useCallback(async (id, userId = null) => {
-    try {
-      const toDelete = unitTypes.find((u) => u.id === id);
-      const { error } = await supabase.from('service_unit_types').delete().eq('id', id);
+  const deleteUnitType = useCallback(
+    async (id, userId = null) => {
+      try {
+        const toDelete = unitTypes.find((u) => u.id === id);
+        const { error } = await supabase.from('service_unit_types').delete().eq('id', id);
 
-      if (error) throw error;
-      setUnitTypes((prev) => prev.filter((u) => u.id !== id));
-      logAudit({ userId, entityType: 'unit_type', entityId: id, entityName: toDelete?.unit_type, action: 'DELETE' });
-    } catch (error) {
-      console.error('Error deleting unit type:', error);
-      throw error;
-    }
-  }, [unitTypes]);
+        if (error) throw error;
+        setUnitTypes((prev) => prev.filter((u) => u.id !== id));
+        logAudit({
+          userId,
+          entityType: 'unit_type',
+          entityId: id,
+          entityName: toDelete?.unit_type,
+          action: 'DELETE',
+        });
+      } catch (error) {
+        console.error('Error deleting unit type:', error);
+        throw error;
+      }
+    },
+    [unitTypes]
+  );
 
   useEffect(() => {
     fetchUnitTypes();

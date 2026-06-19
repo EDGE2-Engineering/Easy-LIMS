@@ -197,7 +197,13 @@ const ServicesProvider = ({ children }) => {
           }
         }
 
-        logAudit({ userId, entityType: 'service', entityId: updatedService.id, entityName: updatedService.serviceType, action: 'UPDATE' });
+        logAudit({
+          userId,
+          entityType: 'service',
+          entityId: updatedService.id,
+          entityName: updatedService.serviceType,
+          action: 'UPDATE',
+        });
         await fetchServices();
       } catch (err) {
         console.error('Update Service Exception:', err);
@@ -254,7 +260,13 @@ const ServicesProvider = ({ children }) => {
             }
           }
 
-          logAudit({ userId, entityType: 'service', entityId: id, entityName: newService.serviceType, action: 'CREATE' });
+          logAudit({
+            userId,
+            entityType: 'service',
+            entityId: id,
+            entityName: newService.serviceType,
+            action: 'CREATE',
+          });
           await fetchServices();
         }
       } catch (err) {
@@ -281,7 +293,13 @@ const ServicesProvider = ({ children }) => {
           throw new Error(`Failed to delete service: ${error.message}`);
         }
 
-        logAudit({ userId, entityType: 'service', entityId: id, entityName: toDelete?.serviceType, action: 'DELETE' });
+        logAudit({
+          userId,
+          entityType: 'service',
+          entityId: id,
+          entityName: toDelete?.serviceType,
+          action: 'DELETE',
+        });
       } catch (err) {
         console.error('Delete Service Exception:', err);
         setServices(previousServices);
@@ -291,39 +309,49 @@ const ServicesProvider = ({ children }) => {
     [services]
   );
 
-  const updateClientServicePrice = useCallback(async (clientId, serviceId, price, userId = null) => {
-    try {
-      console.log(
-        `Updating client service price: client=${clientId}, service=${serviceId}, price=${price}`
-      );
-      const { data, error } = await supabase
-        .from('client_service_prices')
-        .upsert({
-          client_id: clientId,
-          service_id: serviceId,
-          price: price,
-          updated_at: new Date().toISOString(),
-        })
-        .select();
+  const updateClientServicePrice = useCallback(
+    async (clientId, serviceId, price, userId = null) => {
+      try {
+        console.log(
+          `Updating client service price: client=${clientId}, service=${serviceId}, price=${price}`
+        );
+        const { data, error } = await supabase
+          .from('client_service_prices')
+          .upsert({
+            client_id: clientId,
+            service_id: serviceId,
+            price: price,
+            updated_at: new Date().toISOString(),
+          })
+          .select();
 
-      if (error) {
-        console.error('Supabase Upsert Error (client_service_prices):', error);
-        throw error;
+        if (error) {
+          console.error('Supabase Upsert Error (client_service_prices):', error);
+          throw error;
+        }
+        if (data) {
+          setClientServicePrices((prev) => {
+            const filtered = prev.filter(
+              (p) => !(p.client_id === clientId && p.service_id === serviceId)
+            );
+            return [...filtered, data[0]];
+          });
+          logAudit({
+            userId,
+            entityType: 'client_pricing',
+            entityId: `${clientId}_svc_${serviceId}`,
+            entityName: `Client ${clientId} / Service ${serviceId}`,
+            action: 'UPDATE',
+            details: { price },
+          });
+        }
+      } catch (err) {
+        console.error('Exception in updateClientServicePrice:', err);
+        throw err;
       }
-      if (data) {
-        setClientServicePrices((prev) => {
-          const filtered = prev.filter(
-            (p) => !(p.client_id === clientId && p.service_id === serviceId)
-          );
-          return [...filtered, data[0]];
-        });
-        logAudit({ userId, entityType: 'client_pricing', entityId: `${clientId}_svc_${serviceId}`, entityName: `Client ${clientId} / Service ${serviceId}`, action: 'UPDATE', details: { price } });
-      }
-    } catch (err) {
-      console.error('Exception in updateClientServicePrice:', err);
-      throw err;
-    }
-  }, []);
+    },
+    []
+  );
 
   const deleteClientServicePrice = useCallback(async (clientId, serviceId) => {
     try {

@@ -162,12 +162,24 @@ const AdminUsersManager = () => {
         const { error } = await supabase.from('users').update(userData).eq('id', editingUser.id);
         if (error) throw error;
         userId = editingUser.id;
-        logAudit({ userId: currentUser?.id, entityType: 'user', entityId: editingUser.id, entityName: formData.full_name || formData.username, action: 'UPDATE' });
+        logAudit({
+          userId: currentUser?.id,
+          entityType: 'user',
+          entityId: editingUser.id,
+          entityName: formData.full_name || formData.username,
+          action: 'UPDATE',
+        });
       } else {
         const { data, error } = await supabase.from('users').insert([userData]).select().single();
         if (error) throw error;
         userId = data.id;
-        logAudit({ userId: currentUser?.id, entityType: 'user', entityId: userId, entityName: formData.full_name || formData.username, action: 'CREATE' });
+        logAudit({
+          userId: currentUser?.id,
+          entityType: 'user',
+          entityId: userId,
+          entityName: formData.full_name || formData.username,
+          action: 'CREATE',
+        });
       }
 
       // Store department IDs directly on the user row

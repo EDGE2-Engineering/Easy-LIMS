@@ -24,13 +24,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 // Constant values for RMR parameters
 const UCS_OPTIONS = [
-  { value: '15', label: 'Exceptionally strong (> 250 MPa, PLI > 8)', rating: 15 },
-  { value: '12', label: 'Very strong (100 - 250 MPa, PLI 4 - 8)', rating: 12 },
-  { value: '7', label: 'Strong (50 - 100 MPa, PLI 2 - 4)', rating: 7 },
-  { value: '4', label: 'Average (25 - 50 MPa, PLI 1 - 2)', rating: 4 },
-  { value: '2', label: 'Weak (10 - 25 MPa)', rating: 2 },
-  { value: '1', label: 'Very weak (2 - 10 MPa)', rating: 1 },
-  { value: '0', label: 'Extremely weak (< 2 MPa)', rating: 0 },
+  { value: '15', label: 'Exceptionally strong (UCS > 250 MPa, PLI > 8)', rating: 15 },
+  { value: '12', label: 'Very strong (UCS 100 - 250 MPa, PLI 4 - 8)', rating: 12 },
+  { value: '7', label: 'Strong (UCS 50 - 100 MPa, PLI 2 - 4)', rating: 7 },
+  { value: '4', label: 'Average (UCS 25 - 50 MPa, PLI 1 - 2)', rating: 4 },
+  { value: '2', label: 'Weak (UCS 10 - 25 MPa)', rating: 2 },
+  { value: '1', label: 'Very weak (UCS 2 - 10 MPa)', rating: 1 },
+  { value: '0', label: 'Extremely weak (UCS < 2 MPa)', rating: 0 },
 ];
 
 const RQD_OPTIONS = [
@@ -473,7 +473,7 @@ const AdminRockBearingCapacity = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {!usePli ? (
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-gray-500">Intact Strength qc (N/mm²)</Label>
+                  <Label className="text-xs text-gray-500">Compressive Strength qc (N/mm²)</Label>
                   <Input
                     type="number"
                     step="any"
@@ -743,7 +743,7 @@ const AdminRockBearingCapacity = () => {
             <div className="space-y-4">
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500 font-semibold">
-                  1. Intact Rock Strength (UCS)
+                  1. Intact rock strength
                 </Label>
                 <Select value={rmrUCS} onValueChange={(v) => updateField(setRmrUCS, 'rmrUCS', v)}>
                   <SelectTrigger className="h-9 rounded-xl text-xs">
@@ -1034,7 +1034,7 @@ const AdminRockBearingCapacity = () => {
                 <td className="py-4 px-6 font-semibold">Point Load Compressive Strength</td>
                 <td className="py-4 px-4 text-center font-mono font-bold text-primary">qc</td>
                 <td className="py-4 px-4 text-center font-mono">N/mm²</td>
-                <td className="py-4 px-4">Fallback calculation</td>
+                <td className="py-4 px-4">IS 8764: 1998</td>
                 <td className="py-4 px-6 font-mono text-[11px]">qc = 22 × PLI</td>
               </tr>
               <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
