@@ -188,7 +188,7 @@ const TechnicianDashboard = () => {
                           <stat.icon className="w-5 h-5" />
                         </div>
                         <div className="flex-grow min-w-0">
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">
+                          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest truncate">
                             {stat.label}
                           </p>
                           <h3 className="text-2xl font-black text-gray-900 tracking-tight leading-none">
@@ -243,7 +243,7 @@ const TechnicianDashboard = () => {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge className="bg-primary/10 text-primary border-none shadow-none text-[10px] font-black uppercase">
+                          <Badge className="bg-primary/10 text-primary border-none shadow-none text-xs font-black uppercase">
                             {getStateLabel(job.status)}
                           </Badge>
                           <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-primary transition-colors" />
@@ -287,7 +287,7 @@ const TechnicianDashboard = () => {
                         </div>
                         <div>
                           <Badge
-                            className={`text-[10px] font-black uppercase border-none ${
+                            className={`text-xs font-black uppercase border-none ${
                               req.status === 'APPROVED'
                                 ? 'bg-emerald-100 text-emerald-700'
                                 : req.status === 'REJECTED'

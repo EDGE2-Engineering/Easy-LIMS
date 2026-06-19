@@ -70,6 +70,7 @@ const AdminDashboard = () => {
     upcomingLeaves: [],
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  const [todayActivities, setTodayActivities] = useState([]);
   const [workflowCounts, setWorkflowCounts] = useState({});
   const { toast } = useToast();
 
@@ -279,6 +280,68 @@ const AdminDashboard = () => {
         allDocs.filter((d) => d.document_type === 'Tax Invoice')
       );
 
+      // 8. Fetch Today's Activity (New docs, jobs, expenses, clients)
+      const localToday = new Date();
+      localToday.setHours(0, 0, 0, 0);
+      const startOfTodayISO = localToday.toISOString();
+
+      const fetchTodayDocs = supabase.from('documents').select('id, quote_number, document_type, created_at, clients(client_name)').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
+      const fetchTodayJobs = supabase.from('jobs').select('id, job_code, project_name, created_at, clients(client_name)').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
+      const fetchTodayExpenses = supabase.from('expenses').select('id, description, amount, created_at').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
+      const fetchTodayClients = supabase.from('clients').select('id, client_name, created_at').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
+
+      const [todayDocs, todayJobs, todayExpenses, todayClients] = await Promise.all([
+        fetchTodayDocs,
+        fetchTodayJobs,
+        fetchTodayExpenses,
+        fetchTodayClients
+      ]);
+
+      const docActivities = (todayDocs || []).map((doc) => ({
+        id: `doc-${doc.id}`,
+        type: 'document',
+        title: `New ${doc.document_type || 'Document'} Created`,
+        detail: doc.quote_number,
+        subtitle: doc.clients?.client_name || 'No Client Name',
+        timestamp: doc.created_at,
+      }));
+
+      const jobActivities = (todayJobs || []).map((job) => ({
+        id: `job-${job.id}`,
+        type: 'job',
+        title: 'New Job Registered',
+        detail: `#${job.job_code}`,
+        subtitle: job.project_name || job.clients?.client_name || 'No Project Details',
+        timestamp: job.created_at,
+      }));
+
+      const expenseActivities = (todayExpenses || []).map((exp) => ({
+        id: `exp-${exp.id}`,
+        type: 'expense',
+        title: 'New Expense Recorded',
+        detail: `₹${Number(exp.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+        subtitle: exp.description,
+        timestamp: exp.created_at,
+      }));
+
+      const clientActivities = (todayClients || []).map((cli) => ({
+        id: `cli-${cli.id}`,
+        type: 'client',
+        title: 'New Client Registered',
+        detail: cli.client_name,
+        subtitle: 'Master Database',
+        timestamp: cli.created_at,
+      }));
+
+      const compiledActivities = [
+        ...docActivities,
+        ...jobActivities,
+        ...expenseActivities,
+        ...clientActivities,
+      ].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+      setTodayActivities(compiledActivities);
+
       setStats({
         totalJobs: jobs.length,
         activeJobs: active,
@@ -444,12 +507,12 @@ const AdminDashboard = () => {
                         </div>
                         <div className="flex-grow min-w-0">
                           <div className="flex justify-between items-center mb-0.5">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest truncate">
                               {stat.label}
                             </p>
                             <Badge
                               variant="outline"
-                              className={`hidden bg-white/50 border-none text-[8px] font-black uppercase tracking-tighter ${stat.color} px-1.5 py-0 h-4`}
+                              className={`hidden bg-white/50 border-none text-[10px] font-black uppercase tracking-tighter ${stat.color} px-1.5 py-0 h-4`}
                             >
                               {stat.trend}
                             </Badge>
@@ -497,17 +560,17 @@ const AdminDashboard = () => {
                     <CardContent className="p-6 space-y-6">
                       <div className="space-y-4">
                         <div className="flex items-center justify-between px-1">
-                          <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                            <UserMinus className="w-3 h-3" /> On Leave Today
+                          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                            <UserMinus className="w-3.5 h-3.5" /> On Leave Today
                           </h4>
-                          <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                          <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                             {stats.leavesToday.length}
                           </span>
                         </div>
 
                         {stats.leavesToday.length === 0 ? (
                           <div className="p-4 bg-gray-50 rounded-2xl text-center border border-dashed border-gray-200">
-                            <p className="text-xs font-bold text-gray-400 italic">
+                            <p className="text-sm font-medium text-gray-400 italic">
                               Everyone is in today!
                             </p>
                           </div>
@@ -533,7 +596,7 @@ const AdminDashboard = () => {
                                       return u?.full_name || u?.username || 'Unknown User';
                                     })()}
                                   </p>
-                                  <p className="text-[10px] font-bold text-primary uppercase truncate">
+                                  <p className="text-xs font-semibold text-primary uppercase truncate">
                                     {new Date(leave.startDate).toLocaleDateString('en-US', {
                                       month: 'short',
                                       day: 'numeric',
@@ -543,12 +606,12 @@ const AdminDashboard = () => {
                                       month: 'short',
                                       day: 'numeric',
                                     })}
-                                    <span className="ml-1 text-gray-400">
+                                    <span className="ml-1 text-gray-400 font-medium">
                                       ({leave.workingDays}{' '}
                                       {leave.workingDays === 1 ? 'day' : 'days'})
                                     </span>
                                   </p>
-                                  <p className="text-[9px] font-medium text-gray-400 line-clamp-1 italic">
+                                  <p className="text-xs text-gray-400 line-clamp-1 italic mt-0.5">
                                     {leave.comments || 'No reason provided'}
                                   </p>
                                 </div>
@@ -560,17 +623,17 @@ const AdminDashboard = () => {
 
                       <div className="pt-4 border-t border-gray-50 space-y-4">
                         <div className="flex items-center justify-between px-1">
-                          <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                            <CalendarRange className="w-3 h-3" /> Upcoming Leaves
+                          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                            <CalendarRange className="w-3.5 h-3.5" /> Upcoming Leaves
                           </h4>
-                          <span className="text-[10px] font-black text-blue-400 bg-blue-50 px-2 py-0.5 rounded-full">
+                          <span className="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
                             Next 7 Days
                           </span>
                         </div>
 
                         {stats.upcomingLeaves.length === 0 ? (
                           <div className="p-4 bg-gray-50/50 rounded-2xl text-center border border-dashed border-gray-200">
-                            <p className="text-[10px] font-bold text-gray-400 italic">
+                            <p className="text-sm font-medium text-gray-400 italic">
                               No upcoming leaves scheduled.
                             </p>
                           </div>
@@ -582,7 +645,7 @@ const AdminDashboard = () => {
                                 className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-gray-50 hover:border-blue-200 transition-all group shadow-sm"
                               >
                                 <div className="w-8 h-8 bg-blue-50 rounded-xl flex flex-col items-center justify-center border border-blue-100 text-blue-600">
-                                  <span className="text-[8px] font-black leading-none">
+                                  <span className="text-[10px] font-black leading-none uppercase">
                                     {new Date(leave.leave_date).toLocaleDateString('en-US', {
                                       month: 'short',
                                     })}
@@ -599,7 +662,7 @@ const AdminDashboard = () => {
                                       return u?.full_name || u?.username || 'Unknown User';
                                     })()}
                                   </p>
-                                  <p className="text-[10px] font-bold text-blue-500 uppercase truncate">
+                                  <p className="text-xs font-semibold text-blue-500 uppercase truncate">
                                     {new Date(leave.startDate).toLocaleDateString('en-US', {
                                       month: 'short',
                                       day: 'numeric',
@@ -609,12 +672,12 @@ const AdminDashboard = () => {
                                       month: 'short',
                                       day: 'numeric',
                                     })}
-                                    <span className="ml-1 text-gray-400">
+                                    <span className="ml-1 text-gray-400 font-medium">
                                       ({leave.workingDays}{' '}
                                       {leave.workingDays === 1 ? 'day' : 'days'})
                                     </span>
                                   </p>
-                                  <p className="text-[9px] font-medium text-gray-400 line-clamp-1 italic">
+                                  <p className="text-xs text-gray-400 line-clamp-1 italic mt-0.5">
                                     {leave.comments || 'Planned Leave'}
                                   </p>
                                 </div>
@@ -625,10 +688,10 @@ const AdminDashboard = () => {
                       </div>
 
                       <div className="pt-4 border-t border-gray-50 space-y-4">
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                          <Activity className="w-3 h-3" /> Daily Priorities
+                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                          <Activity className="w-3.5 h-3.5" /> Daily Priorities
                         </h4>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 gap-3">
                           <div
                             className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 flex items-center justify-between cursor-pointer hover:bg-gray-50 hover:border-primary/30 transition-colors group"
                             onClick={(e) => {
@@ -636,60 +699,69 @@ const AdminDashboard = () => {
                               window.location.hash = '#/settings/approvals';
                             }}
                           >
-                            <div className="flex flex-col gap-1">
-                              <span className="text-xl font-black text-primary tracking-tight">
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <span className="text-2xl font-black text-primary tracking-tight">
                                 {workflowCounts[WORKFLOW_STATES.TEST_DATA_UNDER_REVIEW] || 0}
                               </span>
-                              <span className="text-[9px] font-black text-gray-400 uppercase tracking-tight">
-                                Job Reviews Pending
+                              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider truncate">
+                                Reviews Pending
                               </span>
                             </div>
-                            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-1 transition-transform" />
+                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-transform shrink-0" />
                           </div>
 
                           <div
-                            className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 flex flex-col gap-1 cursor-pointer hover:bg-gray-50 hover:border-primary/30 transition-colors"
+                            className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 flex items-center justify-between cursor-pointer hover:bg-gray-50 hover:border-primary/30 transition-colors group"
                             onClick={(e) => {
                               e.stopPropagation();
                               window.location.hash = '#/settings/documents';
                             }}
                           >
-                            <span className="text-xl font-black text-primary tracking-tight">
-                              {workflowCounts[WORKFLOW_STATES.REPORT_SIGNED] || 0}
-                            </span>
-                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-tight">
-                              Ready to Invoice
-                            </span>
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <span className="text-2xl font-black text-primary tracking-tight">
+                                {workflowCounts[WORKFLOW_STATES.REPORT_SIGNED] || 0}
+                              </span>
+                              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider truncate">
+                                Ready to Invoice
+                              </span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-transform shrink-0" />
                           </div>
 
                           <div
-                            className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 flex flex-col gap-1 cursor-pointer hover:bg-gray-50 hover:border-primary/30 transition-colors"
+                            className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 flex items-center justify-between cursor-pointer hover:bg-gray-50 hover:border-primary/30 transition-colors group"
                             onClick={(e) => {
                               e.stopPropagation();
                               window.location.hash = '#/settings/approvals';
                             }}
                           >
-                            <span className="text-xl font-black text-primary tracking-tight">
-                              {stats.pendingLeaves}
-                            </span>
-                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-tight">
-                              Leave Requests
-                            </span>
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <span className="text-2xl font-black text-primary tracking-tight">
+                                {stats.pendingLeaves}
+                              </span>
+                              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider truncate">
+                                Leave Requests
+                              </span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-transform shrink-0" />
                           </div>
 
                           <div
-                            className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 flex flex-col gap-1 cursor-pointer hover:bg-gray-50 hover:border-primary/30 transition-colors"
+                            className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 flex items-center justify-between cursor-pointer hover:bg-gray-50 hover:border-primary/30 transition-colors group"
                             onClick={(e) => {
                               e.stopPropagation();
                               window.location.hash = '#/settings/inquiries';
                             }}
                           >
-                            <span className="text-xl font-black text-primary tracking-tight">
-                              {stats.pendingInquiries}
-                            </span>
-                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-tight">
-                              New Inquiries
-                            </span>
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <span className="text-2xl font-black text-primary tracking-tight">
+                                {stats.pendingInquiries}
+                              </span>
+                              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider truncate">
+                                New Inquiries
+                              </span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-transform shrink-0" />
                           </div>
                         </div>
                       </div>
@@ -735,7 +807,7 @@ const AdminDashboard = () => {
                             { label: 'This Year', value: stats.expenditures.year },
                           ].map((exp, idx) => (
                             <div key={idx} className="space-y-2">
-                              <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                              <div className="flex justify-between text-xs font-black uppercase tracking-widest">
                                 <span>{exp.label}</span>
                                 <span className="text-sm">₹{exp.value.toLocaleString()}</span>
                               </div>
@@ -797,7 +869,7 @@ const AdminDashboard = () => {
                             { label: 'This Year', value: stats.quotations.year },
                           ].map((quote, idx) => (
                             <div key={idx} className="space-y-2">
-                              <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                              <div className="flex justify-between text-xs font-black uppercase tracking-widest">
                                 <span>{quote.label}</span>
                                 <span className="text-sm">
                                   ₹
@@ -865,7 +937,7 @@ const AdminDashboard = () => {
                             { label: 'This Year', value: stats.invoices.year },
                           ].map((invoice, idx) => (
                             <div key={idx} className="space-y-2">
-                              <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                              <div className="flex justify-between text-xs font-black uppercase tracking-widest">
                                 <span>{invoice.label}</span>
                                 <span className="text-sm">
                                   ₹
@@ -928,11 +1000,11 @@ const AdminDashboard = () => {
                       </div>
                       {/* <div className="flex items-center gap-1">
                                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Live</span>
+                                     <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Live</span>
                                 </div> */}
                     </CardHeader>
                     <CardContent className="p-6">
-                      <div className="flex flex-col gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                         {[
                           {
                             state: WORKFLOW_STATES.JOB_CREATED,
@@ -961,36 +1033,32 @@ const AdminDashboard = () => {
                           },
                         ].map((stage, idx) => {
                           const count = workflowCounts[stage.state] || 0;
-                          const percentage =
-                            stats.totalJobs > 0 ? (count / stats.totalJobs) * 100 : 0;
 
                           return (
-                            <div key={idx} className="relative group">
-                              <div
-                                className="flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition-all cursor-pointer relative z-10 border border-transparent hover:border-gray-100"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  window.location.hash = `#/settings/jobs?status=${stage.state}`;
-                                }}
-                              >
-                                <div className="flex items-center gap-4">
-                                  <div
-                                    className={`w-10 h-10 rounded-xl ${stage.color} flex items-center justify-center font-black text-sm`}
-                                  >
-                                    {idx + 1}
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-normal text-gray-900">
-                                      {stage.label}
-                                    </p>
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                      {count} Active Case{count !== 1 ? 's' : ''}
-                                    </p>
-                                  </div>
+                            <div
+                              key={idx}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.location.hash = `#/settings/jobs?status=${stage.state}`;
+                              }}
+                              className="flex flex-col justify-between p-4 rounded-2xl border border-gray-100 bg-white hover:bg-gray-50/50 transition-all cursor-pointer relative group hover:shadow-sm"
+                            >
+                              <div className="flex items-center justify-between mb-4">
+                                <div
+                                  className={`w-9 h-9 rounded-xl ${stage.color} flex items-center justify-center font-black text-sm shrink-0`}
+                                >
+                                  {idx + 1}
                                 </div>
-                                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary transition-all group-hover:translate-x-1" />
+                                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
                               </div>
-                              <div className="absolute left-14 right-14 bottom-0 h-px bg-gray-50 group-last:hidden" />
+                              <div>
+                                <p className="text-sm font-normal text-gray-900 group-hover:text-primary transition-colors leading-tight">
+                                  {stage.label}
+                                </p>
+                                 <p className="text-xs font-black text-gray-400 uppercase tracking-widest mt-1">
+                                  {count} Active Case{count !== 1 ? 's' : ''}
+                                </p>
+                              </div>
                             </div>
                           );
                         })}
@@ -1009,70 +1077,94 @@ const AdminDashboard = () => {
               </Tooltip>
             </motion.div>
 
-            {/* Recent Activity Feed
-                    <motion.div variants={item}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
-                            <CardHeader className="p-6 border-b border-gray-50">
-                                <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
-                                    <Zap className="w-5 h-5 text-primary" /> System Activity Feed
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                <div className="divide-y divide-gray-50">
-                                    {recentActivity.length === 0 ? (
-                                        <div className="p-12 text-center">
-                                            <p className="text-sm font-bold text-gray-400 italic">No recent activity found.</p>
-                                        </div>
-                                    ) : (
-                                        recentActivity.map((log, idx) => (
-                                            <div key={idx} className="p-5 flex gap-4 hover:bg-gray-50/50 transition-all group">
-                                                <div className="mt-1">
-                                                    <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center text-primary group-hover:bg-primary/10 transition-colors">
-                                                        <ShieldCheck className="w-4 h-4" />
-                                                    </div>
-                                                </div>
-                                                <div className="flex-grow space-y-1">
-                                                    <div className="flex items-center justify-between">
-                                                        <p className="text-sm font-bold text-gray-900">
-                                                            {log.users?.full_name || log.users?.username}
-                                                            <span className="text-gray-400 font-medium ml-1.5 tracking-tight">moved</span>
-                                                            <span className="text-primary font-black ml-1.5 tracking-tighter">#{log.jobs?.job_code}</span>
-                                                        </p>
-                                                        <span className="text-[10px] font-black text-gray-300 uppercase tracking-tighter">
-                                                            {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs font-bold text-gray-400 flex items-center gap-2">
-                                                        <span className="px-1.5 py-0.5 rounded-md bg-gray-100 text-[10px] border border-gray-200">{getStateLabel(log.from_state)}</span>
-                                                        <ChevronRight className="w-3 h-3 text-gray-300" />
-                                                        <span className="px-1.5 py-0.5 rounded-md bg-primary/5 text-primary text-[10px] border border-primary/10">{getStateLabel(log.to_state)}</span>
-                                                    </p>
-                                                    {log.remarks && <p className="text-[11px] text-gray-500 italic mt-2 border-l-2 border-gray-100 pl-3 py-1 font-medium bg-gray-50/30 rounded-r-lg">{log.remarks}</p>}
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
+            {/* Today's Activity */}
+            <motion.div variants={item} className="mt-8">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
+                    <CardHeader className="p-6 border-b border-gray-50 bg-gray-50/30">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
+                          <Activity className="w-5 h-5 text-primary" /> Today's Activity
+                        </CardTitle>
+                        <Badge className="bg-primary/10 text-primary border-none font-bold">
+                          Today
+                        </Badge>
+                      </div>
+                      <CardDescription className="text-xs font-medium text-gray-400 uppercase tracking-widest mt-1">
+                        Recent documents, jobs, expenses, and clients
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="divide-y divide-gray-50 max-h-[450px] overflow-y-auto no-scrollbar">
+                        {todayActivities.length === 0 ? (
+                          <div className="p-12 text-center">
+                            <Activity className="w-12 h-12 mb-4 opacity-20 text-gray-400 mx-auto" />
+                            <p className="font-semibold text-gray-500 text-sm">No activity recorded today</p>
+                            <p className="text-xs text-gray-400 mt-1 max-w-[240px] mx-auto leading-relaxed">
+                              New jobs, documents, expenses, or clients will appear here as they are created.
+                            </p>
+                          </div>
+                        ) : (
+                          todayActivities.map((act) => {
+                            let icon, badgeColor;
+                            if (act.type === 'document') {
+                              icon = <FileText className="w-4 h-4" />;
+                              badgeColor = 'bg-blue-50 text-blue-600';
+                            } else if (act.type === 'job') {
+                              icon = <Briefcase className="w-4 h-4" />;
+                              badgeColor = 'bg-purple-50 text-purple-600';
+                            } else if (act.type === 'expense') {
+                              icon = <IndianRupee className="w-4 h-4" />;
+                              badgeColor = 'bg-red-50 text-red-600';
+                            } else if (act.type === 'client') {
+                              icon = <Users className="w-4 h-4" />;
+                              badgeColor = 'bg-emerald-50 text-emerald-600';
+                            }
+
+                            return (
+                              <div key={act.id} className="p-5 flex gap-4 hover:bg-gray-50/50 transition-all group">
+                                <div className="mt-0.5">
+                                  <div className={`w-8 h-8 rounded-xl ${badgeColor} flex items-center justify-center shrink-0`}>
+                                    {icon}
+                                  </div>
                                 </div>
-                                <div className="p-4 bg-gray-50/50 border-t border-gray-50 text-center">
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-primary"
-                                        onClick={() => window.location.hash = '#/settings/organization/audit_logs'}
-                                    >
-                                        View All Audit Logs <ChevronRight className="w-3 h-3 ml-1" />
-                                    </Button>
+                                <div className="flex-grow space-y-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-4">
+                                    <p className="text-sm font-semibold text-gray-900 truncate">
+                                      {act.title}
+                                    </p>
+                                     <span className="text-xs font-black text-gray-400 uppercase tracking-tighter shrink-0">
+                                      {new Date(act.timestamp).toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-600 font-bold truncate">
+                                    {act.detail}
+                                  </p>
+                                  {act.subtitle && (
+                                     <p className="text-xs text-gray-400 font-medium truncate">
+                                      {act.subtitle}
+                                    </p>
+                                  )}
                                 </div>
-                            </CardContent>
-                        </Card>
-                            </TooltipTrigger>
-                            <TooltipContent side="left" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
-                                <p className="text-xs">Live feed of the most recent actions and state transitions within the application.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </motion.div> */}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
+                  <p className="text-xs">
+                    Live feed of documents created, jobs registered, expenses logged, and clients added today.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </motion.div>
           </div>
         </div>
       </motion.div>

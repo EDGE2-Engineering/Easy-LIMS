@@ -25,6 +25,7 @@ import { AppDatePicker } from '@/components/ui/AppDatePicker';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import Rupee from '../Rupee';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -699,25 +700,25 @@ const ExpensesManager = () => {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-right py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Date
                 </th>
-                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
                   Description / Remarks
                 </th>
-                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                <th className="text-right py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Amount
                 </th>
-                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap hidden md:table-cell">
+                <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap hidden md:table-cell">
                   Paid By
                 </th>
-                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap hidden md:table-cell">
+                <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap hidden md:table-cell">
                   Created By
                 </th>
-                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap hidden lg:table-cell">
+                <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap hidden lg:table-cell">
                   Added On
                 </th>
-                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                <th className="text-center py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Actions
                 </th>
               </tr>
@@ -726,8 +727,8 @@ const ExpensesManager = () => {
               {paginatedExpenses.length > 0 ? (
                 paginatedExpenses.map((expense) => (
                   <tr key={expense.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
-                    <td className="py-4 px-4 text-right align-middle text-gray-600">
-                      <span className="font-mono font-normal text-xs text-gray-700">
+                    <td className="py-4 px-3 text-left align-top whitespace-nowrap text-gray-600">
+                      <span className="font-mono text-xs text-gray-700">
                         {new Date(expense.date).toLocaleDateString('en-IN', {
                           day: '2-digit',
                           month: 'short',
@@ -735,12 +736,12 @@ const ExpensesManager = () => {
                         })}
                       </span>
                     </td>
-                    <td className="py-4 px-4 align-middle text-gray-600">
-                      <div className="font-bold text-gray-900 group-hover:text-primary transition-colors">
+                    <td className="py-4 px-3 align-top text-gray-600">
+                      <div className="font-semibold text-gray-900 group-hover:text-primary transition-colors break-words">
                         {expense.description}
                       </div>
                       {expense.projectName && (
-                        <div className="text-xs text-gray-700 mt-1">
+                        <div className="text-xs text-gray-500 mt-1 break-words whitespace-normal">
                           <span className="font-semibold text-gray-400 uppercase tracking-wider text-[9px] mr-1">
                             Project:
                           </span>
@@ -748,7 +749,7 @@ const ExpensesManager = () => {
                         </div>
                       )}
                       {expense.siteAddress && (
-                        <div className="text-xs text-gray-700 mt-0.5">
+                        <div className="text-xs text-gray-500 mt-0.5 break-words whitespace-normal">
                           <span className="font-semibold text-gray-400 uppercase tracking-wider text-[9px] mr-1">
                             Site:
                           </span>
@@ -756,33 +757,33 @@ const ExpensesManager = () => {
                         </div>
                       )}
                       {expense.remarks && (
-                        <div className="text-xs text-gray-400 mt-1 italic">{expense.remarks}</div>
+                        <div className="text-xs text-gray-400 mt-1 italic break-words whitespace-normal">{expense.remarks}</div>
                       )}
                     </td>
 
-                    <td className="py-4 px-4 text-center align-middle text-gray-600">
-                      <div className="font-mono font-bold text-primary">
-                        ₹
+                    <td className="py-4 px-3 text-right align-top whitespace-nowrap">
+                      <span className="font-bold text-gray-900 tabular-nums">
+                        <Rupee />
                         {Number(expense.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                      </div>
+                      </span>
                     </td>
-                    <td className="py-4 px-4 text-center align-middle text-gray-600 hidden md:table-cell">
+                    <td className="py-4 px-3 text-left align-top text-gray-600 hidden md:table-cell">
                       {expense.paidBy ? (
-                        <div className="text-xs font-semibold text-gray-700 tracking-tight">
+                        <div className="text-xs font-medium text-gray-700 tracking-tight">
                           {expense.paidBy}
                         </div>
                       ) : (
                         <span className="text-gray-300 text-xs">—</span>
                       )}
                     </td>
-                    <td className="py-4 px-4 text-center align-middle text-gray-600 hidden md:table-cell">
-                      <div className="text-xs font-semibold text-gray-500 tracking-tight">
-                        {expense.createdBy}
+                    <td className="py-4 px-3 text-left align-top text-gray-600 hidden md:table-cell">
+                      <div className="text-xs font-medium text-gray-700 tracking-tight">
+                        {expense.createdBy || '-'}
                       </div>
                     </td>
-                    <td className="py-4 px-4 text-center align-middle text-gray-600 hidden lg:table-cell">
+                    <td className="py-4 px-3 text-left align-top text-gray-600 hidden lg:table-cell">
                       {expense.createdAt ? (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-600">
                           <div className="font-mono">
                             {new Date(expense.createdAt).toLocaleDateString('en-IN', {
                               day: '2-digit',
@@ -802,21 +803,21 @@ const ExpensesManager = () => {
                       )}
                     </td>
 
-                    <td className="py-4 px-4 text-center align-middle text-gray-600">
-                      <div className="flex justify-center gap-2">
+                    <td className="py-4 px-2 text-center align-top whitespace-nowrap">
+                      <div className="flex justify-center items-center gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
                               variant="ghost"
-                              size="sm"
+                              size="icon"
+                              className="h-7 w-7"
                               onClick={() => handleEdit(expense)}
-                              className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all"
                             >
-                              <Edit className="w-4 h-4" />
+                              <Edit className="h-4 w-4 text-gray-500" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                            <p className="text-xs">Edit record</p>
+                            Edit record
                           </TooltipContent>
                         </Tooltip>
 
@@ -824,15 +825,15 @@ const ExpensesManager = () => {
                           <TooltipTrigger asChild>
                             <Button
                               variant="ghost"
-                              size="sm"
+                              size="icon"
+                              className="h-7 w-7"
                               onClick={() => handleDeleteClick(expense)}
-                              className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                            <p className="text-xs">Delete record</p>
+                            Delete record
                           </TooltipContent>
                         </Tooltip>
                       </div>
