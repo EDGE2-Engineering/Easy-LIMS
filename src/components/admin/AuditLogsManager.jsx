@@ -666,7 +666,7 @@ const AuditLogsManager = () => {
               placeholder="Search user, action, target, details…"
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-10 w-full h-10 text-sm bg-gray-50/50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
+              className="pl-10 w-full h-10 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
             />
             {search && (
               <button
@@ -684,13 +684,13 @@ const AuditLogsManager = () => {
         </div>
 
         {/* Filters and Actions Row */}
-        <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-gray-950 p-3 rounded-2xl border border-gray-100 dark:border-gray-850 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-gray-950 p-3 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
           <div className="flex flex-wrap items-center gap-4">
             <Button
               variant={showFilters ? 'secondary' : 'outline'}
               onClick={() => setShowFilters(!showFilters)}
-              className={`h-10 px-4 rounded-xl transition-all border-gray-200 dark:border-gray-800 font-bold uppercase tracking-widest text-[10px] ${
-                showFilters ? 'bg-primary/10 text-primary border-primary/20' : 'bg-gray-50/50 dark:bg-gray-900 text-gray-700 dark:text-gray-300'
+              className={`h-10 px-4 rounded-xl transition-all border-gray-200 font-bold uppercase tracking-widest text-[10px] ${
+                showFilters ? 'bg-primary/10 text-primary border-primary/20' : 'bg-gray-50/50'
               }`}
             >
               <Filter className="w-4 h-4 mr-2" />
@@ -717,7 +717,7 @@ const AuditLogsManager = () => {
               variant="outline"
               onClick={handleExport}
               disabled={exporting || logs.length === 0}
-              className="h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900 hover:bg-green-50 dark:hover:bg-green-950/20 hover:text-green-600 dark:hover:text-green-400 hover:border-green-200 dark:hover:border-green-900 transition-all text-[10px] font-bold uppercase tracking-widest leading-none"
+              className="h-10 px-4 rounded-xl border border-gray-200 bg-gray-50/50 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all text-[10px] font-bold uppercase tracking-widest leading-none"
             >
               {exporting ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -732,7 +732,7 @@ const AuditLogsManager = () => {
                 Sort
               </span>
               <Select value={sortKey} onValueChange={(val) => { setSortKey(val); setPage(1); }}>
-                <SelectTrigger className="w-40 h-10 text-xs bg-gray-50/50 border-gray-200 dark:border-gray-800 rounded-lg dark:bg-gray-900 text-gray-700 dark:text-gray-300">
+                <SelectTrigger className="w-40 h-10 text-xs bg-gray-50/50 border-gray-200 rounded-lg">
                   <SelectValue placeholder="Sort key" />
                 </SelectTrigger>
                 <SelectContent>
@@ -745,7 +745,7 @@ const AuditLogsManager = () => {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-10 w-10 border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900 rounded-lg"
+                className="h-10 w-10 border-gray-200 bg-gray-50/50 rounded-lg"
                 onClick={() => { setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc')); setPage(1); }}
               >
                 {sortDir === 'asc' ? (
@@ -769,7 +769,7 @@ const AuditLogsManager = () => {
 
         {/* Filter panel */}
         {showFilters && (
-          <div className="bg-white dark:bg-gray-950 p-6 rounded-2xl border border-gray-100 dark:border-gray-850 shadow-sm animate-in slide-in-from-top-2 duration-200 space-y-4">
+          <div className="bg-white dark:bg-gray-950 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm animate-in slide-in-from-top-2 duration-200 space-y-4">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider flex items-center">
                 <Filter className="w-4 h-4 mr-2 text-primary" />
@@ -792,7 +792,7 @@ const AuditLogsManager = () => {
                     setPage(1);
                   }}
                 >
-                  <SelectTrigger className="h-10 rounded-xl text-sm bg-muted/40 border-transparent dark:bg-gray-900 text-gray-800 dark:text-gray-300">
+                  <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
                     <SelectValue placeholder="All Activities" />
                   </SelectTrigger>
                   <SelectContent>
@@ -832,7 +832,7 @@ const AuditLogsManager = () => {
                     setPage(1);
                   }}
                 >
-                  <SelectTrigger className="h-10 rounded-xl text-sm bg-muted/40 border-transparent dark:bg-gray-900 text-gray-800 dark:text-gray-300">
+                  <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
                     <SelectValue placeholder="All Users" />
                   </SelectTrigger>
                   <SelectContent>
@@ -852,7 +852,7 @@ const AuditLogsManager = () => {
                   <CalendarRange className="w-3 h-3" /> Quick Date
                 </Label>
                 <Select value={datePreset} onValueChange={applyDatePreset}>
-                  <SelectTrigger className="h-10 rounded-xl text-sm bg-muted/40 border-transparent dark:bg-gray-900 text-gray-800 dark:text-gray-300">
+                  <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
                     <SelectValue placeholder="Custom" />
                   </SelectTrigger>
                   <SelectContent>
@@ -882,7 +882,7 @@ const AuditLogsManager = () => {
                       setPage(1);
                     }}
                   >
-                    <SelectTrigger className="h-10 rounded-xl text-sm bg-muted/40 border-transparent dark:bg-gray-900 text-gray-800 dark:text-gray-300">
+                    <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
                       <SelectValue placeholder="All States" />
                     </SelectTrigger>
                     <SelectContent>
@@ -912,7 +912,7 @@ const AuditLogsManager = () => {
                     setDatePreset('custom');
                     setPage(1);
                   }}
-                  className="h-10 text-sm bg-muted/40 border-transparent rounded-xl dark:bg-gray-900"
+                  className="h-10 text-sm bg-gray-50 border-transparent rounded-xl"
                   placeholder="From date"
                 />
               </div>
@@ -930,7 +930,7 @@ const AuditLogsManager = () => {
                     setDatePreset('custom');
                     setPage(1);
                   }}
-                  className="h-10 text-sm bg-muted/40 border-transparent rounded-xl dark:bg-gray-900"
+                  className="h-10 text-sm bg-gray-50 border-transparent rounded-xl"
                   placeholder="To date"
                 />
               </div>
@@ -940,7 +940,7 @@ const AuditLogsManager = () => {
       </div>
 
       {/* Pagination Controls - Top */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-gray-950 p-2 px-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-850">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-gray-950 p-2 px-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
         <div className="flex items-center gap-3">
           <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">
             Items
@@ -952,7 +952,7 @@ const AuditLogsManager = () => {
               setPage(1);
             }}
           >
-            <SelectTrigger className="w-20 h-9 text-xs bg-gray-50/50 border-gray-200 dark:border-gray-800 rounded-lg dark:bg-gray-900 text-gray-800 dark:text-gray-300">
+            <SelectTrigger className="w-20 h-9 text-xs bg-gray-50/50 border-gray-200 rounded-lg">
               <SelectValue className="text-xs" />
             </SelectTrigger>
             <SelectContent>
@@ -1031,7 +1031,7 @@ const AuditLogsManager = () => {
                 <col style={{ width: '25%' }} />
                 <col style={{ width: '30%' }} />
               </colgroup>
-              <thead className="bg-gray-50 dark:bg-gray-900/60 border-b border-gray-100 dark:border-gray-850">
+              <thead className="bg-gray-50 dark:bg-gray-900/60 border-b border-gray-100 dark:border-gray-800">
                 <tr>
                   {[
                     { label: 'Date & Time', col: 'created_at' },
@@ -1051,7 +1051,7 @@ const AuditLogsManager = () => {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-gray-850">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                 {paginatedLogs.map((log, idx) => (
                   <tr key={log.id || idx} className="hover:bg-muted/45 dark:hover:bg-gray-900/40 transition-colors group">
                     {/* Date */}
