@@ -38,7 +38,6 @@ const MroDashboard = () => {
     totalSamples: 0,
     activeJobsCount: 0,
   });
-  const [leaveRequests, setLeaveRequests] = useState([]);
 
   useEffect(() => {
     if (user?.id) {
@@ -97,16 +96,6 @@ const MroDashboard = () => {
         totalSamples: samplesCount || 0,
         activeJobsCount: activeJobs || 0,
       });
-
-      // 6. Fetch user's leave requests
-      const { data: requests, error: requestsError } = await supabase
-        .from('request_approvals')
-        .select('*')
-        .eq('requester_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (requestsError) throw requestsError;
-      setLeaveRequests(requests || []);
     } catch (error) {
       console.error('MRO Dashboard Fetch Error:', error);
     } finally {
@@ -168,7 +157,7 @@ const MroDashboard = () => {
         </div>
 
         {/* Quick Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             {
               label: 'Total Inward Entries',
@@ -190,13 +179,6 @@ const MroDashboard = () => {
               icon: Clock,
               path: '#/settings/jobs?status=WORK_ORDER_RECEIVED',
               tooltip: 'View jobs ready for material inward',
-            },
-            {
-              label: 'Pending Leave Requests',
-              value: leaveRequests.filter((r) => r.status === 'PENDING').length,
-              icon: Calendar,
-              path: null,
-              tooltip: 'Your pending leave requests',
             },
           ].map((stat, idx) => (
             <motion.div key={idx} variants={item}>
@@ -237,7 +219,7 @@ const MroDashboard = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Jobs Awaiting Material */}
-          <motion.div variants={item} className="lg:col-span-2 space-y-6">
+          <motion.div variants={item} className="lg:col-span-3 space-y-6">
             <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
               <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
                 <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
@@ -348,107 +330,6 @@ const MroDashboard = () => {
               </CardContent>
             </Card>
           </motion.div>
-
-          {/* Right Column: Leave Requests */}
-          <motion.div variants={item} className="space-y-6">
-            <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
-              <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
-                <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-primary" /> My Leave Requests
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="divide-y divide-gray-50 max-h-[400px] overflow-y-auto">
-                  {leaveRequests.length === 0 ? (
-                    <div className="p-8 text-center text-gray-400 font-medium italic text-sm">
-                      No recent leave requests.
-                    </div>
-                  ) : (
-                    leaveRequests.map((req) => (
-                      <div
-                        key={req.id}
-                        className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center group"
-                      >
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">
-                            {req.request_data?.leaveType || 'Leave Request'}
-                          </p>
-                          <p className="text-xs text-gray-500 font-medium">
-                            {new Date(req.request_data?.startDate).toLocaleDateString()} -{' '}
-                            {new Date(req.request_data?.endDate).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div>
-                          <Badge
-                            className={`text-[10px] font-black uppercase border-none ${
-                              req.status === 'APPROVED'
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : req.status === 'REJECTED'
-                                  ? 'bg-red-100 text-red-700'
-                                  : 'bg-yellow-100 text-yellow-700'
-                            }`}
-                          >
-                            {req.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Quick Actions & Tasks */}
-          {/* <motion.div variants={item} className="space-y-6">
-                        <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
-                            <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
-                                <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
-                                    <Zap className="w-5 h-5 text-primary" /> Quick Tasks
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-6">
-                                <div className="grid grid-cols-1 gap-4">
-                                    <Button 
-                                        className="h-16 rounded-2xl font-black uppercase tracking-widest text-xs bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 flex flex-col items-center justify-center gap-1 group"
-                                        onClick={() => window.location.hash = '#/settings/jobs'}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <Package className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                            <span>New Material Inward</span>
-                                        </div>
-                                        <span className="text-[8px] opacity-60 normal-case font-medium">Process samples for a job</span>
-                                    </Button>
-                                    
-                                    <Button 
-                                        variant="outline"
-                                        className="h-16 rounded-2xl font-black uppercase tracking-widest text-xs border-gray-200 hover:bg-gray-50 hover:border-primary/30 flex flex-col items-center justify-center gap-1 group transition-all"
-                                        onClick={() => window.location.hash = '#/settings/clients'}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <UserCheck className="w-4 h-4 group-hover:scale-110 transition-transform text-primary" />
-                                            <span>Manage Clients</span>
-                                        </div>
-                                        <span className="text-[8px] opacity-60 normal-case font-medium text-gray-500">Update client directory</span>
-                                    </Button>
-
-                                    <Button 
-                                        variant="outline"
-                                        className="h-16 rounded-2xl font-black uppercase tracking-widest text-xs border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-1 group transition-all"
-                                        onClick={() => window.location.hash = '#/settings/jobs'}
-                                    >
-                                        <div className="flex items-center gap-2 text-indigo-600">
-                                            <FileCheck className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                            <span>View All Jobs</span>
-                                        </div>
-                                        <span className="text-[8px] opacity-60 normal-case font-medium text-gray-500">Track job pipeline</span>
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        
-                    </motion.div> */}
         </div>
       </motion.div>
     </TooltipProvider>
