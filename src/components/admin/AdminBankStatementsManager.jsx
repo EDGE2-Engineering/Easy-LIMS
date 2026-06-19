@@ -882,28 +882,32 @@ const AdminBankStatementsManager = () => {
             </span>
           </div>
         ) : (
-          <table className="w-full text-sm min-w-[900px]">
+          <table className="w-full text-sm min-w-[1190px] table-fixed">
+            {/* colgroup locks each column width regardless of header/cell content */}
+            <colgroup>
+              <col style={{ width: '100px' }} />
+              <col style={{ width: '130px' }} />
+              <col style={{ width: '140px' }} />
+              <col style={{ width: '220px' }} />
+              <col style={{ width: '120px' }} />
+              <col style={{ width: '120px' }} />
+              <col style={{ width: '130px' }} />
+              <col style={{ width: '160px' }} />
+              <col style={{ width: '80px' }} />
+              <col style={{ width: '90px' }} />
+            </colgroup>
             <thead className="bg-gray-50 border-b">
               <tr>
-                {[
-                  { label: 'Date', cls: 'w-[100px]' },
-                  { label: 'Transaction ID', cls: 'w-[130px]' },
-                  { label: 'Ref / Cheque / Instr Num', cls: 'w-[140px]' },
-                  { label: 'Particulars', cls: 'w-[220px]' },
-                  { label: 'Debit (₹)', cls: 'w-[120px] text-right' },
-                  { label: 'Credit (₹)', cls: 'w-[120px] text-right' },
-                  { label: 'Balance (₹)', cls: 'w-[130px] text-right' },
-                  { label: 'Source', cls: 'w-[160px]' },
-                  { label: 'Sheet', cls: 'w-[80px]' },
-                  { label: 'Actions', cls: 'w-[90px] text-center' },
-                ].map(({ label, cls }) => (
-                  <th
-                    key={label}
-                    className={`py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap ${cls}`}
-                  >
-                    {label}
-                  </th>
-                ))}
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">Date</th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">Transaction ID</th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">Ref / Cheque No.</th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">Particulars</th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-right">Debit (₹)</th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-right">Credit (₹)</th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-right">Balance (₹)</th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">Source</th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-left">Sheet</th>
+                <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -921,15 +925,15 @@ const AdminBankStatementsManager = () => {
                         {txt(row.transaction_id)}
                       </span>
                     </td>
-                    <td className="py-4 px-4 text-xs text-gray-400 align-middle">
+                    <td className="py-4 px-4 text-xs text-gray-400 align-middle whitespace-nowrap">
                       {txt(row.ref_num)}
                     </td>
-                    <td className="py-4 px-4 text-xs text-gray-600 align-middle w-[220px] max-w-[220px]">
+                    <td className="py-4 px-4 text-xs text-gray-600 align-middle">
                       <span className="block break-words whitespace-normal" title={row.particulars}>
                         {txt(row.particulars)}
                       </span>
                     </td>
-                    <td className="py-4 px-4 text-xs font-semibold text-right align-middle whitespace-nowrap w-[120px]">
+                    <td className="py-4 px-4 text-xs font-semibold text-right align-middle whitespace-nowrap">
                       {row.debit_amt != null &&
                       row.debit_amt !== '' &&
                       !isNaN(Number(row.debit_amt)) ? (
@@ -938,7 +942,7 @@ const AdminBankStatementsManager = () => {
                         <span className="text-gray-300 font-normal not-italic">—</span>
                       )}
                     </td>
-                    <td className="py-4 px-4 text-xs font-semibold text-right align-middle whitespace-nowrap w-[120px]">
+                    <td className="py-4 px-4 text-xs font-semibold text-right align-middle whitespace-nowrap">
                       {row.credit_amt != null &&
                       row.credit_amt !== '' &&
                       !isNaN(Number(row.credit_amt)) ? (
@@ -949,15 +953,15 @@ const AdminBankStatementsManager = () => {
                         <span className="text-gray-300 font-normal not-italic">—</span>
                       )}
                     </td>
-                    <td className="py-4 px-4 text-xs font-bold text-right align-middle whitespace-nowrap text-primary w-[130px]">
+                    <td className="py-4 px-4 text-xs font-bold text-right align-middle whitespace-nowrap text-primary">
                       {row.balance_amt != null && !isNaN(Number(row.balance_amt))
                         ? fmt(row.balance_amt)
                         : '—'}
                     </td>
-                    <td className="py-4 px-4 text-xs text-gray-600 align-middle">
+                    <td className="py-4 px-4 text-xs text-gray-600 align-middle whitespace-nowrap">
                       {txt(row.source)}
                     </td>
-                    <td className="py-4 px-4 text-xs text-gray-600 align-middle">
+                    <td className="py-4 px-4 text-xs text-gray-600 align-middle whitespace-nowrap">
                       {txt(row.sheet_number)}
                     </td>
                     <td className="py-4 px-4 text-center align-middle">

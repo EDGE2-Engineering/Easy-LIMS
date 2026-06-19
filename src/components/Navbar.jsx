@@ -494,28 +494,16 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                       </div>
 
                       {canShowNavbarAction(NAVBAR_ACTIONS.APPLY_LEAVE) && (
-                        <>
-                          <button
-                            onClick={() => {
-                              setIsRequestDialogOpen(true);
-                              setDropdownOpen(false);
-                            }}
-                            className="w-full flex items-center space-x-3 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-colors"
-                          >
-                            <Calendar className="w-4 h-4" />
-                            <span>Apply for Leave</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              navigate('/settings/my_leaves');
-                              setDropdownOpen(false);
-                            }}
-                            className="w-full flex items-center space-x-3 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-colors"
-                          >
-                            <CalendarOff className="w-4 h-4" />
-                            <span>My Leaves</span>
-                          </button>
-                        </>
+                        <button
+                          onClick={() => {
+                            navigate('/settings/my_leaves');
+                            setDropdownOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-colors"
+                        >
+                          <CalendarOff className="w-4 h-4" />
+                          <span>My Leaves</span>
+                        </button>
                       )}
 
                       <button
@@ -622,28 +610,16 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                 </div>
 
                 {canShowNavbarAction(NAVBAR_ACTIONS.APPLY_LEAVE) && (
-                  <>
-                    <button
-                      onClick={() => {
-                        setIsRequestDialogOpen(true);
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full flex items-center space-x-3 p-4 rounded-2xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all"
-                    >
-                      <Calendar className="w-5 h-5" />
-                      <span>Apply for Leave</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        navigate('/settings/my_leaves');
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full flex items-center space-x-3 p-4 rounded-2xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all"
-                    >
-                      <CalendarOff className="w-5 h-5" />
-                      <span>My Leaves</span>
-                    </button>
-                  </>
+                  <button
+                    onClick={() => {
+                      navigate('/settings/my_leaves');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center space-x-3 p-4 rounded-2xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all"
+                  >
+                    <CalendarOff className="w-5 h-5" />
+                    <span>My Leaves</span>
+                  </button>
                 )}
 
                 <button

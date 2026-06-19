@@ -4,22 +4,19 @@ import {
   FileText,
   IndianRupee,
   Clock,
-  CheckCircle2,
-  AlertCircle,
   Zap,
-  Wallet,
   TrendingUp,
   FileCheck,
   FileClock,
+  Users,
   Receipt,
-  Calendar,
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { WORKFLOW_STATES, APP_CONFIG } from '@/data/config';
+import { WORKFLOW_STATES } from '@/data/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -31,6 +28,8 @@ const AccountsDashboard = () => {
 
   const [myDocuments, setMyDocuments] = useState([]);
   const [pendingInvoices, setPendingInvoices] = useState([]);
+  const [clientsToday, setClientsToday] = useState([]);
+  const [monthlyExpenses, setMonthlyExpenses] = useState({ total: 0, count: 0 });
   const [stats, setStats] = useState({
     totalQuotations: 0,
     totalInvoices: 0,
@@ -97,6 +96,28 @@ const AccountsDashboard = () => {
         pendingInvoicesCount: jobsToInvoice.length,
         totalBilled: totalBilled,
       });
+
+      // 3. Clients added today
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const { data: todayClients } = await supabase
+        .from('clients')
+        .select('id, client_name, created_at')
+        .gte('created_at', todayStart.toISOString())
+        .order('created_at', { ascending: false });
+      setClientsToday(todayClients || []);
+
+      // 4. Expenses this month
+      const now2 = new Date();
+      const firstOfMonth = new Date(now2.getFullYear(), now2.getMonth(), 1).toISOString().split('T')[0];
+      const lastOfMonth = new Date(now2.getFullYear(), now2.getMonth() + 1, 0).toISOString().split('T')[0];
+      const { data: expThisMonth } = await supabase
+        .from('expenses')
+        .select('amount')
+        .gte('date', firstOfMonth)
+        .lte('date', lastOfMonth);
+      const expTotal = (expThisMonth || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      setMonthlyExpenses({ total: expTotal, count: (expThisMonth || []).length });
     } catch (error) {
       console.error('Dashboard Fetch Error:', error);
     } finally {
@@ -322,24 +343,74 @@ const AccountsDashboard = () => {
             </Card>
           </motion.div>
 
-          {/* My Leaves / Actions */}
+          {/* Right column: Clients Today + Monthly Expenses */}
           <motion.div variants={item} className="space-y-6">
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 gap-3">
-              <Button
-                className="h-14 rounded-2xl font-black uppercase tracking-widest text-xs bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-                onClick={() => (window.location.hash = '#/doc/new?type=Quotation')}
-              >
-                <FileText className="w-4 h-4" /> New Quotation
-              </Button>
-              <Button
-                variant="outline"
-                className="h-14 rounded-2xl font-black uppercase tracking-widest text-xs border-gray-200 hover:bg-gray-50 flex items-center justify-center gap-2"
-                onClick={() => (window.location.hash = '#/settings/expenses')}
-              >
-                <Wallet className="w-4 h-4" /> Manage Expenses
-              </Button>
-            </div>
+
+            {/* Clients Added Today */}
+            <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
+              <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-5">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-black text-gray-900 tracking-tight flex items-center gap-2">
+                    <Users className="w-4 h-4 text-indigo-500" /> Clients Added Today
+                  </CardTitle>
+                  <Badge className="bg-indigo-50 text-indigo-600 border-none font-bold text-[10px]">
+                    {clientsToday.length}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {clientsToday.length === 0 ? (
+                  <div className="p-6 text-center text-gray-400 font-medium italic text-xs">
+                    No new clients registered today.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-50 max-h-[220px] overflow-y-auto">
+                    {clientsToday.map((c) => (
+                      <div
+                        key={c.id}
+                        className="px-5 py-3 flex items-center gap-3 hover:bg-gray-50/50 transition-colors cursor-pointer group"
+                        onClick={() => (window.location.hash = `#/settings/clients/${c.id}`)}
+                      >
+                        <div className="w-7 h-7 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
+                          <Users className="w-3.5 h-3.5 text-indigo-500" />
+                        </div>
+                        <p className="text-sm font-semibold text-gray-800 group-hover:text-indigo-600 transition-colors truncate flex-1">
+                          {c.client_name}
+                        </p>
+                        <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-indigo-500 transition-colors shrink-0" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Expenses This Month */}
+            <Card
+              className="border-none shadow-sm bg-white rounded-3xl overflow-hidden cursor-pointer hover:shadow-md transition-all group"
+              onClick={() => (window.location.hash = '#/settings/expenses')}
+            >
+              <CardContent className="p-5">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-2xl bg-rose-50 text-rose-500 shrink-0">
+                    <Receipt className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      Expenses This Month
+                    </p>
+                    <h3 className="text-2xl font-black text-gray-900 tracking-tight leading-tight mt-0.5">
+                      ₹{monthlyExpenses.total.toLocaleString('en-IN')}
+                    </h3>
+                    <p className="text-xs text-gray-400 font-medium mt-1">
+                      {monthlyExpenses.count} {monthlyExpenses.count === 1 ? 'entry' : 'entries'} recorded
+                    </p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-rose-400 transition-colors mt-1 shrink-0" />
+                </div>
+              </CardContent>
+            </Card>
+
           </motion.div>
         </div>
       </motion.div>

@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
+import { logAudit } from '@/lib/auditLog';
 
 const TermsAndConditionsContext = createContext();
 
@@ -27,7 +28,7 @@ const TermsAndConditionsProvider = ({ children }) => {
     }
   }, []);
 
-  const addTerm = useCallback(async (text, type = 'general') => {
+  const addTerm = useCallback(async (text, type = 'general', userId = null) => {
     try {
       const { data, error } = await supabase
         .from('terms_and_conditions')
@@ -36,6 +37,7 @@ const TermsAndConditionsProvider = ({ children }) => {
 
       if (error) throw error;
       setTerms((prev) => [...prev, ...data]);
+      logAudit({ userId, entityType: 'terms_and_conditions', entityId: data[0]?.id, entityName: text.slice(0, 60), action: 'CREATE' });
       return data;
     } catch (error) {
       console.error('Error adding term:', error);
@@ -43,7 +45,7 @@ const TermsAndConditionsProvider = ({ children }) => {
     }
   }, []);
 
-  const updateTerm = useCallback(async (id, text, type) => {
+  const updateTerm = useCallback(async (id, text, type, userId = null) => {
     try {
       const { data, error } = await supabase
         .from('terms_and_conditions')
@@ -53,6 +55,7 @@ const TermsAndConditionsProvider = ({ children }) => {
 
       if (error) throw error;
       setTerms((prev) => prev.map((term) => (term.id === id ? data[0] : term)));
+      logAudit({ userId, entityType: 'terms_and_conditions', entityId: id, entityName: text.slice(0, 60), action: 'UPDATE' });
       return data;
     } catch (error) {
       console.error('Error updating term:', error);
@@ -60,17 +63,19 @@ const TermsAndConditionsProvider = ({ children }) => {
     }
   }, []);
 
-  const deleteTerm = useCallback(async (id) => {
+  const deleteTerm = useCallback(async (id, userId = null) => {
     try {
+      const toDelete = terms.find((t) => t.id === id);
       const { error } = await supabase.from('terms_and_conditions').delete().eq('id', id);
 
       if (error) throw error;
       setTerms((prev) => prev.filter((term) => term.id !== id));
+      logAudit({ userId, entityType: 'terms_and_conditions', entityId: id, entityName: toDelete?.text?.slice(0, 60), action: 'DELETE' });
     } catch (error) {
       console.error('Error deleting term:', error);
       throw error;
     }
-  }, []);
+  }, [terms]);
 
   useEffect(() => {
     fetchTerms();

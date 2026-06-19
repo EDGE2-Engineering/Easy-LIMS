@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { logAudit } from '@/lib/auditLog';
 
 const SettingsContext = createContext();
 
@@ -49,7 +50,7 @@ const SettingsProvider = ({ children }) => {
   }, []);
 
   const updateSetting = useCallback(
-    async (key, value) => {
+    async (key, value, userId = null) => {
       // Optimistic update
       setSettings((prev) => ({ ...prev, [key]: value }));
 
@@ -83,6 +84,7 @@ const SettingsProvider = ({ children }) => {
             ...prev,
             [key]: { id: data[0].id },
           }));
+          logAudit({ userId, entityType: 'setting', entityId: data[0].id, entityName: key, action: 'UPDATE', details: { value } });
         }
       } catch (err) {
         console.error('Update Setting Exception:', err);

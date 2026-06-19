@@ -4,6 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
+import { logAudit } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -161,10 +162,12 @@ const AdminUsersManager = () => {
         const { error } = await supabase.from('users').update(userData).eq('id', editingUser.id);
         if (error) throw error;
         userId = editingUser.id;
+        logAudit({ userId: currentUser?.id, entityType: 'user', entityId: editingUser.id, entityName: formData.full_name || formData.username, action: 'UPDATE' });
       } else {
         const { data, error } = await supabase.from('users').insert([userData]).select().single();
         if (error) throw error;
         userId = data.id;
+        logAudit({ userId: currentUser?.id, entityType: 'user', entityId: userId, entityName: formData.full_name || formData.username, action: 'CREATE' });
       }
 
       // Store department IDs directly on the user row
@@ -193,6 +196,14 @@ const AdminUsersManager = () => {
     try {
       const newStatus = !userToToggle.is_active;
       await supabase.from('users').update({ is_active: newStatus }).eq('id', userToToggle.id);
+      logAudit({
+        userId: currentUser?.id,
+        entityType: 'user',
+        entityId: userToToggle.id,
+        entityName: userToToggle.full_name || userToToggle.username,
+        action: 'UPDATE',
+        details: { is_active: newStatus },
+      });
       toast({ title: 'Status Updated' });
       fetchUsers();
     } catch (error) {

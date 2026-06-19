@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { STORAGE_KEYS } from '@/data/storageKeys';
+import { logAudit } from '@/lib/auditLog';
 
 const ExpensesContext = createContext();
 
@@ -84,7 +85,7 @@ const ExpensesProvider = ({ children }) => {
   }, [expenses, loading]);
 
   const addExpense = useCallback(
-    async (newExpense) => {
+    async (newExpense, userId = null) => {
       const tempId = `exp_${Date.now()}`;
       const expenseWithId = { ...newExpense, id: tempId, createdAt: new Date().toISOString() };
 
@@ -106,6 +107,7 @@ const ExpensesProvider = ({ children }) => {
         } else if (data && data.length > 0) {
           const added = mapFromDb(data[0]);
           setExpenses((prev) => prev.map((e) => (e.id === tempId ? added : e)));
+          logAudit({ userId, entityType: 'expense', entityId: added.id, entityName: added.description, action: 'CREATE' });
         }
       } catch (err) {
         console.error('Add Expense Exception:', err);
@@ -115,7 +117,7 @@ const ExpensesProvider = ({ children }) => {
   );
 
   const updateExpense = useCallback(
-    async (updatedExpense) => {
+    async (updatedExpense, userId = null) => {
       const previousExpenses = [...expenses];
       setExpenses((prev) => prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e)));
 
@@ -126,6 +128,8 @@ const ExpensesProvider = ({ children }) => {
 
         if (error) {
           console.error('Supabase Update Failed (expenses):', error);
+        } else {
+          logAudit({ userId, entityType: 'expense', entityId: updatedExpense.id, entityName: updatedExpense.description, action: 'UPDATE' });
         }
       } catch (err) {
         console.error('Update Expense Exception:', err);
@@ -135,7 +139,8 @@ const ExpensesProvider = ({ children }) => {
   );
 
   const deleteExpense = useCallback(
-    async (id) => {
+    async (id, userId = null) => {
+      const expenseToDelete = expenses.find((e) => e.id === id);
       const previousExpenses = [...expenses];
       setExpenses((prev) => prev.filter((e) => e.id !== id));
 
@@ -144,6 +149,8 @@ const ExpensesProvider = ({ children }) => {
 
         if (error) {
           console.error('Supabase Delete Failed (expenses):', error);
+        } else {
+          logAudit({ userId, entityType: 'expense', entityId: id, entityName: expenseToDelete?.description, action: 'DELETE' });
         }
       } catch (err) {
         console.error('Delete Expense Exception:', err);

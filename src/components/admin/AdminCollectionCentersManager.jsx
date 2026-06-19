@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Save, Search, AlertCircle, Loader2, MapPin } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { logAudit } from '@/lib/auditLog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const AdminCollectionCentersManager = () => {
+  const { user: currentUser } = useAuth();
   const [centers, setCenters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -91,13 +94,14 @@ const AdminCollectionCentersManager = () => {
     setIsSaving(true);
     try {
       if (isAddingNew) {
-        const { error } = await supabase.from('collection_centers').insert([
+        const { data, error } = await supabase.from('collection_centers').insert([
           {
             name: editingCenter.name,
             address: editingCenter.address,
           },
-        ]);
+        ]).select();
         if (error) throw error;
+        logAudit({ userId: currentUser?.id, entityType: 'collection_center', entityId: data?.[0]?.id, entityName: editingCenter.name, action: 'CREATE' });
         toast({
           title: 'Collection Center Added',
           description: 'New collection center has been successfully added.',
@@ -112,6 +116,7 @@ const AdminCollectionCentersManager = () => {
           })
           .eq('id', editingCenter.id);
         if (error) throw error;
+        logAudit({ userId: currentUser?.id, entityType: 'collection_center', entityId: editingCenter.id, entityName: editingCenter.name, action: 'UPDATE' });
         toast({
           title: 'Collection Center Updated',
           description: 'Collection center has been updated.',
@@ -148,6 +153,7 @@ const AdminCollectionCentersManager = () => {
           .delete()
           .eq('id', deleteConfirmation.id);
         if (error) throw error;
+        logAudit({ userId: currentUser?.id, entityType: 'collection_center', entityId: deleteConfirmation.id, entityName: deleteConfirmation.name, action: 'DELETE' });
         toast({
           title: 'Collection Center Deleted',
           description: 'The collection center has been removed.',

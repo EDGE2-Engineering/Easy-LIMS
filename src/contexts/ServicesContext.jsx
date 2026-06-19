@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useCallback, useMemo } from 
 import { supabase } from '@/lib/customSupabaseClient';
 import { initialServices } from '@/data/services';
 import { STORAGE_KEYS } from '@/data/storageKeys';
+import { logAudit } from '@/lib/auditLog';
 
 const ServicesContext = createContext();
 
@@ -151,7 +152,7 @@ const ServicesProvider = ({ children }) => {
   }, [services]);
 
   const updateService = useCallback(
-    async (updatedService) => {
+    async (updatedService, userId = null) => {
       const previousServices = [...services];
       setServices((prev) => prev.map((s) => (s.id === updatedService.id ? updatedService : s)));
 
@@ -196,6 +197,7 @@ const ServicesProvider = ({ children }) => {
           }
         }
 
+        logAudit({ userId, entityType: 'service', entityId: updatedService.id, entityName: updatedService.serviceType, action: 'UPDATE' });
         await fetchServices();
       } catch (err) {
         console.error('Update Service Exception:', err);
@@ -207,7 +209,7 @@ const ServicesProvider = ({ children }) => {
   );
 
   const addService = useCallback(
-    async (newService) => {
+    async (newService, userId = null) => {
       const previousServices = [...services];
 
       try {
@@ -252,6 +254,7 @@ const ServicesProvider = ({ children }) => {
             }
           }
 
+          logAudit({ userId, entityType: 'service', entityId: id, entityName: newService.serviceType, action: 'CREATE' });
           await fetchServices();
         }
       } catch (err) {
@@ -264,7 +267,8 @@ const ServicesProvider = ({ children }) => {
   );
 
   const deleteService = useCallback(
-    async (id) => {
+    async (id, userId = null) => {
+      const toDelete = services.find((s) => s.id === id);
       const previousServices = [...services];
       setServices((prev) => prev.filter((s) => s.id !== id));
 
@@ -276,6 +280,8 @@ const ServicesProvider = ({ children }) => {
           setServices(previousServices);
           throw new Error(`Failed to delete service: ${error.message}`);
         }
+
+        logAudit({ userId, entityType: 'service', entityId: id, entityName: toDelete?.serviceType, action: 'DELETE' });
       } catch (err) {
         console.error('Delete Service Exception:', err);
         setServices(previousServices);
@@ -285,7 +291,7 @@ const ServicesProvider = ({ children }) => {
     [services]
   );
 
-  const updateClientServicePrice = useCallback(async (clientId, serviceId, price) => {
+  const updateClientServicePrice = useCallback(async (clientId, serviceId, price, userId = null) => {
     try {
       console.log(
         `Updating client service price: client=${clientId}, service=${serviceId}, price=${price}`
@@ -311,6 +317,7 @@ const ServicesProvider = ({ children }) => {
           );
           return [...filtered, data[0]];
         });
+        logAudit({ userId, entityType: 'client_pricing', entityId: `${clientId}_svc_${serviceId}`, entityName: `Client ${clientId} / Service ${serviceId}`, action: 'UPDATE', details: { price } });
       }
     } catch (err) {
       console.error('Exception in updateClientServicePrice:', err);

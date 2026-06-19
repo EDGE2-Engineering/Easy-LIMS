@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { STORAGE_KEYS } from '@/data/storageKeys';
+import { logAudit } from '@/lib/auditLog';
 
 const ClientsContext = createContext();
 
@@ -166,7 +167,7 @@ const ClientsProvider = ({ children }) => {
   }, [clients]);
 
   const updateClient = useCallback(
-    async (updatedClient) => {
+    async (updatedClient, userId = null) => {
       // Check for duplicate client names
       if (updatedClient.clientName) {
         const existingWithName = clients.find(
@@ -203,6 +204,8 @@ const ClientsProvider = ({ children }) => {
           const updated = mapFromDb(data[0]);
           setClients((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
         }
+
+        logAudit({ userId, entityType: 'client', entityId: updatedClient.id, entityName: updatedClient.clientName, action: 'UPDATE' });
       } catch (err) {
         console.error('Update Client Exception:', err);
         setClients(previousClients);
@@ -213,7 +216,7 @@ const ClientsProvider = ({ children }) => {
   );
 
   const addClient = useCallback(
-    async (newClient) => {
+    async (newClient, userId = null) => {
       // Check for duplicate client names
       if (newClient.clientName) {
         const existingWithName = clients.find(
@@ -243,6 +246,7 @@ const ClientsProvider = ({ children }) => {
         if (data && data.length > 0) {
           const added = mapFromDb(data[0]);
           setClients((prev) => [...prev, added]);
+          logAudit({ userId, entityType: 'client', entityId: added.id, entityName: added.clientName, action: 'CREATE' });
         }
       } catch (err) {
         console.error('Add Client Exception:', err);
@@ -254,7 +258,8 @@ const ClientsProvider = ({ children }) => {
   );
 
   const deleteClient = useCallback(
-    async (id) => {
+    async (id, userId = null) => {
+      const clientToDelete = clients.find((c) => c.id === id);
       const previousClients = [...clients];
       setClients((prev) => prev.filter((c) => c.id !== id));
 
@@ -266,6 +271,8 @@ const ClientsProvider = ({ children }) => {
           setClients(previousClients);
           throw new Error(`Failed to delete client: ${error.message}`);
         }
+
+        logAudit({ userId, entityType: 'client', entityId: id, entityName: clientToDelete?.clientName, action: 'DELETE' });
       } catch (err) {
         console.error('Delete Client Exception:', err);
         setClients(previousClients);

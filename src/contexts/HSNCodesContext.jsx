@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { logAudit } from '@/lib/auditLog';
 
 const HSNCodesContext = createContext();
 
@@ -30,13 +31,14 @@ const HSNCodesProvider = ({ children }) => {
     }
   }, []);
 
-  const addHsnCode = useCallback(async (hsnData) => {
+  const addHsnCode = useCallback(async (hsnData, userId = null) => {
     try {
       const { data, error } = await supabase.from('hsn_sac_codes').insert([hsnData]).select();
 
       if (error) throw error;
       if (data) {
         setHsnCodes((prev) => [...prev, data[0]].sort((a, b) => a.code.localeCompare(b.code)));
+        logAudit({ userId, entityType: 'hsn_code', entityId: data[0]?.id, entityName: `${hsnData.code} — ${hsnData.description}`, action: 'CREATE' });
       }
     } catch (error) {
       console.error('Error adding HSN code:', error);
@@ -44,7 +46,7 @@ const HSNCodesProvider = ({ children }) => {
     }
   }, []);
 
-  const updateHsnCode = useCallback(async (id, hsnData) => {
+  const updateHsnCode = useCallback(async (id, hsnData, userId = null) => {
     try {
       const { data, error } = await supabase
         .from('hsn_sac_codes')
@@ -57,6 +59,7 @@ const HSNCodesProvider = ({ children }) => {
         setHsnCodes((prev) =>
           prev.map((h) => (h.id === id ? data[0] : h)).sort((a, b) => a.code.localeCompare(b.code))
         );
+        logAudit({ userId, entityType: 'hsn_code', entityId: id, entityName: `${hsnData.code} — ${hsnData.description}`, action: 'UPDATE' });
       }
     } catch (error) {
       console.error('Error updating HSN code:', error);
@@ -64,17 +67,19 @@ const HSNCodesProvider = ({ children }) => {
     }
   }, []);
 
-  const deleteHsnCode = useCallback(async (id) => {
+  const deleteHsnCode = useCallback(async (id, userId = null) => {
     try {
+      const toDelete = hsnCodes.find((h) => h.id === id);
       const { error } = await supabase.from('hsn_sac_codes').delete().eq('id', id);
 
       if (error) throw error;
       setHsnCodes((prev) => prev.filter((h) => h.id !== id));
+      logAudit({ userId, entityType: 'hsn_code', entityId: id, entityName: toDelete?.code, action: 'DELETE' });
     } catch (error) {
       console.error('Error deleting HSN code:', error);
       throw error;
     }
-  }, []);
+  }, [hsnCodes]);
 
   useEffect(() => {
     fetchHsnCodes();
