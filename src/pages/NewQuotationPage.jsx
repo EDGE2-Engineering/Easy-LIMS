@@ -1463,7 +1463,7 @@ const NewQuotationPage = () => {
         <Navbar isDirty={isDirty} isSaving={isSavingRecord} />
       </div>
 
-      <div className="flex-1 flex flex-col min-h-0 container mx-auto px-4 py-4">
+      <div className="flex-1 flex flex-col min-h-0 w-full px-6 py-4">
         <div className="flex justify-between items-center mb-4 shrink-0">
           <div className="flex items-center gap-4">
             {!isStandard() && (

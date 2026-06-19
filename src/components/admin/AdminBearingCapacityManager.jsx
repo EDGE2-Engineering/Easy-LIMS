@@ -1276,7 +1276,7 @@ const AdminBearingCapacityManager = () => {
       </div>
 
       <TabsContent value="soil">
-        <div className="space-y-8 max-w-5xl mx-auto pb-12">
+        <div className="space-y-8 w-full pb-12">
           {/* ── Overburden Pressure Correction ── */}
           <AdminOverburdenCorrectionManager />
 

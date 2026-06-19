@@ -324,7 +324,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
 
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
-      <div className="container mx-auto px-2">
+      <div className="w-full px-6">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center space-x-2">
             <div className="flex items-center justify-center bg-white p-1 rounded-md shadow-sm">

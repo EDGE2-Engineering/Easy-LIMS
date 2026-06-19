@@ -361,7 +361,7 @@ const AdminCompanyCalendar = () => {
     const upcomingIndex = sortedEvents.findIndex((e) => !isBefore(parseISO(e.event_date), today));
 
     return (
-      <div className="max-w-4xl mx-auto space-y-4">
+      <div className="w-full space-y-4">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -486,7 +486,7 @@ const AdminCompanyCalendar = () => {
   };
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
+    <div className="space-y-8 w-full pb-12">
       {/* Standardized Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>

@@ -123,7 +123,7 @@ const AdminPage = () => {
 
       <Navbar />
 
-      <main className="flex-grow container mx-auto px-4 py-6 relative">
+      <main className="flex-grow w-full px-6 py-6 relative">
         <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full space-y-6">
           <div className="mt-4">
             <ConfigDrivenPage viewName={URL_TO_VIEW[currentTab]} subView={currentTab} id={id} />

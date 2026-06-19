@@ -349,7 +349,7 @@ const InquiriesManager = () => {
   }
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
+    <div className="space-y-8 w-full pb-12">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-3">

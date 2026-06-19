@@ -28,7 +28,7 @@ const TestDetailPage = () => {
     return (
       <>
         <Navbar />
-        <div className="container mx-auto px-4 py-12 text-center">
+        <div className="w-full px-6 py-12 text-center">
           <p>Loading test details...</p>
         </div>
       </>
@@ -39,7 +39,7 @@ const TestDetailPage = () => {
     return (
       <>
         <Navbar />
-        <div className="container mx-auto px-4 py-12 text-center">
+        <div className="w-full px-6 py-12 text-center">
           <h2 className="text-2xl font-bold text-gray-900">Test not found</h2>
           <Link to="/" className="text-primary hover:underline mt-4 inline-block">
             Return to Dashboard
@@ -61,7 +61,7 @@ const TestDetailPage = () => {
       <Navbar />
 
       <div className="bg-white py-4 border-b">
-        <div className="container mx-auto px-4 flex justify-between items-center">
+        <div className="w-full px-6 flex justify-between items-center">
           <Link to="/" className="inline-flex items-center text-primary transition-colors">
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back to Dashboard
@@ -69,8 +69,8 @@ const TestDetailPage = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-sm border p-8">
+      <div className="w-full px-6 py-8">
+        <div className="w-full bg-white rounded-lg shadow-sm border p-8">
           <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8 border-b pb-8">
             <div>
               {test.group && (
