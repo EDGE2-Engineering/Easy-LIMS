@@ -355,26 +355,26 @@ const AuditLogsManager = () => {
         );
       }
 
-      const headers = [
-        'Date & Time',
-        'User',
-        'Job Code',
-        'Project',
-        'Action',
-        'From State',
-        'To State',
-        'Remarks',
-      ];
-      const csvRows = rows.map((r) => [
-        fmt(r.created_at),
-        r.users?.full_name || r.users?.username || 'System',
-        r.jobs?.job_code || '',
-        r.jobs?.project_name || '',
-        r.action_id || '',
-        getStateLabel(r.from_state),
-        getStateLabel(r.to_state),
-        `"${(r.remarks || '').replace(/"/g, '""')}"`,
-      ]);
+      const headers = ['Date & Time', 'User', 'Job Code', 'Project', 'Action', 'Remarks'];
+      const csvRows = rows.map((r) => {
+        let remarkArr = [];
+        if (r.from_state || r.to_state) {
+          remarkArr.push(`${getStateLabel(r.from_state)} -> ${getStateLabel(r.to_state)}`);
+        }
+        if (r.remarks) {
+          remarkArr.push(r.remarks);
+        }
+        const finalRemark = remarkArr.join(' | ');
+
+        return [
+          fmt(r.created_at),
+          r.users?.full_name || r.users?.username || 'System',
+          r.jobs?.job_code || '',
+          r.jobs?.project_name || '',
+          r.action_id || '',
+          `"${finalRemark.replace(/"/g, '""')}"`,
+        ];
+      });
 
       const csv = [headers.join(','), ...csvRows.map((r) => r.join(','))].join('\n');
       const blob = new Blob([csv], { type: 'text/csv' });
@@ -707,15 +707,13 @@ const AuditLogsManager = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[900px] table-fixed">
+            <table className="w-full text-sm min-w-[1000px] table-fixed">
               <colgroup>
-                <col style={{ width: '160px' }} />
-                <col style={{ width: '150px' }} />
-                <col style={{ width: '120px' }} />
-                <col style={{ width: '170px' }} />
-                <col style={{ width: '170px' }} />
-                <col style={{ width: '155px' }} />
-                <col style={{ width: '175px' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '30%' }} />
               </colgroup>
               <thead className="bg-muted/60 border-b border-border">
                 <tr>
@@ -723,8 +721,6 @@ const AuditLogsManager = () => {
                     { label: 'Date & Time', col: 'created_at' },
                     { label: 'User', col: null },
                     { label: 'Job Code', col: null },
-                    { label: 'From State', col: null },
-                    { label: 'To State', col: null },
                     { label: 'Action', col: 'action_id' },
                     { label: 'Remarks', col: null },
                   ].map(({ label, col }) => (
@@ -772,7 +768,7 @@ const AuditLogsManager = () => {
                     {/* Job Code */}
                     <td className="py-3.5 px-4 align-middle">
                       {log.jobs?.job_code ? (
-                        <span className="font-mono font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-lg border border-primary/10 text-xs">
+                        <span className="font-mono font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-lg border border-primary/10 text-xs whitespace-nowrap inline-block">
                           #{log.jobs.job_code}
                         </span>
                       ) : (
@@ -780,44 +776,48 @@ const AuditLogsManager = () => {
                       )}
                     </td>
 
-                    {/* From State */}
-                    <td className="py-3.5 px-4 align-middle">
-                      {log.from_state ? (
-                        stateBadge(log.from_state)
-                      ) : (
-                        <span className="text-gray-300 text-xs">—</span>
-                      )}
-                    </td>
-
-                    {/* To State */}
-                    <td className="py-3.5 px-4 align-middle">
-                      <div className="flex items-center gap-1.5">
-                        {log.from_state && (
-                          <ArrowRight className="w-3 h-3 text-gray-300 shrink-0" />
-                        )}
-                        {stateBadge(log.to_state)}
-                      </div>
-                    </td>
-
                     {/* Action ID */}
                     <td className="py-3.5 px-4 align-middle">
-                      <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                      <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md whitespace-nowrap inline-block">
                         {(log.action_id || '').replace(/_/g, ' ')}
                       </span>
                     </td>
 
                     {/* Remarks */}
                     <td className="py-3.5 px-4 align-middle">
-                      {log.remarks ? (
-                        <span
-                          className="text-xs text-gray-500 italic truncate block max-w-[155px]"
-                          title={log.remarks}
-                        >
-                          {log.remarks}
-                        </span>
-                      ) : (
-                        <span className="text-gray-200 text-xs">—</span>
-                      )}
+                      {(() => {
+                        const hasState = log.from_state || log.to_state;
+                        const hasRemarks = !!log.remarks;
+
+                        if (!hasState && !hasRemarks) {
+                          return <span className="text-gray-200 text-xs">—</span>;
+                        }
+
+                        return (
+                          <div className="text-xs text-gray-700 flex flex-col gap-1">
+                            {hasState && (
+                              <span className="text-[11px] font-semibold text-gray-500 bg-gray-50 self-start px-2 py-0.5 rounded border border-gray-100 mb-0.5 flex items-center">
+                                {log.from_state && log.to_state ? (
+                                  <>
+                                    {getStateLabel(log.from_state)}
+                                    <ArrowRight className="w-3 h-3 mx-1.5 text-gray-400" />
+                                    {getStateLabel(log.to_state)}
+                                  </>
+                                ) : log.to_state ? (
+                                  getStateLabel(log.to_state)
+                                ) : (
+                                  getStateLabel(log.from_state)
+                                )}
+                              </span>
+                            )}
+                            {hasRemarks && (
+                              <span className="whitespace-pre-wrap leading-relaxed">
+                                {log.remarks}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))}
