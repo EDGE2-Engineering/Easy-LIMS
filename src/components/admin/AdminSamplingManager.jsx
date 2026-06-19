@@ -497,23 +497,23 @@ const AdminSamplingManager = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   {DOCUMENT_ITEM_TYPES.SAMPLING.label}
                 </th>
-                <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600">
+                <th className="text-right py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody>
               {paginatedData.map((item) => (
-                <tr key={item.id} className="border-b hover:bg-gray-50 transition-colors">
-                  <td className="py-3 px-4">
+                <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <td className="py-4 px-4 align-top text-gray-600">
                     <div className="flex flex-wrap items-center gap-6 text-sm text-gray-700">
                       <p className="font-bold text-gray-900">{item.serviceType}</p>
                       <div className="w-full"></div>
@@ -560,7 +560,7 @@ const AdminSamplingManager = () => {
                       </p>
                     </div>
                   </td>
-                  <td className="py-1 px-1 text-right">
+                  <td className="py-4 px-4 text-right align-top">
                     <div className="flex justify-end space-x-2">
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -572,7 +572,7 @@ const AdminSamplingManager = () => {
                           <p className="text-xs">Edit sampling details</p>
                         </TooltipContent>
                       </Tooltip>
-
+  
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -593,7 +593,7 @@ const AdminSamplingManager = () => {
               ))}
               {paginatedData.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="px-6 py-10 text-center text-gray-500 italic">
+                  <td colSpan="2" className="py-10 text-center text-gray-500">
                     No sampling records found.
                   </td>
                 </tr>

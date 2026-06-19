@@ -223,7 +223,7 @@ const AdminCollectionCentersManager = () => {
   }
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
+    <div className="space-y-8 w-full pb-12">
       {/* Standardized Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
@@ -264,69 +264,71 @@ const AdminCollectionCentersManager = () => {
         </Tooltip>
       </div>
 
-      <div className="bg-white rounded-lg shadow border border-gray-100 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">
-                Center Name
-              </th>
-              <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Address</th>
-              <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600 w-24">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCenters.map((center) => (
-              <tr key={center.id} className="border-b hover:bg-gray-50 transition-colors">
-                <td className="py-3 px-4 text-sm text-gray-800 font-medium">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-primary opacity-50" />
-                    {center.name}
-                  </div>
-                </td>
-                <td className="py-3 px-4 text-sm text-gray-600">{center.address}</td>
-                <td className="py-2 px-4 text-right">
-                  <div className="flex justify-end gap-1">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(center)}>
-                          <Edit className="w-4 h-4 text-gray-600" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                        <p className="text-xs">Edit location details</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteClick(center)}
-                        >
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                        <p className="text-xs">Permanently remove this center</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filteredCenters.length === 0 && (
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
               <tr>
-                <td colSpan="3" className="py-8 text-center text-gray-400 italic">
-                  No collection centers found.
-                </td>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Center Name
+                </th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Address</th>
+                <th className="text-right py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap w-24">
+                  Actions
+                </th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredCenters.map((center) => (
+                <tr key={center.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <td className="py-4 px-4 align-middle text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-primary opacity-50" />
+                      <span className="font-semibold text-gray-900">{center.name}</span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4 align-middle text-gray-600">{center.address}</td>
+                  <td className="py-4 px-4 text-right align-middle text-gray-600">
+                    <div className="flex justify-end gap-1">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(center)}>
+                            <Edit className="w-4 h-4 text-gray-600" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                          <p className="text-xs">Edit location details</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(center)}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                          <p className="text-xs">Permanently remove this center</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredCenters.length === 0 && (
+                <tr>
+                  <td colSpan="3" className="py-8 text-center text-gray-400 italic">
+                    No collection centers found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <AlertDialog

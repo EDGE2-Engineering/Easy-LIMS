@@ -76,7 +76,7 @@ const AdminUnitWeightsManager = () => {
   }
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
+    <div className="space-y-8 w-full pb-12">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
@@ -112,57 +112,58 @@ const AdminUnitWeightsManager = () => {
         </Tooltip>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left py-4 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Material Type
-              </th>
-              <th className="text-center py-4 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Bulk Unit Weight - γ (kN/m³)
-              </th>
-              <th className="text-center py-4 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Effective Unit Weight - γ' (kN/m³)
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {MATERIALS.map((mat) => {
-              const bulkVal = localWeights[mat.id] ?? '';
-              const effectiveVal = computeEffective(bulkVal);
-
-              return (
-                <tr key={mat.id} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="py-4 px-4">
-                    <span className="font-semibold text-gray-900">{mat.name}</span>
-                  </td>
-                  <td className="py-4 px-4">
-                    <div className="flex justify-center">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={bulkVal}
-                        onChange={(e) => handleChange(mat.id, e.target.value)}
-                        placeholder="0.00"
-                        className="w-40 text-center rounded-xl h-9"
-                      />
-                    </div>
-                  </td>
-                  <td className="py-4 px-4 text-center">
-                    <span
-                      className={`font-mono font-bold ${effectiveVal === '—' ? 'text-gray-300' : 'text-primary'}`}
-                    >
-                      {effectiveVal}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Material Type
+                </th>
+                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Bulk Unit Weight - γ (kN/m³)
+                </th>
+                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Effective Unit Weight - γ' (kN/m³)
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {MATERIALS.map((mat) => {
+                const bulkVal = localWeights[mat.id] ?? '';
+                const effectiveVal = computeEffective(bulkVal);
+  
+                return (
+                  <tr key={mat.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
+                    <td className="py-4 px-4 align-middle text-gray-600">
+                      <span className="font-semibold text-gray-900">{mat.name}</span>
+                    </td>
+                    <td className="py-4 px-4 align-middle text-gray-600">
+                      <div className="flex justify-center">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={bulkVal}
+                          onChange={(e) => handleChange(mat.id, e.target.value)}
+                          placeholder="0.00"
+                          className="w-40 text-center rounded-xl h-9"
+                        />
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-center align-middle text-gray-600">
+                      <span
+                        className={`font-mono font-bold ${effectiveVal === '—' ? 'text-gray-300' : 'text-primary'}`}
+                      >
+                        {effectiveVal}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Info Note */}

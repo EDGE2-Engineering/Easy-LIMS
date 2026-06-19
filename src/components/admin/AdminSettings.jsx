@@ -231,7 +231,7 @@ const AdminSettings = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center space-x-4">
         <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center text-primary">
           <UserCog className="w-6 h-6" />

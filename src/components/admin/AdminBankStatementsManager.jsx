@@ -874,16 +874,16 @@ const AdminBankStatementsManager = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <span className="text-sm font-medium text-muted-foreground animate-pulse">
+            <span className="text-sm font-medium text-gray-500 animate-pulse">
               Loading transactions…
             </span>
           </div>
         ) : (
           <table className="w-full text-sm min-w-[900px]">
-            <thead className="bg-muted/50 border-b border-border">
+            <thead className="bg-gray-50 border-b">
               <tr>
                 {[
                   { label: 'Date', cls: 'w-[100px]' },
@@ -899,7 +899,7 @@ const AdminBankStatementsManager = () => {
                 ].map(({ label, cls }) => (
                   <th
                     key={label}
-                    className={`py-4 px-4 font-bold text-muted-foreground uppercase tracking-widest text-[10px] whitespace-nowrap ${cls}`}
+                    className={`py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap ${cls}`}
                   >
                     {label}
                   </th>
@@ -911,32 +911,32 @@ const AdminBankStatementsManager = () => {
                 rows.map((row) => (
                   <tr
                     key={row.id}
-                    className="border-b border-border hover:bg-muted/30 transition-colors"
+                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                   >
-                    <td className="py-4 px-4 text-xs font-medium text-foreground whitespace-nowrap">
+                    <td className="py-4 px-4 text-xs font-medium text-gray-600 align-middle whitespace-nowrap">
                       {txt(row.date)}
                     </td>
-                    <td className="py-4 px-4 whitespace-nowrap">
+                    <td className="py-4 px-4 align-middle whitespace-nowrap">
                       <span className="font-mono font-bold text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10 text-xs">
                         {txt(row.transaction_id)}
                       </span>
                     </td>
-                    <td className="py-4 px-4 text-xs text-muted-foreground">{txt(row.ref_num)}</td>
-                    <td className="py-4 px-4 text-xs text-foreground w-[220px] max-w-[220px]">
+                    <td className="py-4 px-4 text-xs text-gray-400 align-middle">{txt(row.ref_num)}</td>
+                    <td className="py-4 px-4 text-xs text-gray-600 align-middle w-[220px] max-w-[220px]">
                       <span className="block break-words whitespace-normal" title={row.particulars}>
                         {txt(row.particulars)}
                       </span>
                     </td>
-                    <td className="py-4 px-4 text-xs font-semibold text-right whitespace-nowrap w-[120px]">
+                    <td className="py-4 px-4 text-xs font-semibold text-right align-middle whitespace-nowrap w-[120px]">
                       {row.debit_amt != null &&
                       row.debit_amt !== '' &&
                       !isNaN(Number(row.debit_amt)) ? (
                         <span className="text-destructive">{fmt(row.debit_amt)}</span>
                       ) : (
-                        <span className="text-muted-foreground/40">—</span>
+                        <span className="text-gray-300 font-normal not-italic">—</span>
                       )}
                     </td>
-                    <td className="py-4 px-4 text-xs font-semibold text-right whitespace-nowrap w-[120px]">
+                    <td className="py-4 px-4 text-xs font-semibold text-right align-middle whitespace-nowrap w-[120px]">
                       {row.credit_amt != null &&
                       row.credit_amt !== '' &&
                       !isNaN(Number(row.credit_amt)) ? (
@@ -944,19 +944,19 @@ const AdminBankStatementsManager = () => {
                           {fmt(row.credit_amt)}
                         </span>
                       ) : (
-                        <span className="text-muted-foreground/40">—</span>
+                        <span className="text-gray-300 font-normal not-italic">—</span>
                       )}
                     </td>
-                    <td className="py-4 px-4 text-xs font-bold text-right whitespace-nowrap text-primary w-[130px]">
+                    <td className="py-4 px-4 text-xs font-bold text-right align-middle whitespace-nowrap text-primary w-[130px]">
                       {row.balance_amt != null && !isNaN(Number(row.balance_amt))
                         ? fmt(row.balance_amt)
                         : '—'}
                     </td>
-                    <td className="py-4 px-4 text-xs text-muted-foreground">{txt(row.source)}</td>
-                    <td className="py-4 px-4 text-xs text-muted-foreground">
+                    <td className="py-4 px-4 text-xs text-gray-600 align-middle">{txt(row.source)}</td>
+                    <td className="py-4 px-4 text-xs text-gray-600 align-middle">
                       {txt(row.sheet_number)}
                     </td>
-                    <td className="py-4 px-4 text-center">
+                    <td className="py-4 px-4 text-center align-middle">
                       <div className="flex justify-center gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -972,7 +972,7 @@ const AdminBankStatementsManager = () => {
                               <Edit className="w-4 h-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
                             <p className="text-xs">Edit</p>
                           </TooltipContent>
                         </Tooltip>
@@ -992,7 +992,7 @@ const AdminBankStatementsManager = () => {
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
                             <p className="text-xs">Delete</p>
                           </TooltipContent>
                         </Tooltip>
@@ -1004,8 +1004,8 @@ const AdminBankStatementsManager = () => {
                 <tr>
                   <td colSpan="10" className="py-12 text-center">
                     <div className="flex flex-col items-center gap-2">
-                      <AlertCircle className="w-8 h-8 text-muted-foreground/30" />
-                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      <AlertCircle className="w-8 h-8 text-gray-300" />
+                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
                         {searchTerm || activeFilters > 0
                           ? 'No matching transactions'
                           : 'No transactions yet'}

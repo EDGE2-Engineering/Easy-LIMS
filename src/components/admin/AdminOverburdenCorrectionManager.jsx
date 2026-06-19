@@ -397,7 +397,7 @@ const AdminOverburdenCorrectionManager = () => {
   const bracket = hasQ ? findBracket(qPoints, calcQ) : null;
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-4">
+    <div className="space-y-8 w-full pb-4">
       {/* ── Header ── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
@@ -441,76 +441,77 @@ const AdminOverburdenCorrectionManager = () => {
         </div>
       </div>
 
-      {/* ── Table ── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] w-10">
-                #
-              </th>
-              <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
-                  Effective Overburden Pressure
-                </span>
-                Q (kN/m²)
-              </th>
-              <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
-                  Overburden Pressure
-                </span>
-                Correction Factor (CF)
-              </th>
-              <th className="py-3 px-4 w-10" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {rows.map((row, idx) => (
-              <tr key={row.id} className="hover:bg-gray-50/50 transition-colors group">
-                <td className="py-3 px-4 text-center text-gray-400 text-xs font-mono">{idx + 1}</td>
-                <td className="py-3 px-4">
-                  <div className="flex justify-center">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={row.pressure}
-                      onChange={(e) => handleChange(row.id, 'pressure', e.target.value)}
-                      placeholder="e.g. 100.00"
-                      className="w-40 text-center rounded-xl h-9"
-                    />
-                  </div>
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex justify-center">
-                    <Input
-                      type="number"
-                      step="0.001"
-                      min="0"
-                      value={row.correction}
-                      onChange={(e) => handleChange(row.id, 'correction', e.target.value)}
-                      placeholder="e.g. 1.000"
-                      className="w-40 text-center rounded-xl h-9"
-                    />
-                  </div>
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex justify-center">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteRow(row.id)}
-                      className="h-8 w-8 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                      disabled={rows.length === 1}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap w-10">
+                  #
+                </th>
+                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                    Effective Overburden Pressure
+                  </span>
+                  Q (kN/m²)
+                </th>
+                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                    Overburden Pressure
+                  </span>
+                  Correction Factor (CF)
+                </th>
+                <th className="py-3 px-4 w-10 whitespace-nowrap" />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((row, idx) => (
+                <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
+                  <td className="py-4 px-4 text-center align-middle text-gray-600 text-xs font-mono">{idx + 1}</td>
+                  <td className="py-4 px-4 align-middle text-gray-600">
+                    <div className="flex justify-center">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={row.pressure}
+                        onChange={(e) => handleChange(row.id, 'pressure', e.target.value)}
+                        placeholder="e.g. 100.00"
+                        className="w-40 text-center rounded-xl h-9"
+                      />
+                    </div>
+                  </td>
+                  <td className="py-4 px-4 align-middle text-gray-600">
+                    <div className="flex justify-center">
+                      <Input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        value={row.correction}
+                        onChange={(e) => handleChange(row.id, 'correction', e.target.value)}
+                        placeholder="e.g. 1.000"
+                        className="w-40 text-center rounded-xl h-9"
+                      />
+                    </div>
+                  </td>
+                  <td className="py-4 px-4 align-middle text-gray-600">
+                    <div className="flex justify-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteRow(row.id)}
+                        className="h-8 w-8 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                        disabled={rows.length === 1}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <div className="border-t border-dashed bg-gray-50/50">
           <button
             onClick={handleAddRow}

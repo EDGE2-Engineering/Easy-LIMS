@@ -622,158 +622,186 @@ const DocumentsManager = () => {
           </Button>
         </div>
       </div>
+      
+<div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+  <div className="overflow-x-auto">
+    <table className="w-full text-sm">
+      <thead className="bg-gray-50 border-b">
+        <tr>
+          <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+            Document #
+          </th>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                  Document #
-                </th>
-                <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                  Client and Project Name
-                </th>
-                <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                  Total Amount
-                </th>
-                <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                  Document Date
-                </th>
-                <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                  Created On
-                </th>
-                <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                  Created By
-                </th>
-                <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                  Document Type
-                </th>
-                <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedDocuments.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="py-10 text-center text-gray-500">
-                    No documents found.
-                  </td>
-                </tr>
-              ) : (
-                paginatedDocuments.map((record) => (
-                  <tr
-                    key={record.id}
-                    className="border-b hover:bg-gray-50/50 transition-colors group"
-                  >
-                    <td className="py-5 px-6">
-                      <span className="font-mono font-bold text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10">
-                        {record.quote_number}
-                      </span>
-                    </td>
+          <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+            Client & Project Name
+          </th>
 
-                    <td className="py-5 px-6">
-                      <div className="font-bold text-gray-900">
-                        {record.clients?.client_name || '-'}
-                      </div>
-                      <div className="text-[10px] text-gray-400 mt-0.5 font-medium">
-                        {record.clients?.gstin ? `GSTIN: ${record.clients.gstin}` : ''}
-                      </div>
-                      {record.jobs?.project_name && (
-                        <div className="text-xs text-gray-500 mt-1">{record.jobs.project_name}</div>
-                      )}
-                    </td>
+          <th className="text-right py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+            Amount
+          </th>
 
-                    <td className="py-5 px-6 text-right">
-                      <span className="font-bold text-gray-900 tabular-nums">
-                        <Rupee />
-                        {Math.floor(calculateRecordTotal(record)).toLocaleString('en-IN')}
-                      </span>
-                    </td>
+          <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+            Document Date
+          </th>
 
-                    <td className="py-5 px-6 text-right">
-                      <div className="text-xs text-gray-500 mt-1">
-                        {record.content?.quoteDetails?.date
-                          ? format(new Date(record.content.quoteDetails.date), 'dd MMM yyyy')
-                          : '-'}
-                      </div>
-                    </td>
+          <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+            Created On
+          </th>
 
-                    <td className="py-5 px-6 text-right">
-                      <div className="text-xs text-gray-500 mt-1">
-                        {format(new Date(record.created_at), 'dd MMM yyyy')}
-                      </div>
-                    </td>
+          <th className="text-left py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+            Created By
+          </th>
 
-                    <td className="py-5 px-6 text-right">
-                      <div className="text-xs text-gray-500 mt-1">
-                        {record.users?.full_name || '-'}
-                      </div>
-                    </td>
+          <th className="text-center py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+            Type
+          </th>
 
-                    <td className="py-5 px-6 text-center">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${
-                          record.document_type === 'Tax Invoice'
-                            ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'
-                            : record.document_type === 'Proforma Invoice'
-                              ? 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800'
-                              : record.document_type === 'Purchase Order'
-                                ? 'bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800'
-                                : record.document_type === 'Delivery Challan'
-                                  ? 'bg-teal-50 text-teal-700 border-teal-100 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800'
-                                  : 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
-                        }`}
+          <th className="text-center py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+            Actions
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {paginatedDocuments.length === 0 ? (
+          <tr>
+            <td colSpan={8} className="py-10 text-center text-gray-500">
+              No documents found.
+            </td>
+          </tr>
+        ) : (
+          paginatedDocuments.map((record) => (
+            <tr
+              key={record.id}
+              className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+            >
+              <td className="py-4 px-3 align-top whitespace-nowrap">
+                <div className="font-mono text-xs font-semibold text-gray-700">
+                  {record.quote_number}
+                </div>
+              </td>
+
+<td className="py-4 px-3 align-top">
+  <div className="font-semibold text-gray-900 break-words">
+    {record.clients?.client_name || '-'}
+  </div>
+
+  {record.jobs?.project_name && (
+    <div
+      className="mt-1 text-xs text-gray-500 break-words whitespace-normal"
+      title={record.jobs.project_name}
+    >
+      {record.jobs.project_name}
+    </div>
+  )}
+
+  {record.clients?.gstin && (
+    <div className="mt-2 text-[10px] text-gray-400 break-all">
+      GSTIN: {record.clients.gstin}
+    </div>
+  )}
+</td>
+
+              <td className="py-4 px-3 text-right whitespace-nowrap">
+                <span className="font-bold text-gray-900 tabular-nums">
+                  <Rupee />
+                  {Math.floor(
+                    calculateRecordTotal(record)
+                  ).toLocaleString('en-IN')}
+                </span>
+              </td>
+
+              <td className="py-4 px-3 whitespace-nowrap text-gray-600">
+                {record.content?.quoteDetails?.date
+                  ? format(
+                      new Date(record.content.quoteDetails.date),
+                      'dd MMM yyyy'
+                    )
+                  : '-'}
+              </td>
+
+              <td className="py-4 px-3 whitespace-nowrap text-gray-600">
+                {format(
+                  new Date(record.created_at),
+                  'dd MMM yyyy'
+                )}
+              </td>
+
+              <td className="py-4 px-2 whitespace-nowrap text-gray-600">
+                {record.users?.full_name || '-'}
+              </td>
+
+              <td className="py-4 px-2 text-center whitespace-nowrap">
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${
+                    record.document_type === 'Tax Invoice'
+                      ? 'bg-blue-50 text-blue-700'
+                      : record.document_type === 'Proforma Invoice'
+                      ? 'bg-purple-50 text-purple-700'
+                      : record.document_type === 'Purchase Order'
+                      ? 'bg-orange-50 text-orange-700'
+                      : record.document_type === 'Delivery Challan'
+                      ? 'bg-teal-50 text-teal-700'
+                      : 'bg-green-50 text-green-700'
+                  }`}
+                >
+                  {record.document_type}
+                </span>
+              </td>
+
+              <td className="py-4 px-2">
+                <div className="flex justify-center items-center gap-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() =>
+                          handleOpen(
+                            record.id,
+                            record.quote_number
+                          )
+                        }
                       >
-                        {record.document_type}
-                      </span>
-                    </td>
+                        <ExternalLink className="h-4 w-4 text-blue-600" />
+                      </Button>
+                    </TooltipTrigger>
 
-                    <td className="py-5 px-6 text-center">
-                      <div className="flex justify-center gap-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all text-blue-600"
-                              onClick={() => handleOpen(record.id, record.quote_number)}
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                            <p className="text-xs">Open Document</p>
-                          </TooltipContent>
-                        </Tooltip>
+                    <TooltipContent>
+                      Open Document
+                    </TooltipContent>
+                  </Tooltip>
 
-                        {user?.role !== ROLES.ACCOUNTS.slug && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all"
-                                onClick={() => handleDeleteClick(record)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                              <p className="text-xs">Delete Document</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                  {user?.role !== ROLES.ACCOUNTS.slug && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() =>
+                            handleDeleteClick(record)
+                          }
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TooltipTrigger>
+
+                      <TooltipContent>
+                        Delete Document
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
 
       <AlertDialog
         open={deleteConfirmation.isOpen}

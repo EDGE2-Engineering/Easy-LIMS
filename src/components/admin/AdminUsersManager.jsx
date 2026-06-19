@@ -203,7 +203,7 @@ const AdminUsersManager = () => {
   };
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
+    <div className="space-y-8 w-full pb-12">
       {/* Standardized Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
@@ -333,116 +333,115 @@ const AdminUsersManager = () => {
         )}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b font-semibold">
-            <tr>
-              <th className="text-left p-4">Name</th>
-              <th className="text-left p-4">Employee ID</th>
-              <th className="text-left p-4">Username</th>
-              <th className="text-left p-4">Role</th>
-              <th className="text-left p-4">Status</th>
-              <th className="text-right p-4">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.map((u) => (
-              <tr key={u.id} className="border-b hover:bg-gray-50">
-                <td className="p-4">
-                  <div className="flex flex-col">
-                    <span className="font-medium text-gray-900">{u.full_name}</span>
-                    {/* <span className="text-[10px] text-gray-400 font-medium">
-                                            {u.technician_capabilities?.length > 0 
-                                                ? u.technician_capabilities.map(c => c.category).join(', ') 
-                                                : (u.departments?.name || 'No Dept')}
-                                        </span> */}
-                  </div>
-                </td>
-                <td className="p-4">
-                  <div className="text-xs font-mono font-semibold text-primary">
-                    {u.employee_id || (
-                      <span className="text-gray-300 font-normal not-italic">—</span>
-                    )}
-                  </div>
-                </td>
-                <td className="p-4">
-                  <div className="text-xs text-gray-500">{u.username}</div>
-                </td>
-
-                <td className="p-4">
-                  <Badge className="bg-primary text-primary-foreground uppercase text-[10px] font-bold px-2 py-0.5 shadow-sm hover:bg-primary/90">
-                    {Object.values(ROLES).find((r) => r.slug === u.role)?.label || u.role || 'N/A'}
-                  </Badge>
-                  {(() => {
-                    const deptIds = Array.isArray(u.departments) ? u.departments : [];
-                    const deptNames = deptIds
-                      .map((id) => DEPARTMENTS.find((d) => d.id === id)?.name)
-                      .filter(Boolean);
-                    return deptNames.length > 0 ? (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {deptNames.map((name) => (
-                          <Badge
-                            key={name}
-                            variant="secondary"
-                            className="capitalize text-[10px] border border-border"
-                          >
-                            {name}
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : null;
-                  })()}
-                </td>
-
-                <td className="p-4">
-                  <Badge
-                    className={
-                      u.is_active
-                        ? 'bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20'
-                        : 'bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20'
-                    }
-                  >
-                    {u.is_active ? 'Active' : 'Deactivated'}
-                  </Badge>
-                </td>
-                <td className="p-4 text-right flex justify-end gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="sm" onClick={() => handleEditUser(u)}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                      <p className="text-xs">Edit user account</p>
-                    </TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setUserToToggle(u);
-                          setIsStatusDialogOpen(true);
-                        }}
-                      >
-                        {u.is_active ? (
-                          <UserMinus className="w-4 h-4 text-red-500" />
-                        ) : (
-                          <UserCheck className="w-4 h-4 text-green-500" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                      <p className="text-xs">{u.is_active ? 'Deactivate user' : 'Activate user'}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </td>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Name</th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Employee ID</th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Username</th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Role</th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Status</th>
+                <th className="text-right py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredUsers.map((u) => (
+                <tr key={u.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <td className="py-4 px-4 align-middle text-gray-600">
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-900">{u.full_name}</span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4 align-middle text-gray-600">
+                    <div className="text-xs font-mono font-semibold text-primary">
+                      {u.employee_id || (
+                        <span className="text-gray-300 font-normal not-italic">—</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-4 px-4 align-middle text-gray-600">
+                    <div className="text-xs text-gray-500">{u.username}</div>
+                  </td>
+  
+                  <td className="py-4 px-4 align-middle text-gray-600">
+                    <Badge className="bg-primary text-primary-foreground uppercase text-[10px] font-bold px-2 py-0.5 shadow-sm hover:bg-primary/90">
+                      {Object.values(ROLES).find((r) => r.slug === u.role)?.label || u.role || 'N/A'}
+                    </Badge>
+                    {(() => {
+                      const deptIds = Array.isArray(u.departments) ? u.departments : [];
+                      const deptNames = deptIds
+                        .map((id) => DEPARTMENTS.find((d) => d.id === id)?.name)
+                        .filter(Boolean);
+                      return deptNames.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {deptNames.map((name) => (
+                            <Badge
+                              key={name}
+                              variant="secondary"
+                              className="capitalize text-[10px] border border-border"
+                            >
+                              {name}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
+                  </td>
+  
+                  <td className="py-4 px-4 align-middle text-gray-600">
+                    <Badge
+                      className={
+                        u.is_active
+                          ? 'bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20'
+                          : 'bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20'
+                      }
+                    >
+                      {u.is_active ? 'Active' : 'Deactivated'}
+                    </Badge>
+                  </td>
+                  <td className="py-4 px-4 text-right align-middle text-gray-600">
+                    <div className="flex justify-end gap-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="sm" onClick={() => handleEditUser(u)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                          <p className="text-xs">Edit user account</p>
+                        </TooltipContent>
+                      </Tooltip>
+  
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setUserToToggle(u);
+                              setIsStatusDialogOpen(true);
+                            }}
+                          >
+                            {u.is_active ? (
+                              <UserMinus className="w-4 h-4 text-red-500" />
+                            ) : (
+                              <UserCheck className="w-4 h-4 text-green-500" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                          <p className="text-xs">{u.is_active ? 'Deactivate user' : 'Activate user'}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

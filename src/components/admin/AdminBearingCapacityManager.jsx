@@ -1276,7 +1276,7 @@ const AdminBearingCapacityManager = () => {
       </div>
 
       <TabsContent value="soil">
-        <div className="space-y-8 max-w-5xl mx-auto pb-12">
+        <div className="space-y-8 w-full pb-12">
           {/* ── Overburden Pressure Correction ── */}
           <AdminOverburdenCorrectionManager />
 
@@ -1329,7 +1329,8 @@ const AdminBearingCapacityManager = () => {
 
           {/* ── Table ── */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
               <thead>
                 {/* Group label row */}
                 <tr className="border-b border-gray-100">
@@ -1511,6 +1512,7 @@ const AdminBearingCapacityManager = () => {
                 })}
               </tbody>
             </table>
+            </div>
 
             <div className="border-t border-dashed bg-gray-50/50">
               <button
@@ -1903,7 +1905,8 @@ const AdminBearingCapacityManager = () => {
                   </div>
                 </div>
 
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-50 border-y border-gray-100">
                       <th
@@ -1953,6 +1956,7 @@ const AdminBearingCapacityManager = () => {
                     ))}
                   </tbody>
                 </table>
+                </div>
 
                 <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50">
                   <p className="text-xs text-gray-500 italic">
@@ -2366,7 +2370,8 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
             </div>
 
             {/* Table */}
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100">
                   <th className="py-2" />
@@ -2427,6 +2432,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                 ))}
               </tbody>
             </table>
+            </div>
 
             <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50">
               <p className="text-xs text-gray-500 italic">
@@ -2718,7 +2724,8 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
               </p>
             </div>
 
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
               <thead>
                 {/* Group label row */}
                 <tr className="border-b border-gray-100">
@@ -2842,6 +2849,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                 ))}
               </tbody>
             </table>
+            </div>
 
             <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50">
               <p className="text-xs text-gray-500 italic">
@@ -5972,7 +5980,8 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                           {isClay ? 'Part 3 (consolidation Sf)' : 'Part 2 (immediate Si only)'}
                         </p>
                       </div>
-                      <table className="w-full text-sm">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
                         <thead>
                           <tr className="bg-gray-50 border-b border-gray-100">
                             <th className="text-center py-2 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
@@ -6039,6 +6048,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                           </tr>
                         </tbody>
                       </table>
+                      </div>
                       {(shearSBC === null || settlementSBC === null) && (
                         <p className="px-4 py-2 text-[10px] text-amber-600 dark:text-amber-400 italic bg-amber-50 dark:bg-amber-950/40 border-t border-amber-200 dark:border-amber-800">
                           {shearSBC === null && settlementSBC === null
@@ -7545,7 +7555,8 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                   </p>
                 </div>
                 {/* Rows */}
-                <table className="w-full text-xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
                   <tbody className="divide-y divide-gray-50">
                     {rows.map(({ param, sym, unit, source, formula }) => {
                       const sourceBadge =
@@ -7586,6 +7597,7 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                     })}
                   </tbody>
                 </table>
+                </div>
               </div>
             ))}
 

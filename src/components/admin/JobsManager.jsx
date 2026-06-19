@@ -61,6 +61,8 @@ import MaterialInwardManager from './MaterialInwardManager';
 import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 import ReactSelect from 'react-select';
 import ReportPreview from '@/components/ReportPreview';
+import Rupee from '@/components/Rupee';
+import { format } from 'date-fns';
 
 const JobsManager = ({ id }) => {
   const [records, setRecords] = useState([]);
@@ -2072,117 +2074,129 @@ const JobsManager = ({ id }) => {
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Job Code
-              </th>
-              <th className="text-left py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Client and Project Name
-              </th>
-              <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Quotation Amount
-              </th>
-              <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Created On
-              </th>
-              <th className="text-right py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Created By
-              </th>
-              <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Status
-              </th>
-              <th className="text-center py-4 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedRecords.map((r) => (
-              <tr key={r.id} className="border-b hover:bg-gray-50/50 transition-colors group">
-                <td className="py-5 px-6">
-                  <span className="font-mono font-bold text-primary bg-primary/5 px-2 py-1 rounded-lg border border-primary/10">
-                    {r.job_code}
-                  </span>
-                </td>
-                <td className="py-5 px-6">
-                  <div className="font-bold text-gray-900">{r.clients?.client_name}</div>
-                  <div className="text-[10px] text-gray-400 mt-0.5 font-medium">
-                    {r.clients?.gstin ? `GSTIN: ${r.clients.gstin}` : ''}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">{r.project_name}</div>
-                </td>
-                <td className="py-5 px-6 text-right">
-                  {r.quotationAmount != null ? (
-                    <span className="font-bold text-gray-900 tabular-nums">
-                      ₹{r.quotationAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                    </span>
-                  ) : (
-                    <span className="text-gray-300 font-bold">—</span>
-                  )}
-                </td>
-                <td className="py-5 px-6 text-right">
-                  <div className="text-xs text-gray-500 mt-1">
-                    {new Date(r.created_at).toLocaleString('en-IN', {
-                      timeZone: 'Asia/Kolkata',
-                      dateStyle: 'medium',
-                    })}
-                  </div>
-                </td>
-                <td className="py-5 px-6 text-right">
-                  <div className="text-xs text-gray-500 mt-1">
-                    {r.users?.full_name || r.created_by || '-'}
-                  </div>
-                </td>
-                <td className="py-5 px-6 text-center">
-                  <Badge
-                    className={`shadow-sm uppercase text-[10px] font-black tracking-wide whitespace-nowrap border ${getStatusBadgeClasses(r.status)}`}
-                  >
-                    {getStatusLabel(r.status)}
-                  </Badge>
-                </td>
-                <td className="py-5 px-6 text-center">
-                  <div className="flex justify-center gap-2">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/settings/jobs/${r.id}`)}
-                          className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all"
-                        >
-                          <ArrowRight className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                        <p className="text-xs">Open Job</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    {isAdmin() && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteClick(r)}
-                            className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                          <p className="text-xs">Delete this job</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                  </div>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Job Code
+                </th>
+                <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Client & Project Name
+                </th>
+                <th className="text-right py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Amount
+                </th>
+                <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Created On
+                </th>
+                <th className="text-left py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Created By
+                </th>
+                <th className="text-center py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Status
+                </th>
+                <th className="text-center py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Actions
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {paginatedRecords.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-10 text-center text-gray-500">
+                    No jobs found.
+                  </td>
+                </tr>
+              ) : (
+                paginatedRecords.map((r) => (
+                  <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="py-4 px-3 align-top whitespace-nowrap">
+                      <div className="font-mono text-xs font-semibold text-gray-700">
+                        {r.job_code}
+                      </div>
+                    </td>
+                    <td className="py-4 px-3 align-top">
+                      <div className="font-semibold text-gray-900 break-words">
+                        {r.clients?.client_name || '-'}
+                      </div>
+                      {r.project_name && (
+                        <div className="mt-1 text-xs text-gray-500 break-words whitespace-normal" title={r.project_name}>
+                          {r.project_name}
+                        </div>
+                      )}
+                      {r.clients?.gstin && (
+                        <div className="mt-2 text-[10px] text-gray-400 break-all">
+                          GSTIN: {r.clients.gstin}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-4 px-3 text-right whitespace-nowrap align-top">
+                      {r.quotationAmount != null ? (
+                        <span className="font-bold text-gray-900 tabular-nums">
+                          <Rupee />
+                          {Math.floor(r.quotationAmount).toLocaleString('en-IN')}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300 font-bold">—</span>
+                      )}
+                    </td>
+                    <td className="py-4 px-3 whitespace-nowrap text-gray-600 align-top">
+                      {r.created_at ? format(new Date(r.created_at), 'dd MMM yyyy') : '-'}
+                    </td>
+                    <td className="py-4 px-2 whitespace-nowrap text-gray-600 align-top">
+                      {r.users?.full_name || r.created_by || '-'}
+                    </td>
+                    <td className="py-4 px-2 text-center whitespace-nowrap align-top">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${getStatusBadgeClasses(r.status)}`}
+                      >
+                        {getStatusLabel(r.status)}
+                      </span>
+                    </td>
+                    <td className="py-4 px-2 align-top">
+                      <div className="flex justify-center items-center gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => navigate(`/settings/jobs/${r.id}`)}
+                            >
+                              <ArrowRight className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Open Job</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        {isAdmin() && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                onClick={() => handleDeleteClick(r)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                              <p className="text-xs">Delete this job</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <AlertDialog

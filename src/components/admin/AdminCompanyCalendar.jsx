@@ -361,130 +361,132 @@ const AdminCompanyCalendar = () => {
     const upcomingIndex = sortedEvents.findIndex((e) => !isBefore(parseISO(e.event_date), today));
 
     return (
-      <div className="max-w-4xl mx-auto space-y-4">
+      <div className="w-full space-y-4">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Event Name
-                </th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {sortedEvents.length === 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
                 <tr>
-                  <td colSpan="4" className="px-6 py-12 text-center text-gray-500 italic">
-                    No events found in the calendar.
-                  </td>
+                  <th className="px-6 py-3 text-left font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                    Event Name
+                  </th>
+                  <th className="px-6 py-3 text-left font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-right font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                    Actions
+                  </th>
                 </tr>
-              ) : (
-                sortedEvents.map((event, index) => {
-                  const eventDate = parseISO(event.event_date);
-                  const isPast = isBefore(eventDate, today) && !isSameDay(eventDate, today);
-                  const isRef = index === upcomingIndex;
-
-                  return (
-                    <tr
-                      key={event.id}
-                      className={`group hover:bg-gray-50 transition-colors ${isPast ? 'opacity-60' : ''} ${isRef ? 'bg-primary/5' : ''}`}
-                      id={isRef ? 'today-event' : undefined}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col">
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {sortedEvents.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-10 text-center text-gray-500 italic">
+                      No events found in the calendar.
+                    </td>
+                  </tr>
+                ) : (
+                  sortedEvents.map((event, index) => {
+                    const eventDate = parseISO(event.event_date);
+                    const isPast = isBefore(eventDate, today) && !isSameDay(eventDate, today);
+                    const isRef = index === upcomingIndex;
+  
+                    return (
+                      <tr
+                        key={event.id}
+                        className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${isPast ? 'opacity-60' : ''} ${isRef ? 'bg-primary/5' : ''}`}
+                        id={isRef ? 'today-event' : undefined}
+                      >
+                        <td className="px-6 py-4 align-middle text-gray-600 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span
+                              className={`font-semibold ${isSunday(eventDate) ? 'text-red-600' : 'text-gray-900'}`}
+                            >
+                              {format(eventDate, 'PPP')}
+                            </span>
+                            <span className="text-[10px] text-gray-400 font-medium">
+                              {format(eventDate, 'EEEE')}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 align-middle text-gray-600">
+                          <span className="text-sm font-medium text-gray-700">
+                            {event.event_name}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 align-middle text-gray-600">
                           <span
-                            className={`font-semibold ${isSunday(eventDate) ? 'text-red-600' : 'text-gray-900'}`}
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              event.is_holiday
+                                ? 'bg-orange-100 text-orange-700'
+                                : isSunday(eventDate)
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-primary/10 text-primary'
+                            }`}
                           >
-                            {format(eventDate, 'PPP')}
-                          </span>
-                          <span className="text-[10px] text-gray-400 font-medium">
-                            {format(eventDate, 'EEEE')}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm font-medium text-gray-700">
-                          {event.event_name}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            event.is_holiday
-                              ? 'bg-orange-100 text-orange-700'
+                            {event.is_holiday
+                              ? 'Company Holiday'
                               : isSunday(eventDate)
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-primary/10 text-primary'
-                          }`}
-                        >
-                          {event.is_holiday
-                            ? 'Company Holiday'
-                            : isSunday(eventDate)
-                              ? 'Sunday'
-                              : 'Event'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-gray-400 rounded-lg"
-                                onClick={() => handleDateClick(eventDate)}
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                              <p className="text-xs">Edit event details</p>
-                            </TooltipContent>
-                          </Tooltip>
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                                onClick={() => {
-                                  setSelectedDate(eventDate);
-                                  setEditingEvent(event);
-                                  handleDeleteEvent();
-                                }}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                              <p className="text-xs">Remove event from calendar</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                                ? 'Sunday'
+                                : 'Event'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 align-middle text-gray-600 text-right">
+                          <div className="flex justify-end gap-2">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-gray-400 rounded-lg"
+                                  onClick={() => handleDateClick(eventDate)}
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                <p className="text-xs">Edit event details</p>
+                              </TooltipContent>
+                            </Tooltip>
+  
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                                  onClick={() => {
+                                    setSelectedDate(eventDate);
+                                    setEditingEvent(event);
+                                    handleDeleteEvent();
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                <p className="text-xs">Remove event from calendar</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     );
   };
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
+    <div className="space-y-8 w-full pb-12">
       {/* Standardized Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>

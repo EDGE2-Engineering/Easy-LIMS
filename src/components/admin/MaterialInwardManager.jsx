@@ -1042,27 +1042,24 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Job Order #
                 </th>
-                {/* <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">PO/WO #</th> */}
-                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Created Date
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Received Date
                 </th>
-                {/* <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Client</th> */}
-                {/* <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Status</th> */}
-                <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Created By
                 </th>
-                <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600">
+                <th className="text-right py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Actions
                 </th>
               </tr>
@@ -1070,49 +1067,38 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
             <tbody>
               {paginatedRecords.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-10 text-center text-gray-500">
+                  <td colSpan="5" className="py-10 text-center text-gray-500">
                     No records found.
                   </td>
                 </tr>
               ) : (
                 paginatedRecords.map((record) => (
-                  <tr key={record.id} className="border-b hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-4">
-                      <span className="font-semibold font-mono text-black text-md bg-gray-200 p-1 rounded text-sm">
+                  <tr key={record.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="py-4 px-4 align-middle text-gray-600">
+                      <span className="font-semibold font-mono text-gray-750 text-sm bg-gray-100 px-2 py-1 rounded">
                         {record.job_order_no}
                       </span>
                     </td>
-                    {/* <td className="py-3 px-4 text-sm text-gray-600">
-                                            {record.po_wo_number || '-'}
-                                        </td> */}
-                    <td className="py-3 px-4 text-sm text-gray-600">
+                    <td className="py-4 px-4 text-gray-600 align-middle">
                       {format(new Date(record.created_at), 'dd MMM yyyy')}
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
+                    <td className="py-4 px-4 text-gray-600 align-middle">
                       {record.material_samples?.[0]?.received_date
                         ? format(new Date(record.material_samples[0].received_date), 'dd MMM yyyy')
                         : '-'}
                     </td>
-                    {/* <td className="py-3 px-4 text-sm text-gray-600">
-                                            {record.clients?.client_name || '-'}
-                                        </td> */}
-                    {/* <td className="py-3 px-4">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800`}>
-                                                {record.status.replace(/_/g, ' ')}
-                                            </span>
-                                        </td> */}
-                    <td className="py-3 px-4 text-sm text-gray-600">
+                    <td className="py-4 px-4 text-gray-600 align-middle">
                       {record.users?.full_name || '-'}
                     </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex justify-end space-x-4">
+                    <td className="py-4 px-4 text-right align-middle text-gray-600">
+                      <div className="flex justify-end gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
                               variant="ghost"
-                              size="sm px-2"
+                              size="icon"
                               onClick={() => handleEdit(record)}
-                              className="text-blue-600"
+                              className="text-blue-650"
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
@@ -1126,7 +1112,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                           <TooltipTrigger asChild>
                             <Button
                               variant="ghost"
-                              size="sm px-2"
+                              size="icon"
                               onClick={() => handleDeleteClick(record)}
                               className="text-red-500"
                             >

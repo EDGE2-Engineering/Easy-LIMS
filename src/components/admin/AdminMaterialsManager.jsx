@@ -185,66 +185,68 @@ const AdminMaterialsManager = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow border border-gray-100 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Name</th>
-              <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600 w-24">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredMaterials.map((material) => (
-              <tr key={material.id} className="border-b hover:bg-gray-50 transition-colors">
-                <td className="py-3 px-4 text-sm text-gray-800 font-bold">{material.name}</td>
-                <td className="py-2 px-4 text-right">
-                  <div className="flex justify-end gap-1">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(material)}
-                          disabled
-                        >
-                          <Edit className="w-4 h-4 text-gray-400" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                        <p className="text-xs">Editing disabled</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteClick(material)}
-                          disabled
-                        >
-                          <Trash2 className="w-4 h-4 text-gray-300" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                        <p className="text-xs">Deletion disabled</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filteredMaterials.length === 0 && (
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
               <tr>
-                <td colSpan="2" className="py-8 text-center text-gray-400 italic">
-                  No materials found.
-                </td>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Name</th>
+                <th className="text-right py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap w-24">
+                  Actions
+                </th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredMaterials.map((material) => (
+                <tr key={material.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <td className="py-4 px-4 align-middle text-gray-900 font-semibold">{material.name}</td>
+                  <td className="py-4 px-4 text-right align-middle text-gray-600">
+                    <div className="flex justify-end gap-1">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(material)}
+                            disabled
+                          >
+                            <Edit className="w-4 h-4 text-gray-400" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                          <p className="text-xs">Editing disabled</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(material)}
+                            disabled
+                          >
+                            <Trash2 className="w-4 h-4 text-gray-300" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                          <p className="text-xs">Deletion disabled</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredMaterials.length === 0 && (
+                <tr>
+                  <td colSpan="2" className="py-8 text-center text-gray-400 italic">
+                    No materials found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <AlertDialog

@@ -21,12 +21,9 @@ const HRDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
 
-  const [myLeaveRequests, setMyLeaveRequests] = useState([]);
-  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [stats, setStats] = useState({
     totalEmployees: 0,
-    pendingApprovalsCount: 0,
-    myPendingLeaves: 0,
   });
 
   useEffect(() => {
@@ -46,30 +43,20 @@ const HRDashboard = () => {
 
       if (empError) throw empError;
 
-      // 2. Fetch pending leave approvals (all)
-      const { data: approvals, error: appError } = await supabase
-        .from('request_approvals')
-        .select('*, requester:users!request_approvals_requester_id_fkey(full_name, role)')
-        .eq('status', 'PENDING')
-        .order('created_at', { ascending: false });
+      // 2. Fetch active employees list
+      const { data: employeeList, error: listError } = await supabase
+        .from('users')
+        .select('id, full_name, username, role')
+        .eq('is_active', true)
+        .neq('role', ROLES.SUPER_ADMIN.slug)
+        .order('full_name')
+        .limit(10);
 
-      if (appError) throw appError;
-      setPendingApprovals(approvals || []);
-
-      // 3. Fetch user's own leave requests
-      const { data: myLeaves, error: leavesError } = await supabase
-        .from('request_approvals')
-        .select('*')
-        .eq('requester_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (leavesError) throw leavesError;
-      setMyLeaveRequests(myLeaves || []);
+      if (listError) throw listError;
+      setEmployees(employeeList || []);
 
       setStats({
         totalEmployees: employeeCount || 0,
-        pendingApprovalsCount: approvals?.length || 0,
-        myPendingLeaves: myLeaves?.filter((r) => r.status === 'PENDING').length || 0,
       });
     } catch (error) {
       console.error('HR Dashboard Fetch Error:', error);
@@ -138,30 +125,15 @@ const HRDashboard = () => {
               label: 'Active Employees',
               value: stats.totalEmployees,
               icon: Users,
-              path: '#/settings/system/users',
-              tooltip: 'View all active employees',
-            },
-            {
-              label: 'Pending Approvals',
-              value: stats.pendingApprovalsCount,
-              icon: CheckCircle2,
-              path: '#/settings/approvals',
-              tooltip: 'Review pending leave requests',
-            },
-            {
-              label: 'My Pending Leaves',
-              value: stats.myPendingLeaves,
-              icon: Calendar,
               path: null,
-              tooltip: 'Your pending leave requests',
+              tooltip: 'Total active employees in the system',
             },
           ].map((stat, idx) => (
             <motion.div key={idx} variants={item}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Card
-                    className={`border-none shadow-sm bg-gray-50/30 relative overflow-hidden group ${stat.path ? 'cursor-pointer hover:shadow-md active:scale-95' : ''} transition-all`}
-                    onClick={() => stat.path && (window.location.hash = stat.path)}
+                    className="border-none shadow-sm bg-gray-50/30 relative overflow-hidden group transition-all"
                   >
                     <div className="absolute top-0 right-0 w-16 h-16 bg-gray-50 rounded-bl-[64px] -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110 duration-500" />
                     <CardContent className="p-4 relative">
@@ -177,9 +149,6 @@ const HRDashboard = () => {
                             {stat.value}
                           </h3>
                         </div>
-                        {stat.path && (
-                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors shrink-0" />
-                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -192,86 +161,39 @@ const HRDashboard = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column: Pending Approvals */}
+        <div className="w-full">
+          {/* Left Column: Active Employees Directory */}
           <motion.div variants={item} className="space-y-6">
             <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
               <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
                 <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-orange-500" /> Pending Approval Requests
+                  <Users className="w-5 h-5 text-primary" /> Employee Directory
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="divide-y divide-gray-50 max-h-[400px] overflow-y-auto">
-                  {pendingApprovals.length === 0 ? (
+                  {employees.length === 0 ? (
                     <div className="p-8 text-center text-gray-400 font-medium italic text-sm">
-                      No pending requests to approve.
+                      No active employees found.
                     </div>
                   ) : (
-                    pendingApprovals.map((req) => (
+                    employees.map((emp) => (
                       <div
-                        key={req.id}
-                        className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center group cursor-pointer"
-                        onClick={() => (window.location.hash = '/settings/approvals')}
-                      >
-                        <div>
-                          <p className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">
-                            {req.requester?.full_name}
-                          </p>
-                          <p className="text-xs text-gray-500 font-medium">
-                            {req.request_data?.leaveType || 'Leave Request'}
-                          </p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors shrink-0" />
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Right Column: My Leave Requests */}
-          <motion.div variants={item} className="space-y-6">
-            <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
-              <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
-                <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-primary" /> My Leave Requests
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="divide-y divide-gray-50 max-h-[400px] overflow-y-auto">
-                  {myLeaveRequests.length === 0 ? (
-                    <div className="p-8 text-center text-gray-400 font-medium italic text-sm">
-                      No recent leave requests.
-                    </div>
-                  ) : (
-                    myLeaveRequests.map((req) => (
-                      <div
-                        key={req.id}
+                        key={emp.id}
                         className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center group"
                       >
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">
-                            {req.request_data?.leaveType || 'Leave Request'}
-                          </p>
-                          <p className="text-xs text-gray-500 font-medium">
-                            {new Date(req.request_data?.startDate).toLocaleDateString()} -{' '}
-                            {new Date(req.request_data?.endDate).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div>
-                          <Badge
-                            className={`text-[10px] font-black uppercase border-none ${
-                              req.status === 'APPROVED'
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : req.status === 'REJECTED'
-                                  ? 'bg-red-100 text-red-700'
-                                  : 'bg-yellow-100 text-yellow-700'
-                            }`}
-                          >
-                            {req.status}
-                          </Badge>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-sm uppercase">
+                            {emp.full_name?.[0] || emp.username?.[0] || 'E'}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-gray-900">
+                              {emp.full_name || emp.username}
+                            </p>
+                            <p className="text-xs text-gray-500 font-medium capitalize">
+                              {emp.role ? emp.role.replace('_', ' ') : 'No Role'}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     ))
