@@ -253,6 +253,18 @@
   border-color: #000000 !important;
 }
 
+/* Ensure high-contrast text selection highlight inside white A4 sheets in dark mode */
+.dark .a4-container ::selection,
+.dark .a4-page ::selection {
+  background-color: rgba(59, 130, 246, 0.25) !important;
+  color: inherit !important;
+}
+.dark .a4-container *::-moz-selection,
+.dark .a4-page *::-moz-selection {
+  background-color: rgba(59, 130, 246, 0.25) !important;
+  color: inherit !important;
+}
+
 /* A4 Sheet Standards & Print Styles */
 :root {
   --a4-page-width: 210mm;

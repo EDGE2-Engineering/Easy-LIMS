@@ -1002,84 +1002,84 @@ const AdminRockBearingCapacity = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead className="bg-gray-50 text-[10px] uppercase font-bold text-gray-400 tracking-wider border-b border-gray-100">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="py-3 px-6">Parameter</th>
-                <th className="py-3 px-4 text-center">Symbol</th>
-                <th className="py-3 px-4 text-center">Unit</th>
-                <th className="py-3 px-4">Standard Reference</th>
-                <th className="py-3 px-6">Formula / Source</th>
+                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Parameter</th>
+                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Symbol</th>
+                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Unit</th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Standard Reference</th>
+                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Formula / Source</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-              <tr>
-                <td className="py-3 px-6 font-semibold">Safe Bearing Pressure (Method I)</td>
-                <td className="py-3 px-4 text-center font-mono font-bold text-primary">qs</td>
-                <td className="py-3 px-4 text-center font-mono">N/mm²</td>
-                <td className="py-3 px-4">IS 12070 : 1987</td>
-                <td className="py-3 px-6 font-mono text-[11px]">qc × Nj × Cw × Cj</td>
+              <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td className="py-4 px-6 font-semibold">Safe Bearing Pressure (Method I)</td>
+                <td className="py-4 px-4 text-center font-mono font-bold text-primary">qs</td>
+                <td className="py-4 px-4 text-center font-mono">N/mm²</td>
+                <td className="py-4 px-4">IS 12070 : 1987</td>
+                <td className="py-4 px-6 font-mono text-[11px]">qc × Nj × Cw × Cj</td>
               </tr>
-              <tr>
-                <td className="py-3 px-6 font-semibold">Point Load Compressive Strength</td>
-                <td className="py-3 px-4 text-center font-mono font-bold text-primary">qc</td>
-                <td className="py-3 px-4 text-center font-mono">N/mm²</td>
-                <td className="py-3 px-4">Fallback calculation</td>
-                <td className="py-3 px-6 font-mono text-[11px]">qc = 22 × PLI</td>
+              <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td className="py-4 px-6 font-semibold">Point Load Compressive Strength</td>
+                <td className="py-4 px-4 text-center font-mono font-bold text-primary">qc</td>
+                <td className="py-4 px-4 text-center font-mono">N/mm²</td>
+                <td className="py-4 px-4">Fallback calculation</td>
+                <td className="py-4 px-6 font-mono text-[11px]">qc = 22 × PLI</td>
               </tr>
-              <tr>
-                <td className="py-3 px-6 font-semibold">Design Safe Bearing Pressure</td>
-                <td className="py-3 px-4 text-center font-mono font-bold text-primary">
+              <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td className="py-4 px-6 font-semibold">Design Safe Bearing Pressure</td>
+                <td className="py-4 px-4 text-center font-mono font-bold text-primary">
                   Design SBP
                 </td>
-                <td className="py-3 px-4 text-center font-mono">kN/m²</td>
-                <td className="py-3 px-4">Core strength discount</td>
-                <td className="py-3 px-6 font-mono text-[11px]">
+                <td className="py-4 px-4 text-center font-mono">kN/m²</td>
+                <td className="py-4 px-4">Core strength discount</td>
+                <td className="py-4 px-6 font-mono text-[11px]">
                   qs (in kN/m²) × 0.85 (rounded down to nearest 10)
                 </td>
               </tr>
-              <tr>
-                <td className="py-3 px-6 font-semibold">Immediate Settlement</td>
-                <td className="py-3 px-4 text-center font-mono font-bold text-primary">Si</td>
-                <td className="py-3 px-4 text-center font-mono">mm</td>
-                <td className="py-3 px-4">Elastic formula</td>
-                <td className="py-3 px-6 font-mono text-[11px]">
+              <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td className="py-4 px-6 font-semibold">Immediate Settlement</td>
+                <td className="py-4 px-4 text-center font-mono font-bold text-primary">Si</td>
+                <td className="py-4 px-4 text-center font-mono">mm</td>
+                <td className="py-4 px-4">Elastic formula</td>
+                <td className="py-4 px-6 font-mono text-[11px]">
                   [qs × B × (1 − μ²) × I / E] × 1000
                 </td>
               </tr>
-              <tr>
-                <td className="py-3 px-6 font-semibold">Poisson's Ratio</td>
-                <td className="py-3 px-4 text-center font-mono font-bold text-primary">μ</td>
-                <td className="py-3 px-4 text-center font-mono">—</td>
-                <td className="py-3 px-4">Rock type lookup</td>
-                <td className="py-3 px-6">
+              <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td className="py-4 px-6 font-semibold">Poisson's Ratio</td>
+                <td className="py-4 px-4 text-center font-mono font-bold text-primary">μ</td>
+                <td className="py-4 px-4 text-center font-mono">—</td>
+                <td className="py-4 px-4">Rock type lookup</td>
+                <td className="py-4 px-6">
                   Weathered: 0.40 | Soft: 0.30 | Medium hard: 0.20 | Hard: 0.10
                 </td>
               </tr>
-              <tr>
-                <td className="py-3 px-6 font-semibold">Modulus of Elasticity</td>
-                <td className="py-3 px-4 text-center font-mono font-bold text-primary">E</td>
-                <td className="py-3 px-4 text-center font-mono">kN/m²</td>
-                <td className="py-3 px-4">Rock type lookup</td>
-                <td className="py-3 px-6">
+              <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td className="py-4 px-6 font-semibold">Modulus of Elasticity</td>
+                <td className="py-4 px-4 text-center font-mono font-bold text-primary">E</td>
+                <td className="py-4 px-4 text-center font-mono">kN/m²</td>
+                <td className="py-4 px-4">Rock type lookup</td>
+                <td className="py-4 px-6">
                   Weathered: 1.0M | Soft: 5.0M | Medium: 10.0M | Hard: 20.0M
                 </td>
               </tr>
-              <tr>
-                <td className="py-3 px-6 font-semibold">Rock Mass Rating</td>
-                <td className="py-3 px-4 text-center font-mono font-bold text-primary">RMR</td>
-                <td className="py-3 px-4 text-center font-mono">—</td>
-                <td className="py-3 px-4">IS 13365 (Part 1) : 1998</td>
-                <td className="py-3 px-6 font-mono text-[11px]">
+              <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td className="py-4 px-6 font-semibold">Rock Mass Rating</td>
+                <td className="py-4 px-4 text-center font-mono font-bold text-primary">RMR</td>
+                <td className="py-4 px-4 text-center font-mono">—</td>
+                <td className="py-4 px-4">IS 13365 (Part 1) : 1998</td>
+                <td className="py-4 px-6 font-mono text-[11px]">
                   Σ (Strength + RQD + Spacing + Condition + GW + Joint)
                 </td>
               </tr>
-              <tr>
-                <td className="py-3 px-6 font-semibold">Net Safe Bearing Pressure (Method II)</td>
-                <td className="py-3 px-4 text-center font-mono font-bold text-primary">qnb</td>
-                <td className="py-3 px-4 text-center font-mono">kN/m²</td>
-                <td className="py-3 px-4">IS 12070 : Table 3</td>
-                <td className="py-3 px-6 font-mono text-[11px]">
+              <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td className="py-4 px-6 font-semibold">Net Safe Bearing Pressure (Method II)</td>
+                <td className="py-4 px-4 text-center font-mono font-bold text-primary">qnb</td>
+                <td className="py-4 px-4 text-center font-mono">kN/m²</td>
+                <td className="py-4 px-4">IS 12070 : Table 3</td>
+                <td className="py-4 px-6 font-mono text-[11px]">
                   qnb (in t/m²) × 9.81 [qnb interpolated from RMR table]
                 </td>
               </tr>

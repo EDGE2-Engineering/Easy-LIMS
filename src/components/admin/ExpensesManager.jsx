@@ -695,147 +695,164 @@ const ExpensesManager = () => {
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-right py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] ">
-                Date
-              </th>
-              <th className="text-left py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Description / Remarks
-              </th>
-              <th className="text-center py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Amount
-              </th>
-              <th className="text-center py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] hidden md:table-cell">
-                Paid By
-              </th>
-              <th className="text-center py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] hidden md:table-cell">
-                Created By
-              </th>
-              <th className="text-center py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] hidden lg:table-cell">
-                Added On
-              </th>
-              <th className="text-center py-4 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {paginatedExpenses.length > 0 ? (
-              paginatedExpenses.map((expense) => (
-                <tr key={expense.id} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="py-5 px-2 text-right">
-                    <span className="font-mono font-normal text-xs text-gray-700">
-                      {new Date(expense.date).toLocaleDateString('en-IN', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </span>
-                  </td>
-                  <td className="py-5 px-2">
-                    <div className="font-bold text-gray-900 group-hover:text-primary transition-colors">
-                      {expense.description}
-                    </div>
-                    {expense.projectName && (
-                      <div className="text-xs text-gray-700 mt-1">
-                        <span className="font-semibold text-gray-400 uppercase tracking-wider text-[9px] mr-1">
-                          Project:
-                        </span>
-                        {expense.projectName}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-right py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Date
+                </th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Description / Remarks
+                </th>
+                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Amount
+                </th>
+                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap hidden md:table-cell">
+                  Paid By
+                </th>
+                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap hidden md:table-cell">
+                  Created By
+                </th>
+                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap hidden lg:table-cell">
+                  Added On
+                </th>
+                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {paginatedExpenses.length > 0 ? (
+                paginatedExpenses.map((expense) => (
+                  <tr key={expense.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
+                    <td className="py-4 px-4 text-right align-middle text-gray-600">
+                      <span className="font-mono font-normal text-xs text-gray-700">
+                        {new Date(expense.date).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 align-middle text-gray-600">
+                      <div className="font-bold text-gray-900 group-hover:text-primary transition-colors">
+                        {expense.description}
                       </div>
-                    )}
-                    {expense.siteAddress && (
-                      <div className="text-xs text-gray-700 mt-0.5">
-                        <span className="font-semibold text-gray-400 uppercase tracking-wider text-[9px] mr-1">
-                          Site:
-                        </span>
-                        {expense.siteAddress}
-                      </div>
-                    )}
-                    {expense.remarks && (
-                      <div className="text-xs text-gray-400 mt-1 italic">{expense.remarks}</div>
-                    )}
-                  </td>
-
-                  <td className="py-5 px-2 text-center">
-                    <div className="font-mono font-bold text-primary">
-                      ₹
-                      {Number(expense.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </div>
-                  </td>
-                  <td className="py-5 px-2 text-center hidden md:table-cell">
-                    {expense.paidBy ? (
-                      <div className="text-xs font-semibold text-gray-700 tracking-tight">
-                        {expense.paidBy}
-                      </div>
-                    ) : (
-                      <span className="text-gray-300 text-xs">—</span>
-                    )}
-                  </td>
-                  <td className="py-5 px-2 text-center hidden md:table-cell">
-                    <div className="text-xs font-semibold text-gray-500 tracking-tight">
-                      {expense.createdBy}
-                    </div>
-                  </td>
-                  <td className="py-5 px-2 text-center hidden lg:table-cell">
-                    {expense.createdAt ? (
-                      <div className="text-xs text-gray-500">
-                        <div className="font-mono">
-                          {new Date(expense.createdAt).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
+                      {expense.projectName && (
+                        <div className="text-xs text-gray-700 mt-1">
+                          <span className="font-semibold text-gray-400 uppercase tracking-wider text-[9px] mr-1">
+                            Project:
+                          </span>
+                          {expense.projectName}
                         </div>
-                        <div className="text-gray-400 text-[10px]">
-                          {new Date(expense.createdAt).toLocaleTimeString('en-IN', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                      )}
+                      {expense.siteAddress && (
+                        <div className="text-xs text-gray-700 mt-0.5">
+                          <span className="font-semibold text-gray-400 uppercase tracking-wider text-[9px] mr-1">
+                            Site:
+                          </span>
+                          {expense.siteAddress}
                         </div>
-                      </div>
-                    ) : (
-                      <span className="text-gray-300 text-xs">—</span>
-                    )}
-                  </td>
+                      )}
+                      {expense.remarks && (
+                        <div className="text-xs text-gray-400 mt-1 italic">{expense.remarks}</div>
+                      )}
+                    </td>
 
-                  <td className="py-5 px-2 text-center">
-                    <div className="flex justify-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(expense)}
-                        className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteClick(expense)}
-                        className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    <td className="py-4 px-4 text-center align-middle text-gray-600">
+                      <div className="font-mono font-bold text-primary">
+                        ₹
+                        {Number(expense.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-center align-middle text-gray-600 hidden md:table-cell">
+                      {expense.paidBy ? (
+                        <div className="text-xs font-semibold text-gray-700 tracking-tight">
+                          {expense.paidBy}
+                        </div>
+                      ) : (
+                        <span className="text-gray-300 text-xs">—</span>
+                      )}
+                    </td>
+                    <td className="py-4 px-4 text-center align-middle text-gray-600 hidden md:table-cell">
+                      <div className="text-xs font-semibold text-gray-500 tracking-tight">
+                        {expense.createdBy}
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-center align-middle text-gray-600 hidden lg:table-cell">
+                      {expense.createdAt ? (
+                        <div className="text-xs text-gray-500">
+                          <div className="font-mono">
+                            {new Date(expense.createdAt).toLocaleDateString('en-IN', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </div>
+                          <div className="text-gray-400 text-[10px]">
+                            {new Date(expense.createdAt).toLocaleTimeString('en-IN', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-300 text-xs">—</span>
+                      )}
+                    </td>
+
+                    <td className="py-4 px-4 text-center align-middle text-gray-600">
+                      <div className="flex justify-center gap-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(expense)}
+                              className="h-9 px-4 rounded-lg hover:bg-primary hover:text-white transition-all"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Edit record</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(expense)}
+                              className="h-9 px-4 rounded-lg hover:bg-red-500 hover:text-white text-red-500 transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Delete record</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center text-gray-400">
+                      <IndianRupee className="w-12 h-12 mb-4 opacity-20" />
+                      <p className="font-medium text-lg">No expenses found</p>
+                      <p className="text-sm">Try adjusting your search or filters.</p>
                     </div>
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="8" className="py-12 text-center">
-                  <div className="flex flex-col items-center justify-center text-gray-400">
-                    <IndianRupee className="w-12 h-12 mb-4 opacity-20" />
-                    <p className="font-medium text-lg">No expenses found</p>
-                    <p className="text-sm">Try adjusting your search or filters.</p>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Removed bottom pagination as it is now in the top settings panel */}

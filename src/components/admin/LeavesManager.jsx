@@ -580,46 +580,30 @@ const LeavesManager = () => {
               </Button>
             </div>
 
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-100">
-                  <tr>
-                    <th className="text-left p-5 text-[11px] font-black uppercase tracking-widest text-gray-400">
-                      Date
-                    </th>
-                    <th className="text-left p-5 text-[11px] font-black uppercase tracking-widest text-gray-400">
-                      Comments
-                    </th>
-                    <th className="text-right p-5 text-[11px] font-black uppercase tracking-widest text-gray-400">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {loadingLeaves ? (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b">
                     <tr>
-                      <td colSpan="3" className="p-12 text-center">
-                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary/20" />
-                      </td>
+                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                        Date
+                      </th>
+                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                        Comments
+                      </th>
+                      <th className="text-right py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                        Actions
+                      </th>
                     </tr>
-                  ) : leaves.filter((l) => {
-                      const leaveDate = new Date(l.leave_date);
-                      const matchesMonth =
-                        historyFilters.month === 'all' ||
-                        leaveDate.getMonth() === parseInt(historyFilters.month);
-                      const matchesYear =
-                        historyFilters.year === 'all' ||
-                        leaveDate.getFullYear() === parseInt(historyFilters.year);
-                      return matchesMonth && matchesYear;
-                    }).length === 0 ? (
-                    <tr>
-                      <td colSpan="3" className="p-12 text-center text-gray-400 font-medium">
-                        No leave records found for the selected filters.
-                      </td>
-                    </tr>
-                  ) : (
-                    leaves
-                      .filter((l) => {
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {loadingLeaves ? (
+                      <tr>
+                        <td colSpan="3" className="p-12 text-center">
+                          <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary/20" />
+                        </td>
+                      </tr>
+                    ) : leaves.filter((l) => {
                         const leaveDate = new Date(l.leave_date);
                         const matchesMonth =
                           historyFilters.month === 'all' ||
@@ -628,42 +612,60 @@ const LeavesManager = () => {
                           historyFilters.year === 'all' ||
                           leaveDate.getFullYear() === parseInt(historyFilters.year);
                         return matchesMonth && matchesYear;
-                      })
-                      .map((l) => (
-                        <tr key={l.id} className="hover:bg-gray-50/50 transition-colors">
-                          <td className="p-5 font-black text-gray-900">{l.leave_date}</td>
-                          <td className="p-5 text-gray-500 font-medium italic">
-                            {l.comments || '—'}
-                          </td>
-                          <td className="p-5 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setEditingLeave(l);
-                                  setLeaveComment(l.comments || '');
-                                  setIsEditLeaveDialogOpen(true);
-                                }}
-                                className="text-gray-400 hover:text-primary rounded-xl"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setDeleteTarget(l)}
-                                className="text-gray-400 hover:text-red-500 rounded-xl"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                  )}
-                </tbody>
-              </table>
+                      }).length === 0 ? (
+                      <tr>
+                        <td colSpan="3" className="py-8 text-center text-gray-400 italic">
+                          No leave records found for the selected filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      leaves
+                        .filter((l) => {
+                          const leaveDate = new Date(l.leave_date);
+                          const matchesMonth =
+                            historyFilters.month === 'all' ||
+                            leaveDate.getMonth() === parseInt(historyFilters.month);
+                          const matchesYear =
+                            historyFilters.year === 'all' ||
+                            leaveDate.getFullYear() === parseInt(historyFilters.year);
+                          return matchesMonth && matchesYear;
+                        })
+                        .map((l) => (
+                          <tr key={l.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                            <td className="py-4 px-6 font-mono font-bold text-gray-700 align-middle whitespace-nowrap">{l.leave_date}</td>
+                            <td className="py-4 px-6 text-gray-500 font-medium italic align-middle">
+                              {l.comments || '—'}
+                            </td>
+                            <td className="py-4 px-6 text-right align-middle text-gray-600">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setEditingLeave(l);
+                                    setLeaveComment(l.comments || '');
+                                    setIsEditLeaveDialogOpen(true);
+                                  }}
+                                  className="text-gray-400 hover:text-primary rounded-xl"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setDeleteTarget(l)}
+                                  className="text-gray-400 hover:text-red-500 rounded-xl"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

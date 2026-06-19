@@ -467,131 +467,133 @@ const InquiriesManager = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50/50 border-b border-gray-100">
-            <tr>
-              <th className="text-left py-5 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Received
-              </th>
-              <th className="text-left py-5 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Client / Subject
-              </th>
-              <th className="text-center py-5 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Status
-              </th>
-              <th className="text-right py-5 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {loading ? (
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
               <tr>
-                <td colSpan="4" className="py-20 text-center">
-                  <div className="flex flex-col items-center justify-center gap-3">
-                    <Loader2 className="w-10 h-10 animate-spin text-primary/30" />
-                    <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">
-                      Fetching leads...
-                    </p>
-                  </div>
-                </td>
+                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Received
+                </th>
+                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Client / Subject
+                </th>
+                <th className="text-center py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Status
+                </th>
+                <th className="text-right py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Actions
+                </th>
               </tr>
-            ) : paginatedInquiries.length > 0 ? (
-              paginatedInquiries.map((inquiry) => {
-                const status =
-                  INQUIRY_STATUSES.find((s) => s.value === (inquiry.status || 'PENDING')) ||
-                  INQUIRY_STATUSES[0];
-                return (
-                  <tr key={inquiry.id} className="hover:bg-gray-50/50 transition-all group">
-                    <td className="py-5 px-6">
-                      <div className="flex flex-col">
-                        <span className="font-mono font-bold text-gray-900 whitespace-nowrap">
-                          {format(new Date(inquiry.created_at), 'dd MMM yyyy')}
-                        </span>
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-0.5">
-                          {format(new Date(inquiry.created_at), 'hh:mm aa')}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-5 px-6">
-                      <div className="flex flex-col max-w-md">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-gray-900 group-hover:text-primary transition-colors">
-                            {inquiry.client_name}
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan="4" className="py-20 text-center">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <Loader2 className="w-10 h-10 animate-spin text-primary/30" />
+                      <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">
+                        Fetching leads...
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedInquiries.length > 0 ? (
+                paginatedInquiries.map((inquiry) => {
+                  const status =
+                    INQUIRY_STATUSES.find((s) => s.value === (inquiry.status || 'PENDING')) ||
+                    INQUIRY_STATUSES[0];
+                  return (
+                    <tr key={inquiry.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      <td className="py-4 px-6 align-middle text-gray-600">
+                        <div className="flex flex-col">
+                          <span className="font-mono font-bold text-gray-700 whitespace-nowrap">
+                            {format(new Date(inquiry.created_at), 'dd MMM yyyy')}
                           </span>
-                          {inquiry.phone && (
-                            <span className="text-[10px] text-gray-400 font-mono">
-                              ({inquiry.phone})
-                            </span>
-                          )}
+                          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-0.5">
+                            {format(new Date(inquiry.created_at), 'hh:mm aa')}
+                          </span>
                         </div>
-                        <span className="text-xs font-semibold text-gray-600 line-clamp-1">
-                          {inquiry.subject}
-                        </span>
-                        <span className="text-[10px] text-gray-400 italic line-clamp-1 mt-0.5">
-                          {inquiry.message}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-5 px-6 text-center">
-                      <Badge
-                        className={`${status.color} uppercase text-[10px] font-black px-3 py-1 rounded-full border-none shadow-sm`}
-                      >
-                        {status.label}
-                      </Badge>
-                    </td>
-                    <td className="py-5 px-6 text-right">
-                      <div className="flex justify-end gap-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEdit(inquiry)}
-                              className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary transition-all"
-                            >
-                              <Edit className="w-4.5 h-4.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                            <p className="text-xs">Review and respond</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteClick(inquiry)}
-                              className="h-9 w-9 rounded-xl hover:bg-red-50 hover:text-red-500 transition-all"
-                            >
-                              <Trash2 className="w-4.5 h-4.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                            <p className="text-xs">Delete inquiry</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan="4" className="py-20 text-center">
-                  <div className="flex flex-col items-center justify-center text-gray-400">
-                    <MessageSquare className="w-16 h-16 mb-4 opacity-10" />
-                    <p className="font-bold uppercase tracking-widest text-[10px]">
-                      No inquiries found
-                    </p>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                      </td>
+                      <td className="py-4 px-6 align-middle text-gray-600">
+                        <div className="flex flex-col max-w-md">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-gray-900 group-hover:text-primary transition-colors">
+                              {inquiry.client_name}
+                            </span>
+                            {inquiry.phone && (
+                              <span className="text-[10px] text-gray-400 font-mono">
+                                ({inquiry.phone})
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs font-semibold text-gray-600 line-clamp-1">
+                            {inquiry.subject}
+                          </span>
+                          <span className="text-[10px] text-gray-400 italic line-clamp-1 mt-0.5">
+                            {inquiry.message}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-center align-middle text-gray-600">
+                        <Badge
+                          className={`${status.color} uppercase text-[10px] font-black px-3 py-1 rounded-full border-none shadow-sm`}
+                        >
+                          {status.label}
+                        </Badge>
+                      </td>
+                      <td className="py-4 px-6 text-right align-middle text-gray-600">
+                        <div className="flex justify-end gap-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(inquiry)}
+                                className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary transition-all"
+                              >
+                                <Edit className="w-4.5 h-4.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                              <p className="text-xs">Review and respond</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteClick(inquiry)}
+                                className="h-9 w-9 rounded-xl hover:bg-red-50 hover:text-red-500 transition-all"
+                              >
+                                <Trash2 className="w-4.5 h-4.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                              <p className="text-xs">Delete inquiry</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="4" className="py-20 text-center">
+                    <div className="flex flex-col items-center justify-center text-gray-400">
+                      <MessageSquare className="w-16 h-16 mb-4 opacity-10" />
+                      <p className="font-bold uppercase tracking-widest text-[10px]">
+                        No inquiries found
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <AlertDialog

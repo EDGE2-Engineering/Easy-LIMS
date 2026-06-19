@@ -170,88 +170,90 @@ const AdminReportsManager = () => {
         </Tooltip>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50/50 border-b">
-            <tr>
-              <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Report #</th>
-              <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Client</th>
-              <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">
-                Created By
-              </th>
-              <th className="text-left py-4 px-6 font-semibold text-sm text-gray-600">Date</th>
-              <th className="text-right py-4 px-6 font-semibold text-sm text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
               <tr>
-                <td colSpan="5" className="py-20 text-center">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-                  <span className="text-gray-500">Loading reports...</span>
-                </td>
+                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Report #</th>
+                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Client</th>
+                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Created By
+                </th>
+                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Date</th>
+                <th className="text-right py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Actions</th>
               </tr>
-            ) : filteredReports.length === 0 ? (
-              <tr>
-                <td colSpan="5" className="py-20 text-center text-gray-500">
-                  No reports found. Click "Create Report" to start.
-                </td>
-              </tr>
-            ) : (
-              filteredReports.map((report) => (
-                <tr key={report.id} className="hover:bg-gray-50/80 transition-colors">
-                  <td className="py-4 px-6">
-                    <span className="font-mono font-semibold text-gray-900">
-                      {report.report_number}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-sm text-gray-700">
-                    {report.clients?.client_name || '-'}
-                  </td>
-                  <td className="py-4 px-6 text-sm text-gray-700">
-                    {report.users?.full_name || '-'}
-                  </td>
-                  <td className="py-4 px-6 text-sm text-gray-500">
-                    {format(new Date(report.created_at), 'dd MMM yyyy')}
-                  </td>
-                  <td className="py-3 px-2 text-right space-x-0">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="px-2"
-                          size="icon"
-                          onClick={() => handleEdit(report)}
-                        >
-                          <FileText className="w-4 h-4 text-blue-600" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                        <p className="text-xs">Edit this report</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="px-2"
-                          size="icon"
-                          onClick={() => handleDeleteClick(report)}
-                        >
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                        <p className="text-xs">Permanently delete this report</p>
-                      </TooltipContent>
-                    </Tooltip>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan="5" className="py-20 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+                    <span className="text-gray-500">Loading reports...</span>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : filteredReports.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="py-20 text-center text-gray-500">
+                    No reports found. Click "Create Report" to start.
+                  </td>
+                </tr>
+              ) : (
+                filteredReports.map((report) => (
+                  <tr key={report.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="py-4 px-6 align-middle text-gray-600">
+                      <span className="font-mono font-semibold text-gray-700">
+                        {report.report_number}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-gray-600 align-middle">
+                      {report.clients?.client_name || '-'}
+                    </td>
+                    <td className="py-4 px-6 text-gray-600 align-middle">
+                      {report.users?.full_name || '-'}
+                    </td>
+                    <td className="py-4 px-6 text-gray-600 align-middle">
+                      {format(new Date(report.created_at), 'dd MMM yyyy')}
+                    </td>
+                    <td className="py-4 px-6 text-right text-gray-600 align-middle">
+                      <div className="flex justify-end gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(report)}
+                            >
+                              <FileText className="w-4 h-4 text-blue-600" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Edit this report</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteClick(report)}
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Permanently delete this report</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <AlertDialog

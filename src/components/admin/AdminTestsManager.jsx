@@ -600,73 +600,92 @@ const AdminTestsManager = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow border border-gray-100 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">
-                {DOCUMENT_ITEM_TYPES.LAB_TESTS.label}
-              </th>
-              <th className="text-right py-3 px-4 font-semibold text-sm text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedTests.map((test) => (
-              <tr key={test.id} className="border-b hover:bg-gray-50 transition-colors">
-                <td className="py-3 px-4">
-                  <div className="flex flex-wrap items-center gap-6 text-sm text-gray-700">
-                    <p className="font-bold text-gray-900">{test.testType}</p>
-                    <div className="w-full"></div>
-                    <p>
-                      <span className="font-semibold text-primary">Materials:</span>{' '}
-                      {Array.isArray(test.materials)
-                        ? test.materials.join(', ')
-                        : test.materials || '-'}
-                    </p>
-
-                    <p>
-                      <span className="font-semibold text-primary">Method:</span>{' '}
-                      {test.testMethodSpecification || '-'}
-                    </p>
-
-                    <p>
-                      <span className="font-semibold text-primary">Price:</span> <Rupee />
-                      {test.price.toLocaleString()}
-                    </p>
-
-                    <p>
-                      <span className="font-semibold text-primary">HSN Code:</span>{' '}
-                      {test.hsnCode || '-'}
-                    </p>
-                    <p>
-                      <span className="font-semibold text-primary">Technicals:</span>{' '}
-                      {Array.isArray(test.techList) && test.techList.length > 0
-                        ? test.techList.join(', ')
-                        : '-'}
-                    </p>
-                    <p>
-                      <span className="font-semibold text-primary">T&C:</span>{' '}
-                      {Array.isArray(test.tcList) && test.tcList.length > 0
-                        ? test.tcList.join(', ')
-                        : '-'}
-                    </p>
-                  </div>
-                </td>
-
-                <td className="py-1 px-1 text-right">
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(test)}>
-                      <Edit className="w-4 h-4 text-gray-600" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(test)}>
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
-                  </div>
-                </td>
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  {DOCUMENT_ITEM_TYPES.LAB_TESTS.label}
+                </th>
+                <th className="text-right py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Actions
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {paginatedTests.map((test) => (
+                <tr key={test.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <td className="py-4 px-4 align-top text-gray-600">
+                    <div className="flex flex-wrap items-center gap-6 text-sm text-gray-700">
+                      <p className="font-bold text-gray-900">{test.testType}</p>
+                      <div className="w-full"></div>
+                      <p>
+                        <span className="font-semibold text-primary">Materials:</span>{' '}
+                        {Array.isArray(test.materials)
+                          ? test.materials.join(', ')
+                          : test.materials || '-'}
+                      </p>
+  
+                      <p>
+                        <span className="font-semibold text-primary">Method:</span>{' '}
+                        {test.testMethodSpecification || '-'}
+                      </p>
+  
+                      <p>
+                        <span className="font-semibold text-primary">Price:</span> <Rupee />
+                        {test.price.toLocaleString()}
+                      </p>
+  
+                      <p>
+                        <span className="font-semibold text-primary">HSN Code:</span>{' '}
+                        {test.hsnCode || '-'}
+                      </p>
+                      <p>
+                        <span className="font-semibold text-primary">Technicals:</span>{' '}
+                        {Array.isArray(test.techList) && test.techList.length > 0
+                          ? test.techList.join(', ')
+                          : '-'}
+                      </p>
+                      <p>
+                        <span className="font-semibold text-primary">T&C:</span>{' '}
+                        {Array.isArray(test.tcList) && test.tcList.length > 0
+                          ? test.tcList.join(', ')
+                          : '-'}
+                      </p>
+                    </div>
+                  </td>
+  
+                  <td className="py-4 px-4 text-right align-top">
+                    <div className="flex justify-end space-x-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(test)}>
+                            <Edit className="w-4 h-4 text-gray-600" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                          <p className="text-xs">Edit test details</p>
+                        </TooltipContent>
+                      </Tooltip>
+  
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(test)}>
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                          <p className="text-xs">Permanently delete this test</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Pagination Controls - Bottom */}

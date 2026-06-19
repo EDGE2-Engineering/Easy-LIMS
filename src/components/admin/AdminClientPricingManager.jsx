@@ -189,7 +189,7 @@ const AdminClientPricingManager = () => {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="border-b border-gray-100 bg-gray-50/50 px-6 py-4">
               <div className="flex justify-between items-center">
@@ -208,29 +208,29 @@ const AdminClientPricingManager = () => {
 
             <TabsContent value="services" className="p-0 m-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-100">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="px-6 py-4 font-semibold">Service Name</th>
-                      <th className="px-6 py-4 font-semibold">Default Price</th>
-                      <th className="px-6 py-4 font-semibold">Price for Client</th>
-                      <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Service Name</th>
+                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Default Price</th>
+                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Price for Client</th>
+                      <th className="text-right py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filteredServices.map((service) => {
                       const clientPrice = getClientPrice(service.id, 'service');
                       return (
-                        <tr key={service.id} className="hover:bg-gray-50/50 transition-colors">
-                          <td className="px-6 py-4">
+                        <tr key={service.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                          <td className="py-4 px-6 text-gray-600 align-middle">
                             <div className="font-medium text-gray-900">{service.serviceType}</div>
                             <div className="text-gray-500 text-xs">HSN: {service.hsnCode}</div>
                           </td>
-                          <td className="px-6 py-4 text-gray-600">
+                          <td className="py-4 px-6 text-gray-600 align-middle">
                             <Rupee />
                             {service.price.toLocaleString()}
                           </td>
-                          <td className="px-6 py-4 w-48">
+                          <td className="py-4 px-6 w-48 text-gray-600 align-middle">
                             <Input
                               type="number"
                               placeholder={`₹${service.price}`}
@@ -247,7 +247,7 @@ const AdminClientPricingManager = () => {
                               }
                             />
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="py-4 px-6 text-right text-gray-600 align-middle">
                             <div className="flex justify-end gap-2">
                               {pendingPrices[service.id] !== undefined &&
                                 String(pendingPrices[service.id]) !== String(clientPrice ?? '') && (
@@ -291,21 +291,21 @@ const AdminClientPricingManager = () => {
 
             <TabsContent value="tests" className="p-0 m-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-100">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="px-6 py-4 font-semibold">Test Name & Material</th>
-                      <th className="px-6 py-4 font-semibold">Default Price</th>
-                      <th className="px-6 py-4 font-semibold">Price for Client</th>
-                      <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Test Name & Material</th>
+                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Default Price</th>
+                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Price for Client</th>
+                      <th className="text-right py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filteredTests.map((test) => {
                       const clientPrice = getClientPrice(test.id, 'test');
                       return (
-                        <tr key={test.id} className="hover:bg-gray-50/50 transition-colors">
-                          <td className="px-6 py-4">
+                        <tr key={test.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                          <td className="py-4 px-6 text-gray-600 align-middle">
                             <div className="font-medium text-gray-900">{test.testType}</div>
                             <div className="text-gray-500 text-xs">
                               {Array.isArray(test.materials)
@@ -315,11 +315,11 @@ const AdminClientPricingManager = () => {
                             </div>
                           </td>
 
-                          <td className="px-6 py-4 text-gray-600">
+                          <td className="py-4 px-6 text-gray-600 align-middle">
                             <Rupee />
                             {test.price.toLocaleString()}
                           </td>
-                          <td className="px-6 py-4 w-48">
+                          <td className="py-4 px-6 w-48 text-gray-600 align-middle">
                             <Input
                               type="number"
                               placeholder={`₹${test.price}`}
@@ -336,7 +336,7 @@ const AdminClientPricingManager = () => {
                               }
                             />
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="py-4 px-6 text-right text-gray-600 align-middle">
                             <div className="flex justify-end gap-2">
                               {pendingPrices[test.id] !== undefined &&
                                 String(pendingPrices[test.id]) !== String(clientPrice ?? '') && (
