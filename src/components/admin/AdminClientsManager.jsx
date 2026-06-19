@@ -59,7 +59,7 @@ const isValidEmail = (email) => {
   return emailRegex.test(email);
 };
 
-const AdminClientsManager = () => {
+const AdminClientsManager = ({ id }) => {
   // 1. Context Hooks
   const { clients, updateClient, addClient, deleteClient, setClients } = useClients();
   const { user } = useAuth();
@@ -173,6 +173,15 @@ const AdminClientsManager = () => {
     setContactErrors(initialErrors);
     setIsAddingNew(false);
   };
+
+  React.useEffect(() => {
+    if (id && clients.length > 0) {
+      const client = clients.find((c) => String(c.id) === String(id));
+      if (client) {
+        handleEdit(client);
+      }
+    }
+  }, [id, clients]);
 
   const handleAddNew = () => {
     setEditingClient({

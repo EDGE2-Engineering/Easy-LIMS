@@ -45,7 +45,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 
-const ExpensesManager = () => {
+const ExpensesManager = ({ id }) => {
   const { expenses, addExpense, updateExpense, deleteExpense, loading } = useExpenses();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -179,6 +179,15 @@ const ExpensesManager = () => {
     setEditingExpense({ ...expense });
     setIsAddingNew(false);
   };
+
+  React.useEffect(() => {
+    if (id && expenses.length > 0) {
+      const expense = expenses.find((e) => String(e.id) === String(id));
+      if (expense) {
+        handleEdit(expense);
+      }
+    }
+  }, [id, expenses]);
 
   const handleAddNew = () => {
     setEditingExpense({

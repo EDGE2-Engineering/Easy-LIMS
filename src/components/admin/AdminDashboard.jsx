@@ -285,9 +285,9 @@ const AdminDashboard = () => {
       localToday.setHours(0, 0, 0, 0);
       const startOfTodayISO = localToday.toISOString();
 
-      const fetchTodayDocs = supabase.from('documents').select('id, quote_number, document_type, created_at, clients(client_name)').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
-      const fetchTodayJobs = supabase.from('jobs').select('id, job_code, project_name, created_at, clients(client_name)').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
-      const fetchTodayExpenses = supabase.from('expenses').select('id, description, amount, created_at').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
+      const fetchTodayDocs = supabase.from('documents').select('id, quote_number, document_type, created_at, clients(client_name), users:created_by(full_name, username)').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
+      const fetchTodayJobs = supabase.from('jobs').select('id, job_code, project_name, created_at, clients(client_name), users:created_by(full_name, username)').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
+      const fetchTodayExpenses = supabase.from('expenses').select('id, description, amount, created_at, users:created_by(full_name, username)').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
       const fetchTodayClients = supabase.from('clients').select('id, client_name, created_at').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
 
       const [todayDocs, todayJobs, todayExpenses, todayClients] = await Promise.all([
@@ -297,32 +297,44 @@ const AdminDashboard = () => {
         fetchTodayClients
       ]);
 
-      const docActivities = (todayDocs || []).map((doc) => ({
-        id: `doc-${doc.id}`,
-        type: 'document',
-        title: `New ${doc.document_type || 'Document'} Created`,
-        detail: doc.quote_number,
-        subtitle: doc.clients?.client_name || 'No Client Name',
-        timestamp: doc.created_at,
-      }));
+      const docActivities = (todayDocs || []).map((doc) => {
+        const userName = doc.users?.full_name || doc.users?.username || 'Unknown';
+        return {
+          id: `doc-${doc.id}`,
+          type: 'document',
+          title: `New ${doc.document_type || 'Document'} Created by ${userName}`,
+          detail: doc.quote_number,
+          subtitle: doc.clients?.client_name || 'No Client Name',
+          timestamp: doc.created_at,
+          originalId: doc.id,
+        };
+      });
 
-      const jobActivities = (todayJobs || []).map((job) => ({
-        id: `job-${job.id}`,
-        type: 'job',
-        title: 'New Job Registered',
-        detail: `#${job.job_code}`,
-        subtitle: job.project_name || job.clients?.client_name || 'No Project Details',
-        timestamp: job.created_at,
-      }));
+      const jobActivities = (todayJobs || []).map((job) => {
+        const userName = job.users?.full_name || job.users?.username || 'Unknown';
+        return {
+          id: `job-${job.id}`,
+          type: 'job',
+          title: `New Job Registered by ${userName}`,
+          detail: `#${job.job_code}`,
+          subtitle: job.project_name || job.clients?.client_name || 'No Project Details',
+          timestamp: job.created_at,
+          originalId: job.id,
+        };
+      });
 
-      const expenseActivities = (todayExpenses || []).map((exp) => ({
-        id: `exp-${exp.id}`,
-        type: 'expense',
-        title: 'New Expense Recorded',
-        detail: `₹${Number(exp.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
-        subtitle: exp.description,
-        timestamp: exp.created_at,
-      }));
+      const expenseActivities = (todayExpenses || []).map((exp) => {
+        const userName = exp.users?.full_name || exp.users?.username || 'Unknown';
+        return {
+          id: `exp-${exp.id}`,
+          type: 'expense',
+          title: `New Expense Recorded by ${userName}`,
+          detail: `₹${Number(exp.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+          subtitle: exp.description,
+          timestamp: exp.created_at,
+          originalId: exp.id,
+        };
+      });
 
       const clientActivities = (todayClients || []).map((cli) => ({
         id: `cli-${cli.id}`,
@@ -331,6 +343,7 @@ const AdminDashboard = () => {
         detail: cli.client_name,
         subtitle: 'Master Database',
         timestamp: cli.created_at,
+        originalId: cli.id,
       }));
 
       const compiledActivities = [
@@ -1123,32 +1136,60 @@ const AdminDashboard = () => {
                             }
 
                             return (
-                              <div key={act.id} className="p-5 flex gap-4 hover:bg-gray-50/50 transition-all group">
-                                <div className="mt-0.5">
+                              <div
+                                key={act.id}
+                                onClick={() => {
+                                  if (act.type === 'document') {
+                                    window.location.hash = `#/doc/${act.originalId}`;
+                                  } else if (act.type === 'job') {
+                                    window.location.hash = `#/settings/jobs/${act.originalId}`;
+                                  } else if (act.type === 'expense') {
+                                    window.location.hash = `#/settings/expenses/${act.originalId}`;
+                                  } else if (act.type === 'client') {
+                                    window.location.hash = `#/settings/clients/${act.originalId}`;
+                                  }
+                                }}
+                                className="p-5 flex gap-4 hover:bg-gray-50/50 cursor-pointer transition-all group items-center"
+                              >
+                                <div className="shrink-0">
                                   <div className={`w-8 h-8 rounded-xl ${badgeColor} flex items-center justify-center shrink-0`}>
                                     {icon}
                                   </div>
                                 </div>
-                                <div className="flex-grow space-y-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-4">
-                                    <p className="text-sm font-semibold text-gray-900 truncate">
-                                      {act.title}
+                                <div className="flex-grow flex flex-col md:grid md:grid-cols-12 gap-1 md:gap-4 items-start md:items-center min-w-0">
+                                  <div className="md:col-span-5 min-w-0 w-full">
+                                    <div className="flex items-center justify-between md:block">
+                                      <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-primary transition-colors">
+                                        {act.title}
+                                      </p>
+                                      <span className="text-xs font-black text-gray-400 uppercase tracking-tighter shrink-0 md:hidden">
+                                        {new Date(act.timestamp).toLocaleTimeString([], {
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="md:col-span-3 min-w-0 w-full">
+                                    <p className="text-xs text-gray-600 font-bold truncate">
+                                      {act.detail}
                                     </p>
-                                     <span className="text-xs font-black text-gray-400 uppercase tracking-tighter shrink-0">
+                                  </div>
+                                  <div className="md:col-span-3 min-w-0 w-full">
+                                    {act.subtitle && (
+                                      <p className="text-xs text-gray-400 font-medium truncate">
+                                        {act.subtitle}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="hidden md:block md:col-span-1 text-right shrink-0">
+                                    <span className="text-xs font-black text-gray-400 uppercase tracking-tighter">
                                       {new Date(act.timestamp).toLocaleTimeString([], {
                                         hour: '2-digit',
                                         minute: '2-digit',
                                       })}
                                     </span>
                                   </div>
-                                  <p className="text-xs text-gray-600 font-bold truncate">
-                                    {act.detail}
-                                  </p>
-                                  {act.subtitle && (
-                                     <p className="text-xs text-gray-400 font-medium truncate">
-                                      {act.subtitle}
-                                    </p>
-                                  )}
                                 </div>
                               </div>
                             );
