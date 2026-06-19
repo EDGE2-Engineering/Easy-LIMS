@@ -393,7 +393,7 @@ const AdminCompanyCalendar = () => {
                     const eventDate = parseISO(event.event_date);
                     const isPast = isBefore(eventDate, today) && !isSameDay(eventDate, today);
                     const isRef = index === upcomingIndex;
-  
+
                     return (
                       <tr
                         key={event.id}
@@ -451,7 +451,7 @@ const AdminCompanyCalendar = () => {
                                 <p className="text-xs">Edit event details</p>
                               </TooltipContent>
                             </Tooltip>
-  
+
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button

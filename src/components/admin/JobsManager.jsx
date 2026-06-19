@@ -2110,7 +2110,10 @@ const JobsManager = ({ id }) => {
                 </tr>
               ) : (
                 paginatedRecords.map((r) => (
-                  <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr
+                    key={r.id}
+                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
                     <td className="py-4 px-3 align-top whitespace-nowrap">
                       <div className="font-mono text-xs font-semibold text-gray-700">
                         {r.job_code}
@@ -2121,7 +2124,10 @@ const JobsManager = ({ id }) => {
                         {r.clients?.client_name || '-'}
                       </div>
                       {r.project_name && (
-                        <div className="mt-1 text-xs text-gray-500 break-words whitespace-normal" title={r.project_name}>
+                        <div
+                          className="mt-1 text-xs text-gray-500 break-words whitespace-normal"
+                          title={r.project_name}
+                        >
                           {r.project_name}
                         </div>
                       )}

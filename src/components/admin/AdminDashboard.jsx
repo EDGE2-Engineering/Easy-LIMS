@@ -285,16 +285,40 @@ const AdminDashboard = () => {
       localToday.setHours(0, 0, 0, 0);
       const startOfTodayISO = localToday.toISOString();
 
-      const fetchTodayDocs = supabase.from('documents').select('id, quote_number, document_type, created_at, clients(client_name), users:created_by(full_name, username)').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
-      const fetchTodayJobs = supabase.from('jobs').select('id, job_code, project_name, created_at, clients(client_name), users:created_by(full_name, username)').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
-      const fetchTodayExpenses = supabase.from('expenses').select('id, description, amount, created_at, users:created_by(full_name, username)').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
-      const fetchTodayClients = supabase.from('clients').select('id, client_name, created_at').gte('created_at', startOfTodayISO).then(res => res.data || []).catch(() => []);
+      const fetchTodayDocs = supabase
+        .from('documents')
+        .select(
+          'id, quote_number, document_type, created_at, clients(client_name), users:created_by(full_name, username)'
+        )
+        .gte('created_at', startOfTodayISO)
+        .then((res) => res.data || [])
+        .catch(() => []);
+      const fetchTodayJobs = supabase
+        .from('jobs')
+        .select(
+          'id, job_code, project_name, created_at, clients(client_name), users:created_by(full_name, username)'
+        )
+        .gte('created_at', startOfTodayISO)
+        .then((res) => res.data || [])
+        .catch(() => []);
+      const fetchTodayExpenses = supabase
+        .from('expenses')
+        .select('id, description, amount, created_at, users:created_by(full_name, username)')
+        .gte('created_at', startOfTodayISO)
+        .then((res) => res.data || [])
+        .catch(() => []);
+      const fetchTodayClients = supabase
+        .from('clients')
+        .select('id, client_name, created_at')
+        .gte('created_at', startOfTodayISO)
+        .then((res) => res.data || [])
+        .catch(() => []);
 
       const [todayDocs, todayJobs, todayExpenses, todayClients] = await Promise.all([
         fetchTodayDocs,
         fetchTodayJobs,
         fetchTodayExpenses,
-        fetchTodayClients
+        fetchTodayClients,
       ]);
 
       const docActivities = (todayDocs || []).map((doc) => {
@@ -1068,7 +1092,7 @@ const AdminDashboard = () => {
                                 <p className="text-sm font-normal text-gray-900 group-hover:text-primary transition-colors leading-tight">
                                   {stage.label}
                                 </p>
-                                 <p className="text-xs font-black text-gray-400 uppercase tracking-widest mt-1">
+                                <p className="text-xs font-black text-gray-400 uppercase tracking-widest mt-1">
                                   {count} Active Case{count !== 1 ? 's' : ''}
                                 </p>
                               </div>
@@ -1113,9 +1137,12 @@ const AdminDashboard = () => {
                         {todayActivities.length === 0 ? (
                           <div className="p-12 text-center">
                             <Activity className="w-12 h-12 mb-4 opacity-20 text-gray-400 mx-auto" />
-                            <p className="font-semibold text-gray-500 text-sm">No activity recorded today</p>
+                            <p className="font-semibold text-gray-500 text-sm">
+                              No activity recorded today
+                            </p>
                             <p className="text-xs text-gray-400 mt-1 max-w-[240px] mx-auto leading-relaxed">
-                              New jobs, documents, expenses, or clients will appear here as they are created.
+                              New jobs, documents, expenses, or clients will appear here as they are
+                              created.
                             </p>
                           </div>
                         ) : (
@@ -1152,7 +1179,9 @@ const AdminDashboard = () => {
                                 className="p-5 flex gap-4 hover:bg-gray-50/50 cursor-pointer transition-all group items-center"
                               >
                                 <div className="shrink-0">
-                                  <div className={`w-8 h-8 rounded-xl ${badgeColor} flex items-center justify-center shrink-0`}>
+                                  <div
+                                    className={`w-8 h-8 rounded-xl ${badgeColor} flex items-center justify-center shrink-0`}
+                                  >
                                     {icon}
                                   </div>
                                 </div>
@@ -1199,9 +1228,13 @@ const AdminDashboard = () => {
                     </CardContent>
                   </Card>
                 </TooltipTrigger>
-                <TooltipContent side="left" className="bg-gray-900 text-white border-gray-800 max-w-[250px]">
+                <TooltipContent
+                  side="left"
+                  className="bg-gray-900 text-white border-gray-800 max-w-[250px]"
+                >
                   <p className="text-xs">
-                    Live feed of documents created, jobs registered, expenses logged, and clients added today.
+                    Live feed of documents created, jobs registered, expenses logged, and clients
+                    added today.
                   </p>
                 </TooltipContent>
               </Tooltip>

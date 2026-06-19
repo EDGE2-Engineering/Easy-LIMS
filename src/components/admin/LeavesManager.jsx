@@ -631,8 +631,13 @@ const LeavesManager = () => {
                           return matchesMonth && matchesYear;
                         })
                         .map((l) => (
-                          <tr key={l.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                            <td className="py-4 px-6 font-mono font-bold text-gray-700 align-middle whitespace-nowrap">{l.leave_date}</td>
+                          <tr
+                            key={l.id}
+                            className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="py-4 px-6 font-mono font-bold text-gray-700 align-middle whitespace-nowrap">
+                              {l.leave_date}
+                            </td>
                             <td className="py-4 px-6 text-gray-500 font-medium italic align-middle">
                               {l.comments || '—'}
                             </td>

@@ -615,7 +615,10 @@ const AdminTestsManager = () => {
             </thead>
             <tbody>
               {paginatedTests.map((test) => (
-                <tr key={test.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <tr
+                  key={test.id}
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
                   <td className="py-4 px-4 align-top text-gray-600">
                     <div className="flex flex-wrap items-center gap-6 text-sm text-gray-700">
                       <p className="font-bold text-gray-900">{test.testType}</p>
@@ -626,17 +629,17 @@ const AdminTestsManager = () => {
                           ? test.materials.join(', ')
                           : test.materials || '-'}
                       </p>
-  
+
                       <p>
                         <span className="font-semibold text-primary">Method:</span>{' '}
                         {test.testMethodSpecification || '-'}
                       </p>
-  
+
                       <p>
                         <span className="font-semibold text-primary">Price:</span> <Rupee />
                         {test.price.toLocaleString()}
                       </p>
-  
+
                       <p>
                         <span className="font-semibold text-primary">HSN Code:</span>{' '}
                         {test.hsnCode || '-'}
@@ -655,7 +658,7 @@ const AdminTestsManager = () => {
                       </p>
                     </div>
                   </td>
-  
+
                   <td className="py-4 px-4 text-right align-top">
                     <div className="flex justify-end space-x-2">
                       <Tooltip>
@@ -668,10 +671,14 @@ const AdminTestsManager = () => {
                           <p className="text-xs">Edit test details</p>
                         </TooltipContent>
                       </Tooltip>
-  
+
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(test)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(test)}
+                          >
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </TooltipTrigger>

@@ -466,8 +466,13 @@ const AdminOverburdenCorrectionManager = () => {
             </thead>
             <tbody>
               {rows.map((row, idx) => (
-                <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
-                  <td className="py-4 px-4 text-center align-middle text-gray-600 text-xs font-mono">{idx + 1}</td>
+                <tr
+                  key={row.id}
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors group"
+                >
+                  <td className="py-4 px-4 text-center align-middle text-gray-600 text-xs font-mono">
+                    {idx + 1}
+                  </td>
                   <td className="py-4 px-4 align-middle text-gray-600">
                     <div className="flex justify-center">
                       <Input

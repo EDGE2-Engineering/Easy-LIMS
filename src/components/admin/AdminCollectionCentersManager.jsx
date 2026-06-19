@@ -272,7 +272,9 @@ const AdminCollectionCentersManager = () => {
                 <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Center Name
                 </th>
-                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Address</th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Address
+                </th>
                 <th className="text-right py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap w-24">
                   Actions
                 </th>
@@ -280,7 +282,10 @@ const AdminCollectionCentersManager = () => {
             </thead>
             <tbody>
               {filteredCenters.map((center) => (
-                <tr key={center.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <tr
+                  key={center.id}
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
                   <td className="py-4 px-4 align-middle text-gray-600">
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-primary opacity-50" />

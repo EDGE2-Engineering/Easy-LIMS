@@ -132,9 +132,7 @@ const HRDashboard = () => {
             <motion.div key={idx} variants={item}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Card
-                    className="border-none shadow-sm bg-gray-50/30 relative overflow-hidden group transition-all"
-                  >
+                  <Card className="border-none shadow-sm bg-gray-50/30 relative overflow-hidden group transition-all">
                     <div className="absolute top-0 right-0 w-16 h-16 bg-gray-50 rounded-bl-[64px] -mr-4 -mt-4 opacity-50 transition-transform group-hover:scale-110 duration-500" />
                     <CardContent className="p-4 relative">
                       <div className="flex items-center gap-3">

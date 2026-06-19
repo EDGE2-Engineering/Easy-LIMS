@@ -46,7 +46,7 @@ const MyLeaves = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [leaves, setLeaves] = useState([]);
-  
+
   // Dialog State
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
   const [applyLoading, setApplyLoading] = useState(false);
@@ -72,9 +72,7 @@ const MyLeaves = () => {
     try {
       const { data, error } = await supabase
         .from('request_approvals')
-        .select(
-          '*, reviewer:users!request_approvals_reviewed_by_fkey(full_name, username)'
-        )
+        .select('*, reviewer:users!request_approvals_reviewed_by_fkey(full_name, username)')
         .eq('requester_id', user.id)
         .eq('request_type', 'LEAVE')
         .order('created_at', { ascending: false });
@@ -98,11 +96,12 @@ const MyLeaves = () => {
     const start = new Date(startDateStr);
     const end = new Date(endDateStr);
     if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
-    
+
     let count = 0;
     let cur = new Date(start);
     while (cur <= end) {
-      if (cur.getDay() !== 0) { // Exclude Sundays
+      if (cur.getDay() !== 0) {
+        // Exclude Sundays
         count++;
       }
       cur.setDate(cur.getDate() + 1);
@@ -148,10 +147,7 @@ const MyLeaves = () => {
     if (!cancelTarget) return;
     setCancelLoading(true);
     try {
-      const { error } = await supabase
-        .from('request_approvals')
-        .delete()
-        .eq('id', cancelTarget.id);
+      const { error } = await supabase.from('request_approvals').delete().eq('id', cancelTarget.id);
 
       if (error) throw error;
 
@@ -250,25 +246,33 @@ const MyLeaves = () => {
                 {leaves.map((req) => {
                   const data = req.request_data || {};
                   const workingDays = calculateWorkingDays(data.startDate, data.endDate);
-                  
+
                   return (
-                    <tr key={req.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                    <tr
+                      key={req.id}
+                      className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
+                    >
                       {/* Leave Period */}
                       <td className="py-4 px-6 font-medium text-gray-900 align-middle whitespace-nowrap">
                         <div className="flex flex-col">
                           <span className="font-bold text-gray-950">
-                            {data.startDate ? new Date(data.startDate).toLocaleDateString('en-IN', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            }) : 'N/A'}
+                            {data.startDate
+                              ? new Date(data.startDate).toLocaleDateString('en-IN', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })
+                              : 'N/A'}
                           </span>
                           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight flex items-center gap-1">
-                            to {data.endDate ? new Date(data.endDate).toLocaleDateString('en-IN', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            }) : 'N/A'}
+                            to{' '}
+                            {data.endDate
+                              ? new Date(data.endDate).toLocaleDateString('en-IN', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })
+                              : 'N/A'}
                           </span>
                         </div>
                       </td>
@@ -284,7 +288,10 @@ const MyLeaves = () => {
                       </td>
 
                       {/* Reason */}
-                      <td className="py-4 px-6 align-middle text-gray-500 font-medium max-w-xs truncate" title={data.reason}>
+                      <td
+                        className="py-4 px-6 align-middle text-gray-500 font-medium max-w-xs truncate"
+                        title={data.reason}
+                      >
                         {data.reason || '—'}
                       </td>
 
@@ -312,9 +319,7 @@ const MyLeaves = () => {
                               {req.reviewer?.full_name || 'System'}
                             </span>
                             {req.admin_remarks && (
-                              <span className="text-gray-400 italic">
-                                "{req.admin_remarks}"
-                              </span>
+                              <span className="text-gray-400 italic">"{req.admin_remarks}"</span>
                             )}
                           </div>
                         ) : (
@@ -387,7 +392,7 @@ const MyLeaves = () => {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                 Leave Type
@@ -403,7 +408,7 @@ const MyLeaves = () => {
                 <option>Loss of Pay</option>
               </select>
             </div>
-            
+
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                 Reason
@@ -436,7 +441,8 @@ const MyLeaves = () => {
               Cancel Leave Request?
             </AlertDialogTitle>
             <AlertDialogDescription className="font-medium text-gray-500 text-sm">
-              Are you sure you want to cancel this leave request? This will permanently delete the request.
+              Are you sure you want to cancel this leave request? This will permanently delete the
+              request.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-4">

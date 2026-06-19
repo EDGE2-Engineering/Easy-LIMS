@@ -1073,7 +1073,10 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                 </tr>
               ) : (
                 paginatedRecords.map((record) => (
-                  <tr key={record.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr
+                    key={record.id}
+                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
                     <td className="py-4 px-4 align-middle text-gray-600">
                       <span className="font-semibold font-mono text-gray-750 text-sm bg-gray-100 px-2 py-1 rounded">
                         {record.job_order_no}

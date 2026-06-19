@@ -735,7 +735,10 @@ const ExpensesManager = ({ id }) => {
             <tbody className="divide-y divide-gray-100">
               {paginatedExpenses.length > 0 ? (
                 paginatedExpenses.map((expense) => (
-                  <tr key={expense.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
+                  <tr
+                    key={expense.id}
+                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors group"
+                  >
                     <td className="py-4 px-3 text-left align-top whitespace-nowrap text-gray-600">
                       <span className="font-mono text-xs text-gray-700">
                         {new Date(expense.date).toLocaleDateString('en-IN', {
@@ -766,14 +769,18 @@ const ExpensesManager = ({ id }) => {
                         </div>
                       )}
                       {expense.remarks && (
-                        <div className="text-xs text-gray-400 mt-1 italic break-words whitespace-normal">{expense.remarks}</div>
+                        <div className="text-xs text-gray-400 mt-1 italic break-words whitespace-normal">
+                          {expense.remarks}
+                        </div>
                       )}
                     </td>
 
                     <td className="py-4 px-3 text-right align-top whitespace-nowrap">
                       <span className="font-bold text-gray-900 tabular-nums">
                         <Rupee />
-                        {Number(expense.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        {Number(expense.amount).toLocaleString('en-IN', {
+                          minimumFractionDigits: 2,
+                        })}
                       </span>
                     </td>
                     <td className="py-4 px-3 text-left align-top text-gray-600 hidden md:table-cell">

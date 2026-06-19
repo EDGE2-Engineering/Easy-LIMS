@@ -190,7 +190,9 @@ const AdminMaterialsManager = () => {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Name</th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Name
+                </th>
                 <th className="text-right py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap w-24">
                   Actions
                 </th>
@@ -198,8 +200,13 @@ const AdminMaterialsManager = () => {
             </thead>
             <tbody>
               {filteredMaterials.map((material) => (
-                <tr key={material.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="py-4 px-4 align-middle text-gray-900 font-semibold">{material.name}</td>
+                <tr
+                  key={material.id}
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
+                  <td className="py-4 px-4 align-middle text-gray-900 font-semibold">
+                    {material.name}
+                  </td>
                   <td className="py-4 px-4 text-right align-middle text-gray-600">
                     <div className="flex justify-end gap-1">
                       <Tooltip>

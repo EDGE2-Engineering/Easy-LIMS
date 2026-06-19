@@ -1005,11 +1005,21 @@ const AdminRockBearingCapacity = () => {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Parameter</th>
-                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Symbol</th>
-                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Unit</th>
-                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Standard Reference</th>
-                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Formula / Source</th>
+                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Parameter
+                </th>
+                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Symbol
+                </th>
+                <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Unit
+                </th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Standard Reference
+                </th>
+                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Formula / Source
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 font-medium text-gray-700">

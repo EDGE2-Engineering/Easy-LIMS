@@ -649,7 +649,10 @@ const AdminServicesManager = () => {
             </thead>
             <tbody>
               {paginatedServices.map((service) => (
-                <tr key={service.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <tr
+                  key={service.id}
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
                   <td className="py-4 px-4 align-top text-gray-600">
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700">
                       <p className="font-bold text-gray-900 ">{service.serviceType}</p>
@@ -658,26 +661,26 @@ const AdminServicesManager = () => {
                         <span className="font-semibold text-primary">Price:</span> <Rupee />
                         {service.price.toLocaleString()}
                       </p>
-  
+
                       <p>
                         <span className="font-semibold text-primary">Unit:</span> {service.unit}
                       </p>
-  
+
                       <p>
                         <span className="font-semibold text-primary">Method:</span>{' '}
                         {service.methodOfSampling || 'NA'}
                       </p>
-  
+
                       <p>
                         <span className="font-semibold text-primary"># BHs:</span>{' '}
                         {service.numBHs ?? 0}
                       </p>
-  
+
                       <p>
                         <span className="font-semibold text-primary">Measure:</span>{' '}
                         {service.measure || 'NA'}
                       </p>
-  
+
                       <p>
                         <span className="font-semibold text-primary">HSN Code:</span>{' '}
                         {service.hsnCode || '-'}
@@ -696,7 +699,7 @@ const AdminServicesManager = () => {
                       </p>
                     </div>
                   </td>
-  
+
                   <td className="py-4 px-4 text-right align-top">
                     <div className="flex justify-end space-x-2">
                       <Tooltip>
@@ -709,7 +712,7 @@ const AdminServicesManager = () => {
                           <p className="text-xs">Edit service details</p>
                         </TooltipContent>
                       </Tooltip>
-  
+
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button

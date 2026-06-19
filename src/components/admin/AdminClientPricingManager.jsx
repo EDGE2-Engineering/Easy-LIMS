@@ -211,17 +211,28 @@ const AdminClientPricingManager = () => {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Service Name</th>
-                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Default Price</th>
-                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Price for Client</th>
-                      <th className="text-right py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Actions</th>
+                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                        Service Name
+                      </th>
+                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                        Default Price
+                      </th>
+                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                        Price for Client
+                      </th>
+                      <th className="text-right py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filteredServices.map((service) => {
                       const clientPrice = getClientPrice(service.id, 'service');
                       return (
-                        <tr key={service.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <tr
+                          key={service.id}
+                          className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                        >
                           <td className="py-4 px-6 text-gray-600 align-middle">
                             <div className="font-medium text-gray-900">{service.serviceType}</div>
                             <div className="text-gray-500 text-xs">HSN: {service.hsnCode}</div>
@@ -294,17 +305,28 @@ const AdminClientPricingManager = () => {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Test Name & Material</th>
-                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Default Price</th>
-                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Price for Client</th>
-                      <th className="text-right py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Actions</th>
+                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                        Test Name & Material
+                      </th>
+                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                        Default Price
+                      </th>
+                      <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                        Price for Client
+                      </th>
+                      <th className="text-right py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filteredTests.map((test) => {
                       const clientPrice = getClientPrice(test.id, 'test');
                       return (
-                        <tr key={test.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <tr
+                          key={test.id}
+                          className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                        >
                           <td className="py-4 px-6 text-gray-600 align-middle">
                             <div className="font-medium text-gray-900">{test.testType}</div>
                             <div className="text-gray-500 text-xs">

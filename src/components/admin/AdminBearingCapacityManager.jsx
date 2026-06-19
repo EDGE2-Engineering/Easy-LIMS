@@ -1331,187 +1331,187 @@ const AdminBearingCapacityManager = () => {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-              <thead>
-                {/* Group label row */}
-                <tr className="border-b border-gray-100">
-                  <th className="py-2" colSpan={2} />
-                  <th
-                    colSpan={3}
-                    className="py-2 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400 border-r border-gray-100"
-                  >
-                    Original (φ)
-                  </th>
-                  <th
-                    colSpan={4}
-                    className="py-2 text-center text-[10px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-300 bg-teal-50/50 dark:bg-teal-900/20"
-                  >
-                    Derived — φ′ = tan⁻¹(0.67 · tan φ)
-                  </th>
-                  <th className="py-2" />
-                </tr>
-                {/* Column header row */}
-                <tr className="bg-gray-50 border-b">
-                  <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] w-10">
-                    #
-                  </th>
-                  <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                    <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
-                      Considered Angle of Friction
-                    </span>
-                    φ (°)
-                  </th>
-                  <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                    <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
-                      BC Factor — Cohesion
-                    </span>
-                    N<sub>c</sub>
-                  </th>
-                  <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                    <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
-                      BC Factor — Surcharge
-                    </span>
-                    N<sub>q</sub>
-                  </th>
-                  <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
-                    <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
-                      BC Factor — Unit Weight
-                    </span>
-                    N<sub>γ</sub>
-                  </th>
-                  <th className="text-center py-3 px-4 font-bold text-teal-600 dark:text-teal-300 uppercase tracking-widest text-[10px] bg-teal-50/50 dark:bg-teal-900/20">
-                    <span className="block normal-case font-normal text-teal-500 dark:text-teal-400 text-[9px] leading-tight">
-                      Reduced Angle of Friction
-                    </span>
-                    φ′ (°)
-                  </th>
-                  <th className="text-center py-3 px-4 font-bold text-teal-600 dark:text-teal-300 uppercase tracking-widest text-[10px] bg-teal-50/50 dark:bg-teal-900/20">
-                    <span className="block normal-case font-normal text-teal-500 dark:text-teal-400 text-[9px] leading-tight">
-                      Reduced BC Factor — Cohesion
-                    </span>
-                    N′<sub>c</sub>
-                  </th>
-                  <th className="text-center py-3 px-4 font-bold text-teal-600 dark:text-teal-300 uppercase tracking-widest text-[10px] bg-teal-50/50 dark:bg-teal-900/20">
-                    <span className="block normal-case font-normal text-teal-500 dark:text-teal-400 text-[9px] leading-tight">
-                      Reduced BC Factor — Surcharge
-                    </span>
-                    N′<sub>q</sub>
-                  </th>
-                  <th className="text-center py-3 px-4 font-bold text-teal-600 dark:text-teal-300 uppercase tracking-widest text-[10px] bg-teal-50/50 dark:bg-teal-900/20">
-                    <span className="block normal-case font-normal text-teal-500 dark:text-teal-400 text-[9px] leading-tight">
-                      Reduced BC Factor — Unit Weight
-                    </span>
-                    N′<sub>γ</sub>
-                  </th>
-                  <th className="py-3 px-4 w-10" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {rows.map((row, idx) => {
-                  const { phiPrime, ncPrime, nqPrime, ngPrime } = computeDerived(
-                    row.phi,
-                    ncPts,
-                    nqPts,
-                    ngPts
-                  );
-                  return (
-                    <tr key={row.id} className="hover:bg-gray-50/50 transition-colors group">
-                      <td className="py-3 px-4 text-center text-gray-400 text-xs font-mono">
-                        {idx + 1}
-                      </td>
+                <thead>
+                  {/* Group label row */}
+                  <tr className="border-b border-gray-100">
+                    <th className="py-2" colSpan={2} />
+                    <th
+                      colSpan={3}
+                      className="py-2 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400 border-r border-gray-100"
+                    >
+                      Original (φ)
+                    </th>
+                    <th
+                      colSpan={4}
+                      className="py-2 text-center text-[10px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-300 bg-teal-50/50 dark:bg-teal-900/20"
+                    >
+                      Derived — φ′ = tan⁻¹(0.67 · tan φ)
+                    </th>
+                    <th className="py-2" />
+                  </tr>
+                  {/* Column header row */}
+                  <tr className="bg-gray-50 border-b">
+                    <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] w-10">
+                      #
+                    </th>
+                    <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                      <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                        Considered Angle of Friction
+                      </span>
+                      φ (°)
+                    </th>
+                    <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                      <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                        BC Factor — Cohesion
+                      </span>
+                      N<sub>c</sub>
+                    </th>
+                    <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                      <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                        BC Factor — Surcharge
+                      </span>
+                      N<sub>q</sub>
+                    </th>
+                    <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
+                      <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                        BC Factor — Unit Weight
+                      </span>
+                      N<sub>γ</sub>
+                    </th>
+                    <th className="text-center py-3 px-4 font-bold text-teal-600 dark:text-teal-300 uppercase tracking-widest text-[10px] bg-teal-50/50 dark:bg-teal-900/20">
+                      <span className="block normal-case font-normal text-teal-500 dark:text-teal-400 text-[9px] leading-tight">
+                        Reduced Angle of Friction
+                      </span>
+                      φ′ (°)
+                    </th>
+                    <th className="text-center py-3 px-4 font-bold text-teal-600 dark:text-teal-300 uppercase tracking-widest text-[10px] bg-teal-50/50 dark:bg-teal-900/20">
+                      <span className="block normal-case font-normal text-teal-500 dark:text-teal-400 text-[9px] leading-tight">
+                        Reduced BC Factor — Cohesion
+                      </span>
+                      N′<sub>c</sub>
+                    </th>
+                    <th className="text-center py-3 px-4 font-bold text-teal-600 dark:text-teal-300 uppercase tracking-widest text-[10px] bg-teal-50/50 dark:bg-teal-900/20">
+                      <span className="block normal-case font-normal text-teal-500 dark:text-teal-400 text-[9px] leading-tight">
+                        Reduced BC Factor — Surcharge
+                      </span>
+                      N′<sub>q</sub>
+                    </th>
+                    <th className="text-center py-3 px-4 font-bold text-teal-600 dark:text-teal-300 uppercase tracking-widest text-[10px] bg-teal-50/50 dark:bg-teal-900/20">
+                      <span className="block normal-case font-normal text-teal-500 dark:text-teal-400 text-[9px] leading-tight">
+                        Reduced BC Factor — Unit Weight
+                      </span>
+                      N′<sub>γ</sub>
+                    </th>
+                    <th className="py-3 px-4 w-10" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {rows.map((row, idx) => {
+                    const { phiPrime, ncPrime, nqPrime, ngPrime } = computeDerived(
+                      row.phi,
+                      ncPts,
+                      nqPts,
+                      ngPts
+                    );
+                    return (
+                      <tr key={row.id} className="hover:bg-gray-50/50 transition-colors group">
+                        <td className="py-3 px-4 text-center text-gray-400 text-xs font-mono">
+                          {idx + 1}
+                        </td>
 
-                      {/* φ */}
-                      <td className="py-3 px-4">
-                        <div className="flex justify-center">
-                          <Input
-                            type="number"
-                            step="5"
-                            min="0"
-                            value={row.phi}
-                            onChange={(e) => handleChange(row.id, 'phi', e.target.value)}
-                            placeholder="30"
-                            className="w-20 text-center rounded-xl h-9"
-                          />
-                        </div>
-                      </td>
+                        {/* φ */}
+                        <td className="py-3 px-4">
+                          <div className="flex justify-center">
+                            <Input
+                              type="number"
+                              step="5"
+                              min="0"
+                              value={row.phi}
+                              onChange={(e) => handleChange(row.id, 'phi', e.target.value)}
+                              placeholder="30"
+                              className="w-20 text-center rounded-xl h-9"
+                            />
+                          </div>
+                        </td>
 
-                      {/* Nc */}
-                      <td className="py-3 px-4">
-                        <div className="flex justify-center">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={row.nc}
-                            onChange={(e) => handleChange(row.id, 'nc', e.target.value)}
-                            placeholder="30.14"
-                            className="w-24 text-center rounded-xl h-9"
-                          />
-                        </div>
-                      </td>
+                        {/* Nc */}
+                        <td className="py-3 px-4">
+                          <div className="flex justify-center">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={row.nc}
+                              onChange={(e) => handleChange(row.id, 'nc', e.target.value)}
+                              placeholder="30.14"
+                              className="w-24 text-center rounded-xl h-9"
+                            />
+                          </div>
+                        </td>
 
-                      {/* Nq */}
-                      <td className="py-3 px-4">
-                        <div className="flex justify-center">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={row.nq}
-                            onChange={(e) => handleChange(row.id, 'nq', e.target.value)}
-                            placeholder="18.40"
-                            className="w-24 text-center rounded-xl h-9"
-                          />
-                        </div>
-                      </td>
+                        {/* Nq */}
+                        <td className="py-3 px-4">
+                          <div className="flex justify-center">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={row.nq}
+                              onChange={(e) => handleChange(row.id, 'nq', e.target.value)}
+                              placeholder="18.40"
+                              className="w-24 text-center rounded-xl h-9"
+                            />
+                          </div>
+                        </td>
 
-                      {/* Nγ */}
-                      <td className="py-3 px-4 border-r border-gray-100">
-                        <div className="flex justify-center">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={row.ngamma}
-                            onChange={(e) => handleChange(row.id, 'ngamma', e.target.value)}
-                            placeholder="22.40"
-                            className="w-24 text-center rounded-xl h-9"
-                          />
-                        </div>
-                      </td>
+                        {/* Nγ */}
+                        <td className="py-3 px-4 border-r border-gray-100">
+                          <div className="flex justify-center">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={row.ngamma}
+                              onChange={(e) => handleChange(row.id, 'ngamma', e.target.value)}
+                              placeholder="22.40"
+                              className="w-24 text-center rounded-xl h-9"
+                            />
+                          </div>
+                        </td>
 
-                      {/* Derived — read-only */}
-                      <td className="py-3 px-4 text-center text-xs font-mono font-semibold text-teal-700 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-900/20">
-                        {phiPrime !== null ? phiPrime.toFixed(2) : '—'}
-                      </td>
-                      <td className="py-3 px-4 text-center text-xs font-mono font-semibold text-teal-700 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-900/20">
-                        {fmt(ncPrime)}
-                      </td>
-                      <td className="py-3 px-4 text-center text-xs font-mono font-semibold text-teal-700 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-900/20">
-                        {fmt(nqPrime)}
-                      </td>
-                      <td className="py-3 px-4 text-center text-xs font-mono font-semibold text-teal-700 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-900/20">
-                        {fmt(ngPrime)}
-                      </td>
+                        {/* Derived — read-only */}
+                        <td className="py-3 px-4 text-center text-xs font-mono font-semibold text-teal-700 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-900/20">
+                          {phiPrime !== null ? phiPrime.toFixed(2) : '—'}
+                        </td>
+                        <td className="py-3 px-4 text-center text-xs font-mono font-semibold text-teal-700 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-900/20">
+                          {fmt(ncPrime)}
+                        </td>
+                        <td className="py-3 px-4 text-center text-xs font-mono font-semibold text-teal-700 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-900/20">
+                          {fmt(nqPrime)}
+                        </td>
+                        <td className="py-3 px-4 text-center text-xs font-mono font-semibold text-teal-700 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-900/20">
+                          {fmt(ngPrime)}
+                        </td>
 
-                      {/* Delete */}
-                      <td className="py-3 px-4">
-                        <div className="flex justify-center">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteRow(row.id)}
-                            className="h-8 w-8 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                            disabled={rows.length === 1}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        {/* Delete */}
+                        <td className="py-3 px-4">
+                          <div className="flex justify-center">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteRow(row.id)}
+                              className="h-8 w-8 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                              disabled={rows.length === 1}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
 
             <div className="border-t border-dashed bg-gray-50/50">
@@ -1907,55 +1907,55 @@ const AdminBearingCapacityManager = () => {
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-gray-50 border-y border-gray-100">
-                      <th
-                        rowSpan={2}
-                        className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] w-12 border-r border-gray-100 align-middle"
-                      >
-                        Sl No.
-                      </th>
-                      <th
-                        rowSpan={2}
-                        className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100 align-middle"
-                      >
-                        Shape of Base
-                      </th>
-                      <th
-                        colSpan={3}
-                        className="text-center py-2 px-4 font-bold text-gray-500 uppercase tracking-widest text-[10px] border-b border-gray-100"
-                      >
-                        Shape Factor
-                      </th>
-                    </tr>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-center py-2 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                        s<sub>c</sub>
-                      </th>
-                      <th className="text-center py-2 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                        s<sub>q</sub>
-                      </th>
-                      <th className="text-center py-2 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
-                        s<sub>γ</sub>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {rows.map((row) => (
-                      <tr key={row.sl} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="py-3 px-4 text-center text-xs font-mono text-gray-400 border-r border-gray-100">
-                          {row.sl}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-700 font-medium border-r border-gray-100">
-                          {row.shape}
-                        </td>
-                        <ShapeCell c={row.sc} />
-                        <ShapeCell c={row.sq} />
-                        <ShapeCell c={row.sg} />
+                    <thead>
+                      <tr className="bg-gray-50 border-y border-gray-100">
+                        <th
+                          rowSpan={2}
+                          className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] w-12 border-r border-gray-100 align-middle"
+                        >
+                          Sl No.
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100 align-middle"
+                        >
+                          Shape of Base
+                        </th>
+                        <th
+                          colSpan={3}
+                          className="text-center py-2 px-4 font-bold text-gray-500 uppercase tracking-widest text-[10px] border-b border-gray-100"
+                        >
+                          Shape Factor
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                      <tr className="bg-gray-50 border-b border-gray-100">
+                        <th className="text-center py-2 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                          s<sub>c</sub>
+                        </th>
+                        <th className="text-center py-2 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                          s<sub>q</sub>
+                        </th>
+                        <th className="text-center py-2 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
+                          s<sub>γ</sub>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {rows.map((row) => (
+                        <tr key={row.sl} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="py-3 px-4 text-center text-xs font-mono text-gray-400 border-r border-gray-100">
+                            {row.sl}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-700 font-medium border-r border-gray-100">
+                            {row.shape}
+                          </td>
+                          <ShapeCell c={row.sc} />
+                          <ShapeCell c={row.sq} />
+                          <ShapeCell c={row.sg} />
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
 
                 <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50">
@@ -2372,66 +2372,66 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
             {/* Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="py-2" />
-                  <th
-                    colSpan={6}
-                    className="py-2 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400"
-                  >
-                    Width of Footing (B) in m
-                  </th>
-                </tr>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
-                    <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
-                      Standard Penetration Test
-                    </span>
-                    N-value
-                  </th>
-                  {['1.5', '2.0', '3.0', '4.0', '5.0', '6.0'].map((w) => (
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="py-2" />
                     <th
-                      key={w}
-                      className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]"
+                      colSpan={6}
+                      className="py-2 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400"
                     >
-                      {w} m
+                      Width of Footing (B) in m
                     </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {[
-                  { n: 5, vals: ['0.120', '0.140', '0.160', '0.170', '0.180', '0.180'] },
-                  { n: 10, vals: ['0.030', '0.032', '0.037', '0.039', '0.040', '0.040'] },
-                  { n: 15, vals: ['0.017', '0.018', '0.021', '0.022', '0.023', '0.023'] },
-                  { n: 20, vals: ['0.013', '0.014', '0.016', '0.016', '0.017', '0.017'] },
-                  { n: 25, vals: ['0.009', '0.010', '0.012', '0.013', '0.014', '0.014'] },
-                  { n: 30, vals: ['0.0075', '0.008', '0.009', '0.0094', '0.010', '0.010'] },
-                  { n: 35, vals: ['0.006', '0.0068', '0.0075', '0.008', '0.0082', '0.0085'] },
-                  { n: 40, vals: ['0.0054', '0.0059', '0.0065', '0.0069', '0.007', '0.007'] },
-                  { n: 45, vals: ['NA', '0.0054', '0.0058', '0.006', '0.0061', '0.0062'] },
-                  { n: 50, vals: ['NA', '0.0048', '0.0052', '0.0055', '0.0057', '0.0058'] },
-                  { n: 55, vals: ['NA', '0.0043', '0.0047', '0.0049', '0.005', '0.005'] },
-                  { n: 60, vals: ['NA', '0.0038', '0.0042', '0.0045', '0.0046', '0.0046'] },
-                ].map(({ n, vals }) => (
-                  <tr key={n} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="py-3 px-4 text-center text-xs font-mono font-bold text-gray-700 border-r border-gray-100">
-                      {n}
-                    </td>
-                    {vals.map((v, i) => (
-                      <td
-                        key={i}
-                        className={`py-3 px-4 text-center text-xs font-mono tabular-nums ${
-                          v === 'NA' ? 'text-gray-300 italic' : 'text-gray-700'
-                        }`}
+                  </tr>
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
+                      <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                        Standard Penetration Test
+                      </span>
+                      N-value
+                    </th>
+                    {['1.5', '2.0', '3.0', '4.0', '5.0', '6.0'].map((w) => (
+                      <th
+                        key={w}
+                        className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]"
                       >
-                        {v}
-                      </td>
+                        {w} m
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {[
+                    { n: 5, vals: ['0.120', '0.140', '0.160', '0.170', '0.180', '0.180'] },
+                    { n: 10, vals: ['0.030', '0.032', '0.037', '0.039', '0.040', '0.040'] },
+                    { n: 15, vals: ['0.017', '0.018', '0.021', '0.022', '0.023', '0.023'] },
+                    { n: 20, vals: ['0.013', '0.014', '0.016', '0.016', '0.017', '0.017'] },
+                    { n: 25, vals: ['0.009', '0.010', '0.012', '0.013', '0.014', '0.014'] },
+                    { n: 30, vals: ['0.0075', '0.008', '0.009', '0.0094', '0.010', '0.010'] },
+                    { n: 35, vals: ['0.006', '0.0068', '0.0075', '0.008', '0.0082', '0.0085'] },
+                    { n: 40, vals: ['0.0054', '0.0059', '0.0065', '0.0069', '0.007', '0.007'] },
+                    { n: 45, vals: ['NA', '0.0054', '0.0058', '0.006', '0.0061', '0.0062'] },
+                    { n: 50, vals: ['NA', '0.0048', '0.0052', '0.0055', '0.0057', '0.0058'] },
+                    { n: 55, vals: ['NA', '0.0043', '0.0047', '0.0049', '0.005', '0.005'] },
+                    { n: 60, vals: ['NA', '0.0038', '0.0042', '0.0045', '0.0046', '0.0046'] },
+                  ].map(({ n, vals }) => (
+                    <tr key={n} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="py-3 px-4 text-center text-xs font-mono font-bold text-gray-700 border-r border-gray-100">
+                        {n}
+                      </td>
+                      {vals.map((v, i) => (
+                        <td
+                          key={i}
+                          className={`py-3 px-4 text-center text-xs font-mono tabular-nums ${
+                            v === 'NA' ? 'text-gray-300 italic' : 'text-gray-700'
+                          }`}
+                        >
+                          {v}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50">
@@ -2726,129 +2726,129 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-              <thead>
-                {/* Group label row */}
-                <tr className="border-b border-gray-100">
-                  <th className="py-2" colSpan={2} />
-                  <th
-                    colSpan={4}
-                    className="py-2 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400"
-                  >
-                    Depth Factor I<sub>f</sub> — by L/B ratio
-                  </th>
-                </tr>
-                {/* Column headers */}
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
-                    <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
-                      Scale
-                    </span>
-                    Region
-                  </th>
-                  <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
-                    <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
-                      D/√LB &nbsp;(top) &nbsp;/&nbsp; LB/√D &nbsp;(bottom)
-                    </span>
-                    Depth Ratio
-                  </th>
-                  {['L/B = 1', 'L/B = 9', 'L/B = 25', 'L/B = 100'].map((lbl) => (
+                <thead>
+                  {/* Group label row */}
+                  <tr className="border-b border-gray-100">
+                    <th className="py-2" colSpan={2} />
                     <th
-                      key={lbl}
-                      className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]"
+                      colSpan={4}
+                      className="py-2 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400"
                     >
-                      <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
-                        Depth Factor
-                      </span>
-                      {lbl}
+                      Depth Factor I<sub>f</sub> — by L/B ratio
                     </th>
+                  </tr>
+                  {/* Column headers */}
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
+                      <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                        Scale
+                      </span>
+                      Region
+                    </th>
+                    <th className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
+                      <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                        D/√LB &nbsp;(top) &nbsp;/&nbsp; LB/√D &nbsp;(bottom)
+                      </span>
+                      Depth Ratio
+                    </th>
+                    {['L/B = 1', 'L/B = 9', 'L/B = 25', 'L/B = 100'].map((lbl) => (
+                      <th
+                        key={lbl}
+                        className="text-center py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px]"
+                      >
+                        <span className="block normal-case font-normal text-gray-400 text-[9px] leading-tight">
+                          Depth Factor
+                        </span>
+                        {lbl}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {/* ── Upper half: D/√LB ── */}
+                  {[
+                    { ratio: '0.0', vals: [1.0, 1.0, 1.0, 1.0] },
+                    { ratio: '0.2', vals: [0.94, 0.91, 0.88, 0.85] },
+                    { ratio: '0.4', vals: [0.87, 0.83, 0.8, 0.77] },
+                    { ratio: '0.6', vals: [0.81, 0.77, 0.75, 0.73] },
+                    { ratio: '0.8', vals: [0.76, 0.73, 0.72, 0.72] },
+                    { ratio: '1.0', vals: [0.72, 0.72, 0.72, 0.72] },
+                  ].map(({ ratio, vals }, i) => (
+                    <tr key={`top-${i}`} className="hover:bg-gray-50/50 transition-colors">
+                      {i === 0 && (
+                        <td
+                          rowSpan={6}
+                          className="py-3 px-4 text-center text-xs font-mono font-bold text-gray-700 border-r border-gray-100 align-middle"
+                        >
+                          <span className="block font-sans text-[10px] uppercase tracking-widest text-gray-400 font-bold">
+                            Upper
+                          </span>
+                          <span className="block font-mono text-gray-500 mt-1 normal-case text-[11px]">
+                            D / &radic;LB
+                          </span>
+                        </td>
+                      )}
+                      <td className="py-3 px-4 text-center text-xs font-mono tabular-nums text-gray-700 border-r border-gray-100">
+                        {ratio}
+                      </td>
+                      {vals.map((v, j) => (
+                        <td
+                          key={j}
+                          className="py-3 px-4 text-center text-xs font-mono tabular-nums text-gray-700"
+                        >
+                          {v.toFixed(2)}
+                        </td>
+                      ))}
+                    </tr>
                   ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {/* ── Upper half: D/√LB ── */}
-                {[
-                  { ratio: '0.0', vals: [1.0, 1.0, 1.0, 1.0] },
-                  { ratio: '0.2', vals: [0.94, 0.91, 0.88, 0.85] },
-                  { ratio: '0.4', vals: [0.87, 0.83, 0.8, 0.77] },
-                  { ratio: '0.6', vals: [0.81, 0.77, 0.75, 0.73] },
-                  { ratio: '0.8', vals: [0.76, 0.73, 0.72, 0.72] },
-                  { ratio: '1.0', vals: [0.72, 0.72, 0.72, 0.72] },
-                ].map(({ ratio, vals }, i) => (
-                  <tr key={`top-${i}`} className="hover:bg-gray-50/50 transition-colors">
-                    {i === 0 && (
-                      <td
-                        rowSpan={6}
-                        className="py-3 px-4 text-center text-xs font-mono font-bold text-gray-700 border-r border-gray-100 align-middle"
-                      >
-                        <span className="block font-sans text-[10px] uppercase tracking-widest text-gray-400 font-bold">
-                          Upper
-                        </span>
-                        <span className="block font-mono text-gray-500 mt-1 normal-case text-[11px]">
-                          D / &radic;LB
-                        </span>
-                      </td>
-                    )}
-                    <td className="py-3 px-4 text-center text-xs font-mono tabular-nums text-gray-700 border-r border-gray-100">
-                      {ratio}
-                    </td>
-                    {vals.map((v, j) => (
-                      <td
-                        key={j}
-                        className="py-3 px-4 text-center text-xs font-mono tabular-nums text-gray-700"
-                      >
-                        {v.toFixed(2)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
 
-                {/* ── Divider row ── */}
-                <tr className="bg-gray-100/20">
-                  <td
-                    colSpan={6}
-                    className="py-0 px-4 text-center text-[10px] uppercase tracking-widest font-bold text-gray-400 border-y border-gray-200"
-                  >
-                    ── mid-point crossover ──
-                  </td>
-                </tr>
-
-                {/* ── Lower half: LB/√D ── */}
-                {[
-                  { ratio: '0.8', vals: [0.67, 0.7, 0.71, 0.72] },
-                  { ratio: '0.6', vals: [0.62, 0.67, 0.69, 0.71] },
-                  { ratio: '0.4', vals: [0.57, 0.63, 0.66, 0.68] },
-                  { ratio: '0.2', vals: [0.53, 0.58, 0.61, 0.63] },
-                  { ratio: '0.0', vals: [0.5, 0.5, 0.5, 0.5] },
-                ].map(({ ratio, vals }, i) => (
-                  <tr key={`bot-${i}`} className="hover:bg-gray-50/50 transition-colors">
-                    {i === 0 && (
-                      <td
-                        rowSpan={5}
-                        className="py-3 px-4 text-center text-xs font-mono font-bold text-gray-700 border-r border-gray-100 align-middle"
-                      >
-                        <span className="block font-sans text-[10px] uppercase tracking-widest text-gray-400 font-bold">
-                          Lower
-                        </span>
-                        <span className="block font-mono text-gray-500 mt-1 normal-case text-[11px]">
-                          LB / &radic;D
-                        </span>
-                      </td>
-                    )}
-                    <td className="py-3 px-4 text-center text-xs font-mono tabular-nums text-gray-700 border-r border-gray-100">
-                      {ratio}
+                  {/* ── Divider row ── */}
+                  <tr className="bg-gray-100/20">
+                    <td
+                      colSpan={6}
+                      className="py-0 px-4 text-center text-[10px] uppercase tracking-widest font-bold text-gray-400 border-y border-gray-200"
+                    >
+                      ── mid-point crossover ──
                     </td>
-                    {vals.map((v, j) => (
-                      <td
-                        key={j}
-                        className="py-3 px-4 text-center text-xs font-mono tabular-nums text-gray-700"
-                      >
-                        {v.toFixed(2)}
-                      </td>
-                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+
+                  {/* ── Lower half: LB/√D ── */}
+                  {[
+                    { ratio: '0.8', vals: [0.67, 0.7, 0.71, 0.72] },
+                    { ratio: '0.6', vals: [0.62, 0.67, 0.69, 0.71] },
+                    { ratio: '0.4', vals: [0.57, 0.63, 0.66, 0.68] },
+                    { ratio: '0.2', vals: [0.53, 0.58, 0.61, 0.63] },
+                    { ratio: '0.0', vals: [0.5, 0.5, 0.5, 0.5] },
+                  ].map(({ ratio, vals }, i) => (
+                    <tr key={`bot-${i}`} className="hover:bg-gray-50/50 transition-colors">
+                      {i === 0 && (
+                        <td
+                          rowSpan={5}
+                          className="py-3 px-4 text-center text-xs font-mono font-bold text-gray-700 border-r border-gray-100 align-middle"
+                        >
+                          <span className="block font-sans text-[10px] uppercase tracking-widest text-gray-400 font-bold">
+                            Lower
+                          </span>
+                          <span className="block font-mono text-gray-500 mt-1 normal-case text-[11px]">
+                            LB / &radic;D
+                          </span>
+                        </td>
+                      )}
+                      <td className="py-3 px-4 text-center text-xs font-mono tabular-nums text-gray-700 border-r border-gray-100">
+                        {ratio}
+                      </td>
+                      {vals.map((v, j) => (
+                        <td
+                          key={j}
+                          className="py-3 px-4 text-center text-xs font-mono tabular-nums text-gray-700"
+                        >
+                          {v.toFixed(2)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50">
@@ -5982,72 +5982,72 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                       </div>
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                        <thead>
-                          <tr className="bg-gray-50 border-b border-gray-100">
-                            <th className="text-center py-2 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
-                              <span className="block normal-case font-normal text-[9px] text-gray-400 mb-0.5">
-                                SBC based on Shear Criteria
-                              </span>
-                              q<sub>s</sub> — Part 1
-                            </th>
-                            <th className="text-center py-2 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
-                              <span className="block normal-case font-normal text-[9px] text-gray-400 mb-0.5">
-                                SBC based on Settlement Criteria
-                              </span>
-                              q<sub>a</sub> — {isClay ? 'Part 3' : 'Part 2'}
-                            </th>
-                            <th className="text-center py-2 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
-                              <span className="block normal-case font-normal text-[9px] text-gray-400 mb-0.5">
-                                Lesser of SBC based on Shear Criteria & SBC based on Settlement
-                                Criteria
-                              </span>
-                              minimum(q<sub>s</sub>, q<sub>a</sub>)
-                            </th>
-                            <th className="text-center py-2 px-3 font-bold text-primary uppercase tracking-widest text-[10px] bg-primary/5">
-                              <span className="block normal-case font-normal text-[9px] text-primary/70 mb-0.5">
-                                85% × minimum(SBC based on Shear Criteria, SBC based on Settlement
-                                Criteria)
-                              </span>
-                              Recommended Design SBC
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <ValueCell val={shearSBC} label="from Part 1 qs" />
-                            <ValueCell
-                              val={settlementSBC}
-                              label={isClay ? 'from Part 3 qsafe' : 'from Part 2 qa'}
-                            />
-                            <ValueCell
-                              val={
-                                shearSBC !== null && settlementSBC !== null
-                                  ? Math.min(shearSBC, settlementSBC)
-                                  : null
-                              }
-                              label={
-                                shearSBC !== null && settlementSBC !== null
-                                  ? shearSBC <= settlementSBC
-                                    ? 'shear governs'
-                                    : 'settlement governs'
-                                  : null
-                              }
-                            />
-                            <td className="py-4 px-4 text-center bg-primary/5">
-                              <span
-                                className={`block text-xl font-black font-mono tabular-nums ${recommended !== null ? 'text-primary' : 'text-gray-300'}`}
-                              >
-                                {fmtSBC(recommended)}
-                              </span>
-                              <span className="block text-[10px] text-primary/70 mt-0.5 font-mono">
-                                {recommended !== null
-                                  ? `= 0.85 × ${Math.min(shearSBC, settlementSBC).toFixed(2)}`
-                                  : 'fill Parts 1 & 2/3'}
-                              </span>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
+                          <thead>
+                            <tr className="bg-gray-50 border-b border-gray-100">
+                              <th className="text-center py-2 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
+                                <span className="block normal-case font-normal text-[9px] text-gray-400 mb-0.5">
+                                  SBC based on Shear Criteria
+                                </span>
+                                q<sub>s</sub> — Part 1
+                              </th>
+                              <th className="text-center py-2 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
+                                <span className="block normal-case font-normal text-[9px] text-gray-400 mb-0.5">
+                                  SBC based on Settlement Criteria
+                                </span>
+                                q<sub>a</sub> — {isClay ? 'Part 3' : 'Part 2'}
+                              </th>
+                              <th className="text-center py-2 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] border-r border-gray-100">
+                                <span className="block normal-case font-normal text-[9px] text-gray-400 mb-0.5">
+                                  Lesser of SBC based on Shear Criteria & SBC based on Settlement
+                                  Criteria
+                                </span>
+                                minimum(q<sub>s</sub>, q<sub>a</sub>)
+                              </th>
+                              <th className="text-center py-2 px-3 font-bold text-primary uppercase tracking-widest text-[10px] bg-primary/5">
+                                <span className="block normal-case font-normal text-[9px] text-primary/70 mb-0.5">
+                                  85% × minimum(SBC based on Shear Criteria, SBC based on Settlement
+                                  Criteria)
+                                </span>
+                                Recommended Design SBC
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <ValueCell val={shearSBC} label="from Part 1 qs" />
+                              <ValueCell
+                                val={settlementSBC}
+                                label={isClay ? 'from Part 3 qsafe' : 'from Part 2 qa'}
+                              />
+                              <ValueCell
+                                val={
+                                  shearSBC !== null && settlementSBC !== null
+                                    ? Math.min(shearSBC, settlementSBC)
+                                    : null
+                                }
+                                label={
+                                  shearSBC !== null && settlementSBC !== null
+                                    ? shearSBC <= settlementSBC
+                                      ? 'shear governs'
+                                      : 'settlement governs'
+                                    : null
+                                }
+                              />
+                              <td className="py-4 px-4 text-center bg-primary/5">
+                                <span
+                                  className={`block text-xl font-black font-mono tabular-nums ${recommended !== null ? 'text-primary' : 'text-gray-300'}`}
+                                >
+                                  {fmtSBC(recommended)}
+                                </span>
+                                <span className="block text-[10px] text-primary/70 mt-0.5 font-mono">
+                                  {recommended !== null
+                                    ? `= 0.85 × ${Math.min(shearSBC, settlementSBC).toFixed(2)}`
+                                    : 'fill Parts 1 & 2/3'}
+                                </span>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
                       {(shearSBC === null || settlementSBC === null) && (
                         <p className="px-4 py-2 text-[10px] text-amber-600 dark:text-amber-400 italic bg-amber-50 dark:bg-amber-950/40 border-t border-amber-200 dark:border-amber-800">
@@ -7557,46 +7557,46 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                 {/* Rows */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
-                  <tbody className="divide-y divide-gray-50">
-                    {rows.map(({ param, sym, unit, source, formula }) => {
-                      const sourceBadge =
-                        {
-                          Input: 'bg-blue-50 text-blue-700 border-blue-200',
-                          Computed: 'bg-amber-50 text-amber-700 border-amber-200',
-                          Settings: 'bg-teal-50 text-teal-700 border-teal-200',
-                          Constant: 'bg-purple-50 text-purple-700 border-purple-200',
-                        }[source] ?? 'bg-gray-50 text-gray-500 border-gray-200';
-                      return (
-                        <tr key={param} className="hover:bg-gray-50/60 transition-colors group">
-                          {/* Parameter name */}
-                          <td className="py-2.5 px-4 text-gray-700 font-medium leading-snug w-72">
-                            {param}
-                          </td>
-                          {/* Symbol */}
-                          <td className="py-2.5 px-3 text-center font-mono font-bold text-gray-800 w-16">
-                            {sym}
-                          </td>
-                          {/* Unit */}
-                          <td className="py-2.5 px-3 text-center font-mono text-gray-400 w-24">
-                            {unit}
-                          </td>
-                          {/* Source badge */}
-                          <td className="py-2.5 px-3 text-center w-24">
-                            <span
-                              className={`inline-block px-2 py-0.5 rounded-full border text-[10px] font-semibold ${sourceBadge}`}
-                            >
-                              {source}
-                            </span>
-                          </td>
-                          {/* Formula */}
-                          <td className="py-2.5 px-4 font-mono text-gray-600 leading-relaxed">
-                            {formula}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                    <tbody className="divide-y divide-gray-50">
+                      {rows.map(({ param, sym, unit, source, formula }) => {
+                        const sourceBadge =
+                          {
+                            Input: 'bg-blue-50 text-blue-700 border-blue-200',
+                            Computed: 'bg-amber-50 text-amber-700 border-amber-200',
+                            Settings: 'bg-teal-50 text-teal-700 border-teal-200',
+                            Constant: 'bg-purple-50 text-purple-700 border-purple-200',
+                          }[source] ?? 'bg-gray-50 text-gray-500 border-gray-200';
+                        return (
+                          <tr key={param} className="hover:bg-gray-50/60 transition-colors group">
+                            {/* Parameter name */}
+                            <td className="py-2.5 px-4 text-gray-700 font-medium leading-snug w-72">
+                              {param}
+                            </td>
+                            {/* Symbol */}
+                            <td className="py-2.5 px-3 text-center font-mono font-bold text-gray-800 w-16">
+                              {sym}
+                            </td>
+                            {/* Unit */}
+                            <td className="py-2.5 px-3 text-center font-mono text-gray-400 w-24">
+                              {unit}
+                            </td>
+                            {/* Source badge */}
+                            <td className="py-2.5 px-3 text-center w-24">
+                              <span
+                                className={`inline-block px-2 py-0.5 rounded-full border text-[10px] font-semibold ${sourceBadge}`}
+                              >
+                                {source}
+                              </span>
+                            </td>
+                            {/* Formula */}
+                            <td className="py-2.5 px-4 font-mono text-gray-600 leading-relaxed">
+                              {formula}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             ))}

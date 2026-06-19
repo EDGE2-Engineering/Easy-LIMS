@@ -19,7 +19,9 @@ const AdminDepartmentsManager = () => {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap w-12">#</th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap w-12">
+                  #
+                </th>
                 <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Lab Test Department Name
                 </th>
@@ -27,7 +29,10 @@ const AdminDepartmentsManager = () => {
             </thead>
             <tbody>
               {DEPARTMENTS.map((dept) => (
-                <tr key={dept.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <tr
+                  key={dept.id}
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
                   <td className="py-4 px-4 align-middle text-gray-400 font-mono">{dept.id}</td>
                   <td className="py-4 px-4 align-middle text-gray-600">
                     <div className="flex items-center gap-2">

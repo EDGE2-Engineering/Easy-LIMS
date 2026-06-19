@@ -805,136 +805,144 @@ const AdminClientsManager = ({ id }) => {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
-                      Client & Category
-                    </th>
-                    <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
-                      Address & GSTIN
-                    </th>
-                    <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
-                      Primary Contact
-                    </th>
-                    <th className="text-center py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
-                      Status
-                    </th>
-                    <th className="text-center py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedClients.length > 0 ? (
-                    paginatedClients.map((client) => {
-                      const primaryContact =
-                        (client.contacts || []).find((c) => c.is_primary) || client.contacts?.[0] || {};
-                      return (
-                        <tr key={client.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                          <td className="py-4 px-3 align-top">
-                            <div className="font-semibold text-gray-900 break-words">{client.clientName}</div>
-                            <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap bg-blue-50 text-blue-700">
-                              {client.category || 'General'}
-                            </span>
-                          </td>
-      
-                          <td className="py-4 px-3 align-top text-gray-600">
-                            <div className="text-xs text-gray-500 break-words whitespace-normal" title={client.clientAddress}>
-                              {client.clientAddress}
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Client & Category
+                </th>
+                <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Address & GSTIN
+                </th>
+                <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Primary Contact
+                </th>
+                <th className="text-center py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Status
+                </th>
+                <th className="text-center py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedClients.length > 0 ? (
+                paginatedClients.map((client) => {
+                  const primaryContact =
+                    (client.contacts || []).find((c) => c.is_primary) || client.contacts?.[0] || {};
+                  return (
+                    <tr
+                      key={client.id}
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="py-4 px-3 align-top">
+                        <div className="font-semibold text-gray-900 break-words">
+                          {client.clientName}
+                        </div>
+                        <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap bg-blue-50 text-blue-700">
+                          {client.category || 'General'}
+                        </span>
+                      </td>
+
+                      <td className="py-4 px-3 align-top text-gray-600">
+                        <div
+                          className="text-xs text-gray-500 break-words whitespace-normal"
+                          title={client.clientAddress}
+                        >
+                          {client.clientAddress}
+                        </div>
+                        {client.gstin?.trim() && (
+                          <div className="text-[10px] text-gray-400 mt-2 break-all">
+                            GSTIN: {client.gstin}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="py-4 px-3 align-top text-gray-600">
+                        {primaryContact.contact_person ? (
+                          <div className="space-y-1">
+                            <div className="font-semibold text-gray-900 text-xs">
+                              {primaryContact.contact_person}
                             </div>
-                            {client.gstin?.trim() && (
-                              <div className="text-[10px] text-gray-400 mt-2 break-all">
-                                GSTIN: {client.gstin}
-                              </div>
-                            )}
-                          </td>
-      
-                          <td className="py-4 px-3 align-top text-gray-600">
-                            {primaryContact.contact_person ? (
-                              <div className="space-y-1">
-                                <div className="font-semibold text-gray-900 text-xs">
-                                  {primaryContact.contact_person}
-                                </div>
-                                <div className="text-[10px] text-gray-500 flex items-center gap-1.5">
-                                  <Mail className="w-3 h-3 text-blue-400 shrink-0" />{' '}
-                                  {primaryContact.contact_email || '—'}
-                                </div>
-                                <div className="text-[10px] text-gray-500 flex items-center gap-1.5">
-                                  <Phone className="w-3 h-3 text-green-400 shrink-0" />{' '}
-                                  {primaryContact.contact_phone || '—'}
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="text-gray-300 font-bold">—</span>
-                            )}
-                          </td>
-      
-                          <td className="py-4 px-2 text-center align-top whitespace-nowrap">
-                            {client.status === false ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap bg-red-50 text-red-700">
-                                Inactive
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap bg-green-50 text-green-700">
-                                Active
-                              </span>
-                            )}
-                          </td>
-      
-                          <td className="py-4 px-2 align-top">
-                            <div className="flex justify-center items-center gap-1">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7"
-                                    onClick={() => handleEdit(client)}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                  <p className="text-xs">Edit Client</p>
-                                </TooltipContent>
-                              </Tooltip>
-      
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
-                                    onClick={() => handleDeleteClick(client)}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                                  <p className="text-xs">Delete Client</p>
-                                </TooltipContent>
-                              </Tooltip>
+                            <div className="text-[10px] text-gray-500 flex items-center gap-1.5">
+                              <Mail className="w-3 h-3 text-blue-400 shrink-0" />{' '}
+                              {primaryContact.contact_email || '—'}
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="py-12 text-center text-gray-500">
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <AlertCircle className="w-8 h-8 text-gray-200" />
-                          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
-                            No Clients Registered
-                          </p>
+                            <div className="text-[10px] text-gray-500 flex items-center gap-1.5">
+                              <Phone className="w-3 h-3 text-green-400 shrink-0" />{' '}
+                              {primaryContact.contact_phone || '—'}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-300 font-bold">—</span>
+                        )}
+                      </td>
+
+                      <td className="py-4 px-2 text-center align-top whitespace-nowrap">
+                        {client.status === false ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap bg-red-50 text-red-700">
+                            Inactive
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap bg-green-50 text-green-700">
+                            Active
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-4 px-2 align-top">
+                        <div className="flex justify-center items-center gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => handleEdit(client)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                              <p className="text-xs">Edit Client</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                onClick={() => handleDeleteClick(client)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                              <p className="text-xs">Delete Client</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
                       </td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <AlertCircle className="w-8 h-8 text-gray-200" />
+                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+                        No Clients Registered
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Removed bottom pagination as it is now in the top settings panel */}
 

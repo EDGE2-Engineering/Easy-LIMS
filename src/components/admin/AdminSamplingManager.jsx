@@ -512,7 +512,10 @@ const AdminSamplingManager = () => {
             </thead>
             <tbody>
               {paginatedData.map((item) => (
-                <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <tr
+                  key={item.id}
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
                   <td className="py-4 px-4 align-top text-gray-600">
                     <div className="flex flex-wrap items-center gap-6 text-sm text-gray-700">
                       <p className="font-bold text-gray-900">{item.serviceType}</p>
@@ -572,7 +575,7 @@ const AdminSamplingManager = () => {
                           <p className="text-xs">Edit sampling details</p>
                         </TooltipContent>
                       </Tooltip>
-  
+
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button

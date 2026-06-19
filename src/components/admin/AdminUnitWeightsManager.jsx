@@ -132,9 +132,12 @@ const AdminUnitWeightsManager = () => {
               {MATERIALS.map((mat) => {
                 const bulkVal = localWeights[mat.id] ?? '';
                 const effectiveVal = computeEffective(bulkVal);
-  
+
                 return (
-                  <tr key={mat.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
+                  <tr
+                    key={mat.id}
+                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors group"
+                  >
                     <td className="py-4 px-4 align-middle text-gray-600">
                       <span className="font-semibold text-gray-900">{mat.name}</span>
                     </td>

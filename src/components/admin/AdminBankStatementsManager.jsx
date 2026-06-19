@@ -921,7 +921,9 @@ const AdminBankStatementsManager = () => {
                         {txt(row.transaction_id)}
                       </span>
                     </td>
-                    <td className="py-4 px-4 text-xs text-gray-400 align-middle">{txt(row.ref_num)}</td>
+                    <td className="py-4 px-4 text-xs text-gray-400 align-middle">
+                      {txt(row.ref_num)}
+                    </td>
                     <td className="py-4 px-4 text-xs text-gray-600 align-middle w-[220px] max-w-[220px]">
                       <span className="block break-words whitespace-normal" title={row.particulars}>
                         {txt(row.particulars)}
@@ -952,7 +954,9 @@ const AdminBankStatementsManager = () => {
                         ? fmt(row.balance_amt)
                         : '—'}
                     </td>
-                    <td className="py-4 px-4 text-xs text-gray-600 align-middle">{txt(row.source)}</td>
+                    <td className="py-4 px-4 text-xs text-gray-600 align-middle">
+                      {txt(row.source)}
+                    </td>
                     <td className="py-4 px-4 text-xs text-gray-600 align-middle">
                       {txt(row.sheet_number)}
                     </td>

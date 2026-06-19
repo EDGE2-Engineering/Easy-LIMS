@@ -338,17 +338,32 @@ const AdminUsersManager = () => {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Name</th>
-                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Employee ID</th>
-                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Username</th>
-                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Role</th>
-                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Status</th>
-                <th className="text-right py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Actions</th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Name
+                </th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Employee ID
+                </th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Username
+                </th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Role
+                </th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Status
+                </th>
+                <th className="text-right py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.map((u) => (
-                <tr key={u.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <tr
+                  key={u.id}
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
                   <td className="py-4 px-4 align-middle text-gray-600">
                     <div className="flex flex-col">
                       <span className="font-medium text-gray-900">{u.full_name}</span>
@@ -364,10 +379,12 @@ const AdminUsersManager = () => {
                   <td className="py-4 px-4 align-middle text-gray-600">
                     <div className="text-xs text-gray-500">{u.username}</div>
                   </td>
-  
+
                   <td className="py-4 px-4 align-middle text-gray-600">
                     <Badge className="bg-primary text-primary-foreground uppercase text-[10px] font-bold px-2 py-0.5 shadow-sm hover:bg-primary/90">
-                      {Object.values(ROLES).find((r) => r.slug === u.role)?.label || u.role || 'N/A'}
+                      {Object.values(ROLES).find((r) => r.slug === u.role)?.label ||
+                        u.role ||
+                        'N/A'}
                     </Badge>
                     {(() => {
                       const deptIds = Array.isArray(u.departments) ? u.departments : [];
@@ -389,7 +406,7 @@ const AdminUsersManager = () => {
                       ) : null;
                     })()}
                   </td>
-  
+
                   <td className="py-4 px-4 align-middle text-gray-600">
                     <Badge
                       className={
@@ -413,7 +430,7 @@ const AdminUsersManager = () => {
                           <p className="text-xs">Edit user account</p>
                         </TooltipContent>
                       </Tooltip>
-  
+
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -432,7 +449,9 @@ const AdminUsersManager = () => {
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                          <p className="text-xs">{u.is_active ? 'Deactivate user' : 'Activate user'}</p>
+                          <p className="text-xs">
+                            {u.is_active ? 'Deactivate user' : 'Activate user'}
+                          </p>
                         </TooltipContent>
                       </Tooltip>
                     </div>

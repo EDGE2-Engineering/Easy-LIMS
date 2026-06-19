@@ -504,7 +504,10 @@ const InquiriesManager = () => {
                     INQUIRY_STATUSES.find((s) => s.value === (inquiry.status || 'PENDING')) ||
                     INQUIRY_STATUSES[0];
                   return (
-                    <tr key={inquiry.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={inquiry.id}
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
                       <td className="py-4 px-6 align-middle text-gray-600">
                         <div className="flex flex-col">
                           <span className="font-mono font-bold text-gray-700 whitespace-nowrap">

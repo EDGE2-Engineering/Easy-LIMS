@@ -175,13 +175,21 @@ const AdminReportsManager = () => {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Report #</th>
-                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Client</th>
+                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Report #
+                </th>
+                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Client
+                </th>
                 <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Created By
                 </th>
-                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Date</th>
-                <th className="text-right py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Actions</th>
+                <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Date
+                </th>
+                <th className="text-right py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -200,7 +208,10 @@ const AdminReportsManager = () => {
                 </tr>
               ) : (
                 filteredReports.map((report) => (
-                  <tr key={report.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr
+                    key={report.id}
+                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
                     <td className="py-4 px-6 align-middle text-gray-600">
                       <span className="font-mono font-semibold text-gray-700">
                         {report.report_number}
@@ -219,11 +230,7 @@ const AdminReportsManager = () => {
                       <div className="flex justify-end gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEdit(report)}
-                            >
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(report)}>
                               <FileText className="w-4 h-4 text-blue-600" />
                             </Button>
                           </TooltipTrigger>

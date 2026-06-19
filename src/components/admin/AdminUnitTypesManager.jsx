@@ -194,7 +194,9 @@ const AdminUnitTypesManager = () => {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">Unit Type</th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Unit Type
+                </th>
                 <th className="text-right py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap w-24">
                   Actions
                 </th>
@@ -202,8 +204,13 @@ const AdminUnitTypesManager = () => {
             </thead>
             <tbody>
               {filteredUnitTypes.map((unit) => (
-                <tr key={unit.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="py-4 px-4 text-sm text-gray-800 font-medium align-middle">{unit.unit_type}</td>
+                <tr
+                  key={unit.id}
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
+                  <td className="py-4 px-4 text-sm text-gray-800 font-medium align-middle">
+                    {unit.unit_type}
+                  </td>
                   <td className="py-4 px-4 text-right align-middle text-gray-600">
                     <div className="flex justify-end gap-1">
                       <Tooltip>
@@ -216,10 +223,14 @@ const AdminUnitTypesManager = () => {
                           <p className="text-xs">Edit unit type name</p>
                         </TooltipContent>
                       </Tooltip>
-  
+
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(unit)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(unit)}
+                          >
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </TooltipTrigger>

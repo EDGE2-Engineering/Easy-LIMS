@@ -219,7 +219,9 @@ const AdminHSNCodesManager = () => {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap w-32">Code</th>
+                <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap w-32">
+                  Code
+                </th>
                 <th className="text-left py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Description
                 </th>
@@ -230,9 +232,16 @@ const AdminHSNCodesManager = () => {
             </thead>
             <tbody>
               {filteredHsnCodes.map((hsn) => (
-                <tr key={hsn.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="py-4 px-4 text-sm text-gray-800 font-bold align-middle">{hsn.code}</td>
-                  <td className="py-4 px-4 text-sm text-gray-600 align-middle">{hsn.description}</td>
+                <tr
+                  key={hsn.id}
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
+                  <td className="py-4 px-4 text-sm text-gray-800 font-bold align-middle">
+                    {hsn.code}
+                  </td>
+                  <td className="py-4 px-4 text-sm text-gray-600 align-middle">
+                    {hsn.description}
+                  </td>
                   <td className="py-4 px-4 text-right align-middle text-gray-600">
                     <div className="flex justify-end gap-1">
                       <Tooltip>
@@ -245,10 +254,14 @@ const AdminHSNCodesManager = () => {
                           <p className="text-xs">Edit code details</p>
                         </TooltipContent>
                       </Tooltip>
-  
+
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(hsn)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(hsn)}
+                          >
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </TooltipTrigger>
