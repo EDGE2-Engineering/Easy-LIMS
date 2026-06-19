@@ -313,14 +313,14 @@ const AdminCompanyCalendar = () => {
                                                     relative h-8 w-full rounded-lg text-xs transition-all flex flex-col items-center justify-center
                                                     ${
                                                       event?.is_holiday
-                                                        ? 'bg-orange-100 text-orange-700 font-bold hover:bg-orange-200 ring-2 ring-orange-100 ring-offset-0'
+                                                        ? 'bg-orange-100 text-orange-700 font-bold hover:bg-orange-200 ring-2 ring-orange-100 ring-offset-0 dark:bg-orange-500/20 dark:text-orange-400 dark:hover:bg-orange-500/30 dark:ring-orange-500/20'
                                                         : isSun
-                                                          ? 'text-red-600 font-semibold bg-red-50 hover:bg-red-100'
+                                                          ? 'text-red-600 font-semibold bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20'
                                                           : hasLeave
-                                                            ? 'bg-indigo-50/50 text-indigo-700 hover:bg-indigo-100/50 border border-indigo-200 shadow-sm'
-                                                            : 'text-gray-700 hover:bg-gray-100'
+                                                            ? 'bg-indigo-50/50 text-indigo-700 hover:bg-indigo-100/50 border border-indigo-200 shadow-sm dark:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-500/20 dark:border-indigo-500/20'
+                                                            : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
                                                     }
-                                                    ${isToday ? 'bg-primary/10 text-primary font-bold border border-primary/20' : ''}
+                                                    ${isToday ? 'bg-primary/10 text-primary font-bold border border-primary/20 dark:bg-primary/20 dark:border-primary/30' : ''}
                                                 `}
                         title={
                           event
@@ -421,10 +421,10 @@ const AdminCompanyCalendar = () => {
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                               event.is_holiday
-                                ? 'bg-orange-100 text-orange-700'
+                                ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400'
                                 : isSunday(eventDate)
-                                  ? 'bg-red-100 text-red-700'
-                                  : 'bg-primary/10 text-primary'
+                                  ? 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400'
+                                  : 'bg-primary/10 text-primary dark:bg-primary/20'
                             }`}
                           >
                             {event.is_holiday
