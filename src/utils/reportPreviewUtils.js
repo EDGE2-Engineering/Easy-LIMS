@@ -359,6 +359,12 @@ const addTextBlockPage = (pages, title, content) => {
  *   Groundwater table assumed deep (no GWT correction applied here).
  */
 export const computeSbcSummaryRows = (sbcDetails, boreholeLogs) => {
+  if (!sbcDetails || !sbcDetails.length) return { format: 'empty', rows: [] };
+
+  if (sbcDetails[0] && !Array.isArray(sbcDetails[0])) {
+    return { format: 'unified', rows: sbcDetails };
+  }
+
   const GAMMA = 18; // kN/m³ — unit weight of soil
   const FOS = 3; // factor of safety for shear
   const S_ALLOW = 25; // mm — allowable settlement
@@ -489,7 +495,7 @@ export const computeSbcSummaryRows = (sbcDetails, boreholeLogs) => {
     });
   });
 
-  return rows;
+  return { format: 'legacy', rows };
 };
 
 /**
@@ -617,8 +623,8 @@ export const buildReportPages = (formData) => {
   }
 
   // SBC Summary page — computed from sbcDetails input
-  const sbcSummaryRows = computeSbcSummaryRows(data.sbcDetails, data.boreholeLogs);
-  if (sbcSummaryRows.length > 0) {
+  const sbcSummaryResult = computeSbcSummaryRows(data.sbcDetails, data.boreholeLogs);
+  if (sbcSummaryResult.rows && sbcSummaryResult.rows.length > 0) {
     pages.push({
       isFirstPage: false,
       isContinuation: false,
@@ -626,8 +632,9 @@ export const buildReportPages = (formData) => {
       blocks: [
         {
           type: 'sbc-summary',
-          rows: sbcSummaryRows,
-          sbcDetails: data.sbcDetails,
+          rows: sbcSummaryResult.rows,
+          format: sbcSummaryResult.format,
+          rlValuesNote: data.rlValuesNote,
           projectName: data.projectName || data.projectDetails || '',
           siteAddress: data.siteAddress || data.siteName || '',
         },

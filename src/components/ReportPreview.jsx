@@ -16,6 +16,9 @@ import { Button } from '@/components/ui/button';
 import { X, Printer } from 'lucide-react';
 import { buildReportPages, formatDisplayValue, formatKey } from '@/utils/reportPreviewUtils';
 import { A4_PRINT_PAGE_STYLE } from '@/utils/a4PrintStyles';
+import { useSettings } from '@/contexts/SettingsContext';
+import { computeSoilSbcValues, computeRockSbcValues } from '@/utils/sbcCalculators';
+import FoundationCrossSectionVisualisation from './admin/FoundationCrossSectionVisualisation';
 import './ReportPreview.css';
 import Chart from 'chart.js/auto';
 
@@ -1207,15 +1210,274 @@ const DataTableBlock = ({ title, columns, rows, getCell }) => (
   </div>
 );
 
-const SbcSummaryBlock = ({ rows, projectName, siteAddress }) => {
+const FoundationDiagramBlock = ({ block }) => {
+  const { row, boreholeNumber, materialType } = block;
+  const { settings } = useSettings();
+  const isRock = materialType === 'Rock';
+  const computed = isRock ? computeRockSbcValues(row) : computeSoilSbcValues(row, settings);
+
+  // Extract values that match the parameter cards in FoundationCrossSectionVisualisation
+  const computedForDiagram = {
+    qs_p1: computed.computedQs, // Approximate mapping
+    settlementSBC: isRock ? null : computed.computedQa, // Rock doesn't have settlement part
+    recommended: computed.computedRecommendedSbc,
+    shearSBC: computed.computedQs,
+  };
+
+  return (
+    <div className="mb-6 page-break-inside-avoid">
+      <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
+        Foundation Details – BH-{boreholeNumber} ({materialType})
+      </h3>
+      <p className="text-xs text-gray-800 leading-relaxed mb-4 text-justify">
+        The foundation cross-section diagram below illustrates the typical foundation parameters and
+        anticipated ground conditions for Borehole {boreholeNumber}, based on the safe bearing
+        capacity calculations.
+      </p>
+
+      <div className="mx-auto max-w-2xl print:max-w-none">
+        <FoundationCrossSectionVisualisation
+          data={row}
+          computed={computedForDiagram}
+          isRock={isRock}
+          rockType={row.rockType}
+        />
+      </div>
+
+      <p className="text-[10px] text-gray-500 italic mt-4 text-center">
+        Note: The diagram is schematic and not to scale. All dimensions are in meters unless
+        specified otherwise.
+      </p>
+    </div>
+  );
+};
+
+const SbcSummaryBlock = ({ rows, format, rlValuesNote, projectName, siteAddress }) => {
+  const { settings } = useSettings();
+
   if (!rows || rows.length === 0) return null;
 
+  if (format === 'unified') {
+    const soilRows = rows
+      .map((d, bhIdx) => ({ d, bhIdx }))
+      .filter(
+        ({ d }) =>
+          d &&
+          (d.foundationType === 'Soil' || !d.foundationType || !!d.soilTypeInput || !!d.sbcShape)
+      );
+    const rockRows = rows
+      .map((d, bhIdx) => ({ d, bhIdx }))
+      .filter(({ d }) => d && (d.foundationType === 'Rock' || !!d.rockType || !!d.coreLength));
+
+    const renderTable = (isRock, tableRows) => {
+      if (tableRows.length === 0) return null;
+      return (
+        <div className="mb-6">
+          <h4 className="hidden text-xs font-bold text-gray-800 tracking-wide mb-2">
+            {/* {isRock ? 'Rock Foundation Parameters & SBC' : 'Soil Foundation Parameters & SBC'} */}
+            Foundation Type: {tableRows[0].d.footingType}
+          </h4>
+          <h5 className="hidden text-xs font-bold text-gray-800 tracking-wide mb-2">
+            {/* {isRock ? 'Rock Foundation Parameters & SBC' : 'Soil Foundation Parameters & SBC'} */}
+            Foundation Dimensions (L x B): {tableRows[0].d.lengthL} m × {tableRows[0].d.widthB} m
+          </h5>
+          <table className="w-full text-[9px] border-collapse border border-gray-400">
+            <thead>
+              <tr className="bg-[#f3f4f6]">
+                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                  Type of Structure / Location
+                </th>
+                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                  Borehole No.
+                </th>
+                {/* {!isRock && <th className="border border-gray-400 px-1 py-1 text-center font-bold">Shape</th>} */}
+                {/* <th className="border border-gray-400 px-1 py-1 text-center font-bold">{isRock ? 'Rock Top/Bottom (m)' : 'Material'}</th> */}
+                {/* <th className="border border-gray-400 px-1 py-1 text-center font-bold">Width B (m)</th>
+                <th className="border border-gray-400 px-1 py-1 text-center font-bold">Length L (m)</th> */}
+                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                  Depth of Foundation (from E.G.L.) (m)
+                </th>
+                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                  R.L. of Foundation (from E.G.L.) (m)
+                </th>
+                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                  Strata Description
+                </th>
+                {!isRock && (
+                  <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                    Considered SPT-N Value
+                  </th>
+                )}
+                {/* {!isRock && <th className="border border-gray-400 px-1 py-1 text-center font-bold">Cohesion C (kN/m2)</th>}
+                {!isRock && <th className="border border-gray-400 px-1 py-1 text-center font-bold">Angle Φ (deg)</th>} */}
+                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                  SBC (kN/m2) (Shear Criteria)
+                </th>
+                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                  Allowable Bearing Capacity (kN/m2) for settlement of 25mm
+                </th>
+                <th className="border border-gray-400 px-1 py-1 text-center font-bold">
+                  Recommended SBC for Design (kN/m2)
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {tableRows.map(({ d, bhIdx }) => {
+                const computed = isRock
+                  ? computeRockSbcValues(d)
+                  : computeSoilSbcValues(d, settings);
+
+                return (
+                  <tr key={`unified-${bhIdx}`} className="border-b border-gray-300">
+                    <td className="border border-gray-400 px-1 py-1 text-center font-bold text-gray-800">
+                      {isRock
+                        ? d.depthTop + '-' + d.depthBottom
+                        : d.sbcStructure || d.structure || '-'}
+                    </td>
+                    <td className="border border-gray-400 px-1 py-1 text-center font-bold text-gray-800">
+                      BH-{bhIdx + 1}
+                    </td>
+                    {/* {!isRock && (
+                      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                        {d.sbcShape || '-'}
+                      </td>
+                    )}
+                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                      {isRock ? `${d.depthTop || 0} - ${d.depthBottom || 0}` : d.soilTypeInput || '-'}
+                    </td>
+                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                      {d.sbcB || d.widthB || '-'}
+                    </td>
+                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                      {d.sbcL || d.lengthL || '-'}
+                    </td> */}
+                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                      {d.sbcD || d.df || '-'}
+                    </td>
+                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                      {(() => {
+                        const depth = parseFloat(d.sbcD || d.df || 0);
+                        if (rlValuesNote === 'R.L. Values are assumed.') {
+                          return !isNaN(depth) ? (100 - depth).toFixed(3) : '-';
+                        } else if (
+                          rlValuesNote === 'R.L. Values are provided as furnished by the client.'
+                        ) {
+                          return d.boreholeRL
+                            ? (parseFloat(d.boreholeRL) - (!isNaN(depth) ? depth : 0)).toFixed(3)
+                            : 'Provided';
+                        }
+                        return '-';
+                      })()}
+                    </td>
+                    <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                      {(() => {
+                        if (isRock) return d.rockType || 'Rock';
+                        const type = d.soilTypeInput || d.soilType || 'soil';
+                        const labels = {
+                          clay: 'Clay',
+                          'aggregate-coarse': 'Aggregate (Coarse)',
+                          'aggregate-fine': 'Aggregate (Fine)',
+                          cement: 'Cement',
+                          concrete: 'Concrete',
+                          soil: 'Soil',
+                          rock: 'Rock',
+                          bitumen: 'Bitumen',
+                          steel: 'Steel',
+                          water: 'Water',
+                          tiles: 'Tiles',
+                          bricks: 'Bricks',
+                          'soil-and-rock': 'Soil and Rock',
+                        };
+                        return labels[type] || type;
+                      })()}
+                    </td>
+                    {!isRock && (
+                      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                        {d.sbcN || '-'}
+                      </td>
+                    )}
+                    {/* {!isRock && (
+                      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                        {d.sbcC || '-'}
+                      </td>
+                    )}
+                    {!isRock && (
+                      <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
+                        {d.sbcPhi || '-'}
+                      </td>
+                    )} */}
+                    <td className="border border-gray-400 px-1 py-1 text-center font-mono text-gray-800">
+                      {computed.computedQs != null ? Number(computed.computedQs).toFixed(2) : '-'}
+                    </td>
+                    <td className="border border-gray-400 px-1 py-1 text-center font-mono text-gray-800">
+                      {computed.computedQa != null ? Number(computed.computedQa).toFixed(2) : '-'}
+                    </td>
+                    <td className="border border-gray-400 px-1 py-1 text-center font-bold font-mono text-gray-900">
+                      {computed.computedRecommendedSbc != null
+                        ? Number(computed.computedRecommendedSbc).toFixed(2)
+                        : '-'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
+    };
+
+    return (
+      <div className="mb-6">
+        <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
+          Summary of Safe Bearing Capacity
+        </h3>
+        <p className="text-xs text-gray-800 leading-relaxed mb-4 text-justify">
+          This design report has been prepared to assess the ground conditions for its suitability
+          for
+          {projectName ? (
+            <>
+              {' '}
+              &ldquo;<strong>{projectName}</strong>&rdquo;
+            </>
+          ) : (
+            ' the proposed construction'
+          )}
+          {siteAddress ? (
+            <>
+              {' '}
+              at <strong>{siteAddress}</strong>
+            </>
+          ) : (
+            ''
+          )}
+          . Based on the evaluation of ground conditions, the following technical recommendations
+          have been arrived.
+        </p>
+
+        {renderTable(false, soilRows)}
+        {renderTable(true, rockRows)}
+
+        <div className="mt-3">
+          <p className="text-xs font-bold text-gray-800 mb-1">Note:</p>
+          <ol className="list-decimal list-inside space-y-1 text-xs text-gray-800 leading-relaxed">
+            <li>
+              SBC (Shear Criteria) is computed using Terzaghi's general bearing capacity equation
+              with Meyerhof's bearing capacity factors (FOS = 3).
+            </li>
+            <li>Allowable BC for 25 mm settlement is computed using Teng's formula (IS:8009).</li>
+            <li>Recommended SBC = min(Shear Criteria, Settlement Criteria).</li>
+          </ol>
+        </div>
+      </div>
+    );
+  }
+
+  // Legacy format block
   const first = rows[0];
   const B = first?.width ?? '-';
   const L = first?.footingLength ?? '-';
   const shape = first?.shapeOfFooting ?? 'Isolated (Open)';
 
-  // Group consecutive rows by structure+chainage for rowspan
   const grouped = [];
   rows.forEach((row) => {
     const last = grouped[grouped.length - 1];
@@ -2041,10 +2303,14 @@ const renderBlock = (block, index) => {
         <SbcSummaryBlock
           key={index}
           rows={block.rows}
+          format={block.format}
+          rlValuesNote={block.rlValuesNote}
           projectName={block.projectName}
           siteAddress={block.siteAddress}
         />
       );
+    case 'foundation-diagram':
+      return <FoundationDiagramBlock key={index} block={block} />;
     case 'text':
       return <TextBlock key={index} title={block.title} content={block.content} />;
     case 'list':

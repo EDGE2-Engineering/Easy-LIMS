@@ -25,6 +25,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSettings } from '@/contexts/SettingsContext';
+import { computeSoilSbcValues, computeRockSbcValues } from '@/utils/sbcCalculators';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useWorkflow } from '@/hooks/useWorkflow';
 import { format } from 'date-fns';
@@ -75,6 +77,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
   const { user, isAdmin } = useAuth();
   const { canAction } = usePermissions();
   const { transition, isTransitioning } = useWorkflow();
+  const { settings } = useSettings();
 
   useEffect(() => {
     if (initialJobId) fetchData();
@@ -357,7 +360,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                       <div>
                         <div className="flex items-center justify-between mb-0">
                           <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                            Geotechnical Data
+                            {/* Geotechnical Data */}
                           </h4>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -563,116 +566,202 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                   )}
 
                                   {/* SBC Details Table */}
-                                  {sbcDetails.some((bh) => bh.length > 0) && (
-                                    <div className="space-y-3">
-                                      <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Package className="w-3 h-3 text-purple-500" /> SBC Details
-                                      </h5>
-                                      <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden w-full">
-                                        <table className="w-full text-left text-[11px]">
-                                          <thead className="bg-gray-50 border-b">
-                                            <tr>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                                                BH
-                                              </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                                                Foundation
-                                              </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                                                Structure
-                                              </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                                                Location
-                                              </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                                                Foundation Depth from GL
-                                              </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                                                Foundation RL
-                                              </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                                                Strata
-                                              </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                                                Field N Value
-                                              </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                                                Type of Correction
-                                              </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                                                CP Layer Thickness
-                                              </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                                                Liquid Limit
-                                              </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                                                Width (m)
-                                              </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                                                Length (m)
-                                              </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                                                Shape of Footing
-                                              </th>
-                                            </tr>
-                                          </thead>
-                                          <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                                            {sbcDetails.map((bh, bhIdx) =>
-                                              bh.map((d, dIdx) => (
-                                                <tr
-                                                  key={`sbc-${bhIdx}-${dIdx}`}
-                                                  className="hover:bg-gray-50/30 transition-colors"
-                                                >
-                                                  <td className="p-3 font-bold text-gray-400">
-                                                    BH-{bhIdx + 1}
-                                                  </td>
-                                                  <td className="p-3 text-gray-900">
-                                                    {d.foundation || '-'}
-                                                  </td>
-                                                  <td className="p-3 text-gray-900">
-                                                    {d.structure || '-'}
-                                                  </td>
-                                                  <td className="p-3 text-gray-900">
-                                                    {d.chainage || '-'}
-                                                  </td>
-                                                  <td className="p-3 text-gray-900">
-                                                    {d.depthFromGL || '-'}
-                                                  </td>
-                                                  <td className="p-3 text-gray-900">
-                                                    {d.scourDepthFromGL || '-'}
-                                                  </td>
-                                                  <td className="p-3 text-gray-900">
-                                                    {d.strata || '-'}
-                                                  </td>
-                                                  <td className="p-3 text-gray-900 tabular-nums">
-                                                    {d.fieldNValue || '-'}
-                                                  </td>
-                                                  <td className="p-3 text-gray-900">
-                                                    {d.typeOfCorrection || '-'}
-                                                  </td>
-                                                  <td className="p-3 text-gray-900 tabular-nums">
-                                                    {d.cpLayerThickness || '-'}
-                                                  </td>
-                                                  <td className="p-3 text-gray-900 tabular-nums">
-                                                    {d.liquidLimit || '-'}
-                                                  </td>
-                                                  <td className="p-3 text-gray-900 tabular-nums">
-                                                    {d.width || '-'}
-                                                  </td>
-                                                  <td className="p-3 text-gray-900 tabular-nums">
-                                                    {d.footingLength || '-'}
-                                                  </td>
-                                                  <td className="p-3 text-gray-900">
-                                                    {d.shapeOfFooting || '-'}
-                                                  </td>
-                                                </tr>
-                                              ))
-                                            )}
-                                          </tbody>
-                                        </table>
-                                      </div>
-                                    </div>
-                                  )}
+                                  {sbcDetails.some((bh) => bh && Object.keys(bh).length > 0) &&
+                                    (() => {
+                                      const soilSbcs = sbcDetails
+                                        .map((d, bhIdx) => ({ d, bhIdx }))
+                                        .filter(
+                                          ({ d }) =>
+                                            d &&
+                                            Object.keys(d).length > 0 &&
+                                            (cat === 'Soil' ||
+                                              d.foundationType === 'Soil' ||
+                                              (cat === 'Soil and Rock' &&
+                                                d.foundationType !== 'Rock'))
+                                        );
+                                      const rockSbcs = sbcDetails
+                                        .map((d, bhIdx) => ({ d, bhIdx }))
+                                        .filter(
+                                          ({ d }) =>
+                                            d &&
+                                            Object.keys(d).length > 0 &&
+                                            (cat === 'Rock' || d.foundationType === 'Rock')
+                                        );
+
+                                      const renderSbcTable = (isRock, rows) => {
+                                        if (rows.length === 0) return null;
+                                        return (
+                                          <div className="space-y-3 mt-4">
+                                            <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                              <Package className="w-3 h-3 text-purple-500" /> SBC
+                                              Details -{' '}
+                                              {isRock ? 'Rock Foundation' : 'Soil Foundation'}
+                                            </h5>
+                                            <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden w-full">
+                                              <table className="w-full text-left text-[11px]">
+                                                <thead className="bg-gray-50 border-b">
+                                                  <tr>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                      BH
+                                                    </th>
+                                                    {!isRock && (
+                                                      <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                        Shape
+                                                      </th>
+                                                    )}
+                                                    {!isRock && (
+                                                      <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                        Material
+                                                      </th>
+                                                    )}
+                                                    {isRock && (
+                                                      <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                        Rock Top/Bottom
+                                                      </th>
+                                                    )}
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                      Width B (m)
+                                                    </th>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                      Length L (m)
+                                                    </th>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                      Depth Df (m)
+                                                    </th>
+                                                    {!isRock && (
+                                                      <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                        Cohesion C
+                                                      </th>
+                                                    )}
+                                                    {!isRock && (
+                                                      <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                        Angle Φ
+                                                      </th>
+                                                    )}
+                                                    {!isRock && (
+                                                      <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                        Unit Wt γ
+                                                      </th>
+                                                    )}
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                      Safe BC (qs)
+                                                    </th>
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                      Allowable BC (qa)
+                                                    </th>
+                                                    {!isRock && (
+                                                      <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                        Safe BP (qsafe)
+                                                      </th>
+                                                    )}
+                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                      Rec. SBC
+                                                    </th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                                  {rows.map(({ d, bhIdx }) => {
+                                                    const computed = isRock
+                                                      ? computeRockSbcValues(d)
+                                                      : computeSoilSbcValues(d, settings);
+                                                    return (
+                                                      <tr
+                                                        key={`sbc-${bhIdx}`}
+                                                        className="hover:bg-gray-50/30 transition-colors"
+                                                      >
+                                                        <td className="p-3 font-bold text-gray-400">
+                                                          BH-{bhIdx + 1}
+                                                        </td>
+                                                        {!isRock && (
+                                                          <td className="p-3 text-gray-900">
+                                                            {d.sbcShape || '-'}
+                                                          </td>
+                                                        )}
+                                                        {!isRock && (
+                                                          <td className="p-3 text-gray-900">
+                                                            {d.soilTypeInput || '-'}
+                                                          </td>
+                                                        )}
+                                                        {isRock && (
+                                                          <td className="p-3 text-gray-900">
+                                                            {d.depthTop || d.depthBottom
+                                                              ? `${d.depthTop || 0} - ${d.depthBottom || 0}`
+                                                              : '-'}
+                                                          </td>
+                                                        )}
+                                                        <td className="p-3 text-gray-900">
+                                                          {d.sbcB || d.widthB || '-'}
+                                                        </td>
+                                                        <td className="p-3 text-gray-900">
+                                                          {d.sbcL || d.lengthL || '-'}
+                                                        </td>
+                                                        <td className="p-3 text-gray-900">
+                                                          {d.sbcD || d.df || '-'}
+                                                        </td>
+                                                        {!isRock && (
+                                                          <td className="p-3 text-gray-900">
+                                                            {d.sbcC || '-'}
+                                                          </td>
+                                                        )}
+                                                        {!isRock && (
+                                                          <td className="p-3 text-gray-900">
+                                                            {d.sbcPhi || '-'}
+                                                          </td>
+                                                        )}
+                                                        {!isRock && (
+                                                          <td className="p-3 text-gray-900">
+                                                            {d.sbcGamma || '-'}
+                                                          </td>
+                                                        )}
+                                                        <td className="p-3 text-gray-900 font-mono">
+                                                          {computed.computedQs !== null &&
+                                                          computed.computedQs !== undefined
+                                                            ? Number(computed.computedQs).toFixed(2)
+                                                            : '-'}
+                                                        </td>
+                                                        <td className="p-3 text-gray-900 font-mono">
+                                                          {computed.computedQa !== null &&
+                                                          computed.computedQa !== undefined
+                                                            ? Number(computed.computedQa).toFixed(2)
+                                                            : '-'}
+                                                        </td>
+                                                        {!isRock && (
+                                                          <td className="p-3 text-gray-900 font-mono">
+                                                            {computed.computedQsafe !== null &&
+                                                            computed.computedQsafe !== undefined
+                                                              ? Number(
+                                                                  computed.computedQsafe
+                                                                ).toFixed(2)
+                                                              : '-'}
+                                                          </td>
+                                                        )}
+                                                        <td className="p-3 text-primary font-bold font-mono">
+                                                          {computed.computedRecommendedSbc !==
+                                                            null &&
+                                                          computed.computedRecommendedSbc !==
+                                                            undefined
+                                                            ? Number(
+                                                                computed.computedRecommendedSbc
+                                                              ).toFixed(2)
+                                                            : '-'}
+                                                        </td>
+                                                      </tr>
+                                                    );
+                                                  })}
+                                                </tbody>
+                                              </table>
+                                            </div>
+                                          </div>
+                                        );
+                                      };
+
+                                      return (
+                                        <div className="flex flex-col gap-2 w-full">
+                                          {renderSbcTable(false, soilSbcs)}
+                                          {renderSbcTable(true, rockSbcs)}
+                                        </div>
+                                      );
+                                    })()}
 
                                   {/* Sub-Soil Profile Table */}
                                   {geotechData.subSoilProfile?.some((bh) => bh.length > 0) && (
@@ -1023,7 +1112,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
 
       {/* Category Test Data Input Dialog */}
       <Dialog open={!!selectedCategory} onOpenChange={(open) => !open && setSelectedCategory(null)}>
-        <DialogContent className="max-w-[1100px] max-h-[90vh] overflow-hidden flex flex-col p-0 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800">
+        <DialogContent className="w-[96vw] max-w-[1800px] max-h-[96vh] overflow-hidden flex flex-col p-0 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800">
           <DialogHeader className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
             <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-800">
               <FlaskConical className="w-5 h-5 text-primary" />
@@ -1094,6 +1183,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                           Geotechnical Inputs
                         </h3>
                         <GeotechTestForm
+                          materialCategory={selectedCategory}
                           value={testResults[selectedCategory]?.['GeotechData'] || {}}
                           onChange={(val) => {
                             console.log('[GeotechTestForm onChange] maxDepths:', val?.maxDepths);
