@@ -202,9 +202,6 @@ const NewQuotationPage = () => {
     );
   }, [user, savedRecordId, documentCreatorId]);
 
-  const taxCGST = settings?.tax_cgst ? Number(settings.tax_cgst) : 9;
-  const taxSGST = settings?.tax_sgst ? Number(settings.tax_sgst) : 9;
-  const taxTotalPercent = taxCGST + taxSGST;
 
   const defaultQuoteDetails = useMemo(
     () => ({
@@ -241,11 +238,17 @@ const NewQuotationPage = () => {
   const [documentType, setDocumentType] = useState(searchParams.get('type') || 'Quotation'); // 'Tax Invoice', 'Quotation', 'Proforma Invoice', 'Purchase Order', or 'Delivery Challan'
   const [discount, setDiscount] = useState(0);
   const [discountShow, setDiscountShow] = useState(true);
+  const [isInterstate, setIsInterstate] = useState(false);
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [clientNameSelection, setClientNameSelection] = useState(''); // Predefined client or 'Other'
   const [customClientName, setCustomClientName] = useState('');
   const [contactSelectionIdx, setContactSelectionIdx] = useState('');
+
+  const taxCGST = settings?.tax_cgst ? Number(settings.tax_cgst) : 9;
+  const taxSGST = settings?.tax_sgst ? Number(settings.tax_sgst) : 9;
+  const taxIGST = settings?.tax_igst ? Number(settings.tax_igst) : 18;
+  const taxTotalPercent = isInterstate ? taxIGST : (taxCGST + taxSGST);
 
   const currentData = useMemo(
     () => ({
@@ -254,8 +257,9 @@ const NewQuotationPage = () => {
       documentType,
       discount,
       discountShow,
+      isInterstate,
     }),
-    [quoteDetails, items, documentType, discount, discountShow]
+    [quoteDetails, items, documentType, discount, discountShow, isInterstate]
   );
 
   // Compute aggregated T&C and Technicals from items, merging with legacy manually selected ones if present
@@ -304,6 +308,7 @@ const NewQuotationPage = () => {
     setDocumentType('Quotation');
     setDiscount(0);
     setDiscountShow(true);
+    setIsInterstate(false);
     setComboboxOpen(false);
     setSearchValue('');
     setClientNameSelection('');
@@ -319,6 +324,7 @@ const NewQuotationPage = () => {
       documentType: 'Quotation',
       discount: 0,
       discountShow: true,
+      isInterstate: false,
     };
     setLastSavedData(JSON.stringify(initialSnapshot));
 
@@ -491,6 +497,8 @@ const NewQuotationPage = () => {
           const loadedDiscount = content.discount || 0;
           const loadedDiscountShow =
             content.discountShow !== undefined ? String(content.discountShow) === 'true' : true;
+          const loadedIsInterstate =
+            content.isInterstate !== undefined ? String(content.isInterstate) === 'true' : false;
 
           // Ensure quoteNumber is synced from the top-level column if it's missing or empty in JSON content
           const finalQuoteNumber = loadedQuoteDetails.quoteNumber || data.quote_number;
@@ -504,6 +512,7 @@ const NewQuotationPage = () => {
           setLoadedDocumentType(loadedDocType);
           setDiscount(loadedDiscount);
           setDiscountShow(loadedDiscountShow);
+          setIsInterstate(loadedIsInterstate);
           setSavedRecordId(data.id);
           setDocumentCreatorId(data.created_by);
           if (data.job_id) setLinkedJobId(data.job_id);
@@ -514,6 +523,7 @@ const NewQuotationPage = () => {
             documentType: loadedDocType,
             discount: loadedDiscount,
             discountShow: loadedDiscountShow,
+            isInterstate: loadedIsInterstate,
           };
           setLastSavedData(JSON.stringify(snapshot));
 
@@ -743,6 +753,7 @@ const NewQuotationPage = () => {
           items,
           discount,
           discountShow,
+          isInterstate,
         },
         job_id: resolvedJobId,
         created_by: userId,
@@ -768,6 +779,7 @@ const NewQuotationPage = () => {
             documentType,
             discount,
             discountShow,
+            isInterstate,
           };
           setLastSavedData(JSON.stringify(snapshot));
         }
@@ -801,6 +813,7 @@ const NewQuotationPage = () => {
             documentType,
             discount,
             discountShow,
+            isInterstate,
           };
           setLastSavedData(JSON.stringify(snapshot));
 
@@ -1757,12 +1770,26 @@ const NewQuotationPage = () => {
                 </div>
                 <div>
                   <Label>GSTIN</Label>
-                  <Input
-                    value={quoteDetails.gstin || ''}
-                    onChange={(e) => setQuoteDetails({ ...quoteDetails, gstin: e.target.value })}
-                    placeholder="Enter GSTIN"
-                    disabled={isReadOnly}
-                  />
+                  <div className="flex items-center gap-4">
+                    <Input
+                      value={quoteDetails.gstin || ''}
+                      onChange={(e) => setQuoteDetails({ ...quoteDetails, gstin: e.target.value })}
+                      placeholder="Enter GSTIN"
+                      disabled={isReadOnly}
+                      className="flex-grow"
+                    />
+                    <div className="flex items-center space-x-2 shrink-0 pt-1">
+                      <Checkbox
+                        id="isInterstate"
+                        checked={isInterstate}
+                        onCheckedChange={(checked) => setIsInterstate(!!checked)}
+                        disabled={isReadOnly}
+                      />
+                      <Label htmlFor="isInterstate" className="cursor-pointer select-none whitespace-nowrap">
+                        Interstate Billing (IGST)
+                      </Label>
+                    </div>
+                  </div>
                 </div>
                 <div className="pt-2 border-t">
                   <Label>Contractor Name</Label>
@@ -2388,28 +2415,44 @@ const NewQuotationPage = () => {
                                     </span>
                                   </div>
                                 )}
-                                <div className="flex justify-between text-gray-600 text-xs">
-                                  <span>CGST ({taxCGST}%)</span>
-                                  <span>
-                                    <Rupee />
-                                    {(
-                                      calculateTotal() *
-                                      (1 - discount / 100) *
-                                      (taxCGST / 100)
-                                    ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between text-gray-600 text-xs">
-                                  <span>SGST ({taxSGST}%)</span>
-                                  <span>
-                                    <Rupee />
-                                    {(
-                                      calculateTotal() *
-                                      (1 - discount / 100) *
-                                      (taxSGST / 100)
-                                    ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                  </span>
-                                </div>
+                                {isInterstate ? (
+                                  <div className="flex justify-between text-gray-600 text-xs">
+                                    <span>IGST ({taxIGST}%)</span>
+                                    <span>
+                                      <Rupee />
+                                      {(
+                                        calculateTotal() *
+                                        (1 - discount / 100) *
+                                        (taxIGST / 100)
+                                      ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="flex justify-between text-gray-600 text-xs">
+                                      <span>CGST ({taxCGST}%)</span>
+                                      <span>
+                                        <Rupee />
+                                        {(
+                                          calculateTotal() *
+                                          (1 - discount / 100) *
+                                          (taxCGST / 100)
+                                        ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between text-gray-600 text-xs">
+                                      <span>SGST ({taxSGST}%)</span>
+                                      <span>
+                                        <Rupee />
+                                        {(
+                                          calculateTotal() *
+                                          (1 - discount / 100) *
+                                          (taxSGST / 100)
+                                        ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                      </span>
+                                    </div>
+                                  </>
+                                )}
                                 <div className="flex justify-between text-gray-600 text-xs font-medium">
                                   <span>Total Tax Amount</span>
                                   <span>

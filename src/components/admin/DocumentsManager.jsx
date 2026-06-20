@@ -76,6 +76,7 @@ const DocumentsManager = () => {
 
   const taxCGST = settings?.tax_cgst ? Number(settings.tax_cgst) : 9;
   const taxSGST = settings?.tax_sgst ? Number(settings.tax_sgst) : 9;
+  const taxIGST = settings?.tax_igst ? Number(settings.tax_igst) : 18;
   const taxTotalPercent = taxCGST + taxSGST;
 
   const calculateRecordTotal = (record) => {
@@ -84,9 +85,12 @@ const DocumentsManager = () => {
       const items = content.items || [];
       const discount = content.discount || 0;
 
+      const isInterstate = content.isInterstate === true;
+      const recordTaxTotal = isInterstate ? taxIGST : taxTotalPercent;
+
       const subtotal = items.reduce((sum, item) => sum + (Number(item.total) || 0), 0);
       const discountedSubtotal = subtotal * (1 - discount / 100);
-      const total = discountedSubtotal * (1 + taxTotalPercent / 100);
+      const total = discountedSubtotal * (1 + recordTaxTotal / 100);
 
       return total;
     } catch (error) {

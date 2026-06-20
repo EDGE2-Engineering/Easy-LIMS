@@ -19,6 +19,7 @@ const SettingsProvider = ({ children }) => {
   const [settings, setSettings] = useState({
     tax_cgst: 9,
     tax_sgst: 9,
+    tax_igst: 18,
   });
   const [settingsMetadata, setSettingsMetadata] = useState({}); // Stores IDs and other metadata per key
   const [loading, setLoading] = useState(true);

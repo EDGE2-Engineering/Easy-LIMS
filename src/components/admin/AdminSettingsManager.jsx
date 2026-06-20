@@ -42,6 +42,7 @@ const AdminSettingsManager = () => {
   const [localSettings, setLocalSettings] = useState({
     tax_cgst: '',
     tax_sgst: '',
+    tax_igst: '',
     payment_terms: '',
   });
 
@@ -65,6 +66,7 @@ const AdminSettingsManager = () => {
       setLocalSettings({
         tax_cgst: settings.tax_cgst || '',
         tax_sgst: settings.tax_sgst || '',
+        tax_igst: settings.tax_igst || '',
         payment_terms: settings.payment_terms || '',
       });
       setHasInitialized(true);
@@ -80,6 +82,7 @@ const AdminSettingsManager = () => {
     try {
       await updateSetting('tax_cgst', localSettings.tax_cgst);
       await updateSetting('tax_sgst', localSettings.tax_sgst);
+      await updateSetting('tax_igst', localSettings.tax_igst);
       await updateSetting('payment_terms', localSettings.payment_terms);
 
       toast({ title: 'Settings Saved', description: 'General settings updated successfully.' });
@@ -223,7 +226,7 @@ const AdminSettingsManager = () => {
         {/* Tax Configuration Section */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Tax Configuration</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl">
             <div className="space-y-2">
               <Label>CGST (%)</Label>
               <Input
@@ -249,14 +252,35 @@ const AdminSettingsManager = () => {
               />
               <p className="text-xs text-gray-500">State Goods and Services Tax percentage.</p>
             </div>
+
+            <div className="space-y-2">
+              <Label>IGST (%)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={localSettings.tax_igst}
+                onChange={(e) => handleChange('tax_igst', e.target.value)}
+                placeholder="e.g. 18"
+              />
+              <p className="text-xs text-gray-500">Integrated Goods and Services Tax percentage.</p>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between bg-primary/10 p-4 rounded-md border border-primary/20 text-sm">
-            <div>
-              <span className="font-semibold text-primary">Total Tax:</span>{' '}
-              <span className="text-gray-700">
-                {Number(localSettings.tax_cgst) + Number(localSettings.tax_sgst)}%
-              </span>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-primary/10 p-4 rounded-md border border-primary/20 text-sm gap-2">
+            <div className="flex flex-wrap gap-x-6 gap-y-1">
+              <div>
+                <span className="font-semibold text-primary">Intrastate Tax (CGST + SGST):</span>{' '}
+                <span className="text-gray-700">
+                  {Number(localSettings.tax_cgst) + Number(localSettings.tax_sgst)}%
+                </span>
+              </div>
+              <div>
+                <span className="font-semibold text-primary">Interstate Tax (IGST):</span>{' '}
+                <span className="text-gray-700">
+                  {Number(localSettings.tax_igst)}%
+                </span>
+              </div>
             </div>
             <div className="text-gray-600">Changes will apply to new invoices immediately.</div>
           </div>
