@@ -31,52 +31,58 @@ const TermsAndConditionsProvider = ({ children }) => {
     }
   }, []);
 
-  const addTerm = useCallback(async (text, type = 'general', userId = null) => {
-    try {
-      const { data, error } = await supabase
-        .from('terms_and_conditions')
-        .insert([{ text, type }])
-        .select();
+  const addTerm = useCallback(
+    async (text, type = 'general', userId = null) => {
+      try {
+        const { data, error } = await supabase
+          .from('terms_and_conditions')
+          .insert([{ text, type }])
+          .select();
 
-      if (error) throw error;
-      setTerms((prev) => [...prev, ...data]);
-      logAudit({
-        userId: userId || currentUserId,
-        entityType: 'terms_and_conditions',
-        entityId: data[0]?.id,
-        entityName: text.slice(0, 60),
-        action: 'CREATE',
-      });
-      return data;
-    } catch (error) {
-      console.error('Error adding term:', error);
-      throw error;
-    }
-  }, [currentUserId]);
+        if (error) throw error;
+        setTerms((prev) => [...prev, ...data]);
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'terms_and_conditions',
+          entityId: data[0]?.id,
+          entityName: text.slice(0, 60),
+          action: 'CREATE',
+        });
+        return data;
+      } catch (error) {
+        console.error('Error adding term:', error);
+        throw error;
+      }
+    },
+    [currentUserId]
+  );
 
-  const updateTerm = useCallback(async (id, text, type, userId = null) => {
-    try {
-      const { data, error } = await supabase
-        .from('terms_and_conditions')
-        .update({ text, type, updated_at: new Date() })
-        .eq('id', id)
-        .select();
+  const updateTerm = useCallback(
+    async (id, text, type, userId = null) => {
+      try {
+        const { data, error } = await supabase
+          .from('terms_and_conditions')
+          .update({ text, type, updated_at: new Date() })
+          .eq('id', id)
+          .select();
 
-      if (error) throw error;
-      setTerms((prev) => prev.map((term) => (term.id === id ? data[0] : term)));
-      logAudit({
-        userId: userId || currentUserId,
-        entityType: 'terms_and_conditions',
-        entityId: id,
-        entityName: text.slice(0, 60),
-        action: 'UPDATE',
-      });
-      return data;
-    } catch (error) {
-      console.error('Error updating term:', error);
-      throw error;
-    }
-  }, [currentUserId]);
+        if (error) throw error;
+        setTerms((prev) => prev.map((term) => (term.id === id ? data[0] : term)));
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'terms_and_conditions',
+          entityId: id,
+          entityName: text.slice(0, 60),
+          action: 'UPDATE',
+        });
+        return data;
+      } catch (error) {
+        console.error('Error updating term:', error);
+        throw error;
+      }
+    },
+    [currentUserId]
+  );
 
   const deleteTerm = useCallback(
     async (id, userId = null) => {

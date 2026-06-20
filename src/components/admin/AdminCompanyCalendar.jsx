@@ -190,7 +190,10 @@ const AdminCompanyCalendar = () => {
         });
         toast({ title: 'Event Updated', description: 'Calendar event updated successfully.' });
       } else {
-        const { data, error } = await supabase.from('company_calendar').insert([eventData]).select();
+        const { data, error } = await supabase
+          .from('company_calendar')
+          .insert([eventData])
+          .select();
         if (error) throw error;
         logAudit({
           userId: currentUser?.id,

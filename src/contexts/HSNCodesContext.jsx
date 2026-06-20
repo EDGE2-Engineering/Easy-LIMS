@@ -34,53 +34,61 @@ const HSNCodesProvider = ({ children }) => {
     }
   }, []);
 
-  const addHsnCode = useCallback(async (hsnData, userId = null) => {
-    try {
-      const { data, error } = await supabase.from('hsn_sac_codes').insert([hsnData]).select();
+  const addHsnCode = useCallback(
+    async (hsnData, userId = null) => {
+      try {
+        const { data, error } = await supabase.from('hsn_sac_codes').insert([hsnData]).select();
 
-      if (error) throw error;
-      if (data) {
-        setHsnCodes((prev) => [...prev, data[0]].sort((a, b) => a.code.localeCompare(b.code)));
-        logAudit({
-          userId: userId || currentUserId,
-          entityType: 'hsn_code',
-          entityId: data[0]?.id,
-          entityName: `${hsnData.code} — ${hsnData.description}`,
-          action: 'CREATE',
-        });
+        if (error) throw error;
+        if (data) {
+          setHsnCodes((prev) => [...prev, data[0]].sort((a, b) => a.code.localeCompare(b.code)));
+          logAudit({
+            userId: userId || currentUserId,
+            entityType: 'hsn_code',
+            entityId: data[0]?.id,
+            entityName: `${hsnData.code} — ${hsnData.description}`,
+            action: 'CREATE',
+          });
+        }
+      } catch (error) {
+        console.error('Error adding HSN code:', error);
+        throw error;
       }
-    } catch (error) {
-      console.error('Error adding HSN code:', error);
-      throw error;
-    }
-  }, [currentUserId]);
+    },
+    [currentUserId]
+  );
 
-  const updateHsnCode = useCallback(async (id, hsnData, userId = null) => {
-    try {
-      const { data, error } = await supabase
-        .from('hsn_sac_codes')
-        .update(hsnData)
-        .eq('id', id)
-        .select();
+  const updateHsnCode = useCallback(
+    async (id, hsnData, userId = null) => {
+      try {
+        const { data, error } = await supabase
+          .from('hsn_sac_codes')
+          .update(hsnData)
+          .eq('id', id)
+          .select();
 
-      if (error) throw error;
-      if (data) {
-        setHsnCodes((prev) =>
-          prev.map((h) => (h.id === id ? data[0] : h)).sort((a, b) => a.code.localeCompare(b.code))
-        );
-        logAudit({
-          userId: userId || currentUserId,
-          entityType: 'hsn_code',
-          entityId: id,
-          entityName: `${hsnData.code} — ${hsnData.description}`,
-          action: 'UPDATE',
-        });
+        if (error) throw error;
+        if (data) {
+          setHsnCodes((prev) =>
+            prev
+              .map((h) => (h.id === id ? data[0] : h))
+              .sort((a, b) => a.code.localeCompare(b.code))
+          );
+          logAudit({
+            userId: userId || currentUserId,
+            entityType: 'hsn_code',
+            entityId: id,
+            entityName: `${hsnData.code} — ${hsnData.description}`,
+            action: 'UPDATE',
+          });
+        }
+      } catch (error) {
+        console.error('Error updating HSN code:', error);
+        throw error;
       }
-    } catch (error) {
-      console.error('Error updating HSN code:', error);
-      throw error;
-    }
-  }, [currentUserId]);
+    },
+    [currentUserId]
+  );
 
   const deleteHsnCode = useCallback(
     async (id, userId = null) => {

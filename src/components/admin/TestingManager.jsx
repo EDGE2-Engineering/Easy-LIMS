@@ -200,7 +200,10 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
           });
         }
       } else {
-        const { data, error: insertError } = await supabase.from('job_tests').insert([recordData]).select();
+        const { data, error: insertError } = await supabase
+          .from('job_tests')
+          .insert([recordData])
+          .select();
         error = insertError;
         if (!error && data && data.length > 0) {
           logAudit({

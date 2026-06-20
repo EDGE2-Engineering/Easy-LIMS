@@ -1008,9 +1008,15 @@ const AdminRockBearingCapacity = () => {
                     <SelectValue placeholder="Select Method" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-gray-100">
-                    <SelectItem value="least" className="text-xs font-semibold cursor-pointer">Least of 2 approach</SelectItem>
-                    <SelectItem value="method1" className="text-xs font-semibold cursor-pointer">Method I (Core Strength)</SelectItem>
-                    <SelectItem value="method2" className="text-xs font-semibold cursor-pointer">Method II (RMR Method)</SelectItem>
+                    <SelectItem value="least" className="text-xs font-semibold cursor-pointer">
+                      Least of 2 approach
+                    </SelectItem>
+                    <SelectItem value="method1" className="text-xs font-semibold cursor-pointer">
+                      Method I (Core Strength)
+                    </SelectItem>
+                    <SelectItem value="method2" className="text-xs font-semibold cursor-pointer">
+                      Method II (RMR Method)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1023,12 +1029,8 @@ const AdminRockBearingCapacity = () => {
               </p>
             </div>
             <div className="mt-2 pt-2 border-t border-dashed border-primary/20 space-y-0.5">
-              <p className="text-[9px] font-mono text-primary/60 italic">
-                {recommendedSbcFormula}
-              </p>
-              <p className="text-[9px] font-mono text-primary/70">
-                {recommendedSbcSubstitution}
-              </p>
+              <p className="text-[9px] font-mono text-primary/60 italic">{recommendedSbcFormula}</p>
+              <p className="text-[9px] font-mono text-primary/70">{recommendedSbcSubstitution}</p>
             </div>
           </div>
         </div>

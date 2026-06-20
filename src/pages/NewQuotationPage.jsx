@@ -202,7 +202,6 @@ const NewQuotationPage = () => {
     );
   }, [user, savedRecordId, documentCreatorId]);
 
-
   const defaultQuoteDetails = useMemo(
     () => ({
       clientName: '',
@@ -248,7 +247,7 @@ const NewQuotationPage = () => {
   const taxCGST = settings?.tax_cgst ? Number(settings.tax_cgst) : 9;
   const taxSGST = settings?.tax_sgst ? Number(settings.tax_sgst) : 9;
   const taxIGST = settings?.tax_igst ? Number(settings.tax_igst) : 18;
-  const taxTotalPercent = isInterstate ? taxIGST : (taxCGST + taxSGST);
+  const taxTotalPercent = isInterstate ? taxIGST : taxCGST + taxSGST;
 
   const currentData = useMemo(
     () => ({
@@ -1785,7 +1784,10 @@ const NewQuotationPage = () => {
                         onCheckedChange={(checked) => setIsInterstate(!!checked)}
                         disabled={isReadOnly}
                       />
-                      <Label htmlFor="isInterstate" className="cursor-pointer select-none whitespace-nowrap">
+                      <Label
+                        htmlFor="isInterstate"
+                        className="cursor-pointer select-none whitespace-nowrap"
+                      >
                         Interstate Billing (IGST)
                       </Label>
                     </div>
@@ -2578,11 +2580,11 @@ const NewQuotationPage = () => {
                     <div className="a4-page-content flex flex-col">
                       <div className="text-gray-500 text-sm flex-1">
                         {/* Bank + Signatory (Grid) */}
-                        <div className="grid grid-cols-2 gap-8 mt-2 text-left text-xs">
+                        <div className="grid grid-cols-[1.5fr_1fr] gap-1 mt-2 text-left text-xs">
                           {/* Bank Details */}
                           <div>
                             <h2 className="font-semibold mb-2 text-sm">Bank Details</h2>
-                            <table className="w-full text-sm border-collapse">
+                            <table className="w-full text-xs border-collapse">
                               <tbody>
                                 <tr>
                                   <td className="py-1 font-semibold w-32">Name:</td>
@@ -2631,9 +2633,9 @@ const NewQuotationPage = () => {
                           {/* Authorized Signatory */}
                           <div className="flex flex-col items-center">
                             <h2 className="font-semibold mb-20 text-sm">Authorized Signatory</h2>
-                            <table className="w-full text-sm border-collapse">
+                            <table className="w-full text-xs border-collapse">
                               <tbody>
-                                <tr>
+                                <tr className="text-center">
                                   <td className="py-1">
                                     For EDGE2 Engineering Solutions India Pvt. Ltd.
                                   </td>
@@ -2694,7 +2696,7 @@ const NewQuotationPage = () => {
 
                         {/* Payment Terms */}
                         <div className="mt-6 pt-4 border-t">
-                          <h2 className="font-semibold text-left mb-3">Payment Terms:</h2>
+                          <h2 className="font-semibold text-left mb-3">Payment Terms</h2>
                           <div
                             className={`text-xs whitespace-pre-wrap outline-none ${!isReadOnly ? 'hover:bg-[#f9fafb] focus:bg-[#ffffff] focus:ring-1 focus:ring-[#e5e7eb] rounded p-1 -ml-1 transition-colors' : ''}`}
                             contentEditable={!isReadOnly}
@@ -2717,7 +2719,7 @@ const NewQuotationPage = () => {
                         {/* General Terms & Conditions */}
                         <div className="mt-6 pt-4 border-t">
                           <h2 className="font-semibold text-left mb-3">
-                            General Terms & Conditions:
+                            General Terms & Conditions
                           </h2>
                           <div
                             className={`text-xs whitespace-pre-wrap outline-none ${!isReadOnly ? 'hover:bg-[#f9fafb] focus:bg-[#ffffff] focus:ring-1 focus:ring-[#e5e7eb] rounded p-1 -ml-1 transition-colors' : ''}`}
@@ -2732,7 +2734,7 @@ const NewQuotationPage = () => {
                           >
                             {quoteDetails.generalTerms !== undefined
                               ? quoteDetails.generalTerms
-                              : `1. This quotation is valid for 30 days only\n2. GST @ 18% as given above\n3. Billing will be made based on the actual quantity involved in work\n4. Any quantities exceeding the quantities mentioned above will be subject to additional charges\n5. The rates quoted in this offer are valid only for the quantum of this scope of quotation. If there is any reduction in the quantity, the rates are subject to an increase accordingly and present quotation stands invalid\n6. Reports will be issued only after confirmation of 100% full payment`}
+                              : `- This quotation is valid for 30 days only\n- GST @ 18% as given above\n- Billing will be made based on the actual quantity involved in work\n- Any quantities exceeding the quantities mentioned above will be subject to additional charges\n- The rates quoted in this offer are valid only for the quantum of this scope of quotation. If there is any reduction in the quantity, the rates are subject to an increase accordingly and present quotation stands invalid\n- Reports will be issued only after confirmation of 100% full payment`}
                           </div>
                         </div>
                       </div>

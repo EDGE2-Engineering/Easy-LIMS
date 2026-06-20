@@ -717,7 +717,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
               <SelectTrigger id="client">
                 <SelectValue placeholder="Select a client" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[250px] overflow-y-auto">
                 {clients.map((client) => (
                   <SelectItem key={client.id} value={client.id.toString()}>
                     {client.client_name}
@@ -778,7 +778,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                       <SelectTrigger className="h-9 text-sm">
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-[200px] overflow-y-auto">
                         {materials.map((m) => (
                           <SelectItem key={m.id} value={m.id}>
                             {m.name}

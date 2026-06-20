@@ -303,42 +303,49 @@ const TestsProvider = ({ children }) => {
     [tests, currentUserId]
   );
 
-  const updateClientTestPrice = useCallback(async (clientId, testId, price) => {
-    try {
-      console.log(`Updating client test price: client=${clientId}, test=${testId}, price=${price}`);
-      const { data, error } = await supabase
-        .from('client_test_prices')
-        .upsert({
-          client_id: clientId,
-          test_id: testId,
-          price: price,
-          updated_at: new Date().toISOString(),
-        })
-        .select();
+  const updateClientTestPrice = useCallback(
+    async (clientId, testId, price) => {
+      try {
+        console.log(
+          `Updating client test price: client=${clientId}, test=${testId}, price=${price}`
+        );
+        const { data, error } = await supabase
+          .from('client_test_prices')
+          .upsert({
+            client_id: clientId,
+            test_id: testId,
+            price: price,
+            updated_at: new Date().toISOString(),
+          })
+          .select();
 
-      if (error) {
-        console.error('Supabase Upsert Error (client_test_prices):', error);
-        throw error;
+        if (error) {
+          console.error('Supabase Upsert Error (client_test_prices):', error);
+          throw error;
+        }
+        if (data) {
+          setClientTestPrices((prev) => {
+            const filtered = prev.filter(
+              (p) => !(p.client_id === clientId && p.test_id === testId)
+            );
+            return [...filtered, data[0]];
+          });
+          logAudit({
+            userId: userId || currentUserId,
+            entityType: 'client_test_pricing',
+            entityId: `${clientId}_test_${testId}`,
+            entityName: `Client ${clientId} / Test ${testId}`,
+            action: 'UPDATE',
+            details: { price },
+          });
+        }
+      } catch (err) {
+        console.error('Exception in updateClientTestPrice:', err);
+        throw err;
       }
-      if (data) {
-        setClientTestPrices((prev) => {
-          const filtered = prev.filter((p) => !(p.client_id === clientId && p.test_id === testId));
-          return [...filtered, data[0]];
-        });
-        logAudit({
-          userId: userId || currentUserId,
-          entityType: 'client_test_pricing',
-          entityId: `${clientId}_test_${testId}`,
-          entityName: `Client ${clientId} / Test ${testId}`,
-          action: 'UPDATE',
-          details: { price },
-        });
-      }
-    } catch (err) {
-      console.error('Exception in updateClientTestPrice:', err);
-      throw err;
-    }
-  }, [currentUserId]);
+    },
+    [currentUserId]
+  );
 
   const deleteClientTestPrice = useCallback(
     async (clientId, testId, userId = null) => {

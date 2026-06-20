@@ -277,9 +277,7 @@ const AdminSettingsManager = () => {
               </div>
               <div>
                 <span className="font-semibold text-primary">Interstate Tax (IGST):</span>{' '}
-                <span className="text-gray-700">
-                  {Number(localSettings.tax_igst)}%
-                </span>
+                <span className="text-gray-700">{Number(localSettings.tax_igst)}%</span>
               </div>
             </div>
             <div className="text-gray-600">Changes will apply to new invoices immediately.</div>

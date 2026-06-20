@@ -34,54 +34,60 @@ const UnitTypesProvider = ({ children }) => {
     }
   }, []);
 
-  const addUnitType = useCallback(async (unitType, userId = null) => {
-    try {
-      const { data, error } = await supabase
-        .from('service_unit_types')
-        .insert([{ unit_type: unitType }])
-        .select();
+  const addUnitType = useCallback(
+    async (unitType, userId = null) => {
+      try {
+        const { data, error } = await supabase
+          .from('service_unit_types')
+          .insert([{ unit_type: unitType }])
+          .select();
 
-      if (error) throw error;
-      if (data) {
-        setUnitTypes((prev) => [...prev, data[0]]);
-        logAudit({
-          userId: userId || currentUserId,
-          entityType: 'unit_type',
-          entityId: data[0]?.id,
-          entityName: unitType,
-          action: 'CREATE',
-        });
+        if (error) throw error;
+        if (data) {
+          setUnitTypes((prev) => [...prev, data[0]]);
+          logAudit({
+            userId: userId || currentUserId,
+            entityType: 'unit_type',
+            entityId: data[0]?.id,
+            entityName: unitType,
+            action: 'CREATE',
+          });
+        }
+      } catch (error) {
+        console.error('Error adding unit type:', error);
+        throw error;
       }
-    } catch (error) {
-      console.error('Error adding unit type:', error);
-      throw error;
-    }
-  }, [currentUserId]);
+    },
+    [currentUserId]
+  );
 
-  const updateUnitType = useCallback(async (id, unitType, userId = null) => {
-    try {
-      const { data, error } = await supabase
-        .from('service_unit_types')
-        .update({ unit_type: unitType })
-        .eq('id', id)
-        .select();
+  const updateUnitType = useCallback(
+    async (id, unitType, userId = null) => {
+      try {
+        const { data, error } = await supabase
+          .from('service_unit_types')
+          .update({ unit_type: unitType })
+          .eq('id', id)
+          .select();
 
-      if (error) throw error;
-      if (data) {
-        setUnitTypes((prev) => prev.map((u) => (u.id === id ? data[0] : u)));
-        logAudit({
-          userId: userId || currentUserId,
-          entityType: 'unit_type',
-          entityId: id,
-          entityName: unitType,
-          action: 'UPDATE',
-        });
+        if (error) throw error;
+        if (data) {
+          setUnitTypes((prev) => prev.map((u) => (u.id === id ? data[0] : u)));
+          logAudit({
+            userId: userId || currentUserId,
+            entityType: 'unit_type',
+            entityId: id,
+            entityName: unitType,
+            action: 'UPDATE',
+          });
+        }
+      } catch (error) {
+        console.error('Error updating unit type:', error);
+        throw error;
       }
-    } catch (error) {
-      console.error('Error updating unit type:', error);
-      throw error;
-    }
-  }, [currentUserId]);
+    },
+    [currentUserId]
+  );
 
   const deleteUnitType = useCallback(
     async (id, userId = null) => {

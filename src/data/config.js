@@ -1,8 +1,11 @@
 export const MATERIALS = [
   { id: 'AGGREGATE_COARSE', name: 'Aggregate (Coarse)' },
   { id: 'AGGREGATE_FINE', name: 'Aggregate (Fine)' },
+  { id: 'AGGREGATE', name: 'Aggregate' },
   { id: 'CEMENT', name: 'Cement' },
   { id: 'CONCRETE', name: 'Concrete' },
+  { id: 'CONCRETE_CUBE', name: 'Concrete Cube' },
+  { id: 'CONCRETE_BLOCKS', name: 'Concrete Blocks' },
   { id: 'SOIL', name: 'Soil' },
   { id: 'ROCK', name: 'Rock' },
   { id: 'BITUMEN', name: 'Bitumen' },

@@ -30,49 +30,55 @@ const TechnicalsProvider = ({ children }) => {
     }
   }, []);
 
-  const addTechnical = useCallback(async (text, type, userId = null) => {
-    try {
-      const { data, error } = await supabase.from('technicals').insert([{ text, type }]).select();
+  const addTechnical = useCallback(
+    async (text, type, userId = null) => {
+      try {
+        const { data, error } = await supabase.from('technicals').insert([{ text, type }]).select();
 
-      if (error) throw error;
-      setTechnicals((prev) => [...prev, ...data]);
-      logAudit({
-        userId: userId || currentUserId,
-        entityType: 'technical',
-        entityId: data[0]?.id,
-        entityName: text,
-        action: 'CREATE',
-      });
-      return data;
-    } catch (error) {
-      console.error('Error adding technical:', error);
-      throw error;
-    }
-  }, [currentUserId]);
+        if (error) throw error;
+        setTechnicals((prev) => [...prev, ...data]);
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'technical',
+          entityId: data[0]?.id,
+          entityName: text,
+          action: 'CREATE',
+        });
+        return data;
+      } catch (error) {
+        console.error('Error adding technical:', error);
+        throw error;
+      }
+    },
+    [currentUserId]
+  );
 
-  const updateTechnical = useCallback(async (id, text, type, userId = null) => {
-    try {
-      const { data, error } = await supabase
-        .from('technicals')
-        .update({ text, type, updated_at: new Date() })
-        .eq('id', id)
-        .select();
+  const updateTechnical = useCallback(
+    async (id, text, type, userId = null) => {
+      try {
+        const { data, error } = await supabase
+          .from('technicals')
+          .update({ text, type, updated_at: new Date() })
+          .eq('id', id)
+          .select();
 
-      if (error) throw error;
-      setTechnicals((prev) => prev.map((tech) => (tech.id === id ? data[0] : tech)));
-      logAudit({
-        userId: userId || currentUserId,
-        entityType: 'technical',
-        entityId: id,
-        entityName: text,
-        action: 'UPDATE',
-      });
-      return data;
-    } catch (error) {
-      console.error('Error updating technical:', error);
-      throw error;
-    }
-  }, [currentUserId]);
+        if (error) throw error;
+        setTechnicals((prev) => prev.map((tech) => (tech.id === id ? data[0] : tech)));
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'technical',
+          entityId: id,
+          entityName: text,
+          action: 'UPDATE',
+        });
+        return data;
+      } catch (error) {
+        console.error('Error updating technical:', error);
+        throw error;
+      }
+    },
+    [currentUserId]
+  );
 
   const deleteTechnical = useCallback(
     async (id, userId = null) => {

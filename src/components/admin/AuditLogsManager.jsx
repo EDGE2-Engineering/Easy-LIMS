@@ -159,7 +159,9 @@ const AuditLogsManager = () => {
 
       // unique performers
       const { data: performersAudit } = await supabase.from('audit_logs').select('performed_by');
-      const { data: performersWorkflow } = await supabase.from('job_workflow_logs').select('performed_by');
+      const { data: performersWorkflow } = await supabase
+        .from('job_workflow_logs')
+        .select('performed_by');
       const allPerformers = [
         ...(performersAudit || []).map((r) => r.performed_by),
         ...(performersWorkflow || []).map((r) => r.performed_by),
@@ -197,7 +199,8 @@ const AuditLogsManager = () => {
           .limit(500);
 
         if (filterUser) qAudit = qAudit.eq('performed_by', filterUser);
-        if (filterDateFrom) qAudit = qAudit.gte('created_at', new Date(filterDateFrom).toISOString());
+        if (filterDateFrom)
+          qAudit = qAudit.gte('created_at', new Date(filterDateFrom).toISOString());
         if (filterDateTo) {
           const end = new Date(filterDateTo);
           end.setHours(23, 59, 59, 999);
@@ -220,12 +223,15 @@ const AuditLogsManager = () => {
       if (!filterActivityType || filterActivityType === 'job_workflow') {
         let qWorkflow = supabase
           .from('job_workflow_logs')
-          .select('*, jobs(job_code, project_name), users!job_workflow_logs_performed_by_fkey(id, full_name, username)')
+          .select(
+            '*, jobs(job_code, project_name), users!job_workflow_logs_performed_by_fkey(id, full_name, username)'
+          )
           .order('created_at', { ascending: false })
           .limit(500);
 
         if (filterUser) qWorkflow = qWorkflow.eq('performed_by', filterUser);
-        if (filterDateFrom) qWorkflow = qWorkflow.gte('created_at', new Date(filterDateFrom).toISOString());
+        if (filterDateFrom)
+          qWorkflow = qWorkflow.gte('created_at', new Date(filterDateFrom).toISOString());
         if (filterDateTo) {
           const end = new Date(filterDateTo);
           end.setHours(23, 59, 59, 999);
@@ -250,7 +256,8 @@ const AuditLogsManager = () => {
           id: `audit-${item.id}`,
           created_at: item.created_at,
           user: item.users,
-          job_code: item.entity_type === 'job' || item.entity_type === 'job_test' ? item.entity_name : '',
+          job_code:
+            item.entity_type === 'job' || item.entity_type === 'job_test' ? item.entity_name : '',
           entity_type: item.entity_type,
           entity_id: item.entity_id,
           entity_name: item.entity_name,
@@ -305,7 +312,9 @@ const AuditLogsManager = () => {
             (item.entity_name || '').toLowerCase().includes(term) ||
             (item.action || '').toLowerCase().includes(term) ||
             (item.job_code || '').toLowerCase().includes(term) ||
-            JSON.stringify(item.details || {}).toLowerCase().includes(term)
+            JSON.stringify(item.details || {})
+              .toLowerCase()
+              .includes(term)
           );
         });
       }
@@ -427,7 +436,8 @@ const AuditLogsManager = () => {
           .order('created_at', { ascending: false });
 
         if (filterUser) qAudit = qAudit.eq('performed_by', filterUser);
-        if (filterDateFrom) qAudit = qAudit.gte('created_at', new Date(filterDateFrom).toISOString());
+        if (filterDateFrom)
+          qAudit = qAudit.gte('created_at', new Date(filterDateFrom).toISOString());
         if (filterDateTo) {
           const end = new Date(filterDateTo);
           end.setHours(23, 59, 59, 999);
@@ -446,11 +456,14 @@ const AuditLogsManager = () => {
       if (!filterActivityType || filterActivityType === 'job_workflow') {
         let qWorkflow = supabase
           .from('job_workflow_logs')
-          .select('*, jobs(job_code, project_name), users!job_workflow_logs_performed_by_fkey(id, full_name, username)')
+          .select(
+            '*, jobs(job_code, project_name), users!job_workflow_logs_performed_by_fkey(id, full_name, username)'
+          )
           .order('created_at', { ascending: false });
 
         if (filterUser) qWorkflow = qWorkflow.eq('performed_by', filterUser);
-        if (filterDateFrom) qWorkflow = qWorkflow.gte('created_at', new Date(filterDateFrom).toISOString());
+        if (filterDateFrom)
+          qWorkflow = qWorkflow.gte('created_at', new Date(filterDateFrom).toISOString());
         if (filterDateTo) {
           const end = new Date(filterDateTo);
           end.setHours(23, 59, 59, 999);
@@ -501,7 +514,9 @@ const AuditLogsManager = () => {
             (item.entity_type || '').toLowerCase().includes(term) ||
             (item.entity_name || '').toLowerCase().includes(term) ||
             (item.action || '').toLowerCase().includes(term) ||
-            JSON.stringify(item.details || {}).toLowerCase().includes(term)
+            JSON.stringify(item.details || {})
+              .toLowerCase()
+              .includes(term)
           );
         });
       }
@@ -648,7 +663,9 @@ const AuditLogsManager = () => {
                 <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
                   {label}
                 </p>
-                <p className="text-2xl font-black text-gray-900 dark:text-gray-100 leading-tight">{value}</p>
+                <p className="text-2xl font-black text-gray-900 dark:text-gray-100 leading-tight">
+                  {value}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -731,7 +748,13 @@ const AuditLogsManager = () => {
               <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">
                 Sort
               </span>
-              <Select value={sortKey} onValueChange={(val) => { setSortKey(val); setPage(1); }}>
+              <Select
+                value={sortKey}
+                onValueChange={(val) => {
+                  setSortKey(val);
+                  setPage(1);
+                }}
+              >
                 <SelectTrigger className="w-40 h-10 text-xs bg-gray-50/50 border-gray-200 rounded-lg">
                   <SelectValue placeholder="Sort key" />
                 </SelectTrigger>
@@ -746,7 +769,10 @@ const AuditLogsManager = () => {
                 variant="outline"
                 size="icon"
                 className="h-10 w-10 border-gray-200 bg-gray-50/50 rounded-lg"
-                onClick={() => { setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc')); setPage(1); }}
+                onClick={() => {
+                  setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+                  setPage(1);
+                }}
               >
                 {sortDir === 'asc' ? (
                   <SortAsc className="w-4 h-4 text-gray-600 dark:text-gray-400" />
@@ -776,7 +802,7 @@ const AuditLogsManager = () => {
                 Advanced Filters
               </h3>
             </div>
-            
+
             {/* Row 1: Activity Type · User · Quick Date */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Activity Type */}
@@ -956,10 +982,18 @@ const AuditLogsManager = () => {
               <SelectValue className="text-xs" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="10" className="text-xs">10</SelectItem>
-              <SelectItem value="25" className="text-xs">25</SelectItem>
-              <SelectItem value="50" className="text-xs">50</SelectItem>
-              <SelectItem value="100" className="text-xs">100</SelectItem>
+              <SelectItem value="10" className="text-xs">
+                10
+              </SelectItem>
+              <SelectItem value="25" className="text-xs">
+                25
+              </SelectItem>
+              <SelectItem value="50" className="text-xs">
+                50
+              </SelectItem>
+              <SelectItem value="100" className="text-xs">
+                100
+              </SelectItem>
             </SelectContent>
           </Select>
           <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none border-l dark:border-gray-800 pl-3 ml-1">
@@ -1018,8 +1052,12 @@ const AuditLogsManager = () => {
         ) : logs.length === 0 ? (
           <div className="py-20 text-center bg-white dark:bg-gray-950">
             <ShieldCheck className="w-12 h-12 mx-auto mb-3 text-gray-200 dark:text-gray-800" />
-            <p className="text-sm font-bold text-gray-400 dark:text-gray-500">No matching activity found.</p>
-            <p className="text-xs text-gray-300 dark:text-gray-600 mt-1">Try adjusting your search or filters.</p>
+            <p className="text-sm font-bold text-gray-400 dark:text-gray-500">
+              No matching activity found.
+            </p>
+            <p className="text-xs text-gray-300 dark:text-gray-600 mt-1">
+              Try adjusting your search or filters.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto bg-white dark:bg-gray-950">
@@ -1053,7 +1091,10 @@ const AuditLogsManager = () => {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                 {paginatedLogs.map((log, idx) => (
-                  <tr key={log.id || idx} className="hover:bg-muted/45 dark:hover:bg-gray-900/40 transition-colors group">
+                  <tr
+                    key={log.id || idx}
+                    className="hover:bg-muted/45 dark:hover:bg-gray-900/40 transition-colors group"
+                  >
                     {/* Date */}
                     <td className="py-3.5 px-4 align-middle">
                       <div className="flex flex-col">
@@ -1083,15 +1124,17 @@ const AuditLogsManager = () => {
 
                     {/* Action */}
                     <td className="py-3.5 px-4 align-middle">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        log.action === 'CREATE'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
-                          : log.action === 'UPDATE'
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400'
-                            : log.action === 'DELETE'
-                              ? 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
-                      }`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          log.action === 'CREATE'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400'
+                            : log.action === 'UPDATE'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400'
+                              : log.action === 'DELETE'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400'
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                        }`}
+                      >
                         {(log.action || '').replace(/_/g, ' ')}
                       </span>
                     </td>
@@ -1102,16 +1145,17 @@ const AuditLogsManager = () => {
                         <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 self-start px-2 py-0.5 rounded border border-gray-200 dark:border-gray-700/50 uppercase tracking-wider">
                           {(log.entity_type || '').replace(/_/g, ' ')}
                         </span>
-                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate max-w-xs" title={log.entity_name}>
+                        <span
+                          className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate max-w-xs"
+                          title={log.entity_name}
+                        >
                           {log.entity_name || '—'}
                         </span>
                       </div>
                     </td>
 
                     {/* Details */}
-                    <td className="py-3.5 px-4 align-middle">
-                      {renderDetails(log)}
-                    </td>
+                    <td className="py-3.5 px-4 align-middle">{renderDetails(log)}</td>
                   </tr>
                 ))}
               </tbody>
