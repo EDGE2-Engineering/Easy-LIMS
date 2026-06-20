@@ -129,6 +129,9 @@ const AdminRockBearingCapacity = () => {
   const [rmrGW, setRmrGW] = useState('15');
   const [rmrJoint, setRmrJoint] = useState('0');
 
+  // Selected Method for Recommended Design SBC
+  const [designSbcMethod, setDesignSbcMethod] = useState('least');
+
   // Load from local storage
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -157,6 +160,7 @@ const AdminRockBearingCapacity = () => {
         setRmrCondition(data.rmrCondition || '25');
         setRmrGW(data.rmrGW || '15');
         setRmrJoint(data.rmrJoint || '0');
+        setDesignSbcMethod(data.designSbcMethod || 'least');
       } catch (e) {
         console.error('Error loading rock calc state:', e);
       }
@@ -197,6 +201,7 @@ const AdminRockBearingCapacity = () => {
     setRmrCondition('25');
     setRmrGW('15');
     setRmrJoint('0');
+    setDesignSbcMethod('least');
     localStorage.removeItem(LOCAL_STORAGE_KEY);
     toast({
       title: 'Reset Completed',
@@ -337,6 +342,29 @@ const AdminRockBearingCapacity = () => {
     if (val === null || val === undefined || isNaN(val)) return '—';
     return val.toFixed(dec);
   };
+
+  // Recommended Design SBC calculation based on selected method
+  let recommendedSbc = 0;
+  let recommendedSbcLabel = '';
+  let recommendedSbcFormula = '';
+  let recommendedSbcSubstitution = '';
+
+  if (designSbcMethod === 'method1') {
+    recommendedSbc = designSbp;
+    recommendedSbcLabel = 'Governed by Method I: Core Strength SBP';
+    recommendedSbcFormula = 'SBC = Method I Design SBP';
+    recommendedSbcSubstitution = `= ${designSbp} kN/m²`;
+  } else if (designSbcMethod === 'method2') {
+    recommendedSbc = qnb_kn_m2;
+    recommendedSbcLabel = 'Governed by Method II: RMR SBC';
+    recommendedSbcFormula = 'SBC = Method II RMR SBC';
+    recommendedSbcSubstitution = `= ${fmt(qnb_kn_m2, 1)} kN/m²`;
+  } else {
+    recommendedSbc = Math.min(designSbp, qnb_kn_m2);
+    recommendedSbcLabel = 'Governed by conservative design envelope limit';
+    recommendedSbcFormula = 'SBC = min(Method I Design SBP, Method II RMR SBC)';
+    recommendedSbcSubstitution = `= min(${designSbp}, ${fmt(qnb_kn_m2, 1)}) = ${fmt(recommendedSbc, 1)} kN/m²`;
+  }
 
   return (
     <div className="space-y-8 w-full pb-12">
@@ -966,23 +994,40 @@ const AdminRockBearingCapacity = () => {
             </p>
           </div>
 
-          <div className="border border-primary/20 rounded-xl p-4 space-y-1 bg-primary/5">
-            <p className="text-[10px] font-bold text-primary uppercase tracking-wider">
-              Recommended Design SBC
-            </p>
-            <p className="text-3xl font-black font-mono text-primary mt-1">
-              {fmt(Math.min(designSbp, qnb_kn_m2), 1)}{' '}
-              <span className="text-sm font-bold">kN/m²</span>
-            </p>
-            <p className="text-[9px] text-primary/80 font-semibold leading-tight mt-1">
-              Governed by conservative design envelope limit
-            </p>
+          <div className="border border-primary/20 rounded-xl p-4 space-y-3 bg-primary/5 flex flex-col justify-between">
+            <div className="space-y-1.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <p className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                  Recommended Design SBC
+                </p>
+                <Select
+                  value={designSbcMethod}
+                  onValueChange={(v) => updateField(setDesignSbcMethod, 'designSbcMethod', v)}
+                >
+                  <SelectTrigger className="h-7 w-full sm:w-[170px] text-[10px] px-2 py-0.5 rounded-lg border-primary/20 bg-white text-primary font-bold shadow-sm hover:bg-gray-50 transition-colors">
+                    <SelectValue placeholder="Select Method" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-gray-100">
+                    <SelectItem value="least" className="text-xs font-semibold cursor-pointer">Least of 2 approach</SelectItem>
+                    <SelectItem value="method1" className="text-xs font-semibold cursor-pointer">Method I (Core Strength)</SelectItem>
+                    <SelectItem value="method2" className="text-xs font-semibold cursor-pointer">Method II (RMR Method)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-3xl font-black font-mono text-primary mt-1">
+                {designSbcMethod === 'method1' ? designSbp : fmt(recommendedSbc, 1)}{' '}
+                <span className="text-sm font-bold">kN/m²</span>
+              </p>
+              <p className="text-[9px] text-primary/80 font-semibold leading-tight mt-1">
+                {recommendedSbcLabel}
+              </p>
+            </div>
             <div className="mt-2 pt-2 border-t border-dashed border-primary/20 space-y-0.5">
               <p className="text-[9px] font-mono text-primary/60 italic">
-                SBC = min(Method I Design SBP, Method II RMR SBC)
+                {recommendedSbcFormula}
               </p>
               <p className="text-[9px] font-mono text-primary/70">
-                {`= min(${designSbp}, ${fmt(qnb_kn_m2, 1)}) = ${fmt(Math.min(designSbp, qnb_kn_m2), 1)} kN/m²`}
+                {recommendedSbcSubstitution}
               </p>
             </div>
           </div>
