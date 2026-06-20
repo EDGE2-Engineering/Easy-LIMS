@@ -2583,7 +2583,7 @@ const NewQuotationPage = () => {
                         <div className="grid grid-cols-[1.5fr_1fr] gap-1 mt-2 text-left text-xs">
                           {/* Bank Details */}
                           <div>
-                            <h2 className="font-semibold mb-2 text-sm">Bank Details</h2>
+                            <h2 className="font-semibold mb-4 text-sm">Bank Details</h2>
                             <table className="w-full text-xs border-collapse">
                               <tbody>
                                 <tr>
