@@ -1,0 +1,5 @@
+ui/node_modules
+.git
+ui/dist
+.env
+__pycache__

@@ -1,0 +1,289 @@
+import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { apiClient } from '@/lib/apiClient';
+import { STORAGE_KEYS } from '@/data/storageKeys';
+import { logAudit } from '@/lib/auditLog';
+import { useAuth } from '@/contexts/AuthContext';
+
+const ClientsContext = createContext();
+
+const initialClients = [
+  {
+    id: 'C1',
+    clientName: 'Indus Towers Ltd.',
+    clientAddress: "No.12, Subramanya Arcade, 'D' Block, 7th Floor, Bannerghatta Road, Bengaluru.",
+    contacts: [
+      {
+        contact_person: '',
+        contact_email: 'indus@email.com',
+        contact_phone: '123',
+        is_primary: true,
+      },
+    ],
+  },
+  {
+    id: 'C2',
+    clientName: 'Reliance Jio Infocomm Ltd.',
+    clientAddress: 'Bengaluru, Karnataka',
+    contacts: [
+      {
+        contact_person: '',
+        contact_email: 'jio@email.com',
+        contact_phone: '456',
+        is_primary: true,
+      },
+    ],
+  },
+  {
+    id: 'C3',
+    clientName: 'ATC Telecom Infrastructure Pvt. Ltd.',
+    clientAddress:
+      'HM Tower, 1st Floor, Magrath Road Junction, Brigade Road, Ashok Nagar, Bengaluru - 560001, Karnataka, INDIA',
+    contacts: [
+      {
+        contact_person: '',
+        contact_email: 'atc@email.com',
+        contact_phone: '789',
+        is_primary: true,
+      },
+    ],
+  },
+];
+
+const ClientsProvider = ({ children }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id;
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const mapFromDb = useCallback((c) => {
+    if (!c) return null;
+    let contacts = Array.isArray(c.contacts) ? c.contacts : [];
+
+    // Migration: If no contacts array exists, create one from legacy email/phone
+    if (contacts.length === 0 && (c.email || c.phone || c.client_name || c.clientName)) {
+      contacts = [
+        {
+          contact_person: '',
+          contact_email: c.email || '',
+          contact_phone: c.phone || '',
+          is_primary: true,
+        },
+      ];
+    }
+
+    const primaryContact = contacts.find((con) => con.is_primary) || contacts[0] || {};
+
+    return {
+      ...c,
+      id: c.id,
+      clientName: c.client_name || c.clientName || '',
+      clientAddress: c.client_address || c.clientAddress || '',
+      contacts: contacts,
+      // Backward compatibility for UI parts still using single email/phone
+      email: primaryContact.contact_email || c.email || '',
+      phone: primaryContact.contact_phone || c.phone || '',
+      gstin: c.gstin || '',
+      createdAt: c.created_at || new Date().toISOString(),
+    };
+  }, []);
+
+  const mapToDb = useCallback((c) => {
+    const payload = {
+      client_name: c.clientName,
+      client_address: c.clientAddress,
+      gstin: c.gstin || null,
+      contacts: Array.isArray(c.contacts) ? c.contacts : [],
+    };
+    // Only include ID if it's not a temporary/new record ID (which would be a string like cli_...)
+    if (c.id && typeof c.id === 'number') {
+      payload.id = c.id;
+    }
+    return payload;
+  }, []);
+
+  const fetchClients = useCallback(async () => {
+    try {
+      const data = await apiClient.get('/api/clients?order_by=created_at&order_dir=asc');
+
+      if (data && data.length > 0) {
+        const mappedData = data.map(mapFromDb);
+        setClients(mappedData);
+      } else {
+        const stored = localStorage.getItem(STORAGE_KEYS.CLIENTS);
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setClients(parsed.map(mapFromDb));
+              return;
+            }
+          } catch (e) {}
+        }
+        setClients(initialClients.map(mapFromDb));
+      }
+    } catch (error) {
+      console.error('Error loading clients:', error);
+      if (clients.length === 0) setClients(initialClients.map(mapFromDb));
+    } finally {
+      setLoading(false);
+    }
+  }, [mapFromDb]);
+
+  useEffect(() => {
+    fetchClients();
+    const handleStorageChange = () => {
+      const stored = localStorage.getItem(STORAGE_KEYS.CLIENTS);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) setClients(parsed.map(mapFromDb));
+        } catch (e) {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [fetchClients, mapFromDb]);
+
+  useEffect(() => {
+    if (clients.length > 0) {
+      localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+    }
+  }, [clients]);
+
+  const updateClient = useCallback(
+    async (updatedClient, userId = null) => {
+      // Check for duplicate client names
+      if (updatedClient.clientName) {
+        const existingWithName = clients.find(
+          (c) =>
+            c.id !== updatedClient.id &&
+            c.clientName.toLowerCase() === updatedClient.clientName.toLowerCase()
+        );
+        if (existingWithName) {
+          throw new Error(`Client name "${updatedClient.clientName}" already exists.`);
+        }
+      }
+
+      const previousClients = [...clients];
+      setClients((prev) => prev.map((c) => (c.id === updatedClient.id ? updatedClient : c)));
+
+      try {
+        const dbPayload = mapToDb(updatedClient);
+        const { id, ...updates } = dbPayload;
+        updates.updated_at = new Date().toISOString();
+
+        const data = await apiClient.put(`/api/clients/${id}`, updates);
+
+        if (data) {
+          const updated = mapFromDb(data);
+          setClients((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+        }
+
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'client',
+          entityId: updatedClient.id,
+          entityName: updatedClient.clientName,
+          action: 'UPDATE',
+        });
+      } catch (err) {
+        console.error('Update Client Exception:', err);
+        setClients(previousClients);
+        throw err;
+      }
+    },
+    [clients, mapToDb, mapFromDb, currentUserId]
+  );
+
+  const addClient = useCallback(
+    async (newClient, userId = null) => {
+      // Check for duplicate client names
+      if (newClient.clientName) {
+        const existingWithName = clients.find(
+          (c) => c.clientName.toLowerCase() === newClient.clientName.toLowerCase()
+        );
+        if (existingWithName) {
+          throw new Error(`Client name "${newClient.clientName}" already exists.`);
+        }
+      }
+
+      const previousClients = [...clients];
+      // We'll add the client to the state after a successful DB insert to get the real ID
+
+      try {
+        const dbPayload = mapToDb(newClient);
+        dbPayload.created_at = new Date().toISOString();
+        dbPayload.updated_at = new Date().toISOString();
+
+        const data = await apiClient.post('/api/clients', dbPayload);
+
+        if (data) {
+          const added = mapFromDb(data);
+          setClients((prev) => [...prev, added]);
+          logAudit({
+            userId: userId || currentUserId,
+            entityType: 'client',
+            entityId: added.id,
+            entityName: added.clientName,
+            action: 'CREATE',
+          });
+        }
+      } catch (err) {
+        console.error('Add Client Exception:', err);
+        setClients(previousClients);
+        throw err;
+      }
+    },
+    [clients, mapToDb, mapFromDb, currentUserId]
+  );
+
+  const deleteClient = useCallback(
+    async (id, userId = null) => {
+      const clientToDelete = clients.find((c) => c.id === id);
+      const previousClients = [...clients];
+      setClients((prev) => prev.filter((c) => c.id !== id));
+
+      try {
+        await apiClient.delete(`/api/clients/${id}`);
+
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'client',
+          entityId: id,
+          entityName: clientToDelete?.clientName,
+          action: 'DELETE',
+        });
+      } catch (err) {
+        console.error('Delete Client Exception:', err);
+        setClients(previousClients);
+        throw err;
+      }
+    },
+    [clients, currentUserId]
+  );
+
+  const contextValue = useMemo(
+    () => ({
+      clients,
+      loading,
+      updateClient,
+      addClient,
+      deleteClient,
+      setClients,
+      refreshClients: fetchClients,
+    }),
+    [clients, loading, updateClient, addClient, deleteClient, fetchClients]
+  );
+
+  return <ClientsContext.Provider value={contextValue}>{children}</ClientsContext.Provider>;
+};
+
+export const useClients = () => {
+  const context = React.useContext(ClientsContext);
+  if (!context) {
+    throw new Error('useClients must be used within a ClientsProvider');
+  }
+  return context;
+};
+
+export { ClientsContext, ClientsProvider };

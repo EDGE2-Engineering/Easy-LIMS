@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 1wZ2qus0f2bzezUI82FCSDLQDhjvyd9H2tLFVH0fAufRbNkg38cwvW9e4mFXq2e
+-- \restrict 1wZ2qus0f2bzezUI82FCSDLQDhjvyd9H2tLFVH0fAufRbNkg38cwvW9e4mFXq2e
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 18.4
@@ -86,14 +86,14 @@ CREATE SCHEMA "vault";
 -- Name: pg_stat_statements; Type: EXTENSION; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
+-- CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
 
 
 --
 -- Name: EXTENSION "pg_stat_statements"; Type: COMMENT; Schema: -; Owner: -
 --
 
-COMMENT ON EXTENSION "pg_stat_statements" IS 'track planning and execution statistics of all SQL statements executed';
+-- COMMENT ON EXTENSION "pg_stat_statements" IS 'track planning and execution statistics of all SQL statements executed';
 
 
 --
@@ -114,14 +114,14 @@ COMMENT ON EXTENSION "pgcrypto" IS 'cryptographic functions';
 -- Name: supabase_vault; Type: EXTENSION; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";
+-- CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";
 
 
 --
 -- Name: EXTENSION "supabase_vault"; Type: COMMENT; Schema: -; Owner: -
 --
 
-COMMENT ON EXTENSION "supabase_vault" IS 'Supabase Vault Extension';
+-- COMMENT ON EXTENSION "supabase_vault" IS 'Supabase Vault Extension';
 
 
 --
@@ -7352,3 +7352,4 @@ CREATE EVENT TRIGGER "pgrst_drop_watch" ON "sql_drop"
 
 \unrestrict 1wZ2qus0f2bzezUI82FCSDLQDhjvyd9H2tLFVH0fAufRbNkg38cwvW9e4mFXq2e
 
+CREATE TABLE public.audit_logs (id SERIAL PRIMARY KEY, performed_by INTEGER, entity_type VARCHAR(255), entity_id VARCHAR(255), entity_name VARCHAR(255), action VARCHAR(255), details JSONB, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);

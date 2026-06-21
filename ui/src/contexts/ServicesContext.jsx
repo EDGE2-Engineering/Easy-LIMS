@@ -1,0 +1,422 @@
+import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { apiClient } from '@/lib/apiClient';
+import { initialServices } from '@/data/services';
+import { STORAGE_KEYS } from '@/data/storageKeys';
+import { logAudit } from '@/lib/auditLog';
+import { useAuth } from '@/contexts/AuthContext';
+
+const ServicesContext = createContext();
+
+const ServicesProvider = ({ children }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id;
+  const [services, setServices] = useState([]);
+  const [clientServicePrices, setClientServicePrices] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const mapFromDb = useCallback((s) => {
+    if (!s) return null;
+    return {
+      ...s,
+      id: s.id,
+      serviceType: s.service_type || s.serviceType || '',
+      price: Number(s.price) || 0,
+      unit: s.unit || '',
+      qty: Number(s.qty) || 1,
+      methodOfSampling: s.method_of_sampling || s.methodOfSampling || 'NA',
+      numBHs: Number(s.num_bhs ?? s.numBHs ?? 0) || 0,
+      measure: s.measure || s.measureType || 'NA',
+      hsnCode: s.hsn_code || s.hsnCode || '',
+      tcList: (() => {
+        if (s.service_to_terms_conditions)
+          return s.service_to_terms_conditions
+            .map((x) => x.terms_and_conditions?.type)
+            .filter(Boolean);
+        if (Array.isArray(s.tc_list || s.tcList)) return s.tc_list || s.tcList;
+        return s.tc_list || s.tcList || [];
+      })(),
+      techList: (() => {
+        if (s.service_to_technicals)
+          return s.service_to_technicals.map((x) => x.technicals?.type).filter(Boolean);
+        if (Array.isArray(s.tech_list || s.techList)) return s.tech_list || s.techList;
+        return s.tech_list || s.techList || [];
+      })(),
+      createdAt: s.created_at || new Date().toISOString(),
+    };
+  }, []);
+
+  const mapToDb = useCallback((s) => {
+    const payload = {
+      service_type: s.serviceType,
+      price: s.price,
+      unit: s.unit,
+      qty: s.qty,
+      method_of_sampling: s.methodOfSampling || s.method_of_sampling || 'NA',
+      num_bhs: typeof s.numBHs === 'number' ? s.numBHs : Number(s.num_bhs ?? 0),
+      measure: s.measure || 'NA',
+      hsn_code: s.hsnCode || s.hsn_code || '',
+    };
+    if (s.id && typeof s.id === 'number') {
+      payload.id = s.id;
+    }
+    return payload;
+  }, []);
+
+  const fetchServices = useCallback(async () => {
+    try {
+      const data = await apiClient.get('/api/services?order_by=created_at&order_dir=asc');
+
+      if (!data) {
+        throw new Error('No data returned');
+      }
+
+      const [techsRel, termsRel, techsDb, termsDb] = await Promise.all([
+        apiClient.get('/api/service_to_technicals'),
+        apiClient.get('/api/service_to_terms_conditions'),
+        apiClient.get('/api/technicals'),
+        apiClient.get('/api/terms_and_conditions'),
+      ]);
+
+      const techMap = techsDb.reduce((acc, t) => ({ ...acc, [t.id]: t.type }), {});
+      const termMap = termsDb.reduce((acc, t) => ({ ...acc, [t.id]: t.type }), {});
+
+      const enrichedData = data.map((s) => {
+        const sTechs = techsRel
+          .filter((r) => r.service_id === s.id)
+          .map((r) => ({ technicals: { type: techMap[r.technical_id] } }));
+        const sTerms = termsRel
+          .filter((r) => r.service_id === s.id)
+          .map((r) => ({ terms_and_conditions: { type: termMap[r.tc_id] } }));
+
+        return {
+          ...s,
+          service_to_technicals: sTechs,
+          service_to_terms_conditions: sTerms,
+        };
+      });
+
+      const mappedData = enrichedData.map(mapFromDb);
+      setServices(mappedData);
+    } catch (error) {
+      console.error('Error loading services:', error);
+      const stored = localStorage.getItem(STORAGE_KEYS.SERVICES);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setServices(parsed);
+          }
+        } catch (e) {}
+      }
+      if (services.length === 0) setServices(initialServices);
+    } finally {
+      setLoading(false);
+    }
+  }, [mapFromDb]);
+
+  const fetchClientServicePrices = useCallback(async () => {
+    try {
+      const data = await apiClient.get('/api/client_service_prices');
+      if (data) {
+        setClientServicePrices(data);
+      }
+    } catch (error) {
+      console.error('Error loading client service prices:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchServices();
+    fetchClientServicePrices();
+    const handleStorageChange = () => {
+      const stored = localStorage.getItem(STORAGE_KEYS.SERVICES);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) setServices(parsed);
+        } catch (e) {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [fetchServices, fetchClientServicePrices]);
+
+  useEffect(() => {
+    if (services.length > 0) {
+      localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
+    }
+  }, [services]);
+
+  const updateService = useCallback(
+    async (updatedService, userId = null) => {
+      const previousServices = [...services];
+      setServices((prev) => prev.map((s) => (s.id === updatedService.id ? updatedService : s)));
+
+      try {
+        const dbPayload = mapToDb(updatedService);
+        const { id, ...updates } = dbPayload;
+        updates.updated_at = new Date().toISOString();
+
+        await apiClient.put(`/api/services/${id}`, updates);
+
+        // Sync T&C
+        const allTermsRels = await apiClient.get('/api/service_to_terms_conditions');
+        const toDeleteTerms = allTermsRels.filter((r) => r.service_id === id);
+        for (const rel of toDeleteTerms) {
+          await apiClient.delete(`/api/service_to_terms_conditions/${rel.id}`).catch(() => {});
+        }
+
+        if (updatedService.tcList?.length > 0) {
+          const terms = await apiClient.get('/api/terms_and_conditions', {
+            params: { in_type: updatedService.tcList },
+          });
+          if (terms?.length > 0) {
+            for (const t of terms) {
+              await apiClient
+                .post('/api/service_to_terms_conditions', { service_id: id, tc_id: t.id })
+                .catch(() => {});
+            }
+          }
+        }
+
+        // Sync Technicals
+        const allTechRels = await apiClient.get('/api/service_to_technicals');
+        const toDeleteTechs = allTechRels.filter((r) => r.service_id === id);
+        for (const rel of toDeleteTechs) {
+          await apiClient.delete(`/api/service_to_technicals/${rel.id}`).catch(() => {});
+        }
+
+        if (updatedService.techList?.length > 0) {
+          const techs = await apiClient.get('/api/technicals', {
+            params: { in_type: updatedService.techList },
+          });
+          if (techs?.length > 0) {
+            for (const t of techs) {
+              await apiClient
+                .post('/api/service_to_technicals', { service_id: id, technical_id: t.id })
+                .catch(() => {});
+            }
+          }
+        }
+
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'service',
+          entityId: updatedService.id,
+          entityName: updatedService.serviceType,
+          action: 'UPDATE',
+        });
+        await fetchServices();
+      } catch (err) {
+        console.error('Update Service Exception:', err);
+        setServices(previousServices);
+        throw err;
+      }
+    },
+    [services, mapToDb, fetchServices, currentUserId]
+  );
+
+  const addService = useCallback(
+    async (newService, userId = null) => {
+      const previousServices = [...services];
+
+      try {
+        const dbPayload = mapToDb(newService);
+        dbPayload.created_at = new Date().toISOString();
+        dbPayload.updated_at = new Date().toISOString();
+
+        const createdItem = await apiClient.post('/api/services', dbPayload);
+
+        if (createdItem && createdItem.id) {
+          const id = createdItem.id;
+
+          // Sync T&C
+          if (newService.tcList?.length > 0) {
+            const terms = await apiClient.get('/api/terms_and_conditions', {
+              params: { in_type: newService.tcList },
+            });
+            if (terms?.length > 0) {
+              for (const t of terms) {
+                await apiClient
+                  .post('/api/service_to_terms_conditions', { service_id: id, tc_id: t.id })
+                  .catch(() => {});
+              }
+            }
+          }
+
+          // Sync Technicals
+          if (newService.techList?.length > 0) {
+            const techs = await apiClient.get('/api/technicals', {
+              params: { in_type: newService.techList },
+            });
+            if (techs?.length > 0) {
+              for (const t of techs) {
+                await apiClient
+                  .post('/api/service_to_technicals', { service_id: id, technical_id: t.id })
+                  .catch(() => {});
+              }
+            }
+          }
+
+          logAudit({
+            userId: userId || currentUserId,
+            entityType: 'service',
+            entityId: id,
+            entityName: newService.serviceType,
+            action: 'CREATE',
+          });
+          await fetchServices();
+        }
+      } catch (err) {
+        console.error('Add Service Exception:', err);
+        setServices(previousServices);
+        throw err;
+      }
+    },
+    [services, mapToDb, fetchServices, currentUserId]
+  );
+
+  const deleteService = useCallback(
+    async (id, userId = null) => {
+      const toDelete = services.find((s) => s.id === id);
+      const previousServices = [...services];
+      setServices((prev) => prev.filter((s) => s.id !== id));
+
+      try {
+        await apiClient.delete(`/api/services/${id}`);
+
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'service',
+          entityId: id,
+          entityName: toDelete?.serviceType,
+          action: 'DELETE',
+        });
+      } catch (err) {
+        console.error('Delete Service Exception:', err);
+        setServices(previousServices);
+        throw err;
+      }
+    },
+    [services, currentUserId]
+  );
+
+  const updateClientServicePrice = useCallback(
+    async (clientId, serviceId, price, userId = null) => {
+      try {
+        console.log(
+          `Updating client service price: client=${clientId}, service=${serviceId}, price=${price}`
+        );
+        // Simulating upsert
+        const existing = await apiClient.get('/api/client_service_prices', {
+          params: { eq_client_id: clientId, eq_service_id: serviceId },
+        });
+
+        let savedPrice;
+        if (existing && existing.length > 0) {
+          savedPrice = await apiClient.put(`/api/client_service_prices/${existing[0].id}`, {
+            client_id: clientId,
+            service_id: serviceId,
+            price: price,
+            updated_at: new Date().toISOString(),
+          });
+        } else {
+          savedPrice = await apiClient.post('/api/client_service_prices', {
+            client_id: clientId,
+            service_id: serviceId,
+            price: price,
+            updated_at: new Date().toISOString(),
+          });
+        }
+
+        if (savedPrice) {
+          setClientServicePrices((prev) => {
+            const filtered = prev.filter(
+              (p) => !(p.client_id === clientId && p.service_id === serviceId)
+            );
+            return [...filtered, savedPrice];
+          });
+          logAudit({
+            userId: userId || currentUserId,
+            entityType: 'client_pricing',
+            entityId: `${clientId}_svc_${serviceId}`,
+            entityName: `Client ${clientId} / Service ${serviceId}`,
+            action: 'UPDATE',
+            details: { price },
+          });
+        }
+      } catch (err) {
+        console.error('Exception in updateClientServicePrice:', err);
+        throw err;
+      }
+    },
+    [currentUserId]
+  );
+
+  const deleteClientServicePrice = useCallback(
+    async (clientId, serviceId, userId = null) => {
+      try {
+        const existing = await apiClient.get('/api/client_service_prices', {
+          params: { eq_client_id: clientId, eq_service_id: serviceId },
+        });
+        if (existing && existing.length > 0) {
+          await apiClient.delete(`/api/client_service_prices/${existing[0].id}`);
+        }
+        setClientServicePrices((prev) =>
+          prev.filter((p) => !(p.client_id === clientId && p.service_id === serviceId))
+        );
+        logAudit({
+          userId: userId || currentUserId,
+          entityType: 'client_pricing',
+          entityId: `${clientId}_svc_${serviceId}`,
+          entityName: `Client ${clientId} / Service ${serviceId}`,
+          action: 'DELETE',
+        });
+      } catch (err) {
+        console.error('Error deleting client service price:', err);
+        throw err;
+      }
+    },
+    [currentUserId]
+  );
+
+  const contextValue = useMemo(
+    () => ({
+      services,
+      clientServicePrices,
+      loading,
+      updateService,
+      addService,
+      deleteService,
+      updateClientServicePrice,
+      deleteClientServicePrice,
+      setServices,
+      refreshServices: fetchServices,
+      refreshClientServicePrices: fetchClientServicePrices,
+    }),
+    [
+      services,
+      clientServicePrices,
+      loading,
+      updateService,
+      addService,
+      deleteService,
+      updateClientServicePrice,
+      deleteClientServicePrice,
+      fetchServices,
+      fetchClientServicePrices,
+    ]
+  );
+
+  return <ServicesContext.Provider value={contextValue}>{children}</ServicesContext.Provider>;
+};
+
+export const useServices = () => {
+  const context = React.useContext(ServicesContext);
+  if (!context) {
+    throw new Error('useServices must be used within a ServicesProvider');
+  }
+  return context;
+};
+
+export { ServicesContext, ServicesProvider };
