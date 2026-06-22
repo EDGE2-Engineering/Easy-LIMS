@@ -1333,11 +1333,11 @@ export default function GeotechSoilSbcDetails({ value = {}, onChange }) {
             </div>
 
             {/* ── Foundation Cross-Section Visualisation ── */}
-            {/* <FoundationCrossSectionVisualisation
+            <FoundationCrossSectionVisualisation
                         data={value}
                         computed={{ qs_p1, settlementSBC, recommended, shearSBC }}
                         isRock={false}
-                      /> */}
+                      />
           </div>
         );
       })()}

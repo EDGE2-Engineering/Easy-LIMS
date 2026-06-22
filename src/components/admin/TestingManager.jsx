@@ -566,27 +566,37 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                   )}
 
                                   {/* SBC Details Table */}
-                                  {sbcDetails.some((bh) => bh && Object.keys(bh).length > 0) &&
-                                    (() => {
-                                      const soilSbcs = sbcDetails
-                                        .map((d, bhIdx) => ({ d, bhIdx }))
-                                        .filter(
-                                          ({ d }) =>
-                                            d &&
-                                            Object.keys(d).length > 0 &&
-                                            (cat === 'Soil' ||
-                                              d.foundationType === 'Soil' ||
-                                              (cat === 'Soil and Rock' &&
-                                                d.foundationType !== 'Rock'))
-                                        );
-                                      const rockSbcs = sbcDetails
-                                        .map((d, bhIdx) => ({ d, bhIdx }))
-                                        .filter(
-                                          ({ d }) =>
-                                            d &&
-                                            Object.keys(d).length > 0 &&
-                                            (cat === 'Rock' || d.foundationType === 'Rock')
-                                        );
+                                  {(() => {
+                                    const normalizedSbcDetails = [];
+                                    (sbcDetails || []).forEach((bhSbc, bhIdx) => {
+                                      if (Array.isArray(bhSbc)) {
+                                        bhSbc.forEach((entry, entryIdx) => {
+                                          if (entry && Object.keys(entry).length > 0) {
+                                            normalizedSbcDetails.push({ d: entry, bhIdx, entryIdx });
+                                          }
+                                        });
+                                      } else if (bhSbc && Object.keys(bhSbc).length > 0) {
+                                        normalizedSbcDetails.push({ d: bhSbc, bhIdx, entryIdx: 0 });
+                                      }
+                                    });
+
+                                    if (normalizedSbcDetails.length === 0) return null;
+
+                                    const soilSbcs = normalizedSbcDetails
+                                      .filter(
+                                        ({ d }) =>
+                                          d &&
+                                          (cat === 'Soil' ||
+                                            d.foundationType === 'Soil' ||
+                                            (cat === 'Soil and Rock' &&
+                                              d.foundationType !== 'Rock'))
+                                      );
+                                    const rockSbcs = normalizedSbcDetails
+                                      .filter(
+                                        ({ d }) =>
+                                          d &&
+                                          (cat === 'Rock' || d.foundationType === 'Rock')
+                                      );
 
                                       const renderSbcTable = (isRock, rows) => {
                                         if (rows.length === 0) return null;
@@ -660,17 +670,19 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                   </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                                                  {rows.map(({ d, bhIdx }) => {
+                                                  {rows.map(({ d, bhIdx, entryIdx }, idx) => {
                                                     const computed = isRock
                                                       ? computeRockSbcValues(d)
                                                       : computeSoilSbcValues(d, settings);
+                                                    const hasMultiple = Array.isArray(sbcDetails[bhIdx]) && sbcDetails[bhIdx].length > 1;
                                                     return (
                                                       <tr
-                                                        key={`sbc-${bhIdx}`}
+                                                        key={`sbc-${bhIdx}-${idx}`}
                                                         className="hover:bg-gray-50/30 transition-colors"
                                                       >
                                                         <td className="p-3 font-bold text-gray-400">
                                                           BH-{bhIdx + 1}
+                                                          {hasMultiple ? ` (${entryIdx + 1})` : ''}
                                                         </td>
                                                         {!isRock && (
                                                           <td className="p-3 text-gray-900">

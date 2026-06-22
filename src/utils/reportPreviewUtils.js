@@ -365,44 +365,20 @@ export const computeSbcSummaryRows = (sbcDetails, boreholeLogs) => {
     return { format: 'unified', rows: sbcDetails };
   }
 
-  const GAMMA = 18; // kN/m³ — unit weight of soil
-  const FOS = 3; // factor of safety for shear
-  const S_ALLOW = 25; // mm — allowable settlement
-
-  // Meyerhof bearing capacity factors from φ (degrees)
-  const bearingFactors = (phi_deg) => {
-    const phi = (phi_deg * Math.PI) / 180;
-    const Nq = Math.exp(Math.PI * Math.tan(phi)) * Math.pow(Math.tan(Math.PI / 4 + phi / 2), 2);
-    const Nc = phi_deg > 0 ? (Nq - 1) / Math.tan(phi) : 5.14;
-    const Ng = 2 * (Nq + 1) * Math.tan(phi);
-    return { Nc, Nq, Ng };
-  };
-
-  // Peck's correlation: φ from corrected N (IS:6403)
-  const phiFromN = (N) => {
-    if (N <= 0) return 0;
-    if (N <= 4) return 26;
-    if (N <= 10) return 28 + ((N - 4) * (30 - 28)) / 6;
-    if (N <= 30) return 30 + ((N - 10) * (40 - 30)) / 20;
-    if (N <= 50) return 40 + ((N - 30) * (45 - 40)) / 20;
-    return 45;
-  };
-
-  // Shape factors (Meyerhof) for different footing shapes
-  const shapeFactors = (shape, B, L, Nq, Nc) => {
-    const r = B / (L || B); // B/L ratio (≤1)
-    switch ((shape || '').toLowerCase()) {
-      case 'square':
-        return { sc: 1 + 0.2 * r, sq: 1 + 0.1 * r, sg: 1 - 0.4 * r };
-      case 'circle':
-        return { sc: 1.3, sq: 1.2, sg: 0.6 };
-      case 'continous strip':
-      case 'strip':
-        return { sc: 1.0, sq: 1.0, sg: 1.0 };
-      case 'rectangle':
-      default:
-        return { sc: 1 + 0.2 * r, sq: 1 + 0.1 * r, sg: 1 - 0.4 * r };
-    }
+  // Helper: find the soil type (strata) at a given depth from the borehole log layers
+  const strataAtDepth = (bhIdx, depth) => {
+    const logs = (boreholeLogs || [])[bhIdx] || [];
+    if (!logs.length || depth <= 0) return null;
+    // Find the layer that contains depth (fromDepth <= depth <= toDepth)
+    const layer = logs.find((row) => {
+      const from = parseFloat(row.fromDepth ?? 0);
+      const to = parseFloat(row.toDepth ?? row.depth);
+      return !isNaN(from) && !isNaN(to) && depth > from && depth <= to;
+    });
+    if (layer) return layer.soilType || null;
+    // If depth exceeds all layers, use the last layer
+    const last = logs[logs.length - 1];
+    return last?.soilType || null;
   };
 
   const rows = [];
@@ -411,92 +387,73 @@ export const computeSbcSummaryRows = (sbcDetails, boreholeLogs) => {
   (sbcDetails || []).forEach((levelRows, bhIdx) => {
     const bhLabel = `BH-${String(bhIdx + 1).padStart(2, '0')}`;
 
-    (levelRows || []).filter(rowHasData).forEach((entry) => {
-      const rawN = parseFloat(entry.fieldNValue) || 0;
-      const Df = parseFloat(entry.depthFromGL) || 0;
-      const scourDf = parseFloat(entry.scourDepthFromGL) || 0;
-      const B = parseFloat(entry.width) || 1.5;
-      const L = parseFloat(entry.footingLength) || B;
-      const LL = parseFloat(entry.liquidLimit) || 0;
-      const cpThick = parseFloat(entry.cpLayerThickness) || 0;
-      const correction = entry.typeOfCorrection || 'No Correction';
-      const shape = entry.shapeOfFooting || 'Rectangle';
+    (levelRows || []).filter(rowHasData).forEach((entry, entryIndex) => {
+      // ── Dimensions & shape ──────────────────────────────────────────────
+      // The form stores values under sbcB/sbcL/sbcD/sbcShape/sbcN.
+      // Fall back to the legacy field names for old data.
+      const B = parseFloat(entry.sbcB ?? entry.width) || 1.5;
+      const L = parseFloat(entry.sbcL ?? entry.footingLength) || B;
+      const Df = parseFloat(entry.sbcD ?? entry.depthFromGL) || 0;
+      const shape = entry.sbcShape || entry.shapeOfFooting || 'Rectangle';
+      const N_corr = parseFloat(entry.sbcN ?? entry.fieldNValue) || 1;
 
-      // Effective depth = Df + scour depth
-      const Df_eff = Df + scourDf;
+      // ── Use pre-computed values saved by GeotechSoilSbcDetails ────────────
+      const sbc_shear =
+        entry.computedQs != null
+          ? Math.round(Number(entry.computedQs))
+          : null;
 
-      // Step 1 — cap N at 50
-      let N = Math.min(rawN, 50);
+      const qa_settlement =
+        entry.computedQa != null
+          ? Math.round(Number(entry.computedQa))
+          : null;
 
-      // Step 2 — overburden correction (CN factor, IS:2131)
-      // CN = 0.77 * log10(2000 / σ'v), σ'v = γ * Df (kPa)
-      const applyOverburden =
-        correction === 'Over burden Correction' || correction === 'Both Corrections';
-      const applyDilatancy =
-        correction === 'Dilatancy Correction' || correction === 'Both Corrections';
+      const recommended =
+        entry.computedRecommendedSbc != null
+          ? Math.round(Number(entry.computedRecommendedSbc))
+          : sbc_shear != null && qa_settlement != null
+          ? Math.min(sbc_shear, qa_settlement)
+          : null;
 
-      if (applyOverburden && Df_eff > 0) {
-        const sigma_v = GAMMA * Df_eff; // kPa
-        const CN = Math.min(0.77 * Math.log10(2000 / Math.max(sigma_v, 1)), 2.0);
-        N = Math.min(Math.round(CN * N), 50);
-      }
+      // ── Foundation RL ────────────────────────────────────────────────────
+      // boreholeRL is stored on the SBC entry (set from the bore log sheet).
+      // Foundation RL = Borehole RL - Foundation Depth (Df)
+      const boreholeRL = parseFloat(entry.boreholeRL ?? entry.groundLevelRL);
+      const foundationRL = !isNaN(boreholeRL) && Df > 0 ? boreholeRL - Df : null;
 
-      // Step 3 — dilatancy correction (IS:2131 clause 4.6.2)
-      // For N > 15 in fine saturated sand: N' = 15 + 0.5*(N-15)
-      if (applyDilatancy && N > 15) {
-        N = Math.round(15 + 0.5 * (N - 15));
-      }
+      // ── Strata description ───────────────────────────────────────────────
+      // Look up the soil layer at foundation depth from the borehole log.
+      const strataFromLog = strataAtDepth(bhIdx, Df);
+      const strata = entry.strata || strataFromLog || '-';
 
-      const N_corr = Math.max(N, 1);
-
-      // Step 4 — φ from corrected N
-      const phi = phiFromN(N_corr);
-      const { Nc, Nq, Ng } = bearingFactors(phi);
-      const { sc, sq, sg } = shapeFactors(shape, B, L, Nq, Nc);
-
-      // Step 5 — SBC (shear criteria), Terzaghi general bearing capacity
-      // q_ult = c·Nc·sc + γ·Df·Nq·sq + 0.5·γ·B·Nγ·sg  (c=0 for SPT-based)
-      const q_ult = GAMMA * Df_eff * Nq * sq + 0.5 * GAMMA * B * Ng * sg;
-      const sbc_shear = Math.round(q_ult / FOS);
-
-      // Step 6 — Allowable BC for 25 mm settlement (Teng's formula, IS:8009)
-      // qa = 1.4 * N_corr² * B² / (B + 0.3)² * Fd  (kN/m²) for S=25mm
-      // Fd = depth factor = 1 + Df/(3B) ≤ 2
-      const Fd = Math.min(1 + Df_eff / (3 * B), 2.0);
-      const qa_settlement = Math.round(
-        ((1.4 * N_corr * N_corr * (B * B)) / Math.pow(B + 0.3, 2)) * Fd
-      );
-
-      // Step 7 — Recommended SBC
-      const recommended = Math.min(sbc_shear, qa_settlement);
-
-      // Foundation RL = Ground Level RL - Foundation Depth from GL (D)
-      const groundLevelRL = parseFloat(entry.groundLevelRL);
-      const foundationRL = !isNaN(groundLevelRL) && Df > 0 ? groundLevelRL - Df : null;
+      // ── Structure / Location ─────────────────────────────────────────────
+      // The SBC form has no dedicated structure field; use any available label.
+      const structure = entry.structure || entry.sbcStructure || entry.sbcLocation || '';
 
       rows.push({
         sNo: sNo++,
-        structure: entry.structure || '-',
-        chainage: entry.chainage || '-',
+        structure,
+        chainage: entry.chainage || '',
         bhLabel,
+        bhIdx,
+        entryIndex,
         depthFromGL: Df > 0 ? Df.toFixed(1) : '-',
-        scourDepthFromGL: scourDf > 0 ? scourDf.toFixed(1) : '-',
         foundationRL: foundationRL !== null ? foundationRL.toFixed(3) : '-',
-        strata: entry.strata || '-',
+        strata,
         nCorr: `N=${N_corr}`,
-        sbcShear: sbc_shear,
-        qaSettlement: qa_settlement,
-        recommended,
+        sbcShear: sbc_shear ?? '-',
+        qaSettlement: qa_settlement ?? '-',
+        recommended: recommended ?? '-',
         width: B,
         footingLength: L,
         shapeOfFooting: shape,
-        typeOfCorrection: correction,
       });
     });
   });
 
   return { format: 'legacy', rows };
 };
+
 
 /**
  * Build paginated A4 pages for the geotechnical report preview.

@@ -190,11 +190,72 @@ function computeCorrectedSPT(sbcData, overburdenRows) {
 import GeotechSoilSbcDetails from './GeotechSoilSbcDetails';
 import GeotechRockSbcDetails from './GeotechRockSbcDetails';
 
+/**
+ * Searchable soil-type dropdown.
+ * Uses the app's own Select primitives so it respects the current theme.
+ */
+function SoilTypeSelect({ value, onChange }) {
+  const [search, setSearch] = React.useState('');
+  const filtered = React.useMemo(
+    () =>
+      soilTypes.filter((t) => t.toLowerCase().includes(search.toLowerCase())),
+    [search]
+  );
+
+  return (
+    <Select
+      value={value || ''}
+      onValueChange={(v) => {
+        onChange(v);
+      }}
+      onOpenChange={(open) => {
+        if (!open) setSearch('');
+      }}
+    >
+      <SelectTrigger className="h-8 text-xs w-full">
+        <SelectValue placeholder="Select soil type" />
+      </SelectTrigger>
+      <SelectContent className="max-h-72">
+        {/* inline search input — not a SelectItem so it won't be selectable */}
+        <div
+          className="flex items-center border-b border-border px-2 pb-1 mb-1"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <svg
+            className="mr-1.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none py-1"
+            placeholder="Search soil types…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.stopPropagation()}
+          />
+        </div>
+        {filtered.length === 0 ? (
+          <div className="py-4 text-center text-xs text-muted-foreground">No results</div>
+        ) : (
+          filtered.map((type) => (
+            <SelectItem key={type} value={type} className="text-xs">
+              {type}
+            </SelectItem>
+          ))
+        )}
+      </SelectContent>
+    </Select>
+  );
+}
+
 export default function GeotechTestForm({ value, onChange, materialCategory }) {
   const [activeTab, setActiveTab] = useState('borehole');
-  const [activeSoilField, setActiveSoilField] = useState(null);
-  const [filteredSoilTypes, setFilteredSoilTypes] = useState(soilTypes);
-  const [showSoilSuggestions, setShowSoilSuggestions] = useState(false);
   const [sieveError, setSieveError] = useState(null); // { boreholeIndex, depthIndex, message }
 
   // Overburden correction table from Settings → System → Overburden
@@ -282,11 +343,13 @@ export default function GeotechTestForm({ value, onChange, materialCategory }) {
     ],
     sbcDetails: (() => {
       if (!value?.sbcDetails) {
-        return initialBoreholeLogs.map(() => ({}));
+        return initialBoreholeLogs.map(() => [{}]);
       }
       return value.sbcDetails.map((bhSbc) => {
-        if (Array.isArray(bhSbc)) return bhSbc[0] || {};
-        return bhSbc || {};
+        if (Array.isArray(bhSbc)) {
+          return bhSbc.length > 0 ? bhSbc : [{}];
+        }
+        return [bhSbc || {}];
       });
     })(),
     subSoilProfile: value?.subSoilProfile || [[{ depth: '', description: '' }]],
@@ -428,7 +491,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory }) {
       maxDepths: [...(formData.maxDepths || []), ''],
       latitudes: [...(formData.latitudes || []), ''],
       longitudes: [...(formData.longitudes || []), ''],
-      sbcDetails: [...formData.sbcDetails, {}],
+      sbcDetails: [...formData.sbcDetails, [{}]],
       labTestResults: [
         ...formData.labTestResults,
         [
@@ -497,34 +560,42 @@ export default function GeotechTestForm({ value, onChange, materialCategory }) {
     });
   };
 
-  const handleSoilSearch = (e, boreholeIndex, depthIndex) => {
-    const val = e.target.value;
-    handleBoreholeDepthChange(boreholeIndex, depthIndex, 'soilType', val);
-    if (val.trim()) {
-      setFilteredSoilTypes(soilTypes.filter((s) => s.toLowerCase().includes(val.toLowerCase())));
-      setShowSoilSuggestions(true);
-    } else {
-      setShowSoilSuggestions(false);
-    }
-  };
-
   const selectSoilType = (type, boreholeIndex, depthIndex) => {
     handleBoreholeDepthChange(boreholeIndex, depthIndex, 'soilType', type);
-    setShowSoilSuggestions(false);
   };
 
   // --- SBC Handlers ---
-  const handleSbcChange = (boreholeIndex, field, val) => {
+  const handleSbcChange = (boreholeIndex, entryIndex, field, val) => {
     const newSbcDetails = [...formData.sbcDetails];
+    const bhEntries = [...(newSbcDetails[boreholeIndex] || [{}])];
     if (field === null && typeof val === 'object') {
-      newSbcDetails[boreholeIndex] = val;
+      bhEntries[entryIndex] = val;
     } else {
-      newSbcDetails[boreholeIndex] = {
-        ...newSbcDetails[boreholeIndex],
+      bhEntries[entryIndex] = {
+        ...bhEntries[entryIndex],
         [field]: val,
       };
     }
+    newSbcDetails[boreholeIndex] = bhEntries;
     setFormData({ ...formData, sbcDetails: newSbcDetails });
+  };
+
+  const addSbcEntry = (boreholeIndex) => {
+    const newSbcDetails = [...formData.sbcDetails];
+    const bhEntries = [...(newSbcDetails[boreholeIndex] || [{}])];
+    bhEntries.push({});
+    newSbcDetails[boreholeIndex] = bhEntries;
+    setFormData({ ...formData, sbcDetails: newSbcDetails });
+  };
+
+  const removeSbcEntry = (boreholeIndex, entryIndex) => {
+    const newSbcDetails = [...formData.sbcDetails];
+    const bhEntries = [...(newSbcDetails[boreholeIndex] || [{}])];
+    if (bhEntries.length > 1) {
+      bhEntries.splice(entryIndex, 1);
+      newSbcDetails[boreholeIndex] = bhEntries;
+      setFormData({ ...formData, sbcDetails: newSbcDetails });
+    }
   };
 
   // --- Lab Test Handlers ---
@@ -926,46 +997,11 @@ export default function GeotechTestForm({ value, onChange, materialCategory }) {
                                 </SelectContent>
                               </Select>
                             </td>
-                            <td className="px-2 py-2 relative overflow-visible">
-                              <Input
-                                value={depthData.soilType}
-                                onChange={(e) => handleSoilSearch(e, boreholeIndex, depthIndex)}
-                                onFocus={() => {
-                                  setActiveSoilField({
-                                    boreholeIndex,
-                                    depthIndex,
-                                  });
-                                  setShowSoilSuggestions(true);
-                                  setFilteredSoilTypes(
-                                    soilTypes.filter((type) =>
-                                      type
-                                        .toLowerCase()
-                                        .includes((depthData.soilType || '').toLowerCase())
-                                    )
-                                  );
-                                }}
-                                onBlur={() => setTimeout(() => setShowSoilSuggestions(false), 200)}
-                                className="h-8 text-sm focus:ring-1 focus:ring-primary/30"
-                                placeholder="Soil Type"
-                                title="Visual soil or rock classification"
+                            <td className="px-2 py-2">
+                              <SoilTypeSelect
+                                value={depthData.soilType || ''}
+                                onChange={(val) => selectSoilType(val, boreholeIndex, depthIndex)}
                               />
-                              {showSoilSuggestions &&
-                                activeSoilField?.boreholeIndex === boreholeIndex &&
-                                activeSoilField?.depthIndex === depthIndex && (
-                                  <div className="absolute z-[999] w-full min-w-[250px] bg-white border rounded-lg shadow-xl max-h-48 overflow-auto mt-1 left-0 ring-1 ring-black/5">
-                                    {filteredSoilTypes.map((type, idx) => (
-                                      <div
-                                        key={idx}
-                                        className="px-3 py-2 hover:bg-primary/5 hover:text-primary cursor-pointer text-xs transition-colors border-b last:border-0 border-gray-50"
-                                        onClick={() =>
-                                          selectSoilType(type, boreholeIndex, depthIndex)
-                                        }
-                                      >
-                                        {type}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
                             </td>
                             <td className="px-2 py-2">
                               {depthData.natureOfSampling === 'DS' ? (
@@ -1084,83 +1120,118 @@ export default function GeotechTestForm({ value, onChange, materialCategory }) {
               depths.
             </p>
             <div className="space-y-4">
-              {formData.boreholeLogs.map((_, boreholeIndex) => (
-                <div
-                  key={boreholeIndex}
-                  className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm"
-                >
-                  <h4 className="text-sm font-bold text-gray-800 mb-3">
-                    SBC - BH {boreholeIndex + 1}
-                  </h4>
-                  <div className="mt-2">
-                    {(() => {
-                      const sbcVal = formData.sbcDetails[boreholeIndex] || {};
-                      const type =
-                        materialCategory === 'Rock'
-                          ? 'Rock'
-                          : materialCategory === 'Soil'
-                            ? 'Soil'
-                            : sbcVal.foundationType || 'Soil';
+              {formData.boreholeLogs.map((_, boreholeIndex) => {
+                const sbcEntries = formData.sbcDetails[boreholeIndex] || [{}];
+                return (
+                  <div
+                    key={boreholeIndex}
+                    className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-4"
+                  >
+                    <h4 className="text-sm font-bold text-gray-800 dark:text-gray-100 pb-2 border-b dark:border-gray-700">
+                      SBC - BH {boreholeIndex + 1}
+                    </h4>
 
-                      return (
-                        <div className="space-y-4">
-                          {materialCategory === 'Soil and Rock' && (
-                            <div className="flex items-center gap-4 bg-gray-50/50 p-2 rounded-lg border border-gray-100">
-                              <Label className="text-xs font-bold text-gray-600 uppercase">
-                                Foundation Material
-                              </Label>
-                              <Select
-                                value={type}
-                                onValueChange={(val) =>
-                                  handleSbcChange(boreholeIndex, null, {
-                                    ...sbcVal,
-                                    foundationType: val,
+                    <div className="space-y-6">
+                      {sbcEntries.map((sbcVal, entryIndex) => {
+                        const type =
+                          materialCategory === 'Rock'
+                            ? 'Rock'
+                            : materialCategory === 'Soil'
+                              ? 'Soil'
+                              : sbcVal.foundationType || 'Soil';
+
+                        return (
+                          <div key={entryIndex} className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50/30 dark:bg-gray-700/40 relative space-y-4">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                SBC - BH {boreholeIndex + 1} - Footing Size {entryIndex + 1}
+                              </span>
+                              {sbcEntries.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeSbcEntry(boreholeIndex, entryIndex)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 h-8 w-8 rounded-lg"
+                                  title="Remove this footing size entry"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+
+                            {materialCategory === 'Soil and Rock' && (
+                              <div className="flex items-center gap-4 bg-gray-50/50 dark:bg-gray-700/50 p-2 rounded-lg border border-gray-100 dark:border-gray-600">
+                                <Label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">
+                                  Foundation Material
+                                </Label>
+                                <Select
+                                  value={type}
+                                  onValueChange={(val) =>
+                                    handleSbcChange(boreholeIndex, entryIndex, null, {
+                                      ...sbcVal,
+                                      foundationType: val,
+                                    })
+                                  }
+                                >
+                                  <SelectTrigger className="w-[180px] h-8 text-xs bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 dark:text-gray-200">
+                                    <SelectValue placeholder="Select Material" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Soil" className="text-xs">
+                                      Soil
+                                    </SelectItem>
+                                    <SelectItem value="Rock" className="text-xs">
+                                      Rock
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+
+                            {type === 'Rock' ? (
+                              <GeotechRockSbcDetails
+                                value={sbcVal}
+                                onChange={(newVal) =>
+                                  handleSbcChange(boreholeIndex, entryIndex, null, {
+                                    ...newVal,
+                                    foundationType: type,
                                   })
                                 }
-                              >
-                                <SelectTrigger className="w-[180px] h-8 text-xs bg-white border-gray-200">
-                                  <SelectValue placeholder="Select Material" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Soil" className="text-xs">
-                                    Soil
-                                  </SelectItem>
-                                  <SelectItem value="Rock" className="text-xs">
-                                    Rock
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
-                          {type === 'Rock' ? (
-                            <GeotechRockSbcDetails
-                              value={sbcVal}
-                              onChange={(newVal) =>
-                                handleSbcChange(boreholeIndex, null, {
-                                  ...newVal,
-                                  foundationType: type,
-                                })
-                              }
-                            />
-                          ) : (
-                            <GeotechSoilSbcDetails
-                              value={sbcVal}
-                              onChange={(newVal) =>
-                                handleSbcChange(boreholeIndex, null, {
-                                  ...newVal,
-                                  foundationType: type,
-                                })
-                              }
-                            />
-                          )}
-                        </div>
-                      );
-                    })()}
+                              />
+                            ) : (
+                              <GeotechSoilSbcDetails
+                                value={sbcVal}
+                                onChange={(newVal) =>
+                                  handleSbcChange(boreholeIndex, entryIndex, null, {
+                                    ...newVal,
+                                    foundationType: type,
+                                  })
+                                }
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="pt-2 flex justify-start">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addSbcEntry(boreholeIndex)}
+                        className="text-primary hover:bg-primary/5 border-primary/20"
+                        title="Add a new footing size recommendation for this borehole"
+                      >
+                        <Plus className="w-4 h-4 mr-2" /> Add Footing Size
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {formData.boreholeLogs.length === 0 && (
-                <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500 italic">
+                <div className="bg-white dark:bg-gray-800 p-8 rounded-xl border border-gray-200 dark:border-gray-700 text-center text-gray-500 dark:text-gray-400 italic">
                   Add a borehole to enter SBC details.
                 </div>
               )}
