@@ -10,9 +10,9 @@ const AdminClientsManager = lazyWithRetry(
 const AdminUsersManager = lazyWithRetry(() => import('@/components/admin/AdminUsersManager.jsx'));
 const DocumentsManager = lazyWithRetry(() => import('@/components/admin/DocumentsManager.jsx'));
 const JobsManager = lazyWithRetry(() => import('@/components/admin/JobsManager.jsx'));
-const AdminTestsManager = lazyWithRetry(() => import('@/components/admin/AdminTestsManager.jsx'));
-const AdminServicesManager = lazyWithRetry(
-  () => import('@/components/admin/AdminServicesManager.jsx')
+const AdminLabTestsManager = lazyWithRetry(() => import('@/components/admin/AdminLabTestsManager.jsx'));
+const AdminFieldTestsManager = lazyWithRetry(
+  () => import('@/components/admin/AdminFieldTestsManager.jsx')
 );
 const AdminSystemSettings = lazyWithRetry(
   () => import('@/components/admin/AdminSystemSettings.jsx')
@@ -69,8 +69,8 @@ const ConfigDrivenPage = ({ viewName, subView, id }) => {
   if (viewName === VIEWS.SETTINGS) {
     if (subView === 'clients') Component = AdminClientsManager;
     else if (subView === 'system') Component = AdminSystemSettings;
-    else if (subView === 'field_tests') Component = AdminServicesManager;
-    else if (subView === 'lab_tests') Component = AdminTestsManager;
+    else if (subView === 'field_tests') Component = AdminFieldTestsManager;
+    else if (subView === 'lab_tests') Component = AdminLabTestsManager;
     else if (subView === 'sampling') Component = AdminSamplingManager;
   }
 

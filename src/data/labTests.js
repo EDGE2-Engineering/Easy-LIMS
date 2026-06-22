@@ -1,6 +1,6 @@
 import { STORAGE_KEYS } from './storageKeys';
 
-export const initialTests = [
+export const initialLabTests = [
   {
     id: 'T1',
     testType: 'Organic Impurities Analysis',
@@ -21,20 +21,20 @@ export const initialTests = [
   },
 ];
 
-export const getTests = () => {
-  const stored = localStorage.getItem(STORAGE_KEYS.TESTS);
+export const getLabTests = () => {
+  const stored = localStorage.getItem(STORAGE_KEYS.LAB_TESTS);
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     } catch (e) {
-      console.error('Error parsing stored tests', e);
+      console.error('Error parsing stored lab tests', e);
     }
   }
-  return initialTests;
+  return initialLabTests;
 };
 
-export const saveTests = (tests) => {
-  localStorage.setItem(STORAGE_KEYS.TESTS, JSON.stringify(tests));
+export const saveLabTests = (labTests) => {
+  localStorage.setItem(STORAGE_KEYS.LAB_TESTS, JSON.stringify(labTests));
   window.dispatchEvent(new Event('storage'));
 };

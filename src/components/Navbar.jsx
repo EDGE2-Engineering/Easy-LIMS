@@ -311,8 +311,8 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
 
       return (
         (location.pathname.startsWith('/settings') && !isManagementTab) ||
-        location.pathname.startsWith('/service/') ||
-        location.pathname.startsWith('/test/')
+        location.pathname.startsWith('/field-test/') ||
+        location.pathname.startsWith('/lab-test/')
       );
     }
 

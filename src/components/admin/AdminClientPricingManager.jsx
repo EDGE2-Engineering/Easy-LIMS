@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useClients } from '@/contexts/ClientsContext';
-import { useServices } from '@/contexts/ServicesContext';
-import { useTests } from '@/contexts/TestsContext';
+import { useFieldTests } from '@/contexts/FieldTestsContext';
+import { useLabTests } from '@/contexts/LabTestsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { Button } from '@/components/ui/button';
@@ -23,15 +23,15 @@ import { DOCUMENT_ITEM_TYPES } from '@/data/config';
 
 const AdminClientPricingManager = () => {
   const { clients } = useClients();
-  const { services, clientServicePrices, updateClientServicePrice, deleteClientServicePrice } =
-    useServices();
-  const { tests, clientTestPrices, updateClientTestPrice, deleteClientTestPrice } = useTests();
+  const { fieldTests, clientFieldTestPrices, updateClientFieldTestPrice, deleteClientFieldTestPrice } =
+    useFieldTests();
+  const { labTests, clientLabTestPrices, updateClientLabTestPrice, deleteClientLabTestPrice } = useLabTests();
   const { user } = useAuth();
   const { toast } = useToast();
 
   const [selectedClientId, setSelectedClientId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('services');
+  const [activeTab, setActiveTab] = useState('fieldTests');
   const [pendingPrices, setPendingPrices] = useState({});
 
   useEffect(() => {
@@ -40,13 +40,13 @@ const AdminClientPricingManager = () => {
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
 
-  const filteredServices = services.filter(
+  const filteredFieldTests = fieldTests.filter(
     (s) =>
-      s.serviceType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.fieldTestType.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.hsnCode?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredTests = tests.filter(
+  const filteredLabTests = labTests.filter(
     (t) =>
       t.testType.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (Array.isArray(t.materials) ? t.materials.join(', ') : t.materials || '')
@@ -69,10 +69,10 @@ const AdminClientPricingManager = () => {
     if (price === undefined) return;
 
     try {
-      if (type === 'service') {
-        await updateClientServicePrice(selectedClientId, itemId, Number(price));
+      if (type === 'fieldTest') {
+        await updateClientFieldTestPrice(selectedClientId, itemId, Number(price));
       } else {
-        await updateClientTestPrice(selectedClientId, itemId, Number(price));
+        await updateClientLabTestPrice(selectedClientId, itemId, Number(price));
       }
 
       // Clear pending status on success
@@ -89,9 +89,9 @@ const AdminClientPricingManager = () => {
 
       // Telegram Notification
       const itemName =
-        type === 'service'
-          ? services.find((s) => s.id === itemId)?.serviceType
-          : tests.find((t) => t.id === itemId)?.testType;
+        type === 'fieldTest'
+          ? fieldTests.find((s) => s.id === itemId)?.fieldTestType
+          : labTests.find((t) => t.id === itemId)?.testType;
       const message = `💰 *Client Pricing Updated*\n\nClient: \`${selectedClient?.clientName}\`\nItem: \`${itemName}\`\nNew Price: \`${price}\`\nUpdated By: \`${user?.fullName || 'Unknown'}\``;
       sendTelegramNotification(message);
     } catch (error) {
@@ -107,10 +107,10 @@ const AdminClientPricingManager = () => {
     if (!selectedClientId) return;
 
     try {
-      if (type === 'service') {
-        await deleteClientServicePrice(selectedClientId, itemId);
+      if (type === 'fieldTest') {
+        await deleteClientFieldTestPrice(selectedClientId, itemId);
       } else {
-        await deleteClientTestPrice(selectedClientId, itemId);
+        await deleteClientLabTestPrice(selectedClientId, itemId);
       }
       toast({
         title: 'Price removed',
@@ -119,9 +119,9 @@ const AdminClientPricingManager = () => {
 
       // Telegram Notification
       const itemName =
-        type === 'service'
-          ? services.find((s) => s.id === itemId)?.serviceType
-          : tests.find((t) => t.id === itemId)?.testType;
+        type === 'fieldTest'
+          ? fieldTests.find((s) => s.id === itemId)?.fieldTestType
+          : labTests.find((t) => t.id === itemId)?.testType;
       const message = `💸 *Client Pricing Removed*\n\nClient: \`${selectedClient?.clientName}\`\nItem: \`${itemName}\`\nRemoved By: \`${user?.fullName || 'Unknown'}\``;
       sendTelegramNotification(message);
     } catch (error) {
@@ -134,12 +134,12 @@ const AdminClientPricingManager = () => {
   };
 
   const getClientPrice = (itemId, type) => {
-    if (type === 'service') {
-      return clientServicePrices.find(
-        (p) => p.client_id === selectedClientId && p.service_id === itemId
+    if (type === 'fieldTest') {
+      return clientFieldTestPrices.find(
+        (p) => p.client_id === selectedClientId && p.field_test_id === itemId
       )?.price;
     } else {
-      return clientTestPrices.find((p) => p.client_id === selectedClientId && p.test_id === itemId)
+      return clientLabTestPrices.find((p) => p.client_id === selectedClientId && p.lab_test_id === itemId)
         ?.price;
     }
   };
@@ -198,21 +198,21 @@ const AdminClientPricingManager = () => {
                   <span className="text-primary">{selectedClient?.clientName}</span>
                 </h2>
                 <TabsList className="bg-white border border-gray-200">
-                  <TabsTrigger value="services">
+                  <TabsTrigger value="fieldTests">
                     {DOCUMENT_ITEM_TYPES.FIELD_TESTS.label}
                   </TabsTrigger>
-                  <TabsTrigger value="tests">{DOCUMENT_ITEM_TYPES.LAB_TESTS.label}</TabsTrigger>
+                  <TabsTrigger value="labTests">{DOCUMENT_ITEM_TYPES.LAB_TESTS.label}</TabsTrigger>
                 </TabsList>
               </div>
             </div>
 
-            <TabsContent value="services" className="p-0 m-0">
+            <TabsContent value="fieldTests" className="p-0 m-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
-                        Service Name
+                        Field Test Name
                       </th>
                       <th className="text-left py-3 px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                         Default Price
@@ -226,33 +226,33 @@ const AdminClientPricingManager = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredServices.map((service) => {
-                      const clientPrice = getClientPrice(service.id, 'service');
+                    {filteredFieldTests.map((fieldTest) => {
+                      const clientPrice = getClientPrice(fieldTest.id, 'fieldTest');
                       return (
                         <tr
-                          key={service.id}
+                          key={fieldTest.id}
                           className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                         >
                           <td className="py-4 px-6 text-gray-600 align-middle">
-                            <div className="font-medium text-gray-900">{service.serviceType}</div>
-                            <div className="text-gray-500 text-xs">HSN: {service.hsnCode}</div>
+                            <div className="font-medium text-gray-900">{fieldTest.fieldTestType}</div>
+                            <div className="text-gray-500 text-xs">HSN: {fieldTest.hsnCode}</div>
                           </td>
                           <td className="py-4 px-6 text-gray-600 align-middle">
                             <Rupee />
-                            {service.price.toLocaleString()}
+                            {fieldTest.price.toLocaleString()}
                           </td>
                           <td className="py-4 px-6 w-48 text-gray-600 align-middle">
                             <Input
                               type="number"
-                              placeholder={`₹${service.price}`}
+                              placeholder={`₹${fieldTest.price}`}
                               value={
-                                pendingPrices[service.id] !== undefined
-                                  ? pendingPrices[service.id]
+                                pendingPrices[fieldTest.id] !== undefined
+                                  ? pendingPrices[fieldTest.id]
                                   : (clientPrice ?? '')
                               }
-                              onChange={(e) => handlePendingPriceChange(service.id, e.target.value)}
+                              onChange={(e) => handlePendingPriceChange(fieldTest.id, e.target.value)}
                               className={
-                                clientPrice || pendingPrices[service.id] !== undefined
+                                clientPrice || pendingPrices[fieldTest.id] !== undefined
                                   ? 'border-primary/50 bg-primary/5 shadow-sm'
                                   : 'border-gray-200'
                               }
@@ -260,11 +260,11 @@ const AdminClientPricingManager = () => {
                           </td>
                           <td className="py-4 px-6 text-right text-gray-600 align-middle">
                             <div className="flex justify-end gap-2">
-                              {pendingPrices[service.id] !== undefined &&
-                                String(pendingPrices[service.id]) !== String(clientPrice ?? '') && (
+                              {pendingPrices[fieldTest.id] !== undefined &&
+                                String(pendingPrices[fieldTest.id]) !== String(clientPrice ?? '') && (
                                   <Button
                                     size="sm"
-                                    onClick={() => handleSavePrice(service.id, 'service')}
+                                    onClick={() => handleSavePrice(fieldTest.id, 'fieldTest')}
                                     className="bg-green-600 hover:bg-green-700 text-white"
                                     title="Save Price for Client"
                                   >
@@ -277,7 +277,7 @@ const AdminClientPricingManager = () => {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => handleRemovePrice(service.id, 'service')}
+                                      onClick={() => handleRemovePrice(fieldTest.id, 'fieldTest')}
                                       className="text-red-500 hover:text-red-600 hover:bg-red-50"
                                     >
                                       <Trash2 className="w-4 h-4" />
@@ -300,7 +300,7 @@ const AdminClientPricingManager = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="tests" className="p-0 m-0">
+            <TabsContent value="labTests" className="p-0 m-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b">
@@ -320,39 +320,39 @@ const AdminClientPricingManager = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredTests.map((test) => {
-                      const clientPrice = getClientPrice(test.id, 'test');
+                    {filteredLabTests.map((labTest) => {
+                      const clientPrice = getClientPrice(labTest.id, 'labTest');
                       return (
                         <tr
-                          key={test.id}
+                          key={labTest.id}
                           className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                         >
                           <td className="py-4 px-6 text-gray-600 align-middle">
-                            <div className="font-medium text-gray-900">{test.testType}</div>
+                            <div className="font-medium text-gray-900">{labTest.testType}</div>
                             <div className="text-gray-500 text-xs">
-                              {Array.isArray(test.materials)
-                                ? test.materials.join(', ')
-                                : test.materials || '-'}{' '}
-                              | HSN: {test.hsnCode}
+                              {Array.isArray(labTest.materials)
+                                ? labTest.materials.join(', ')
+                                : labTest.materials || '-'}{' '}
+                              | HSN: {labTest.hsnCode}
                             </div>
                           </td>
 
                           <td className="py-4 px-6 text-gray-600 align-middle">
                             <Rupee />
-                            {test.price.toLocaleString()}
+                            {labTest.price.toLocaleString()}
                           </td>
                           <td className="py-4 px-6 w-48 text-gray-600 align-middle">
                             <Input
                               type="number"
-                              placeholder={`₹${test.price}`}
+                              placeholder={`₹${labTest.price}`}
                               value={
-                                pendingPrices[test.id] !== undefined
-                                  ? pendingPrices[test.id]
+                                pendingPrices[labTest.id] !== undefined
+                                  ? pendingPrices[labTest.id]
                                   : (clientPrice ?? '')
                               }
-                              onChange={(e) => handlePendingPriceChange(test.id, e.target.value)}
+                              onChange={(e) => handlePendingPriceChange(labTest.id, e.target.value)}
                               className={
-                                clientPrice || pendingPrices[test.id] !== undefined
+                                clientPrice || pendingPrices[labTest.id] !== undefined
                                   ? 'border-primary/50 bg-primary/5 shadow-sm'
                                   : 'border-gray-200'
                               }
@@ -360,11 +360,11 @@ const AdminClientPricingManager = () => {
                           </td>
                           <td className="py-4 px-6 text-right text-gray-600 align-middle">
                             <div className="flex justify-end gap-2">
-                              {pendingPrices[test.id] !== undefined &&
-                                String(pendingPrices[test.id]) !== String(clientPrice ?? '') && (
+                              {pendingPrices[labTest.id] !== undefined &&
+                                String(pendingPrices[labTest.id]) !== String(clientPrice ?? '') && (
                                   <Button
                                     size="sm"
-                                    onClick={() => handleSavePrice(test.id, 'test')}
+                                    onClick={() => handleSavePrice(labTest.id, 'labTest')}
                                     className="bg-green-600 hover:bg-green-700 text-white"
                                   >
                                     <Save className="w-4 h-4 mr-1" /> Save
@@ -376,7 +376,7 @@ const AdminClientPricingManager = () => {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => handleRemovePrice(test.id, 'test')}
+                                      onClick={() => handleRemovePrice(labTest.id, 'labTest')}
                                       className="text-red-500 hover:text-red-600 hover:bg-red-50"
                                     >
                                       <Trash2 className="w-4 h-4" />

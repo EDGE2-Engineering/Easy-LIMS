@@ -403,7 +403,7 @@
   }
 
   /* Quotation line items: explicit colgroup widths; drop actions col in print */
-  .quote-items-table col:nth-child(8) {
+  .quote-items-table col:nth-child(9) {
     width: 0 !important;
   }
 

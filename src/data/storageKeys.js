@@ -3,8 +3,8 @@ const PREFIX = 'easy_lims_';
 export const STORAGE_KEYS = {
   SESSION: `${PREFIX}session`,
   CLIENTS: `${PREFIX}clients`,
-  TESTS: `${PREFIX}tests`,
-  SERVICES: `${PREFIX}services`,
+  LAB_TESTS: `${PREFIX}lab_tests`,
+  FIELD_TESTS: `${PREFIX}field_tests`,
   SAMPLING_DATA: `${PREFIX}sampling_data`,
   CONTENT: `${PREFIX}content`,
   IMAGES: `${PREFIX}images`,
@@ -21,8 +21,10 @@ const LEGACY_MAPPING = {
   app_session: STORAGE_KEYS.SESSION,
   // Data
   clients: STORAGE_KEYS.CLIENTS,
-  tests: STORAGE_KEYS.TESTS,
-  services: STORAGE_KEYS.SERVICES,
+  tests: STORAGE_KEYS.LAB_TESTS,
+  services: STORAGE_KEYS.FIELD_TESTS,
+  easy_lims_tests: STORAGE_KEYS.LAB_TESTS,
+  easy_lims_services: STORAGE_KEYS.FIELD_TESTS,
   sampling_data: STORAGE_KEYS.SAMPLING_DATA,
   // Content/Assets
   edge2EasyLIMS_content: STORAGE_KEYS.CONTENT,

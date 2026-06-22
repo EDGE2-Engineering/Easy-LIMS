@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Rupee from '../Rupee';
-import { useServices } from '@/contexts/ServicesContext';
+import { useFieldTests } from '@/contexts/FieldTestsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnitTypes } from '@/contexts/UnitTypesContext';
 import { useHSNCodes } from '@/contexts/HSNCodesContext';
@@ -46,8 +46,8 @@ import ReactSelect from 'react-select';
 import { DOCUMENT_ITEM_TYPES } from '@/data/config';
 import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 
-const AdminServicesManager = () => {
-  const { services, updateService, addService, deleteService, setServices } = useServices();
+const AdminFieldTestsManager = () => {
+  const { fieldTests, updateFieldTest, addFieldTest, deleteFieldTest, setFieldTests } = useFieldTests();
   const { unitTypes } = useUnitTypes();
   const { hsnCodes } = useHSNCodes();
   const { terms } = useTermsAndConditions();
@@ -55,13 +55,13 @@ const AdminServicesManager = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [editingService, setEditingService] = useState(null);
+  const [editingFieldTest, setEditingFieldTest] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     isOpen: false,
-    serviceId: null,
-    serviceType: '',
+    fieldTestId: null,
+    fieldTestType: '',
   });
   const [sortField, setSortField] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
@@ -73,16 +73,16 @@ const AdminServicesManager = () => {
   const uniqueUnits = [
     'all',
     ...new Set(
-      services
+      fieldTests
         .map((s) => s.unit)
         .filter(Boolean)
         .sort()
     ),
   ];
 
-  const filteredServices = services.filter((s) => {
+  const filteredFieldTests = fieldTests.filter((s) => {
     const matchesSearch =
-      (s.serviceType?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (s.fieldTestType?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (s.price?.toString() || '').includes(searchTerm) ||
       (s.hsnCode?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (s.unit?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
@@ -93,7 +93,7 @@ const AdminServicesManager = () => {
     return matchesSearch && matchesUnit;
   });
 
-  const sortedServices = [...filteredServices].sort((a, b) => {
+  const sortedFieldTests = [...filteredFieldTests].sort((a, b) => {
     let valA, valB;
     switch (sortField) {
       case 'price':
@@ -106,8 +106,8 @@ const AdminServicesManager = () => {
         break;
       case 'name':
       default:
-        valA = (a.serviceType || '').toLowerCase();
-        valB = (b.serviceType || '').toLowerCase();
+        valA = (a.fieldTestType || '').toLowerCase();
+        valB = (b.fieldTestType || '').toLowerCase();
         break;
     }
 
@@ -117,24 +117,24 @@ const AdminServicesManager = () => {
   });
 
   // Pagination calculations
-  const totalPages = Math.ceil(sortedServices.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedFieldTests.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedServices = sortedServices.slice(startIndex, endIndex);
+  const paginatedFieldTests = sortedFieldTests.slice(startIndex, endIndex);
 
   // Reset to page 1 when filters change
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterUnit, sortField, sortOrder]);
 
-  const handleEdit = (service) => {
-    setEditingService({ ...service });
+  const handleEdit = (fieldTest) => {
+    setEditingFieldTest({ ...fieldTest });
     setIsAddingNew(false);
   };
 
   const handleAddNew = () => {
-    setEditingService({
-      serviceType: '',
+    setEditingFieldTest({
+      fieldTestType: '',
       price: 0,
       unit: '',
       qty: 1,
@@ -144,6 +144,7 @@ const AdminServicesManager = () => {
       hsnCode: '',
       tcList: [],
       techList: [],
+      numDays: 1,
     });
     setIsAddingNew(true);
   };
@@ -152,27 +153,27 @@ const AdminServicesManager = () => {
     setIsSaving(true);
     try {
       if (isAddingNew) {
-        await addService(editingService);
-        toast({ title: 'Service Added', description: 'New service has been successfully added.' });
+        await addFieldTest(editingFieldTest);
+        toast({ title: 'Field Test Added', description: 'New field test has been successfully added.' });
 
         // Telegram Notification
-        const message = `🛠️ *New Service Added*\n\nType: \`${editingService.serviceType}\`\nPrice: \`${editingService.price}\`\nAdded By: \`${user?.fullName || 'Unknown'}\``;
+        const message = `🛠️ *New Field Test Added*\n\nType: \`${editingFieldTest.fieldTestType}\`\nPrice: \`${editingFieldTest.price}\`\nAdded By: \`${user?.fullName || 'Unknown'}\``;
         sendTelegramNotification(message);
       } else {
-        await updateService(editingService);
-        toast({ title: 'Service Updated', description: 'Service details have been updated.' });
+        await updateFieldTest(editingFieldTest);
+        toast({ title: 'Field Test Updated', description: 'Field test details have been updated.' });
 
         // Telegram Notification
-        const message = `✏️ *Service Updated*\n\nType: \`${editingService.serviceType}\`\nPrice: \`${editingService.price}\`\nUpdated By: \`${user?.fullName || 'Unknown'}\``;
+        const message = `✏️ *Field Test Updated*\n\nType: \`${editingFieldTest.fieldTestType}\`\nPrice: \`${editingFieldTest.price}\`\nUpdated By: \`${user?.fullName || 'Unknown'}\``;
         sendTelegramNotification(message);
       }
-      setEditingService(null);
+      setEditingFieldTest(null);
       setIsAddingNew(false);
     } catch (error) {
       console.error(error);
       toast({
         title: 'Error',
-        description: 'Failed to save service. ' + error.message,
+        description: 'Failed to save field test. ' + error.message,
         variant: 'destructive',
       });
     } finally {
@@ -180,41 +181,41 @@ const AdminServicesManager = () => {
     }
   };
 
-  const handleDeleteClick = (service) => {
+  const handleDeleteClick = (fieldTest) => {
     setDeleteConfirmation({
       isOpen: true,
-      serviceId: service.id,
-      serviceType: service.serviceType,
+      fieldTestId: fieldTest.id,
+      fieldTestType: fieldTest.fieldTestType,
     });
   };
 
   const confirmDelete = async () => {
-    if (deleteConfirmation.serviceId) {
+    if (deleteConfirmation.fieldTestId) {
       try {
-        await deleteService(deleteConfirmation.serviceId);
+        await deleteFieldTest(deleteConfirmation.fieldTestId);
         toast({
-          title: 'Service Deleted',
-          description: 'The service has been removed.',
+          title: 'Field Test Deleted',
+          description: 'The field test has been removed.',
           variant: 'destructive',
         });
 
         // Telegram Notification
-        const message = `🗑️ *Service Deleted*\n\nType: \`${deleteConfirmation.serviceType}\`\nDeleted By: \`${user?.fullName || 'Unknown'}\``;
+        const message = `🗑️ *Field Test Deleted*\n\nType: \`${deleteConfirmation.fieldTestType}\`\nDeleted By: \`${user?.fullName || 'Unknown'}\``;
         sendTelegramNotification(message);
       } catch (error) {
-        console.error('Error deleting service:', error);
+        console.error('Error deleting field test:', error);
         toast({
           title: 'Error',
-          description: 'Failed to delete service. ' + error.message,
+          description: 'Failed to delete field test. ' + error.message,
           variant: 'destructive',
         });
       }
     }
-    setDeleteConfirmation({ isOpen: false, serviceId: null, serviceType: '' });
+    setDeleteConfirmation({ isOpen: false, fieldTestId: null, fieldTestType: '' });
   };
 
   const handleChange = (field, value) => {
-    setEditingService((prev) => ({ ...prev, [field]: value }));
+    setEditingFieldTest((prev) => ({ ...prev, [field]: value }));
   };
 
   const resetAll = () => {
@@ -226,12 +227,12 @@ const AdminServicesManager = () => {
   };
 
   const handleExport = () => {
-    const dataStr = JSON.stringify(services, null, 2);
+    const dataStr = JSON.stringify(fieldTests, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `services_backup_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `field_tests_backup_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -242,7 +243,7 @@ const AdminServicesManager = () => {
   const handleImportClick = () => {
     if (
       window.confirm(
-        'Warning: Importing data will OVERWRITE all current services. This cannot be undone. Do you want to continue?'
+        'Warning: Importing data will OVERWRITE all current field tests. This cannot be undone. Do you want to continue?'
       )
     ) {
       fileImportRef.current?.click();
@@ -258,7 +259,7 @@ const AdminServicesManager = () => {
       try {
         const importedData = JSON.parse(event.target.result);
         if (Array.isArray(importedData)) {
-          setServices(importedData);
+          setFieldTests(importedData);
           toast({
             title: 'Import Loaded',
             description: 'Data loaded. Save individual changes to persist.',
@@ -273,15 +274,15 @@ const AdminServicesManager = () => {
     e.target.value = '';
   };
 
-  if (editingService) {
+  if (editingFieldTest) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm animate-in slide-in-from-right-4 duration-300">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h2 className="text-xl font-bold">
-            {isAddingNew ? 'Add New Service' : 'Edit Field Test'}
+            {isAddingNew ? 'Add New Field Test' : 'Edit Field Test'}
           </h2>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setEditingService(null)} disabled={isSaving}>
+            <Button variant="outline" onClick={() => setEditingFieldTest(null)} disabled={isSaving}>
               Cancel
             </Button>
             <Button
@@ -297,11 +298,11 @@ const AdminServicesManager = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-1 gap-4 pb-8">
           <div className="space-y-2">
-            <Label>Field Test</Label>
+            <Label>Field Test Type</Label>
             <Textarea
               rows={2}
-              value={editingService.serviceType}
-              onChange={(e) => handleChange('serviceType', e.target.value)}
+              value={editingFieldTest.fieldTestType}
+              onChange={(e) => handleChange('fieldTestType', e.target.value)}
               placeholder="e.g. Drilling Upto 10m"
             />
           </div>
@@ -313,14 +314,14 @@ const AdminServicesManager = () => {
             </Label>
             <Input
               type="number"
-              value={editingService.price}
+              value={editingFieldTest.price}
               onChange={(e) => handleChange('price', Number(e.target.value))}
             />
           </div>
           <div className="space-y-2">
             <Label>Unit</Label>
             <Select
-              value={editingService.unit}
+              value={editingFieldTest.unit}
               onValueChange={(value) => handleChange('unit', value)}
             >
               <SelectTrigger>
@@ -340,7 +341,7 @@ const AdminServicesManager = () => {
             <Label>Quantity (Default)</Label>
             <Input
               type="number"
-              value={editingService.qty}
+              value={editingFieldTest.qty}
               onChange={(e) => handleChange('qty', Number(e.target.value))}
             />
           </div>
@@ -348,7 +349,7 @@ const AdminServicesManager = () => {
           <div className="space-y-2">
             <Label>Method of Sampling</Label>
             <Select
-              value={editingService.methodOfSampling || 'NA'}
+              value={editingFieldTest.methodOfSampling || 'NA'}
               onValueChange={(value) => handleChange('methodOfSampling', value)}
             >
               <SelectTrigger>
@@ -368,15 +369,25 @@ const AdminServicesManager = () => {
             <Input
               type="number"
               min="0"
-              value={editingService.numBHs ?? 0}
+              value={editingFieldTest.numBHs ?? 0}
               onChange={(e) => handleChange('numBHs', Number(e.target.value))}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Number of Days</Label>
+            <Input
+              type="number"
+              min="1"
+              value={editingFieldTest.numDays ?? 1}
+              onChange={(e) => handleChange('numDays', Number(e.target.value))}
             />
           </div>
 
           <div className="space-y-2">
             <Label>Measure</Label>
             <Select
-              value={editingService.measure || 'NA'}
+              value={editingFieldTest.measure || 'NA'}
               onValueChange={(value) => handleChange('measure', value)}
             >
               <SelectTrigger>
@@ -393,7 +404,7 @@ const AdminServicesManager = () => {
           <div className="space-y-2">
             <Label>HSN Code</Label>
             <Select
-              value={editingService.hsnCode || ''}
+              value={editingFieldTest.hsnCode || ''}
               onValueChange={(value) => handleChange('hsnCode', value)}
             >
               <SelectTrigger>
@@ -422,7 +433,7 @@ const AdminServicesManager = () => {
               classNamePrefix="select"
               placeholder="Select Terms and Conditions..."
               value={
-                editingService?.tcList?.map((type) => ({
+                editingFieldTest?.tcList?.map((type) => ({
                   value: type,
                   label: type,
                 })) || []
@@ -450,7 +461,7 @@ const AdminServicesManager = () => {
               classNamePrefix="select"
               placeholder="Select Technical Lists..."
               value={
-                editingService?.techList?.map((type) => ({
+                editingFieldTest?.techList?.map((type) => ({
                   value: type,
                   label: type,
                 })) || []
@@ -602,8 +613,8 @@ const AdminServicesManager = () => {
             </SelectContent>
           </Select>
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none border-l pl-3 ml-1">
-            Showing {sortedServices.length === 0 ? 0 : startIndex + 1}-
-            {Math.min(endIndex, sortedServices.length)} of {sortedServices.length}
+            Showing {sortedFieldTests.length === 0 ? 0 : startIndex + 1}-
+            {Math.min(endIndex, sortedFieldTests.length)} of {sortedFieldTests.length}
           </span>
         </div>
 
@@ -648,53 +659,58 @@ const AdminServicesManager = () => {
               </tr>
             </thead>
             <tbody>
-              {paginatedServices.map((service) => (
+              {paginatedFieldTests.map((fieldTest) => (
                 <tr
-                  key={service.id}
+                  key={fieldTest.id}
                   className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                 >
                   <td className="py-4 px-4 align-top text-gray-600">
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700">
-                      <p className="font-bold text-gray-900 ">{service.serviceType}</p>
+                      <p className="font-bold text-gray-900 ">{fieldTest.fieldTestType}</p>
                       <div className="w-full"></div>
                       <p>
                         <span className="font-semibold text-primary">Price:</span> <Rupee />
-                        {service.price.toLocaleString()}
+                        {fieldTest.price.toLocaleString()}
                       </p>
 
                       <p>
-                        <span className="font-semibold text-primary">Unit:</span> {service.unit}
+                        <span className="font-semibold text-primary">Unit:</span> {fieldTest.unit}
                       </p>
 
                       <p>
                         <span className="font-semibold text-primary">Method:</span>{' '}
-                        {service.methodOfSampling || 'NA'}
+                        {fieldTest.methodOfSampling || 'NA'}
                       </p>
 
                       <p>
                         <span className="font-semibold text-primary"># BHs:</span>{' '}
-                        {service.numBHs ?? 0}
+                        {fieldTest.numBHs ?? 0}
+                      </p>
+
+                      <p>
+                        <span className="font-semibold text-primary"># Days:</span>{' '}
+                        {fieldTest.numDays ?? 1}
                       </p>
 
                       <p>
                         <span className="font-semibold text-primary">Measure:</span>{' '}
-                        {service.measure || 'NA'}
+                        {fieldTest.measure || 'NA'}
                       </p>
 
                       <p>
                         <span className="font-semibold text-primary">HSN Code:</span>{' '}
-                        {service.hsnCode || '-'}
+                        {fieldTest.hsnCode || '-'}
                       </p>
                       <p>
                         <span className="font-semibold text-primary">Technicals:</span>{' '}
-                        {Array.isArray(service.techList) && service.techList.length > 0
-                          ? service.techList.join(', ')
+                        {Array.isArray(fieldTest.techList) && fieldTest.techList.length > 0
+                          ? fieldTest.techList.join(', ')
                           : '-'}
                       </p>
                       <p>
                         <span className="font-semibold text-primary">T&C:</span>{' '}
-                        {Array.isArray(service.tcList) && service.tcList.length > 0
-                          ? service.tcList.join(', ')
+                        {Array.isArray(fieldTest.tcList) && fieldTest.tcList.length > 0
+                          ? fieldTest.tcList.join(', ')
                           : '-'}
                       </p>
                     </div>
@@ -704,12 +720,12 @@ const AdminServicesManager = () => {
                     <div className="flex justify-end space-x-2">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(service)}>
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(fieldTest)}>
                             <Edit className="w-4 h-4 text-gray-600" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                          <p className="text-xs">Edit service details</p>
+                          <p className="text-xs">Edit field test details</p>
                         </TooltipContent>
                       </Tooltip>
 
@@ -718,13 +734,13 @@ const AdminServicesManager = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDeleteClick(service)}
+                            onClick={() => handleDeleteClick(fieldTest)}
                           >
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                          <p className="text-xs">Permanently delete this service</p>
+                          <p className="text-xs">Permanently delete this field test</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>
@@ -736,12 +752,10 @@ const AdminServicesManager = () => {
         </div>
       </div>
 
-      {/* Removed bottom pagination as it is now in the top settings panel */}
-
       <AlertDialog
         open={deleteConfirmation.isOpen}
         onOpenChange={(isOpen) =>
-          !isOpen && setDeleteConfirmation({ isOpen: false, serviceId: null, serviceType: '' })
+          !isOpen && setDeleteConfirmation({ isOpen: false, fieldTestId: null, fieldTestType: '' })
         }
       >
         <AlertDialogContent>
@@ -752,7 +766,7 @@ const AdminServicesManager = () => {
             </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete{' '}
-              <span className="font-semibold text-gray-900">{deleteConfirmation.serviceType}</span>?
+              <span className="font-semibold text-gray-900">{deleteConfirmation.fieldTestType}</span>?
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -771,4 +785,4 @@ const AdminServicesManager = () => {
   );
 };
 
-export default AdminServicesManager;
+export default AdminFieldTestsManager;

@@ -35,8 +35,8 @@ import { Input } from '@/components/ui/input';
 import { AppDatePicker } from '@/components/ui/AppDatePicker';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { useServices } from '@/contexts/ServicesContext';
-import { useTests } from '@/contexts/TestsContext';
+import { useFieldTests } from '@/contexts/FieldTestsContext';
+import { useLabTests } from '@/contexts/LabTestsContext';
 import { useSampling } from '@/contexts/SamplingContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -170,8 +170,8 @@ const numberToWords = (num) => {
 };
 
 const NewQuotationPage = () => {
-  const { services, clientServicePrices } = useServices();
-  const { tests, clientTestPrices } = useTests();
+  const { fieldTests, clientFieldTestPrices } = useFieldTests();
+  const { labTests, clientLabTestPrices } = useLabTests();
   const { samplingData } = useSampling();
   const { clients } = useClients();
   const { settings } = useSettings();
@@ -894,29 +894,29 @@ const NewQuotationPage = () => {
   const getAppropiatePrice = (itemId, type, clientId) => {
     if (!clientId) {
       if (type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
-        return services.find((s) => s.id === itemId)?.price || 0;
+        return fieldTests.find((s) => s.id === itemId)?.price || 0;
       } else if (type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
         return samplingData.find((s) => s.id === itemId)?.price || 0;
       } else {
-        return tests.find((t) => t.id === itemId)?.price || 0;
+        return labTests.find((t) => t.id === itemId)?.price || 0;
       }
     }
 
     if (type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
-      const clientPrice = clientServicePrices.find(
-        (p) => p.client_id === clientId && p.service_id === itemId
+      const clientPrice = clientFieldTestPrices.find(
+        (p) => p.client_id === clientId && p.field_test_id === itemId
       );
       if (clientPrice) return clientPrice.price;
-      return services.find((s) => s.id === itemId)?.price || 0;
+      return fieldTests.find((s) => s.id === itemId)?.price || 0;
     } else if (type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
       // For now, sampling doesn't have client-specific prices
       return samplingData.find((s) => s.id === itemId)?.price || 0;
     } else {
-      const clientPrice = clientTestPrices.find(
-        (p) => p.client_id === clientId && p.test_id === itemId
+      const clientPrice = clientLabTestPrices.find(
+        (p) => p.client_id === clientId && p.lab_test_id === itemId
       );
       if (clientPrice) return clientPrice.price;
-      return tests.find((t) => t.id === itemId)?.price || 0;
+      return labTests.find((t) => t.id === itemId)?.price || 0;
     }
   };
 
@@ -991,21 +991,21 @@ const NewQuotationPage = () => {
     let unit = 'Nos';
 
     if (newItemType === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
-      itemData = services.find((s) => s.id === selectedItemId);
+      itemData = fieldTests.find((s) => s.id === selectedItemId);
       if (itemData) {
-        description = itemData.serviceType;
+        description = itemData.fieldTestType;
         price = itemData.price;
         unit = itemData.unit || 'Nos';
       }
     } else if (newItemType === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
       itemData = samplingData.find((s) => s.id === selectedItemId);
       if (itemData) {
-        description = `${itemData.serviceType} - ${Array.isArray(itemData.materials) ? itemData.materials.join(', ') : itemData.materials || ''}`;
+        description = `${itemData.name} - ${Array.isArray(itemData.materials) ? itemData.materials.join(', ') : itemData.materials || ''}`;
         price = itemData.price;
         unit = itemData.unit || 'Nos';
       }
     } else {
-      itemData = tests.find((t) => t.id === selectedItemId);
+      itemData = labTests.find((t) => t.id === selectedItemId);
       if (itemData) {
         description = `${itemData.testType} - ${Array.isArray(itemData.materials) ? itemData.materials.join(', ') : itemData.materials || ''}`;
         price = itemData.price;
@@ -1028,6 +1028,7 @@ const NewQuotationPage = () => {
           unit,
           price: Number(finalPrice),
           qty: Number(qty),
+          numDays: Number(itemData.numDays ?? 1) || 1,
           total: Number(finalPrice) * Number(qty),
           hsnCode: itemData.hsnCode || '',
           tcList: itemData.tcList || itemData.tc_list || [],
@@ -1097,6 +1098,31 @@ const NewQuotationPage = () => {
               ...item,
               qty: newQty,
               total: Number(item.price || 0) * newQty,
+            }
+          : item
+      )
+    );
+  };
+
+  const handleUpdateItemNumDays = (rowId, numDaysValue, editableElement) => {
+    const normalizedValue = String(numDaysValue).replace(/,/g, '').trim();
+    const newNumDays = Number(normalizedValue);
+
+    if (!Number.isFinite(newNumDays) || newNumDays < 1) {
+      const currentItem = items.find((item) => item.id === rowId);
+      if (editableElement && currentItem) {
+        editableElement.textContent = currentItem.numDays ?? 1;
+      }
+      return;
+    }
+
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === rowId
+          ? {
+              ...item,
+              numDays: newNumDays,
+              total: Number(item.price || 0) * Number(item.qty || 0),
             }
           : item
       )
@@ -1438,33 +1464,33 @@ const NewQuotationPage = () => {
   };
   const getSelectableItemOptions = () => {
     if (newItemType === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
-      return services.map((s) => ({ value: s.id, label: s.serviceType }));
+      return fieldTests.map((s) => ({ value: s.id, label: s.fieldTestType }));
     }
 
     if (newItemType === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
       return samplingData.map((s) => ({
         value: s.id,
-        label: `${s.serviceType} - ${Array.isArray(s.materials) ? s.materials.join(', ') : s.materials || ''}`,
+        label: `${s.name} - ${Array.isArray(s.materials) ? s.materials.join(', ') : s.materials || ''}`,
       }));
     }
 
-    return tests.map((t) => ({
+    return labTests.map((t) => ({
       value: t.id,
       label: `${t.testType} - ${Array.isArray(t.materials) ? t.materials.join(', ') : t.materials || ''}`,
     }));
   };
   const getSelectedItemDisplayLabel = () => {
     if (newItemType === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
-      return services.find((s) => s.id === selectedItemId)?.serviceType || '';
+      return fieldTests.find((s) => s.id === selectedItemId)?.fieldTestType || '';
     }
 
     if (newItemType === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
       const item = samplingData.find((s) => s.id === selectedItemId);
       if (!item) return '';
-      return `${item.serviceType} - ${Array.isArray(item.materials) ? item.materials.join(', ') : item.materials || ''}`;
+      return `${item.name} - ${Array.isArray(item.materials) ? item.materials.join(', ') : item.materials || ''}`;
     }
 
-    const item = tests.find((t) => t.id === selectedItemId);
+    const item = labTests.find((t) => t.id === selectedItemId);
     if (!item) return '';
     return `${item.testType} - ${Array.isArray(item.materials) ? item.materials.join(', ') : item.materials || ''}`;
   };
@@ -2223,10 +2249,11 @@ const NewQuotationPage = () => {
                         <table className="quote-items-table w-full table-fixed mb-8 mt-2">
                           <colgroup>
                             <col style={{ width: '3%' }} />
-                            <col style={{ width: '30%' }} />
+                            <col style={{ width: '27%' }} />
                             <col style={{ width: '6%' }} />
                             <col style={{ width: '6%' }} />
                             <col style={{ width: '4%' }} />
+                            <col style={{ width: '3%' }} />
                             <col style={{ width: '3%' }} />
                             <col style={{ width: '6%' }} />
                             <col style={{ width: '7%' }} />
@@ -2250,6 +2277,9 @@ const NewQuotationPage = () => {
                               </th>
                               <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
                                 Qty
+                              </th>
+                              <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                                Days
                               </th>
                               <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
                                 Total
@@ -2345,6 +2375,33 @@ const NewQuotationPage = () => {
                                     >
                                       {item.qty}
                                     </span>
+                                  </td>
+                                  <td className="py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
+                                    {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS ||
+                                    item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS ||
+                                    item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING ? (
+                                      <span
+                                        contentEditable={!isReadOnly}
+                                        suppressContentEditableWarning
+                                        onBlur={(e) =>
+                                          handleUpdateItemNumDays(
+                                            item.id,
+                                            e.currentTarget.textContent,
+                                            e.currentTarget
+                                          )
+                                        }
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            e.currentTarget.blur();
+                                          }
+                                        }}
+                                      >
+                                        {item.numDays ?? 1}
+                                      </span>
+                                    ) : (
+                                      '—'
+                                    )}
                                   </td>
                                   <td className="py-0 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200">
                                     <Rupee />

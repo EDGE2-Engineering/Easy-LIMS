@@ -1,29 +1,29 @@
 import { STORAGE_KEYS } from './storageKeys';
 
-export const initialServices = [
+export const initialFieldTests = [
   {
     id: 'S1',
-    serviceType: 'Drilling Upto 10m',
+    fieldTestType: 'Drilling Upto 10m',
     unit: 'Per Metre',
     price: 1000,
     qty: 1,
   },
 ];
 
-export const getServices = () => {
-  const stored = localStorage.getItem(STORAGE_KEYS.SERVICES);
+export const getFieldTests = () => {
+  const stored = localStorage.getItem(STORAGE_KEYS.FIELD_TESTS);
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     } catch (e) {
-      console.error('Error parsing stored services', e);
+      console.error('Error parsing stored field tests', e);
     }
   }
-  return initialServices;
+  return initialFieldTests;
 };
 
-export const saveServices = (services) => {
-  localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
+export const saveFieldTests = (fieldTests) => {
+  localStorage.setItem(STORAGE_KEYS.FIELD_TESTS, JSON.stringify(fieldTests));
   window.dispatchEvent(new Event('storage'));
 };

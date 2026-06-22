@@ -53,10 +53,10 @@ const AdminSamplingManager = () => {
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     isOpen: false,
     itemId: null,
-    serviceType: '',
+    name: '',
   });
 
-  const [sortField, setSortField] = useState('serviceType');
+  const [sortField, setSortField] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
   const [filterMaterial, setFilterMaterial] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -66,7 +66,7 @@ const AdminSamplingManager = () => {
 
   const filteredData = samplingData.filter((s) => {
     const matchesSearch =
-      (s.serviceType?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (s.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (Array.isArray(s.materials) ? s.materials.join(', ') : s.materials || '')
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
@@ -107,7 +107,7 @@ const AdminSamplingManager = () => {
 
   const resetAll = () => {
     setSearchTerm('');
-    setSortField('serviceType');
+    setSortField('name');
     setSortOrder('asc');
     setFilterMaterial('all');
     setCurrentPage(1);
@@ -120,7 +120,7 @@ const AdminSamplingManager = () => {
 
   const handleAddNew = () => {
     setEditingItem({
-      serviceType: '',
+      name: '',
       materials: [],
       group: '',
       testMethodSpecification: '',
@@ -130,12 +130,13 @@ const AdminSamplingManager = () => {
       hsnCode: '',
       tcList: [],
       techList: [],
+      numDays: 1,
     });
     setIsAddingNew(true);
   };
 
   const handleSave = async () => {
-    if (!editingItem.serviceType) {
+    if (!editingItem.name) {
       toast({
         title: 'Validation Error',
         description: 'Sampling Type is required.',
@@ -153,7 +154,7 @@ const AdminSamplingManager = () => {
           description: 'New sampling record has been successfully added.',
         });
         sendTelegramNotification(
-          `🧪 *New Sampling Added*\n\nType: \`${editingItem.serviceType}\`\nPrice: \`${editingItem.price}\`\nAdded By: \`${user?.fullName || 'Unknown'}\``
+          `🧪 *New Sampling Added*\n\nType: \`${editingItem.name}\`\nPrice: \`${editingItem.price}\`\nAdded By: \`${user?.fullName || 'Unknown'}\``
         );
       } else {
         await updateSampling(editingItem);
@@ -162,7 +163,7 @@ const AdminSamplingManager = () => {
           description: 'Sampling details have been updated.',
         });
         sendTelegramNotification(
-          `✏️ *Sampling Updated*\n\nType: \`${editingItem.serviceType}\`\nPrice: \`${editingItem.price}\`\nUpdated By: \`${user?.fullName || 'Unknown'}\``
+          `✏️ *Sampling Updated*\n\nType: \`${editingItem.name}\`\nPrice: \`${editingItem.price}\`\nUpdated By: \`${user?.fullName || 'Unknown'}\``
         );
       }
       setEditingItem(null);
@@ -183,7 +184,7 @@ const AdminSamplingManager = () => {
     setDeleteConfirmation({
       isOpen: true,
       itemId: item.id,
-      serviceType: item.serviceType,
+      name: item.name,
     });
   };
 
@@ -197,7 +198,7 @@ const AdminSamplingManager = () => {
           variant: 'destructive',
         });
         sendTelegramNotification(
-          `🗑️ *Sampling Deleted*\n\nType: \`${deleteConfirmation.serviceType}\`\nDeleted By: \`${user?.fullName || 'Unknown'}\``
+          `🗑️ *Sampling Deleted*\n\nType: \`${deleteConfirmation.name}\`\nDeleted By: \`${user?.fullName || 'Unknown'}\``
         );
       } catch (error) {
         console.error('Error deleting sampling:', error);
@@ -208,7 +209,7 @@ const AdminSamplingManager = () => {
         });
       }
     }
-    setDeleteConfirmation({ isOpen: false, itemId: null, serviceType: '' });
+    setDeleteConfirmation({ isOpen: false, itemId: null, name: '' });
   };
 
   const handleChange = (field, value) => {
@@ -245,8 +246,8 @@ const AdminSamplingManager = () => {
               </Label>
               <Textarea
                 rows={2}
-                value={editingItem.serviceType}
-                onChange={(e) => handleChange('serviceType', e.target.value)}
+                value={editingItem.name}
+                onChange={(e) => handleChange('name', e.target.value)}
                 placeholder="e.g. Drilling Upto 10m"
               />
             </div>
@@ -328,6 +329,16 @@ const AdminSamplingManager = () => {
               type="number"
               value={editingItem.qty}
               onChange={(e) => handleChange('qty', Number(e.target.value))}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Num Days</Label>
+            <Input
+              type="number"
+              min="1"
+              value={editingItem.numDays ?? 1}
+              onChange={(e) => handleChange('numDays', Number(e.target.value))}
             />
           </div>
 
@@ -450,7 +461,7 @@ const AdminSamplingManager = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="serviceType">Name</SelectItem>
+                  <SelectItem value="name">Name</SelectItem>
                   <SelectItem value="price">Price</SelectItem>
                   <SelectItem value="qty">Qty</SelectItem>
                   <SelectItem value="hsnCode">HSN</SelectItem>
@@ -485,7 +496,7 @@ const AdminSamplingManager = () => {
               onClick={resetAll}
               disabled={
                 !searchTerm &&
-                sortField === 'serviceType' &&
+                sortField === 'name' &&
                 sortOrder === 'asc' &&
                 filterMaterial === 'all'
               }
@@ -518,7 +529,7 @@ const AdminSamplingManager = () => {
                 >
                   <td className="py-4 px-4 align-top text-gray-600">
                     <div className="flex flex-wrap items-center gap-6 text-sm text-gray-700">
-                      <p className="font-bold text-gray-900">{item.serviceType}</p>
+                      <p className="font-bold text-gray-900">{item.name}</p>
                       <div className="w-full"></div>
                       <p>
                         <span className="font-semibold text-primary">Materials:</span>{' '}
@@ -544,6 +555,10 @@ const AdminSamplingManager = () => {
                       <p>
                         <span className="font-semibold text-primary">Qty (Default):</span>{' '}
                         {item.qty || '1'}
+                      </p>
+                      <p>
+                        <span className="font-semibold text-primary"># Days:</span>{' '}
+                        {item.numDays ?? 1}
                       </p>
                       <p>
                         <span className="font-semibold text-primary">HSN Code:</span>{' '}
@@ -635,7 +650,7 @@ const AdminSamplingManager = () => {
       <AlertDialog
         open={deleteConfirmation.isOpen}
         onOpenChange={(open) =>
-          !open && setDeleteConfirmation({ isOpen: false, itemId: null, serviceType: '' })
+          !open && setDeleteConfirmation({ isOpen: false, itemId: null, name: '' })
         }
       >
         <AlertDialogContent>
@@ -645,7 +660,7 @@ const AdminSamplingManager = () => {
             </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete{' '}
-              <span className="font-semibold text-gray-900">{deleteConfirmation.serviceType}</span>?
+              <span className="font-semibold text-gray-900">{deleteConfirmation.name}</span>?
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

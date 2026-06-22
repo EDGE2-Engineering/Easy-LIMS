@@ -3,8 +3,8 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
-import { ServicesProvider } from '@/contexts/ServicesContext';
-import { TestsProvider } from '@/contexts/TestsContext';
+import { FieldTestsProvider } from '@/contexts/FieldTestsContext';
+import { LabTestsProvider } from '@/contexts/LabTestsContext';
 import { ClientsProvider } from '@/contexts/ClientsContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { UnitTypesProvider } from '@/contexts/UnitTypesContext';
@@ -21,8 +21,8 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { getSiteContent } from '@/data/config';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-import ServiceDetailPage from '@/pages/ServiceDetailPage.jsx';
-import TestDetailPage from '@/pages/TestDetailPage.jsx';
+import FieldTestDetailPage from '@/pages/FieldTestDetailPage.jsx';
+import LabTestDetailPage from '@/pages/LabTestDetailPage.jsx';
 import AdminPage from '@/pages/AdminPage';
 import NewQuotationPage from '@/pages/NewQuotationPage.jsx';
 import DeviceRestriction from '@/components/DeviceRestriction';
@@ -63,18 +63,18 @@ const router = createHashRouter(
       ),
     },
     {
-      path: '/service/:id',
+      path: '/field-test/:id',
       element: (
         <ProtectedRoute>
-          <ServiceDetailPage />
+          <FieldTestDetailPage />
         </ProtectedRoute>
       ),
     },
     {
-      path: '/test/:id',
+      path: '/lab-test/:id',
       element: (
         <ProtectedRoute>
-          <TestDetailPage />
+          <LabTestDetailPage />
         </ProtectedRoute>
       ),
     },
@@ -101,10 +101,10 @@ function App() {
       <DeviceRestriction>
         <AuthProvider>
           <ThemeProvider>
-            <ServicesProvider>
+            <FieldTestsProvider>
               <WorkflowProvider>
                 <SamplingProvider>
-                  <TestsProvider>
+                  <LabTestsProvider>
                     <ClientsProvider>
                       <SettingsProvider>
                         <UnitTypesProvider>
@@ -154,10 +154,10 @@ function App() {
                         </UnitTypesProvider>
                       </SettingsProvider>
                     </ClientsProvider>
-                  </TestsProvider>
+                  </LabTestsProvider>
                 </SamplingProvider>
               </WorkflowProvider>
-            </ServicesProvider>
+            </FieldTestsProvider>
           </ThemeProvider>
         </AuthProvider>
       </DeviceRestriction>

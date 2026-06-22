@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Rupee from '../Rupee';
-import { useTests } from '@/contexts/TestsContext';
+import { useLabTests } from '@/contexts/LabTestsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHSNCodes } from '@/contexts/HSNCodesContext';
 import { useTermsAndConditions } from '@/contexts/TermsAndConditionsContext';
@@ -47,8 +47,8 @@ import ReactSelect from 'react-select';
 import { DOCUMENT_ITEM_TYPES } from '@/data/config';
 import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 
-const AdminTestsManager = () => {
-  const { tests, updateTest, addTest, deleteTest, setTests } = useTests();
+const AdminLabTestsManager = () => {
+  const { labTests, updateLabTest, addLabTest, deleteLabTest, setLabTests } = useLabTests();
   const { hsnCodes } = useHSNCodes();
   const { terms } = useTermsAndConditions();
   const { technicals } = useTechnicals();
@@ -57,13 +57,13 @@ const AdminTestsManager = () => {
 
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [editingTest, setEditingTest] = useState(null);
+  const [editingLabTest, setEditingLabTest] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     isOpen: false,
-    testId: null,
-    testType: '',
+    labTestId: null,
+    labTestType: '',
   });
   const [sortField, setSortField] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
@@ -74,7 +74,7 @@ const AdminTestsManager = () => {
 
   const uniqueMaterials = ['all', ...materials.map((m) => m.name)];
 
-  const filteredTests = tests.filter((t) => {
+  const filteredLabTests = labTests.filter((t) => {
     const matchesSearch =
       (t.testType?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (t.price?.toString() || '').includes(searchTerm) ||
@@ -95,7 +95,7 @@ const AdminTestsManager = () => {
     return matchesSearch && matchesMaterial;
   });
 
-  const sortedTests = [...filteredTests].sort((a, b) => {
+  const sortedLabTests = [...filteredLabTests].sort((a, b) => {
     let valA, valB;
     switch (sortField) {
       case 'price':
@@ -128,29 +128,28 @@ const AdminTestsManager = () => {
   });
 
   // Pagination calculations
-  const totalPages = Math.ceil(sortedTests.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedLabTests.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedTests = sortedTests.slice(startIndex, endIndex);
+  const paginatedLabTests = sortedLabTests.slice(startIndex, endIndex);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterMaterial, sortField, sortOrder]);
 
-  const handleEdit = (test) => {
-    setEditingTest({ ...test });
+  const handleEdit = (labTest) => {
+    setEditingLabTest({ ...labTest });
     setIsAddingNew(false);
   };
 
   const handleAddNew = () => {
-    setEditingTest({
+    setEditingLabTest({
       testType: '',
       materials: [],
       group: '',
-
       testMethodSpecification: '',
-      numDays: 0,
+      numDays: 1,
       price: 0,
       hsnCode: '',
       tcList: [],
@@ -163,27 +162,27 @@ const AdminTestsManager = () => {
     setIsSaving(true);
     try {
       if (isAddingNew) {
-        await addTest(editingTest);
-        toast({ title: 'Test Added', description: 'New test has been successfully added.' });
+        await addLabTest(editingLabTest);
+        toast({ title: 'Lab Test Added', description: 'New lab test has been successfully added.' });
 
         // Telegram Notification
-        const message = `🧪 *New Test Added*\n\nType: \`${editingTest.testType}\`\nPrice: \`${editingTest.price}\`\nAdded By: \`${user?.fullName || 'Unknown'}\``;
+        const message = `🧪 *New Lab Test Added*\n\nType: \`${editingLabTest.testType}\`\nPrice: \`${editingLabTest.price}\`\nAdded By: \`${user?.fullName || 'Unknown'}\``;
         sendTelegramNotification(message);
       } else {
-        await updateTest(editingTest);
-        toast({ title: 'Test Updated', description: 'Test details have been updated.' });
+        await updateLabTest(editingLabTest);
+        toast({ title: 'Lab Test Updated', description: 'Lab test details have been updated.' });
 
         // Telegram Notification
-        const message = `✏️ *Test Updated*\n\nType: \`${editingTest.testType}\`\nPrice: \`${editingTest.price}\`\nUpdated By: \`${user?.fullName || 'Unknown'}\``;
+        const message = `✏️ *Lab Test Updated*\n\nType: \`${editingLabTest.testType}\`\nPrice: \`${editingLabTest.price}\`\nUpdated By: \`${user?.fullName || 'Unknown'}\``;
         sendTelegramNotification(message);
       }
-      setEditingTest(null);
+      setEditingLabTest(null);
       setIsAddingNew(false);
     } catch (error) {
       console.error(error);
       toast({
         title: 'Error',
-        description: 'Failed to save test. ' + error.message,
+        description: 'Failed to save lab test. ' + error.message,
         variant: 'destructive',
       });
     } finally {
@@ -191,41 +190,41 @@ const AdminTestsManager = () => {
     }
   };
 
-  const handleDeleteClick = (test) => {
+  const handleDeleteClick = (labTest) => {
     setDeleteConfirmation({
       isOpen: true,
-      testId: test.id,
-      testType: test.testType,
+      labTestId: labTest.id,
+      labTestType: labTest.testType,
     });
   };
 
   const confirmDelete = async () => {
-    if (deleteConfirmation.testId) {
+    if (deleteConfirmation.labTestId) {
       try {
-        await deleteTest(deleteConfirmation.testId);
+        await deleteLabTest(deleteConfirmation.labTestId);
         toast({
-          title: 'Test Deleted',
-          description: 'The test has been removed.',
+          title: 'Lab Test Deleted',
+          description: 'The lab test has been removed.',
           variant: 'destructive',
         });
 
         // Telegram Notification
-        const message = `🗑️ *Test Deleted*\n\nType: \`${deleteConfirmation.testType}\`\nDeleted By: \`${user?.fullName || 'Unknown'}\``;
+        const message = `🗑️ *Lab Test Deleted*\n\nType: \`${deleteConfirmation.labTestType}\`\nDeleted By: \`${user?.fullName || 'Unknown'}\``;
         sendTelegramNotification(message);
       } catch (error) {
-        console.error('Failed to delete test:', error);
+        console.error('Failed to delete lab test:', error);
         toast({
           title: 'Error',
-          description: 'Failed to delete test. ' + error.message,
+          description: 'Failed to delete lab test. ' + error.message,
           variant: 'destructive',
         });
       }
     }
-    setDeleteConfirmation({ isOpen: false, testId: null, testType: '' });
+    setDeleteConfirmation({ isOpen: false, labTestId: null, labTestType: '' });
   };
 
   const handleChange = (field, value) => {
-    setEditingTest((prev) => ({ ...prev, [field]: value }));
+    setEditingLabTest((prev) => ({ ...prev, [field]: value }));
   };
 
   const resetAll = () => {
@@ -237,12 +236,12 @@ const AdminTestsManager = () => {
   };
 
   const handleExport = () => {
-    const dataStr = JSON.stringify(tests, null, 2);
+    const dataStr = JSON.stringify(labTests, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `tests_backup_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `lab_tests_backup_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -253,7 +252,7 @@ const AdminTestsManager = () => {
   const handleImportClick = () => {
     if (
       window.confirm(
-        'Warning: Importing data will OVERWRITE all current tests. This cannot be undone. Do you want to continue?'
+        'Warning: Importing data will OVERWRITE all current lab tests. This cannot be undone. Do you want to continue?'
       )
     ) {
       fileImportRef.current?.click();
@@ -269,7 +268,7 @@ const AdminTestsManager = () => {
       try {
         const importedData = JSON.parse(event.target.result);
         if (Array.isArray(importedData)) {
-          setTests(importedData);
+          setLabTests(importedData);
           toast({
             title: 'Import Loaded',
             description: 'Data loaded. Save individual changes to persist.',
@@ -286,13 +285,13 @@ const AdminTestsManager = () => {
 
   const groups = ['Physical', 'Chemical'];
 
-  if (editingTest) {
+  if (editingLabTest) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm animate-in slide-in-from-right-4 duration-300">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h2 className="text-xl font-bold">{isAddingNew ? 'Add New Test' : 'Edit Test'}</h2>
+          <h2 className="text-xl font-bold">{isAddingNew ? 'Add New Lab Test' : 'Edit Lab Test'}</h2>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setEditingTest(null)} disabled={isSaving}>
+            <Button variant="outline" onClick={() => setEditingLabTest(null)} disabled={isSaving}>
               Cancel
             </Button>
             <Button
@@ -308,10 +307,10 @@ const AdminTestsManager = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-1 gap-4 pb-8">
           <div className="space-y-2">
-            <Label>Test Type</Label>
+            <Label>Lab Test Type</Label>
             <Textarea
               rows={2}
-              value={editingTest.testType}
+              value={editingLabTest.testType}
               onChange={(e) => handleChange('testType', e.target.value)}
               placeholder="e.g. Organic Impurities Analysis"
             />
@@ -328,10 +327,12 @@ const AdminTestsManager = () => {
               classNamePrefix="select"
               placeholder="Select Materials..."
               value={
-                editingTest?.materials?.map((m) => ({
-                  value: m,
-                  label: m,
-                })) || []
+                editingLabTest?.materials
+                  ?.filter((m) => materials.some((mat) => mat.name === m))
+                  ?.map((m) => ({
+                    value: m,
+                    label: m,
+                  })) || []
               }
               onChange={(selectedOptions) => {
                 handleChange(
@@ -345,7 +346,7 @@ const AdminTestsManager = () => {
 
           <div className="space-y-2">
             <Label>Group</Label>
-            <Select value={editingTest.group} onValueChange={(val) => handleChange('group', val)}>
+            <Select value={editingLabTest.group} onValueChange={(val) => handleChange('group', val)}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select Group" />
               </SelectTrigger>
@@ -362,7 +363,7 @@ const AdminTestsManager = () => {
           <div className="space-y-2">
             <Label>Test Method Specification</Label>
             <Input
-              value={editingTest.testMethodSpecification}
+              value={editingLabTest.testMethodSpecification}
               onChange={(e) => handleChange('testMethodSpecification', e.target.value)}
               placeholder="e.g. IS2385 (Part2)"
             />
@@ -372,7 +373,8 @@ const AdminTestsManager = () => {
             <Label>Num Days</Label>
             <Input
               type="number"
-              value={editingTest.numDays}
+              min="1"
+              value={editingLabTest.numDays ?? 1}
               onChange={(e) => handleChange('numDays', Number(e.target.value))}
             />
           </div>
@@ -383,7 +385,7 @@ const AdminTestsManager = () => {
             </Label>
             <Input
               type="number"
-              value={editingTest.price}
+              value={editingLabTest.price}
               onChange={(e) => handleChange('price', Number(e.target.value))}
             />
           </div>
@@ -391,7 +393,7 @@ const AdminTestsManager = () => {
           <div className="space-y-2">
             <Label>HSN Code</Label>
             <Select
-              value={editingTest.hsnCode || ''}
+              value={editingLabTest.hsnCode || ''}
               onValueChange={(value) => handleChange('hsnCode', value)}
             >
               <SelectTrigger>
@@ -420,7 +422,7 @@ const AdminTestsManager = () => {
               classNamePrefix="select"
               placeholder="Select Terms..."
               value={
-                editingTest?.tcList?.map((type) => ({
+                editingLabTest?.tcList?.map((type) => ({
                   value: type,
                   label: type,
                 })) || []
@@ -448,7 +450,7 @@ const AdminTestsManager = () => {
               classNamePrefix="select"
               placeholder="Select Technicals..."
               value={
-                editingTest?.techList?.map((type) => ({
+                editingLabTest?.techList?.map((type) => ({
                   value: type,
                   label: type,
                 })) || []
@@ -474,7 +476,7 @@ const AdminTestsManager = () => {
           <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
-              placeholder="Search tests..."
+              placeholder="Search lab tests..."
               className="pl-10 w-full h-10 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -594,8 +596,8 @@ const AdminTestsManager = () => {
             </SelectContent>
           </Select>
           <span className="text-xs text-gray-600">
-            Showing {sortedTests.length === 0 ? 0 : startIndex + 1}-
-            {Math.min(endIndex, sortedTests.length)} of {sortedTests.length}
+            Showing {sortedLabTests.length === 0 ? 0 : startIndex + 1}-
+            {Math.min(endIndex, sortedLabTests.length)} of {sortedLabTests.length}
           </span>
         </div>
       </div>
@@ -614,46 +616,51 @@ const AdminTestsManager = () => {
               </tr>
             </thead>
             <tbody>
-              {paginatedTests.map((test) => (
+              {paginatedLabTests.map((labTest) => (
                 <tr
-                  key={test.id}
+                  key={labTest.id}
                   className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                 >
                   <td className="py-4 px-4 align-top text-gray-600">
                     <div className="flex flex-wrap items-center gap-6 text-sm text-gray-700">
-                      <p className="font-bold text-gray-900">{test.testType}</p>
+                      <p className="font-bold text-gray-900">{labTest.testType}</p>
                       <div className="w-full"></div>
                       <p>
                         <span className="font-semibold text-primary">Materials:</span>{' '}
-                        {Array.isArray(test.materials)
-                          ? test.materials.join(', ')
-                          : test.materials || '-'}
+                        {Array.isArray(labTest.materials)
+                          ? labTest.materials.join(', ')
+                          : labTest.materials || '-'}
                       </p>
 
                       <p>
                         <span className="font-semibold text-primary">Method:</span>{' '}
-                        {test.testMethodSpecification || '-'}
+                        {labTest.testMethodSpecification || '-'}
+                      </p>
+
+                      <p>
+                        <span className="font-semibold text-primary"># Days:</span>{' '}
+                        {labTest.numDays ?? 1}
                       </p>
 
                       <p>
                         <span className="font-semibold text-primary">Price:</span> <Rupee />
-                        {test.price.toLocaleString()}
+                        {labTest.price.toLocaleString()}
                       </p>
 
                       <p>
                         <span className="font-semibold text-primary">HSN Code:</span>{' '}
-                        {test.hsnCode || '-'}
+                        {labTest.hsnCode || '-'}
                       </p>
                       <p>
                         <span className="font-semibold text-primary">Technicals:</span>{' '}
-                        {Array.isArray(test.techList) && test.techList.length > 0
-                          ? test.techList.join(', ')
+                        {Array.isArray(labTest.techList) && labTest.techList.length > 0
+                          ? labTest.techList.join(', ')
                           : '-'}
                       </p>
                       <p>
                         <span className="font-semibold text-primary">T&C:</span>{' '}
-                        {Array.isArray(test.tcList) && test.tcList.length > 0
-                          ? test.tcList.join(', ')
+                        {Array.isArray(labTest.tcList) && labTest.tcList.length > 0
+                          ? labTest.tcList.join(', ')
                           : '-'}
                       </p>
                     </div>
@@ -663,12 +670,12 @@ const AdminTestsManager = () => {
                     <div className="flex justify-end space-x-2">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(test)}>
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(labTest)}>
                             <Edit className="w-4 h-4 text-gray-600" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                          <p className="text-xs">Edit test details</p>
+                          <p className="text-xs">Edit lab test details</p>
                         </TooltipContent>
                       </Tooltip>
 
@@ -677,13 +684,13 @@ const AdminTestsManager = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDeleteClick(test)}
+                            onClick={() => handleDeleteClick(labTest)}
                           >
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                          <p className="text-xs">Permanently delete this test</p>
+                          <p className="text-xs">Permanently delete this lab test</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>
@@ -727,18 +734,18 @@ const AdminTestsManager = () => {
       <AlertDialog
         open={deleteConfirmation.isOpen}
         onOpenChange={(isOpen) =>
-          !isOpen && setDeleteConfirmation({ isOpen: false, testId: null, testType: '' })
+          !isOpen && setDeleteConfirmation({ isOpen: false, labTestId: null, labTestType: '' })
         }
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center text-red-600">
               <AlertCircle className="w-5 h-5 mr-2" />
-              Delete Test?
+              Delete Lab Test?
             </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete{' '}
-              <span className="font-semibold text-gray-900">{deleteConfirmation.testType}</span>?
+              <span className="font-semibold text-gray-900">{deleteConfirmation.labTestType}</span>?
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -757,4 +764,4 @@ const AdminTestsManager = () => {
   );
 };
 
-export default AdminTestsManager;
+export default AdminLabTestsManager;

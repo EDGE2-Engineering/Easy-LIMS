@@ -17,7 +17,7 @@ const SamplingProvider = ({ children }) => {
     return {
       ...s,
       id: s.id,
-      serviceType: s.service_type || '',
+      name: s.name || '',
       materials: (() => {
         // Priority: junction table rows
         if (s.sampling_to_materials && s.sampling_to_materials.length > 0)
@@ -42,6 +42,7 @@ const SamplingProvider = ({ children }) => {
       unit: s.unit || '',
       qty: Number(s.qty) || 1,
       price: Number(s.price) || 0,
+      numDays: Number(s.num_days ?? s.numDays ?? 1) || 1,
       hsnCode: s.hsn_code || '',
       tcList: (() => {
         // Priority: junction table rows
@@ -91,12 +92,13 @@ const SamplingProvider = ({ children }) => {
   // Run migration_sampling_tc_tech.sql in Supabase if they don't exist yet.
   const mapToDb = useCallback(
     (s) => ({
-      service_type: s.serviceType,
+      name: s.name,
       group: s.group,
       test_method_specification: s.testMethodSpecification,
       unit: s.unit,
       qty: s.qty,
       price: s.price,
+      num_days: typeof s.numDays === 'number' ? s.numDays : Number(s.num_days ?? 1),
       hsn_code: s.hsnCode,
     }),
     []
@@ -210,10 +212,10 @@ const SamplingProvider = ({ children }) => {
         }
 
         logAudit({
-          userId: userId || currentUserId,
+          userId: currentUserId,
           entityType: 'sampling',
           entityId: updatedItem.id,
-          entityName: updatedItem.serviceType,
+          entityName: updatedItem.name,
           action: 'UPDATE',
         });
         await fetchSamplingData();
@@ -274,10 +276,10 @@ const SamplingProvider = ({ children }) => {
           }
 
           logAudit({
-            userId: userId || currentUserId,
+            userId: currentUserId,
             entityType: 'sampling',
             entityId: id,
-            entityName: newItem.serviceType,
+            entityName: newItem.name,
             action: 'CREATE',
           });
           await fetchSamplingData();
@@ -310,7 +312,7 @@ const SamplingProvider = ({ children }) => {
           userId: userId || currentUserId,
           entityType: 'sampling',
           entityId: id,
-          entityName: toDelete?.serviceType,
+          entityName: toDelete?.name,
           action: 'DELETE',
         });
       } catch (err) {
