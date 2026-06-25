@@ -660,8 +660,8 @@ const AdminSamplingManager = () => {
             </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete{' '}
-              <span className="font-semibold text-gray-900">{deleteConfirmation.name}</span>?
-              This action cannot be undone.
+              <span className="font-semibold text-gray-900">{deleteConfirmation.name}</span>? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

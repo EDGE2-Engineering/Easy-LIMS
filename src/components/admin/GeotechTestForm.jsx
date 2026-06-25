@@ -197,8 +197,7 @@ import GeotechRockSbcDetails from './GeotechRockSbcDetails';
 function SoilTypeSelect({ value, onChange }) {
   const [search, setSearch] = React.useState('');
   const filtered = React.useMemo(
-    () =>
-      soilTypes.filter((t) => t.toLowerCase().includes(search.toLowerCase())),
+    () => soilTypes.filter((t) => t.toLowerCase().includes(search.toLowerCase())),
     [search]
   );
 
@@ -1141,7 +1140,10 @@ export default function GeotechTestForm({ value, onChange, materialCategory }) {
                               : sbcVal.foundationType || 'Soil';
 
                         return (
-                          <div key={entryIndex} className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50/30 dark:bg-gray-700/40 relative space-y-4">
+                          <div
+                            key={entryIndex}
+                            className="p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50/30 dark:bg-gray-700/40 relative space-y-4"
+                          >
                             <div className="flex justify-between items-center">
                               <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
                                 SBC - BH {boreholeIndex + 1} - Footing Size {entryIndex + 1}

@@ -23,9 +23,14 @@ import { DOCUMENT_ITEM_TYPES } from '@/data/config';
 
 const AdminClientPricingManager = () => {
   const { clients } = useClients();
-  const { fieldTests, clientFieldTestPrices, updateClientFieldTestPrice, deleteClientFieldTestPrice } =
-    useFieldTests();
-  const { labTests, clientLabTestPrices, updateClientLabTestPrice, deleteClientLabTestPrice } = useLabTests();
+  const {
+    fieldTests,
+    clientFieldTestPrices,
+    updateClientFieldTestPrice,
+    deleteClientFieldTestPrice,
+  } = useFieldTests();
+  const { labTests, clientLabTestPrices, updateClientLabTestPrice, deleteClientLabTestPrice } =
+    useLabTests();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -139,8 +144,9 @@ const AdminClientPricingManager = () => {
         (p) => p.client_id === selectedClientId && p.field_test_id === itemId
       )?.price;
     } else {
-      return clientLabTestPrices.find((p) => p.client_id === selectedClientId && p.lab_test_id === itemId)
-        ?.price;
+      return clientLabTestPrices.find(
+        (p) => p.client_id === selectedClientId && p.lab_test_id === itemId
+      )?.price;
     }
   };
 
@@ -234,7 +240,9 @@ const AdminClientPricingManager = () => {
                           className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                         >
                           <td className="py-4 px-6 text-gray-600 align-middle">
-                            <div className="font-medium text-gray-900">{fieldTest.fieldTestType}</div>
+                            <div className="font-medium text-gray-900">
+                              {fieldTest.fieldTestType}
+                            </div>
                             <div className="text-gray-500 text-xs">HSN: {fieldTest.hsnCode}</div>
                           </td>
                           <td className="py-4 px-6 text-gray-600 align-middle">
@@ -250,7 +258,9 @@ const AdminClientPricingManager = () => {
                                   ? pendingPrices[fieldTest.id]
                                   : (clientPrice ?? '')
                               }
-                              onChange={(e) => handlePendingPriceChange(fieldTest.id, e.target.value)}
+                              onChange={(e) =>
+                                handlePendingPriceChange(fieldTest.id, e.target.value)
+                              }
                               className={
                                 clientPrice || pendingPrices[fieldTest.id] !== undefined
                                   ? 'border-primary/50 bg-primary/5 shadow-sm'
@@ -261,7 +271,8 @@ const AdminClientPricingManager = () => {
                           <td className="py-4 px-6 text-right text-gray-600 align-middle">
                             <div className="flex justify-end gap-2">
                               {pendingPrices[fieldTest.id] !== undefined &&
-                                String(pendingPrices[fieldTest.id]) !== String(clientPrice ?? '') && (
+                                String(pendingPrices[fieldTest.id]) !==
+                                  String(clientPrice ?? '') && (
                                   <Button
                                     size="sm"
                                     onClick={() => handleSavePrice(fieldTest.id, 'fieldTest')}

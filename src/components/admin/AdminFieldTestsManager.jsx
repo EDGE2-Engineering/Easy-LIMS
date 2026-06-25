@@ -47,7 +47,8 @@ import { DOCUMENT_ITEM_TYPES } from '@/data/config';
 import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 
 const AdminFieldTestsManager = () => {
-  const { fieldTests, updateFieldTest, addFieldTest, deleteFieldTest, setFieldTests } = useFieldTests();
+  const { fieldTests, updateFieldTest, addFieldTest, deleteFieldTest, setFieldTests } =
+    useFieldTests();
   const { unitTypes } = useUnitTypes();
   const { hsnCodes } = useHSNCodes();
   const { terms } = useTermsAndConditions();
@@ -154,14 +155,20 @@ const AdminFieldTestsManager = () => {
     try {
       if (isAddingNew) {
         await addFieldTest(editingFieldTest);
-        toast({ title: 'Field Test Added', description: 'New field test has been successfully added.' });
+        toast({
+          title: 'Field Test Added',
+          description: 'New field test has been successfully added.',
+        });
 
         // Telegram Notification
         const message = `🛠️ *New Field Test Added*\n\nType: \`${editingFieldTest.fieldTestType}\`\nPrice: \`${editingFieldTest.price}\`\nAdded By: \`${user?.fullName || 'Unknown'}\``;
         sendTelegramNotification(message);
       } else {
         await updateFieldTest(editingFieldTest);
-        toast({ title: 'Field Test Updated', description: 'Field test details have been updated.' });
+        toast({
+          title: 'Field Test Updated',
+          description: 'Field test details have been updated.',
+        });
 
         // Telegram Notification
         const message = `✏️ *Field Test Updated*\n\nType: \`${editingFieldTest.fieldTestType}\`\nPrice: \`${editingFieldTest.price}\`\nUpdated By: \`${user?.fullName || 'Unknown'}\``;
@@ -766,8 +773,10 @@ const AdminFieldTestsManager = () => {
             </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete{' '}
-              <span className="font-semibold text-gray-900">{deleteConfirmation.fieldTestType}</span>?
-              This action cannot be undone.
+              <span className="font-semibold text-gray-900">
+                {deleteConfirmation.fieldTestType}
+              </span>
+              ? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

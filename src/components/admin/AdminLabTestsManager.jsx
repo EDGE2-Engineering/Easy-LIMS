@@ -163,7 +163,10 @@ const AdminLabTestsManager = () => {
     try {
       if (isAddingNew) {
         await addLabTest(editingLabTest);
-        toast({ title: 'Lab Test Added', description: 'New lab test has been successfully added.' });
+        toast({
+          title: 'Lab Test Added',
+          description: 'New lab test has been successfully added.',
+        });
 
         // Telegram Notification
         const message = `🧪 *New Lab Test Added*\n\nType: \`${editingLabTest.testType}\`\nPrice: \`${editingLabTest.price}\`\nAdded By: \`${user?.fullName || 'Unknown'}\``;
@@ -289,7 +292,9 @@ const AdminLabTestsManager = () => {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm animate-in slide-in-from-right-4 duration-300">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h2 className="text-xl font-bold">{isAddingNew ? 'Add New Lab Test' : 'Edit Lab Test'}</h2>
+          <h2 className="text-xl font-bold">
+            {isAddingNew ? 'Add New Lab Test' : 'Edit Lab Test'}
+          </h2>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setEditingLabTest(null)} disabled={isSaving}>
               Cancel
@@ -346,7 +351,10 @@ const AdminLabTestsManager = () => {
 
           <div className="space-y-2">
             <Label>Group</Label>
-            <Select value={editingLabTest.group} onValueChange={(val) => handleChange('group', val)}>
+            <Select
+              value={editingLabTest.group}
+              onValueChange={(val) => handleChange('group', val)}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select Group" />
               </SelectTrigger>

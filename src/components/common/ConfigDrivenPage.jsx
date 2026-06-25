@@ -10,7 +10,9 @@ const AdminClientsManager = lazyWithRetry(
 const AdminUsersManager = lazyWithRetry(() => import('@/components/admin/AdminUsersManager.jsx'));
 const DocumentsManager = lazyWithRetry(() => import('@/components/admin/DocumentsManager.jsx'));
 const JobsManager = lazyWithRetry(() => import('@/components/admin/JobsManager.jsx'));
-const AdminLabTestsManager = lazyWithRetry(() => import('@/components/admin/AdminLabTestsManager.jsx'));
+const AdminLabTestsManager = lazyWithRetry(
+  () => import('@/components/admin/AdminLabTestsManager.jsx')
+);
 const AdminFieldTestsManager = lazyWithRetry(
   () => import('@/components/admin/AdminFieldTestsManager.jsx')
 );

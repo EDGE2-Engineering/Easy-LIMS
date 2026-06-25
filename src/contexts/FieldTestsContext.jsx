@@ -159,7 +159,9 @@ const FieldTestsProvider = ({ children }) => {
   const updateFieldTest = useCallback(
     async (updatedFieldTest, userId = null) => {
       const previousFieldTests = [...fieldTests];
-      setFieldTests((prev) => prev.map((s) => (s.id === updatedFieldTest.id ? updatedFieldTest : s)));
+      setFieldTests((prev) =>
+        prev.map((s) => (s.id === updatedFieldTest.id ? updatedFieldTest : s))
+      );
 
       try {
         const dbPayload = mapToDb(updatedFieldTest);

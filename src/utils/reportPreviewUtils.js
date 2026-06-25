@@ -398,22 +398,16 @@ export const computeSbcSummaryRows = (sbcDetails, boreholeLogs) => {
       const N_corr = parseFloat(entry.sbcN ?? entry.fieldNValue) || 1;
 
       // ── Use pre-computed values saved by GeotechSoilSbcDetails ────────────
-      const sbc_shear =
-        entry.computedQs != null
-          ? Math.round(Number(entry.computedQs))
-          : null;
+      const sbc_shear = entry.computedQs != null ? Math.round(Number(entry.computedQs)) : null;
 
-      const qa_settlement =
-        entry.computedQa != null
-          ? Math.round(Number(entry.computedQa))
-          : null;
+      const qa_settlement = entry.computedQa != null ? Math.round(Number(entry.computedQa)) : null;
 
       const recommended =
         entry.computedRecommendedSbc != null
           ? Math.round(Number(entry.computedRecommendedSbc))
           : sbc_shear != null && qa_settlement != null
-          ? Math.min(sbc_shear, qa_settlement)
-          : null;
+            ? Math.min(sbc_shear, qa_settlement)
+            : null;
 
       // ── Foundation RL ────────────────────────────────────────────────────
       // boreholeRL is stored on the SBC entry (set from the bore log sheet).
@@ -453,7 +447,6 @@ export const computeSbcSummaryRows = (sbcDetails, boreholeLogs) => {
 
   return { format: 'legacy', rows };
 };
-
 
 /**
  * Build paginated A4 pages for the geotechnical report preview.

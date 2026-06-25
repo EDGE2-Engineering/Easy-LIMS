@@ -500,7 +500,7 @@ const NewQuotationPage = () => {
             content.isInterstate !== undefined ? String(content.isInterstate) === 'true' : false;
 
           // Ensure quoteNumber is synced from the top-level column if it's missing or empty in JSON content
-          const finalQuoteNumber = loadedQuoteDetails.quoteNumber || data.quote_number;
+          const finalQuoteNumber = data.quote_number || loadedQuoteDetails.quoteNumber;
           if (finalQuoteNumber) {
             loadedQuoteDetails.quoteNumber = finalQuoteNumber;
           }

@@ -1629,9 +1629,7 @@ const SbcSummaryBlock = ({ rows, format, rlValuesNote, projectName, siteAddress 
                             rowSpan={group.entries.length}
                           >
                             {group.structure !== '-' ? group.structure : ''}
-                            {group.chainage && group.chainage !== '-'
-                              ? ` / ${group.chainage}`
-                              : ''}
+                            {group.chainage && group.chainage !== '-' ? ` / ${group.chainage}` : ''}
                           </td>
                         )}
                         <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
@@ -1643,7 +1641,9 @@ const SbcSummaryBlock = ({ rows, format, rlValuesNote, projectName, siteAddress 
                         <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
                           {row.foundationRL}
                         </td>
-                        <td className="border border-gray-400 px-1 py-1 text-gray-800">{row.strata}</td>
+                        <td className="border border-gray-400 px-1 py-1 text-gray-800">
+                          {row.strata}
+                        </td>
                         <td className="border border-gray-400 px-1 py-1 text-center text-gray-800">
                           {row.nCorr}
                         </td>
@@ -1681,9 +1681,9 @@ const SbcSummaryBlock = ({ rows, format, rlValuesNote, projectName, siteAddress 
           </li>
           <li>
             SBC (Shear Criteria) is computed using Terzaghi&apos;s general bearing capacity equation
-            with Meyerhof&apos;s bearing capacity factors (FOS = 3). Allowable BC for 25 mm settlement
-            is computed using Teng&apos;s formula (IS:8009). Recommended SBC = min(Shear Criteria,
-            Settlement Criteria).
+            with Meyerhof&apos;s bearing capacity factors (FOS = 3). Allowable BC for 25 mm
+            settlement is computed using Teng&apos;s formula (IS:8009). Recommended SBC = min(Shear
+            Criteria, Settlement Criteria).
           </li>
         </ol>
       </div>
