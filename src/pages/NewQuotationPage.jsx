@@ -2680,7 +2680,9 @@ const NewQuotationPage = () => {
                     <div className="a4-page-content flex flex-col">
                       <div className="text-gray-500 text-sm flex-1">
                         {/* Bank + Signatory (Grid) */}
-                        <div className="grid grid-cols-[1.5fr_1fr] gap-1 mt-2 text-left text-xs">
+                        <div
+                          className={`grid ${selectedBank?.qr_code_url ? 'grid-cols-[1.5fr_0.8fr_1fr]' : 'grid-cols-[1.5fr_1fr]'} gap-4 mt-2 text-left text-xs`}
+                        >
                           {/* Bank Details */}
                           <div>
                             <h2 className="font-semibold mb-4 text-sm">Bank Details</h2>
@@ -2730,6 +2732,20 @@ const NewQuotationPage = () => {
                             </table>
                           </div>
 
+                          {/* QR Code (if available) */}
+                          {selectedBank?.qr_code_url && (
+                            <div className="flex flex-col items-center justify-center pl-0">
+                              <img
+                                src={selectedBank.qr_code_url}
+                                alt="UPI QR Code"
+                                className="w-24 h-24 object-contain"
+                              />
+                              <span className="text-[8px] text-gray-400 font-bold uppercase tracking-wider mt-1">
+                                Scan to Pay
+                              </span>
+                            </div>
+                          )}
+
                           {/* Authorized Signatory */}
                           {/* <div className="flex flex-col items-center">
                             <h2 className="font-semibold mb-20 text-sm">Authorized Signatory</h2>
@@ -2747,7 +2763,7 @@ const NewQuotationPage = () => {
                             </table>
                           </div>
                         </div> */}
-                          <div className="flex items-center justify-center h-24">
+                          <div className="flex items-center justify-center h-24 pl-0">
                             <h2 className="font-semibold text-[10px] text-center">
                               * This is a computer generated {documentType.toLowerCase()} and does
                               not require a physical signature.

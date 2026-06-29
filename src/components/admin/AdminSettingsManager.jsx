@@ -59,6 +59,7 @@ const AdminSettingsManager = () => {
     branch_name: '',
     ifsc_code: '',
     is_default: false,
+    qr_code_url: '',
   });
 
   useEffect(() => {
@@ -105,6 +106,7 @@ const AdminSettingsManager = () => {
         branch_name: '',
         ifsc_code: '',
         is_default: false,
+        qr_code_url: '',
       });
       setShowBankForm(false);
       toast({ title: 'Success', description: 'Bank account added successfully.' });
@@ -127,6 +129,7 @@ const AdminSettingsManager = () => {
         branch_name: '',
         ifsc_code: '',
         is_default: false,
+        qr_code_url: '',
       });
       setShowBankForm(false);
       toast({ title: 'Success', description: 'Bank account updated successfully.' });
@@ -149,9 +152,24 @@ const AdminSettingsManager = () => {
       branch_name: bank.branch_name || '',
       ifsc_code: bank.ifsc_code || '',
       is_default: bank.is_default || false,
+      qr_code_url: bank.qr_code_url || '',
     });
     setEditingBankId(bank.id);
     setShowBankForm(true);
+  };
+
+  const handleQrCodeChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBankForm((prev) => ({
+          ...prev,
+          qr_code_url: reader.result,
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleDeleteBank = async (id) => {
@@ -304,6 +322,7 @@ const AdminSettingsManager = () => {
                   branch_name: '',
                   ifsc_code: '',
                   is_default: false,
+                  qr_code_url: '',
                 });
               }}
               className="rounded-xl"
@@ -382,6 +401,35 @@ const AdminSettingsManager = () => {
                     Set as default account
                   </Label>
                 </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>QR Code Image (UPI/Bank QR)</Label>
+                  <div className="flex flex-col gap-4">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleQrCodeChange}
+                      className="cursor-pointer rounded-xl"
+                    />
+                    {bankForm.qr_code_url && (
+                      <div className="relative w-32 h-32 overflow-hidden rounded-lg border border-gray-200 bg-white p-1">
+                        <img
+                          src={bankForm.qr_code_url}
+                          alt="QR Code Preview"
+                          className="object-contain w-full h-full"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6 rounded-md shadow-sm"
+                          onClick={() => setBankForm({ ...bankForm, qr_code_url: '' })}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
               <DialogFooter className="pt-4">
                 <Button
@@ -459,19 +507,30 @@ const AdminSettingsManager = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="flex justify-between">
-                      <span className="font-medium">A/c Number:</span>
-                      <span className="text-gray-900">{bank.bank_account_number}</span>
+                  <div className="flex gap-4">
+                    <div className="space-y-2 text-sm text-gray-600 flex-1">
+                      <div className="flex justify-between">
+                        <span className="font-medium">A/c Number:</span>
+                        <span className="text-gray-900">{bank.bank_account_number}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">IFSC Code:</span>
+                        <span className="text-gray-900">{bank.ifsc_code}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Branch:</span>
+                        <span className="text-gray-900">{bank.branch_name}</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">IFSC Code:</span>
-                      <span className="text-gray-900">{bank.ifsc_code}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Branch:</span>
-                      <span className="text-gray-900">{bank.branch_name}</span>
-                    </div>
+                    {bank.qr_code_url && (
+                      <div className="w-20 h-20 border border-gray-200 rounded-lg overflow-hidden bg-white p-1 shrink-0 flex items-center justify-center">
+                        <img
+                          src={bank.qr_code_url}
+                          alt="QR Code"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {!bank.is_default && (
