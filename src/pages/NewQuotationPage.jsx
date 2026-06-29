@@ -1010,7 +1010,7 @@ const NewQuotationPage = () => {
         description = `${itemData.testType} - ${Array.isArray(itemData.materials) ? itemData.materials.join(', ') : itemData.materials || ''}`;
         price = itemData.price;
 
-        unit = 'Test';
+        unit = 'Per Test';
       }
     }
 
@@ -2174,8 +2174,16 @@ const NewQuotationPage = () => {
                               </div>
                             </div>
 
-                            {/* Client, Contractor, Project Details - 3 Columns */}
-                            <div className="grid grid-cols-3 gap-6 mb-2 text-sm py-0 border-b">
+                            {/* Client, Contractor, Project Details - Columns */}
+                            <div
+                              className={`grid ${
+                                quoteDetails.contractorName &&
+                                quoteDetails.contractorName.trim() &&
+                                quoteDetails.contractorName.trim() !== '-'
+                                  ? 'grid-cols-3'
+                                  : 'grid-cols-2'
+                              } gap-6 mb-2 text-sm py-0 border-b`}
+                            >
                               {/* Column 1: Client */}
                               <div className="space-y-1">
                                 <h3 className="text-gray-500 font-semibold uppercase tracking-wide border-b pb-1 mb-2">
@@ -2203,17 +2211,21 @@ const NewQuotationPage = () => {
                               </div>
 
                               {/* Column 2: Contractor */}
-                              <div className="space-y-1 border-l pl-2">
-                                <h3 className="text-gray-500 font-semibold uppercase tracking-wide border-b pb-1 mb-2">
-                                  Contractor
-                                </h3>
-                                <p className="font-bold text-gray-900 text-xs">
-                                  {quoteDetails.contractorName || '-'}
-                                </p>
-                                <p className="text-gray-600 whitespace-pre-wrap text-xs">
-                                  {quoteDetails.contractorAddress}
-                                </p>
-                              </div>
+                              {quoteDetails.contractorName &&
+                                quoteDetails.contractorName.trim() &&
+                                quoteDetails.contractorName.trim() !== '-' && (
+                                  <div className="space-y-1 border-l pl-2">
+                                    <h3 className="text-gray-500 font-semibold uppercase tracking-wide border-b pb-1 mb-2">
+                                      Contractor
+                                    </h3>
+                                    <p className="font-bold text-gray-900 text-xs">
+                                      {quoteDetails.contractorName || '-'}
+                                    </p>
+                                    <p className="text-gray-600 whitespace-pre-wrap text-xs">
+                                      {quoteDetails.contractorAddress}
+                                    </p>
+                                  </div>
+                                )}
 
                               {/* Column 3: Project */}
                               <div className="space-y-1 border-l pl-2">
@@ -2249,39 +2261,65 @@ const NewQuotationPage = () => {
                         <table className="quote-items-table w-full table-fixed mb-8 mt-2">
                           <colgroup>
                             <col style={{ width: '3%' }} />
-                            <col style={{ width: '27%' }} />
+                            <col style={{ width: documentType === 'Quotation' ? '27%' : '30%' }} />
                             <col style={{ width: '6%' }} />
                             <col style={{ width: '6%' }} />
                             <col style={{ width: '4%' }} />
                             <col style={{ width: '3%' }} />
-                            <col style={{ width: '3%' }} />
+                            {documentType === 'Quotation' && <col style={{ width: '3%' }} />}
                             <col style={{ width: '6%' }} />
                             <col style={{ width: '7%' }} />
                           </colgroup>
                           <thead>
                             <tr>
-                              <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                              <th
+                                className="text-left border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                style={{ color: 'rgb(33, 112, 187)' }}
+                              >
                                 Sl No.
                               </th>
-                              <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                              <th
+                                className="text-left border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                style={{ color: 'rgb(33, 112, 187)' }}
+                              >
                                 Description
                               </th>
-                              <th className="text-left border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                              <th
+                                className="text-left border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                style={{ color: 'rgb(33, 112, 187)' }}
+                              >
                                 HSN / SAC
                               </th>
-                              <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                              <th
+                                className="text-right border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                style={{ color: 'rgb(33, 112, 187)' }}
+                              >
                                 Price Per Unit
                               </th>
-                              <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                              <th
+                                className="text-right border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                style={{ color: 'rgb(33, 112, 187)' }}
+                              >
                                 Unit
                               </th>
-                              <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                              <th
+                                className="text-right border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                style={{ color: 'rgb(33, 112, 187)' }}
+                              >
                                 Qty
                               </th>
-                              <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
-                                Days
-                              </th>
-                              <th className="text-right border-r border-t border-b border-l border-gray-200 py-3 px-1 font-semibold text-gray-600 text-xs">
+                              {documentType === 'Quotation' && (
+                                <th
+                                  className="text-right border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                  style={{ color: 'rgb(33, 112, 187)' }}
+                                >
+                                  Days
+                                </th>
+                              )}
+                              <th
+                                className="text-right border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                style={{ color: 'rgb(33, 112, 187)' }}
+                              >
                                 Total
                               </th>
                               <th className="print:hidden"></th>
@@ -2376,33 +2414,35 @@ const NewQuotationPage = () => {
                                       {item.qty}
                                     </span>
                                   </td>
-                                  <td className="py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
-                                    {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS ||
-                                    item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS ||
-                                    item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING ? (
-                                      <span
-                                        contentEditable={!isReadOnly}
-                                        suppressContentEditableWarning
-                                        onBlur={(e) =>
-                                          handleUpdateItemNumDays(
-                                            item.id,
-                                            e.currentTarget.textContent,
-                                            e.currentTarget
-                                          )
-                                        }
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            e.currentTarget.blur();
+                                  {documentType === 'Quotation' && (
+                                    <td className="py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
+                                      {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS ||
+                                      item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS ||
+                                      item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING ? (
+                                        <span
+                                          contentEditable={!isReadOnly}
+                                          suppressContentEditableWarning
+                                          onBlur={(e) =>
+                                            handleUpdateItemNumDays(
+                                              item.id,
+                                              e.currentTarget.textContent,
+                                              e.currentTarget
+                                            )
                                           }
-                                        }}
-                                      >
-                                        {item.numDays ?? 1}
-                                      </span>
-                                    ) : (
-                                      '—'
-                                    )}
-                                  </td>
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                              e.preventDefault();
+                                              e.currentTarget.blur();
+                                            }
+                                          }}
+                                        >
+                                          {item.numDays ?? 1}
+                                        </span>
+                                      ) : (
+                                        '—'
+                                      )}
+                                    </td>
+                                  )}
                                   <td className="py-0 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200">
                                     <Rupee />
                                     {item.total.toLocaleString()}
@@ -2441,7 +2481,10 @@ const NewQuotationPage = () => {
                             })}
                             {page.items.length === 0 && (
                               <tr>
-                                <td colSpan="8" className="py-8 text-center text-gray-400 italic">
+                                <td
+                                  colSpan={documentType === 'Quotation' ? '8' : '7'}
+                                  className="py-8 text-center text-gray-400 italic"
+                                >
                                   No items added yet.
                                 </td>
                               </tr>
@@ -2688,7 +2731,7 @@ const NewQuotationPage = () => {
                           </div>
 
                           {/* Authorized Signatory */}
-                          <div className="flex flex-col items-center">
+                          {/* <div className="flex flex-col items-center">
                             <h2 className="font-semibold mb-20 text-sm">Authorized Signatory</h2>
                             <table className="w-full text-xs border-collapse">
                               <tbody>
@@ -2702,6 +2745,13 @@ const NewQuotationPage = () => {
                                 </tr>
                               </tbody>
                             </table>
+                          </div>
+                        </div> */}
+                          <div className="flex items-center justify-center h-24">
+                            <h2 className="font-semibold text-[10px] text-center">
+                              * This is a computer generated {documentType.toLowerCase()} and does
+                              not require a physical signature.
+                            </h2>
                           </div>
                         </div>
 
@@ -2755,7 +2805,7 @@ const NewQuotationPage = () => {
                         <div className="mt-6 pt-4 border-t">
                           <h2 className="font-semibold text-left mb-3">Payment Terms</h2>
                           <div
-                            className={`text-xs whitespace-pre-wrap outline-none ${!isReadOnly ? 'hover:bg-[#f9fafb] focus:bg-[#ffffff] focus:ring-1 focus:ring-[#e5e7eb] rounded p-1 -ml-1 transition-colors' : ''}`}
+                            className={`font-bold italic text-xs whitespace-pre-wrap outline-none ${!isReadOnly ? 'hover:bg-[#f9fafb] focus:bg-[#ffffff] focus:ring-1 focus:ring-[#e5e7eb] rounded p-1 -ml-1 transition-colors' : ''}`}
                             contentEditable={!isReadOnly}
                             suppressContentEditableWarning
                             onBlur={(e) => {

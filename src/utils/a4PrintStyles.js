@@ -83,7 +83,7 @@ export const A4_PRINT_PAGE_STYLE = `
     table-layout: fixed !important;
   }
 
-  .quote-items-table col:nth-child(9) {
+  .quote-items-table col:last-child {
     width: 0 !important;
   }
 
