@@ -2538,7 +2538,9 @@ const NewQuotationPage = () => {
                                       getCellClasses('none')
                                     )}
                                   >
-                                    <p className="font-small text-xs">{item.description}</p>
+                                    <p className="font-small text-xs whitespace-pre-wrap">
+                                      {item.description}
+                                    </p>
                                     <p
                                       className="text-xs text-gray-500 capitalize italic"
                                       style={{ fontSize: '10px' }}

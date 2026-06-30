@@ -1570,7 +1570,9 @@ const JobsManager = ({ id }) => {
                           []
                         ).map((item, idx) => (
                           <tr key={idx} className="hover:bg-gray-50/30 transition-colors">
-                            <td className="p-3 text-gray-700 font-medium">{item.description}</td>
+                            <td className="p-3 text-gray-700 font-medium whitespace-pre-wrap">
+                              {item.description}
+                            </td>
                             <td className="p-3 text-center text-gray-500">{item.qty}</td>
                             <td className="p-3 text-center text-gray-500">{item.unit}</td>
                             <td className="p-3 text-right text-gray-500 tabular-nums">

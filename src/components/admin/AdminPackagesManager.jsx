@@ -472,7 +472,9 @@ const AdminPackagesManager = () => {
                             {typeLabel}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-gray-900 font-medium">{details.name}</td>
+                        <td className="py-3 px-4 text-gray-900 font-medium whitespace-pre-wrap">
+                          {details.name}
+                        </td>
                         <td className="py-3 px-4 text-right text-gray-600 font-medium">
                           <Rupee /> {details.price.toLocaleString()}
                         </td>
@@ -748,7 +750,7 @@ const AdminPackagesManager = () => {
                                   key={`${item.type}-${item.id}-${idx}`}
                                   className="hover:bg-gray-50/30"
                                 >
-                                  <td className="py-2 px-3 text-gray-700 font-medium break-words leading-tight">
+                                  <td className="py-2 px-3 text-gray-700 font-medium break-words leading-tight whitespace-pre-wrap">
                                     {details.name}
                                   </td>
                                   <td className="py-2 px-3 text-center">

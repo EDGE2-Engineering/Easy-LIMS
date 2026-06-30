@@ -631,7 +631,9 @@ const AdminLabTestsManager = () => {
                 >
                   <td className="py-4 px-4 align-top text-gray-600">
                     <div className="flex flex-wrap items-center gap-6 text-sm text-gray-700">
-                      <p className="font-bold text-gray-900">{labTest.testType}</p>
+                      <p className="font-bold text-gray-900 whitespace-pre-wrap">
+                        {labTest.testType}
+                      </p>
                       <div className="w-full"></div>
                       <p>
                         <span className="font-semibold text-primary">Materials:</span>{' '}
