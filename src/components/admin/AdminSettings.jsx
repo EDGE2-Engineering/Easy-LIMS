@@ -160,6 +160,7 @@ const AdminSettings = () => {
       tests: JSON.parse(localStorage.getItem(STORAGE_KEYS.TESTS) || '[]'),
       services: JSON.parse(localStorage.getItem(STORAGE_KEYS.SERVICES) || '[]'),
       samplingData: JSON.parse(localStorage.getItem(STORAGE_KEYS.SAMPLING_DATA) || '[]'),
+      packages: JSON.parse(localStorage.getItem(STORAGE_KEYS.PACKAGES) || '[]'),
       siteContent: JSON.parse(localStorage.getItem(STORAGE_KEYS.CONTENT) || '{}'),
       pageImages: JSON.parse(localStorage.getItem(STORAGE_KEYS.IMAGES) || '{}'),
       timestamp: new Date().toISOString(),
@@ -208,6 +209,8 @@ const AdminSettings = () => {
           localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(backup.services));
         if (backup.samplingData)
           localStorage.setItem(STORAGE_KEYS.SAMPLING_DATA, JSON.stringify(backup.samplingData));
+        if (backup.packages)
+          localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify(backup.packages));
         if (backup.siteContent)
           localStorage.setItem(STORAGE_KEYS.CONTENT, JSON.stringify(backup.siteContent));
         if (backup.pageImages)

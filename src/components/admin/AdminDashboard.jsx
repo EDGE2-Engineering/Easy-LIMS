@@ -317,12 +317,19 @@ const AdminDashboard = () => {
         .gte('created_at', startOfTodayISO)
         .then((res) => res.data || [])
         .catch(() => []);
+      const fetchTodayPackages = supabase
+        .from('packages')
+        .select('id, name, created_at, users:created_by(full_name, username)')
+        .gte('created_at', startOfTodayISO)
+        .then((res) => res.data || [])
+        .catch(() => []);
 
-      const [todayDocs, todayJobs, todayExpenses, todayClients] = await Promise.all([
+      const [todayDocs, todayJobs, todayExpenses, todayClients, todayPackages] = await Promise.all([
         fetchTodayDocs,
         fetchTodayJobs,
         fetchTodayExpenses,
         fetchTodayClients,
+        fetchTodayPackages,
       ]);
 
       const docActivities = (todayDocs || []).map((doc) => {
@@ -374,11 +381,25 @@ const AdminDashboard = () => {
         originalId: cli.id,
       }));
 
+      const packageActivities = (todayPackages || []).map((pkg) => {
+        const userName = pkg.users?.full_name || pkg.users?.username || 'Unknown';
+        return {
+          id: `pkg-${pkg.id}`,
+          type: 'package',
+          title: `New Package Created by ${userName}`,
+          detail: pkg.name,
+          subtitle: 'Master Database',
+          timestamp: pkg.created_at,
+          originalId: pkg.id,
+        };
+      });
+
       const compiledActivities = [
         ...docActivities,
         ...jobActivities,
         ...expenseActivities,
         ...clientActivities,
+        ...packageActivities,
       ].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
       setTodayActivities(compiledActivities);
@@ -1164,6 +1185,9 @@ const AdminDashboard = () => {
                             } else if (act.type === 'client') {
                               icon = <Users className="w-4 h-4" />;
                               badgeColor = 'bg-emerald-50 text-emerald-600';
+                            } else if (act.type === 'package') {
+                              icon = <Package className="w-4 h-4" />;
+                              badgeColor = 'bg-orange-50 text-orange-600';
                             }
 
                             return (
@@ -1178,6 +1202,8 @@ const AdminDashboard = () => {
                                     window.location.hash = `#/settings/expenses/${act.originalId}`;
                                   } else if (act.type === 'client') {
                                     window.location.hash = `#/settings/clients/${act.originalId}`;
+                                  } else if (act.type === 'package') {
+                                    window.location.hash = `#/settings/packages`;
                                   }
                                 }}
                                 className="p-5 flex gap-4 hover:bg-gray-50/50 cursor-pointer transition-all group items-center"

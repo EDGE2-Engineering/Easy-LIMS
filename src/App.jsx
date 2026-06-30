@@ -13,6 +13,7 @@ import { TermsAndConditionsProvider } from '@/contexts/TermsAndConditionsContext
 import { TechnicalsProvider } from '@/contexts/TechnicalsContext';
 import { MaterialsProvider } from '@/contexts/MaterialsContext';
 import { SamplingProvider } from '@/contexts/SamplingContext';
+import { PackagesProvider } from '@/contexts/PackagesContext';
 import { ExpensesProvider } from '@/contexts/ExpensesContext';
 import { WorkflowProvider } from '@/contexts/WorkflowContext';
 import { BankAccountsProvider } from '@/contexts/BankAccountsContext';
@@ -105,55 +106,57 @@ function App() {
               <WorkflowProvider>
                 <SamplingProvider>
                   <LabTestsProvider>
-                    <ClientsProvider>
-                      <SettingsProvider>
-                        <UnitTypesProvider>
-                          <HSNCodesProvider>
-                            <MaterialsProvider>
-                              <TermsAndConditionsProvider>
-                                <TechnicalsProvider>
-                                  <ExpensesProvider>
-                                    <BankAccountsProvider>
-                                      <BankStatementsProvider>
-                                        <Helmet>
-                                          <title>{getSiteContent().global?.siteName}</title>
-                                          <link
-                                            rel="preconnect"
-                                            href="https://fonts.googleapis.com"
-                                          />
-                                          <link
-                                            rel="preconnect"
-                                            href="https://fonts.gstatic.com"
-                                            crossOrigin="anonymous"
-                                          />
-                                          <link
-                                            href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
-                                            rel="stylesheet"
-                                          />
-                                        </Helmet>
-                                        <div className="min-h-screen bg-background text-foreground">
-                                          <TooltipProvider>
-                                            <RouterProvider
-                                              router={router}
-                                              future={{
-                                                v7_startTransition: true,
-                                                v7_relativeSplatPath: true,
-                                              }}
+                    <PackagesProvider>
+                      <ClientsProvider>
+                        <SettingsProvider>
+                          <UnitTypesProvider>
+                            <HSNCodesProvider>
+                              <MaterialsProvider>
+                                <TermsAndConditionsProvider>
+                                  <TechnicalsProvider>
+                                    <ExpensesProvider>
+                                      <BankAccountsProvider>
+                                        <BankStatementsProvider>
+                                          <Helmet>
+                                            <title>{getSiteContent().global?.siteName}</title>
+                                            <link
+                                              rel="preconnect"
+                                              href="https://fonts.googleapis.com"
                                             />
-                                          </TooltipProvider>
-                                          <Toaster />
-                                          <UpdateDetector />
-                                        </div>
-                                      </BankStatementsProvider>
-                                    </BankAccountsProvider>
-                                  </ExpensesProvider>
-                                </TechnicalsProvider>
-                              </TermsAndConditionsProvider>
-                            </MaterialsProvider>
-                          </HSNCodesProvider>
-                        </UnitTypesProvider>
-                      </SettingsProvider>
-                    </ClientsProvider>
+                                            <link
+                                              rel="preconnect"
+                                              href="https://fonts.gstatic.com"
+                                              crossOrigin="anonymous"
+                                            />
+                                            <link
+                                              href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+                                              rel="stylesheet"
+                                            />
+                                          </Helmet>
+                                          <div className="min-h-screen bg-background text-foreground">
+                                            <TooltipProvider>
+                                              <RouterProvider
+                                                router={router}
+                                                future={{
+                                                  v7_startTransition: true,
+                                                  v7_relativeSplatPath: true,
+                                                }}
+                                              />
+                                            </TooltipProvider>
+                                            <Toaster />
+                                            <UpdateDetector />
+                                          </div>
+                                        </BankStatementsProvider>
+                                      </BankAccountsProvider>
+                                    </ExpensesProvider>
+                                  </TechnicalsProvider>
+                                </TermsAndConditionsProvider>
+                              </MaterialsProvider>
+                            </HSNCodesProvider>
+                          </UnitTypesProvider>
+                        </SettingsProvider>
+                      </ClientsProvider>
+                    </PackagesProvider>
                   </LabTestsProvider>
                 </SamplingProvider>
               </WorkflowProvider>

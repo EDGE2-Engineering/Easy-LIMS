@@ -272,6 +272,14 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
       view: VIEWS.SETTINGS,
     },
     {
+      id: SETTINGS_ITEM_IDS.PACKAGES,
+      label: 'Packages',
+      icon: Package,
+      path: '/settings/packages',
+      description: 'Manage test and sampling packages',
+      view: VIEWS.SETTINGS,
+    },
+    {
       id: SETTINGS_ITEM_IDS.SAMPLING,
       label: 'Sampling',
       icon: SwatchBook,

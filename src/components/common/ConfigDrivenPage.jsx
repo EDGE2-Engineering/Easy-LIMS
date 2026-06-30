@@ -22,6 +22,9 @@ const AdminSystemSettings = lazyWithRetry(
 const AdminSamplingManager = lazyWithRetry(
   () => import('@/components/admin/AdminSamplingManager.jsx')
 );
+const AdminPackagesManager = lazyWithRetry(
+  () => import('@/components/admin/AdminPackagesManager.jsx')
+);
 const ExpensesManager = lazyWithRetry(() => import('@/components/admin/ExpensesManager.jsx'));
 const LeavesManager = lazyWithRetry(() => import('@/components/admin/LeavesManager.jsx'));
 const UtilitiesManager = lazyWithRetry(() => import('@/components/admin/UtilitiesManager.jsx'));
@@ -74,6 +77,7 @@ const ConfigDrivenPage = ({ viewName, subView, id }) => {
     else if (subView === 'field_tests') Component = AdminFieldTestsManager;
     else if (subView === 'lab_tests') Component = AdminLabTestsManager;
     else if (subView === 'sampling') Component = AdminSamplingManager;
+    else if (subView === 'packages') Component = AdminPackagesManager;
   }
 
   if (!canView(viewName)) {

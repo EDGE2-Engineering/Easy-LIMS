@@ -811,3 +811,21 @@
   background-color: hsl(var(--muted));
   color: hsl(var(--muted-foreground));
 }
+
+/* Package group hover border overrides (preventing dark mode .border-gray-50 overrides) */
+.a4-container .package-group-border-t,
+.dark .a4-container .package-group-border-t {
+  border-top-color: #f87171 !important;
+}
+.a4-container .package-group-border-b,
+.dark .a4-container .package-group-border-b {
+  border-bottom-color: #f87171 !important;
+}
+.a4-container .package-group-border-l,
+.dark .a4-container .package-group-border-l {
+  border-left-color: #f87171 !important;
+}
+.a4-container .package-group-border-r,
+.dark .a4-container .package-group-border-r {
+  border-right-color: #f87171 !important;
+}

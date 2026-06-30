@@ -38,6 +38,7 @@ import { Label } from '@/components/ui/label';
 import { useFieldTests } from '@/contexts/FieldTestsContext';
 import { useLabTests } from '@/contexts/LabTestsContext';
 import { useSampling } from '@/contexts/SamplingContext';
+import { usePackages } from '@/contexts/PackagesContext';
 import { useClients } from '@/contexts/ClientsContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -173,6 +174,7 @@ const NewQuotationPage = () => {
   const { fieldTests, clientFieldTestPrices } = useFieldTests();
   const { labTests, clientLabTestPrices } = useLabTests();
   const { samplingData } = useSampling();
+  const { packages } = usePackages();
   const { clients } = useClients();
   const { settings } = useSettings();
   const { bankAccounts, loading: accountsLoading } = useBankAccounts();
@@ -233,6 +235,8 @@ const NewQuotationPage = () => {
   const [items, setItems] = useState([]);
   const [newItemType, setNewItemType] = useState(DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS);
   const [selectedItemId, setSelectedItemId] = useState('');
+  const [selectedPackageId, setSelectedPackageId] = useState('');
+  const [hoveredPackageGroupId, setHoveredPackageGroupId] = useState(null);
   const [qty, setQty] = useState(1);
   const [documentType, setDocumentType] = useState(searchParams.get('type') || 'Quotation'); // 'Tax Invoice', 'Quotation', 'Proforma Invoice', 'Purchase Order', or 'Delivery Challan'
   const [discount, setDiscount] = useState(0);
@@ -894,29 +898,30 @@ const NewQuotationPage = () => {
   const getAppropiatePrice = (itemId, type, clientId) => {
     if (!clientId) {
       if (type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
-        return fieldTests.find((s) => s.id === itemId)?.price || 0;
+        return fieldTests.find((s) => String(s.id) === String(itemId))?.price || 0;
       } else if (type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
-        return samplingData.find((s) => s.id === itemId)?.price || 0;
+        return samplingData.find((s) => String(s.id) === String(itemId))?.price || 0;
       } else {
-        return labTests.find((t) => t.id === itemId)?.price || 0;
+        return labTests.find((t) => String(t.id) === String(itemId))?.price || 0;
       }
     }
 
     if (type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
       const clientPrice = clientFieldTestPrices.find(
-        (p) => p.client_id === clientId && p.field_test_id === itemId
+        (p) =>
+          String(p.client_id) === String(clientId) && String(p.field_test_id) === String(itemId)
       );
       if (clientPrice) return clientPrice.price;
-      return fieldTests.find((s) => s.id === itemId)?.price || 0;
+      return fieldTests.find((s) => String(s.id) === String(itemId))?.price || 0;
     } else if (type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
       // For now, sampling doesn't have client-specific prices
-      return samplingData.find((s) => s.id === itemId)?.price || 0;
+      return samplingData.find((s) => String(s.id) === String(itemId))?.price || 0;
     } else {
       const clientPrice = clientLabTestPrices.find(
-        (p) => p.client_id === clientId && p.lab_test_id === itemId
+        (p) => String(p.client_id) === String(clientId) && String(p.lab_test_id) === String(itemId)
       );
       if (clientPrice) return clientPrice.price;
-      return labTests.find((t) => t.id === itemId)?.price || 0;
+      return labTests.find((t) => String(t.id) === String(itemId))?.price || 0;
     }
   };
 
@@ -1048,6 +1053,97 @@ const NewQuotationPage = () => {
       setSelectedItemId('');
       setQty(1);
     }
+  };
+
+  const handleAddPackage = () => {
+    if (!selectedPackageId) return;
+
+    const packageData = packages.find((p) => String(p.id) === String(selectedPackageId));
+    if (!packageData) return;
+
+    const packageGroupId = `pkg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const newItems = [];
+
+    const clientId = clients.find((c) => c.clientName === quoteDetails.clientName)?.id;
+
+    packageData.items.forEach((pkgItem, idx) => {
+      let itemData;
+      let description = '';
+      let price = 0;
+      let unit = 'Nos';
+
+      if (pkgItem.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
+        itemData = fieldTests.find((s) => String(s.id) === String(pkgItem.id));
+        if (itemData) {
+          description = itemData.fieldTestType;
+          unit = itemData.unit || 'Nos';
+        }
+      } else if (pkgItem.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
+        itemData = samplingData.find((s) => String(s.id) === String(pkgItem.id));
+        if (itemData) {
+          description = `${itemData.name} - ${Array.isArray(itemData.materials) ? itemData.materials.join(', ') : itemData.materials || ''}`;
+          unit = itemData.unit || 'Nos';
+        }
+      } else {
+        itemData = labTests.find((t) => String(t.id) === String(pkgItem.id));
+        if (itemData) {
+          description = `${itemData.testType} - ${Array.isArray(itemData.materials) ? itemData.materials.join(', ') : itemData.materials || ''}`;
+          unit = 'Per Test';
+        }
+      }
+
+      if (itemData) {
+        const finalPrice = getAppropiatePrice(pkgItem.id, pkgItem.type, clientId);
+        newItems.push({
+          id: Date.now() + idx + Math.random(),
+          sourceId: pkgItem.id,
+          type: pkgItem.type,
+          description,
+          unit,
+          price: Number(finalPrice),
+          qty: Number(pkgItem.qty || 1),
+          numDays: Number(itemData.numDays ?? 1) || 1,
+          total: Number(finalPrice) * Number(pkgItem.qty || 1),
+          hsnCode: itemData.hsnCode || '',
+          tcList: itemData.tcList || itemData.tc_list || [],
+          techList: itemData.techList || itemData.tech_list || [],
+          packageGroupId,
+          packageId: packageData.id,
+          packageName: packageData.name,
+          ...(pkgItem.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS && itemData
+            ? {
+                methodOfSampling: itemData.methodOfSampling || itemData.method_of_sampling || 'NA',
+                numBHs: itemData.numBHs ?? itemData.num_bhs ?? 0,
+                measure: itemData.measure || 'NA',
+              }
+            : {}),
+        });
+      }
+    });
+
+    if (newItems.length > 0) {
+      setItems((prev) => [...prev, ...newItems]);
+      toast({
+        title: 'Package Added',
+        description: `Successfully added ${newItems.length} items from "${packageData.name}" to the document.`,
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: 'Failed to add package items. Make sure the package contains valid items.',
+        variant: 'destructive',
+      });
+    }
+
+    setSelectedPackageId('');
+  };
+
+  const handleDeletePackage = (packageGroupId) => {
+    setItems((prev) => prev.filter((item) => item.packageGroupId !== packageGroupId));
+    toast({
+      title: 'Package Removed',
+      description: 'The package and all its items have been removed.',
+    });
   };
 
   const handleDeleteItem = (rowId) => {
@@ -1998,6 +2094,52 @@ const NewQuotationPage = () => {
                 Add Item
               </h2>
               <div className="space-y-4">
+                {/* Packages Dropdown */}
+                <div>
+                  <Label>Packages</Label>
+                  <div className="flex gap-2 mt-1">
+                    <div className="flex-1">
+                      <ReactSelect
+                        classNamePrefix="react-select"
+                        isDisabled={isReadOnly}
+                        options={packages.map((p) => ({ value: p.id, label: p.name }))}
+                        value={
+                          selectedPackageId
+                            ? {
+                                value: selectedPackageId,
+                                label: packages.find((p) => p.id === selectedPackageId)?.name,
+                              }
+                            : null
+                        }
+                        onChange={(option) => setSelectedPackageId(option ? option.value : '')}
+                        placeholder="Select a Package to add..."
+                        isSearchable
+                        isClearable
+                        styles={themedReactSelectStyles({
+                          minHeight: '44px',
+                          borderRadius: '0.75rem',
+                        })}
+                      />
+                    </div>
+                    <Button
+                      onClick={handleAddPackage}
+                      disabled={!selectedPackageId || isReadOnly}
+                      variant="outline"
+                      className="h-[44px] px-4 rounded-xl shrink-0"
+                    >
+                      Add Package
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="relative flex py-2 items-center">
+                  <div className="flex-grow border-t border-gray-100"></div>
+                  <span className="flex-shrink mx-4 text-gray-400 text-[10px] font-bold uppercase tracking-wider">
+                    Or Add Individual Item
+                  </span>
+                  <div className="flex-grow border-t border-gray-100"></div>
+                </div>
+
                 <div className="grid grid-cols-3 gap-1">
                   {DOCUMENT_ITEM_TYPE_OPTIONS.map((itemType) => {
                     const ItemTypeIcon = documentItemTypeIcons[itemType.key];
@@ -2329,12 +2471,73 @@ const NewQuotationPage = () => {
                             {page.items.map((item, index) => {
                               const slNo = items.findIndex((x) => x.id === item.id) + 1;
 
+                              const groupItems = item.packageGroupId
+                                ? items.filter((x) => x.packageGroupId === item.packageGroupId)
+                                : [];
+                              const isFirstInGroup = groupItems[0]?.id === item.id;
+                              const isLastInGroup =
+                                groupItems[groupItems.length - 1]?.id === item.id;
+                              const isHoveredGroup =
+                                item.packageGroupId &&
+                                hoveredPackageGroupId === item.packageGroupId;
+
+                              const getCellClasses = (cellPosition) => {
+                                if (!isHoveredGroup) return '';
+                                let cls = ' ';
+                                if (isFirstInGroup) cls += 'package-group-border-t border-t-2 ';
+                                if (isLastInGroup) cls += 'package-group-border-b border-b-2 ';
+                                if (cellPosition === 'left')
+                                  cls += 'package-group-border-l border-l-2 ';
+                                if (cellPosition === 'right')
+                                  cls += 'package-group-border-r border-r-2 ';
+                                return cls;
+                              };
+
                               return (
-                                <tr key={item.id} className="border-b border-gray-50">
-                                  <td className="py-0 px-1 text-gray-500 text-xs align-top border-r border-l border-gray-200">
+                                <tr
+                                  key={item.id}
+                                  className={cn(
+                                    'border-b border-gray-50 transition-colors',
+                                    item.packageGroupId &&
+                                      hoveredPackageGroupId === item.packageGroupId &&
+                                      'bg-red-50/70'
+                                  )}
+                                  onMouseEnter={() =>
+                                    item.packageGroupId &&
+                                    setHoveredPackageGroupId(item.packageGroupId)
+                                  }
+                                  onMouseLeave={() => setHoveredPackageGroupId(null)}
+                                >
+                                  <td
+                                    className={cn(
+                                      'py-0 px-1 text-gray-500 text-xs align-top border-r border-l border-gray-200 relative',
+                                      getCellClasses('left')
+                                    )}
+                                  >
                                     {slNo}.
+                                    {isHoveredGroup && (
+                                      <div className="absolute -top-7 left-0 bg-emerald-600 text-white text-[9px] font-bold px-2 py-1 rounded-t-md flex items-center gap-1.5 shadow-md z-20 whitespace-nowrap print:hidden animate-in fade-in duration-100">
+                                        <span>Package: {item.packageName}</span>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeletePackage(item.packageGroupId);
+                                          }}
+                                          className="bg-emerald-700 hover:bg-emerald-800 text-white transition-colors p-0.5 rounded ml-1"
+                                          title="Delete entire package"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    )}
                                   </td>
-                                  <td className="py-0 px-1 text-gray-900 align-top border-r border-l border-gray-200">
+                                  <td
+                                    className={cn(
+                                      'py-0 px-1 text-gray-900 align-top border-r border-l border-gray-200',
+                                      getCellClasses('none')
+                                    )}
+                                  >
                                     <p className="font-small text-xs">{item.description}</p>
                                     <p
                                       className="text-xs text-gray-500 capitalize italic"
@@ -2365,10 +2568,20 @@ const NewQuotationPage = () => {
                                         ) : null;
                                       })()}
                                   </td>
-                                  <td className="py-0 px-1 text-left text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
+                                  <td
+                                    className={cn(
+                                      'py-0 px-1 text-left text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
+                                      getCellClasses('none')
+                                    )}
+                                  >
                                     {item.hsnCode || '—'}
                                   </td>
-                                  <td className="py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
+                                  <td
+                                    className={cn(
+                                      'py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
+                                      getCellClasses('none')
+                                    )}
+                                  >
                                     <Rupee />
                                     <span
                                       contentEditable={!isReadOnly}
@@ -2390,10 +2603,20 @@ const NewQuotationPage = () => {
                                       {item.price}
                                     </span>
                                   </td>
-                                  <td className="py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
+                                  <td
+                                    className={cn(
+                                      'py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
+                                      getCellClasses('none')
+                                    )}
+                                  >
                                     {item.unit}
                                   </td>
-                                  <td className="py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
+                                  <td
+                                    className={cn(
+                                      'py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
+                                      getCellClasses('none')
+                                    )}
+                                  >
                                     <span
                                       contentEditable={!isReadOnly}
                                       suppressContentEditableWarning
@@ -2415,7 +2638,12 @@ const NewQuotationPage = () => {
                                     </span>
                                   </td>
                                   {documentType === 'Quotation' && (
-                                    <td className="py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200">
+                                    <td
+                                      className={cn(
+                                        'py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
+                                        getCellClasses('none')
+                                      )}
+                                    >
                                       {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS ||
                                       item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS ||
                                       item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING ? (
@@ -2443,7 +2671,12 @@ const NewQuotationPage = () => {
                                       )}
                                     </td>
                                   )}
-                                  <td className="py-0 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200">
+                                  <td
+                                    className={cn(
+                                      'py-0 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200',
+                                      getCellClasses('right')
+                                    )}
+                                  >
                                     <Rupee />
                                     {item.total.toLocaleString()}
                                   </td>
