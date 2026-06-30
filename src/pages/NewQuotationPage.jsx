@@ -2402,57 +2402,57 @@ const NewQuotationPage = () => {
                         {/* Table */}
                         <table className="quote-items-table w-full table-fixed mb-8 mt-2">
                           <colgroup>
-                            <col style={{ width: '3%' }} />
+                            <col style={{ width: '2%' }} />
                             <col style={{ width: documentType === 'Quotation' ? '27%' : '30%' }} />
-                            <col style={{ width: '6%' }} />
-                            <col style={{ width: '6%' }} />
+                            <col style={{ width: '5%' }} />
+                            <col style={{ width: '4%' }} />
                             <col style={{ width: '4%' }} />
                             <col style={{ width: '3%' }} />
-                            {documentType === 'Quotation' && <col style={{ width: '3%' }} />}
+                            {documentType === 'Quotation' && <col style={{ width: '4%' }} />}
                             <col style={{ width: '6%' }} />
-                            <col style={{ width: '7%' }} />
+                            <col style={{ width: '5%' }} />
                           </colgroup>
                           <thead>
                             <tr>
                               <th
-                                className="text-left border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
                                 style={{ color: 'rgb(33, 112, 187)' }}
                               >
-                                Sl No.
+                                Sl No
                               </th>
                               <th
-                                className="text-left border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
                                 style={{ color: 'rgb(33, 112, 187)' }}
                               >
                                 Description
                               </th>
                               <th
-                                className="text-left border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
                                 style={{ color: 'rgb(33, 112, 187)' }}
                               >
                                 HSN / SAC
                               </th>
                               <th
-                                className="text-right border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
                                 style={{ color: 'rgb(33, 112, 187)' }}
                               >
                                 Price Per Unit
                               </th>
                               <th
-                                className="text-right border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
                                 style={{ color: 'rgb(33, 112, 187)' }}
                               >
                                 Unit
                               </th>
                               <th
-                                className="text-right border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
                                 style={{ color: 'rgb(33, 112, 187)' }}
                               >
                                 Qty
                               </th>
                               {documentType === 'Quotation' && (
                                 <th
-                                  className="text-right border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                  className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
                                   style={{ color: 'rgb(33, 112, 187)' }}
                                 >
                                   Days
@@ -2510,7 +2510,7 @@ const NewQuotationPage = () => {
                                 >
                                   <td
                                     className={cn(
-                                      'py-0 px-1 text-gray-500 text-xs align-top border-r border-l border-gray-200 relative',
+                                      'py-0 px-1 text-gray-500 text-[9px] align-center border-r border-l border-gray-200 relative',
                                       getCellClasses('left')
                                     )}
                                   >
@@ -2539,7 +2539,7 @@ const NewQuotationPage = () => {
                                     )}
                                   >
                                     <p className="font-small text-xs whitespace-pre-wrap">
-                                      {item.description}
+                                      {item.description.trim()}
                                     </p>
                                     <p
                                       className="text-xs text-gray-500 capitalize italic"
@@ -2572,7 +2572,7 @@ const NewQuotationPage = () => {
                                   </td>
                                   <td
                                     className={cn(
-                                      'py-0 px-1 text-left text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
+                                      'py-0 px-1 text-center text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
                                       getCellClasses('none')
                                     )}
                                   >
@@ -2607,7 +2607,7 @@ const NewQuotationPage = () => {
                                   </td>
                                   <td
                                     className={cn(
-                                      'py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
+                                      'py-0 px-1 text-center text-gray-600 font-medium text-[10px] align-top border-r border-l border-gray-200',
                                       getCellClasses('none')
                                     )}
                                   >
@@ -2615,7 +2615,7 @@ const NewQuotationPage = () => {
                                   </td>
                                   <td
                                     className={cn(
-                                      'py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
+                                      'py-0 px-1 text-center text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
                                       getCellClasses('none')
                                     )}
                                   >
@@ -2642,7 +2642,7 @@ const NewQuotationPage = () => {
                                   {documentType === 'Quotation' && (
                                     <td
                                       className={cn(
-                                        'py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
+                                        'py-0 px-1 text-center text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
                                         getCellClasses('none')
                                       )}
                                     >
@@ -2682,13 +2682,14 @@ const NewQuotationPage = () => {
                                     <Rupee />
                                     {item.total.toLocaleString()}
                                   </td>
-                                  <td className="text-right print:hidden align-top">
+                                  <td className="print:hidden align-top">
                                     {!isReadOnly && (
-                                      <div className="flex items-center justify-end gap-0">
+                                      // <div className="flex items-center justify-center gap-0">
+                                      <div className="inline-flex items-center gap-0">
                                         <button
                                           onClick={() => handleMoveItemUp(slNo - 1)}
                                           disabled={slNo === 1}
-                                          className="text-gray-400 hover:text-gray-600 p-1 disabled:opacity-30 transition-colors"
+                                          className="text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors"
                                           title="Move Up"
                                         >
                                           <ChevronUp className="w-4 h-4" />
@@ -2696,14 +2697,14 @@ const NewQuotationPage = () => {
                                         <button
                                           onClick={() => handleMoveItemDown(slNo - 1)}
                                           disabled={slNo === items.length}
-                                          className="text-gray-400 hover:text-gray-600 p-1 disabled:opacity-30 transition-colors"
+                                          className="text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors"
                                           title="Move Down"
                                         >
                                           <ChevronDown className="w-4 h-4" />
                                         </button>
                                         <button
                                           onClick={() => handleDeleteItem(item.id)}
-                                          className="text-red-400 hover:text-red-600 p-1 transition-colors"
+                                          className="text-red-400 hover:text-red-600 p-0 transition-colors"
                                           title="Delete"
                                         >
                                           <Trash2 className="w-4 h-4" />
