@@ -1498,7 +1498,7 @@ const JobsManager = ({ id }) => {
                   )}
                 </div>
                 <div className="space-y-2 md:col-span-2 lg:col-span-3">
-                  <Label className="text-xs text-gray-700 font-semibold">Location</Label>
+                  <Label className="text-xs text-gray-700 font-semibold">Project Address</Label>
                   {!canModify && (
                     <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">
                       {editingRecord.project_address || ''}
@@ -1511,7 +1511,7 @@ const JobsManager = ({ id }) => {
                       onChange={(e) =>
                         setEditingRecord({ ...editingRecord, project_address: e.target.value })
                       }
-                      placeholder="Enter project location"
+                      placeholder="Enter project address"
                     />
                   )}
                 </div>

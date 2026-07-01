@@ -98,6 +98,12 @@ export const A4_PRINT_PAGE_STYLE = `
     height: auto !important;
   }
 
+  .a4-container img.upi-qr-code-img {
+    width: 300px !important;
+    height: 300px !important;
+    max-width: 300px !important;
+  }
+
   .a4-container .flex,
   .a4-container .grid {
     max-width: 100% !important;

@@ -266,6 +266,12 @@
 }
 
 /* A4 Sheet Standards & Print Styles */
+.a4-container img.upi-qr-code-img {
+  width: 300px !important;
+  height: 300px !important;
+  max-width: 300px !important;
+}
+
 :root {
   --a4-page-width: 210mm;
   --a4-page-height: 297mm;

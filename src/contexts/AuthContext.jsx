@@ -23,6 +23,7 @@ const AuthProvider = ({ children }) => {
   const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem(STORAGE_KEYS.SESSION);
+    localStorage.removeItem(STORAGE_KEYS.LAST_ACTIVITY);
   }, []);
 
   const login = useCallback(
@@ -57,6 +58,7 @@ const AuthProvider = ({ children }) => {
 
         setUser(sessionUser);
         localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sessionUser));
+        localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, Date.now().toString());
 
         // Send login notification
         notifyLogin(sessionUser.username, sessionUser.fullName);
@@ -95,6 +97,7 @@ const AuthProvider = ({ children }) => {
             }
           } else {
             setUser(parsedUser);
+            localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, Date.now().toString());
           }
         } catch (e) {
           console.error('Failed to parse stored user', e);
@@ -138,37 +141,64 @@ const AuthProvider = ({ children }) => {
     };
   }, [user?.id, logout, toast]);
 
-  // Inactivity timeout logic
+  // Synchronize session changes across tabs
   useEffect(() => {
-    let timeoutId;
+    const handleStorageChange = (e) => {
+      if (e.key === STORAGE_KEYS.SESSION) {
+        if (!e.newValue) {
+          setUser(null);
+        } else {
+          try {
+            setUser(JSON.parse(e.newValue));
+          } catch (err) {}
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
-    const resetTimer = () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      if (user) {
-        timeoutId = setTimeout(() => {
-          logout();
-          toast({
-            title: 'Session Timed Out',
-            description: 'You have been logged out due to inactivity.',
-            variant: 'destructive',
-          });
-        }, INACTIVITY_TIMEOUT);
+  // Inactivity timeout logic (cross-tab synchronized via localStorage)
+  useEffect(() => {
+    if (!user) return;
+
+    // Initialize/update last activity on mount/user change
+    localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, Date.now().toString());
+
+    const updateActivity = () => {
+      const now = Date.now();
+      const lastSaved = Number(localStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY) || 0);
+      if (now - lastSaved > 5000) {
+        // Throttle writes to localStorage to at most once every 5 seconds
+        localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, now.toString());
       }
     };
 
-    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+    const checkInactivity = () => {
+      const lastActivity = Number(localStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY) || 0);
+      const now = Date.now();
+      if (now - lastActivity >= INACTIVITY_TIMEOUT) {
+        logout();
+        toast({
+          title: 'Session Timed Out',
+          description: 'You have been logged out due to inactivity.',
+          variant: 'destructive',
+        });
+      }
+    };
 
-    if (user) {
-      resetTimer();
-      activityEvents.forEach((event) => {
-        window.addEventListener(event, resetTimer);
-      });
-    }
+    // Run the inactivity check every 5 seconds
+    const intervalId = setInterval(checkInactivity, 5000);
+
+    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+    activityEvents.forEach((event) => {
+      window.addEventListener(event, updateActivity);
+    });
 
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
+      clearInterval(intervalId);
       activityEvents.forEach((event) => {
-        window.removeEventListener(event, resetTimer);
+        window.removeEventListener(event, updateActivity);
       });
     };
   }, [user, logout, toast, INACTIVITY_TIMEOUT]);

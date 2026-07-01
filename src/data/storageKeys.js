@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   REPORT_FORM: `${PREFIX}report_form`,
   EXPENSES: `${PREFIX}expenses`,
   PACKAGES: `${PREFIX}packages`,
+  LAST_ACTIVITY: `${PREFIX}last_activity`,
 };
 
 /**

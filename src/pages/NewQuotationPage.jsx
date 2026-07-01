@@ -241,6 +241,7 @@ const NewQuotationPage = () => {
   const [documentType, setDocumentType] = useState(searchParams.get('type') || 'Quotation'); // 'Tax Invoice', 'Quotation', 'Proforma Invoice', 'Purchase Order', or 'Delivery Challan'
   const [discount, setDiscount] = useState(0);
   const [discountShow, setDiscountShow] = useState(true);
+  const [daysShow, setDaysShow] = useState(true);
   const [isInterstate, setIsInterstate] = useState(false);
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -260,9 +261,10 @@ const NewQuotationPage = () => {
       documentType,
       discount,
       discountShow,
+      daysShow,
       isInterstate,
     }),
-    [quoteDetails, items, documentType, discount, discountShow, isInterstate]
+    [quoteDetails, items, documentType, discount, discountShow, daysShow, isInterstate]
   );
 
   // Compute aggregated T&C and Technicals from items, merging with legacy manually selected ones if present
@@ -311,6 +313,7 @@ const NewQuotationPage = () => {
     setDocumentType('Quotation');
     setDiscount(0);
     setDiscountShow(true);
+    setDaysShow(true);
     setIsInterstate(false);
     setComboboxOpen(false);
     setSearchValue('');
@@ -327,6 +330,7 @@ const NewQuotationPage = () => {
       documentType: 'Quotation',
       discount: 0,
       discountShow: true,
+      daysShow: true,
       isInterstate: false,
     };
     setLastSavedData(JSON.stringify(initialSnapshot));
@@ -457,8 +461,29 @@ const NewQuotationPage = () => {
 
           // Also try to find matching contact or set primary
           const contacts = foundClient.contacts || [];
-          const primaryIdx = contacts.findIndex((con) => con.is_primary);
-          const currentIdx = primaryIdx >= 0 ? primaryIdx : contacts.length > 0 ? 0 : -1;
+          let currentIdx = contacts.findIndex(
+            (con) =>
+              (con.contact_person || '').trim().toLowerCase() ===
+              (quoteDetails.name || '').trim().toLowerCase()
+          );
+          if (currentIdx === -1) {
+            currentIdx = contacts.findIndex(
+              (con) =>
+                (con.contact_email || '').trim().toLowerCase() ===
+                (quoteDetails.email || '').trim().toLowerCase()
+            );
+          }
+          if (currentIdx === -1) {
+            currentIdx = contacts.findIndex(
+              (con) =>
+                (con.contact_phone || '').trim().toLowerCase() ===
+                (quoteDetails.phone || '').trim().toLowerCase()
+            );
+          }
+          if (currentIdx === -1) {
+            const primaryIdx = contacts.findIndex((con) => con.is_primary);
+            currentIdx = primaryIdx >= 0 ? primaryIdx : contacts.length > 0 ? 0 : -1;
+          }
 
           if (currentIdx >= 0 && contactSelectionIdx === '') {
             setContactSelectionIdx(currentIdx.toString());
@@ -477,7 +502,7 @@ const NewQuotationPage = () => {
       try {
         const { data, error } = await supabase
           .from('documents')
-          .select('*, clients(*)')
+          .select('*, clients(*), jobs(*)')
           .eq('id', id)
           .single();
 
@@ -487,12 +512,59 @@ const NewQuotationPage = () => {
           const content = data.content;
           const loadedQuoteDetails = { ...(content.quoteDetails || {}) };
 
-          // Fallback to joined client data if specific fields are missing in JSON
-          if (!loadedQuoteDetails.clientName && data.clients?.client_name) {
-            loadedQuoteDetails.clientName = data.clients.client_name;
+          // Always use/refresh client details from the joined client record (clients table) if it exists
+          if (data.clients) {
+            loadedQuoteDetails.clientName = data.clients.client_name || '';
+            loadedQuoteDetails.clientAddress = data.clients.client_address || '';
+            loadedQuoteDetails.gstin = data.clients.gstin || '';
+
+            // Find matching contact or fallback
+            const contacts = Array.isArray(data.clients.contacts) ? data.clients.contacts : [];
+            let matchedContact = null;
+
+            // Try matching by name
+            const savedContactName = (loadedQuoteDetails.name || '').trim().toLowerCase();
+            if (savedContactName) {
+              matchedContact = contacts.find(
+                (c) => (c.contact_person || '').trim().toLowerCase() === savedContactName
+              );
+            }
+            // Try matching by email
+            if (!matchedContact && loadedQuoteDetails.email) {
+              matchedContact = contacts.find(
+                (c) =>
+                  (c.contact_email || '').trim().toLowerCase() ===
+                  loadedQuoteDetails.email.trim().toLowerCase()
+              );
+            }
+            // Try matching by phone
+            if (!matchedContact && loadedQuoteDetails.phone) {
+              matchedContact = contacts.find(
+                (c) =>
+                  (c.contact_phone || '').trim().toLowerCase() ===
+                  loadedQuoteDetails.phone.trim().toLowerCase()
+              );
+            }
+            // Fallback to primary contact or first contact
+            if (!matchedContact) {
+              matchedContact = contacts.find((c) => c.is_primary) || contacts[0];
+            }
+
+            if (matchedContact) {
+              loadedQuoteDetails.name = matchedContact.contact_person || '';
+              loadedQuoteDetails.email = matchedContact.contact_email || '';
+              loadedQuoteDetails.phone = matchedContact.contact_phone || '';
+            } else {
+              loadedQuoteDetails.name = '';
+              loadedQuoteDetails.email = '';
+              loadedQuoteDetails.phone = '';
+            }
           }
-          if (!loadedQuoteDetails.clientAddress && data.clients?.client_address) {
-            loadedQuoteDetails.clientAddress = data.clients.client_address;
+
+          // Always use/refresh project details from the joined job record (jobs table) if it exists
+          if (data.jobs) {
+            loadedQuoteDetails.projectName = data.jobs.project_name || '';
+            loadedQuoteDetails.projectAddress = data.jobs.project_address || '';
           }
 
           const loadedItems = content.items || [];
@@ -500,6 +572,8 @@ const NewQuotationPage = () => {
           const loadedDiscount = content.discount || 0;
           const loadedDiscountShow =
             content.discountShow !== undefined ? String(content.discountShow) === 'true' : true;
+          const loadedDaysShow =
+            content.daysShow !== undefined ? String(content.daysShow) === 'true' : true;
           const loadedIsInterstate =
             content.isInterstate !== undefined ? String(content.isInterstate) === 'true' : false;
 
@@ -515,6 +589,7 @@ const NewQuotationPage = () => {
           setLoadedDocumentType(loadedDocType);
           setDiscount(loadedDiscount);
           setDiscountShow(loadedDiscountShow);
+          setDaysShow(loadedDaysShow);
           setIsInterstate(loadedIsInterstate);
           setSavedRecordId(data.id);
           setDocumentCreatorId(data.created_by);
@@ -526,6 +601,7 @@ const NewQuotationPage = () => {
             documentType: loadedDocType,
             discount: loadedDiscount,
             discountShow: loadedDiscountShow,
+            daysShow: loadedDaysShow,
             isInterstate: loadedIsInterstate,
           };
           setLastSavedData(JSON.stringify(snapshot));
@@ -729,6 +805,7 @@ const NewQuotationPage = () => {
         const jobPayload = {
           client_id: clientId,
           project_name: quoteDetails.projectName || '',
+          project_address: quoteDetails.projectAddress || '',
           status: WORKFLOW_STATES.QUOTATION_SENT,
           created_by: userId,
           updated_by: userId,
@@ -742,6 +819,20 @@ const NewQuotationPage = () => {
         if (jobError) throw new Error('Failed to auto-create job: ' + jobError.message);
         resolvedJobId = newJob.id;
         setLinkedJobId(newJob.id);
+      } else {
+        // Update existing job project details to keep in sync
+        const { error: jobUpdateError } = await supabase
+          .from('jobs')
+          .update({
+            project_name: quoteDetails.projectName || '',
+            project_address: quoteDetails.projectAddress || '',
+            updated_by: userId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', resolvedJobId);
+        if (jobUpdateError) {
+          console.error('Failed to update linked job details:', jobUpdateError);
+        }
       }
 
       const recordData = {
@@ -756,6 +847,7 @@ const NewQuotationPage = () => {
           items,
           discount,
           discountShow,
+          daysShow,
           isInterstate,
         },
         job_id: resolvedJobId,
@@ -782,6 +874,7 @@ const NewQuotationPage = () => {
             documentType,
             discount,
             discountShow,
+            daysShow,
             isInterstate,
           };
           setLastSavedData(JSON.stringify(snapshot));
@@ -816,6 +909,7 @@ const NewQuotationPage = () => {
             documentType,
             discount,
             discountShow,
+            daysShow,
             isInterstate,
           };
           setLastSavedData(JSON.stringify(snapshot));
@@ -1399,74 +1493,34 @@ const NewQuotationPage = () => {
     }
 
     const pages = [];
-    const totalTypes = derivedTcTypes.length;
-    let currentTypeIndex = 0;
 
-    // Logic: Pagination is based on number of T&C Types (groups), not individual lines.
-    // Page 1 gets TC_ITEMS_PER_FIRST_PAGE types.
-    // Subsequent pages get TC_ITEMS_PER_CONTINUATION_PAGE types.
-
-    // --- First Page ---
-    const firstPageLimit = TC_ITEMS_PER_FIRST_PAGE;
-    const firstPageTypes = derivedTcTypes.slice(0, firstPageLimit);
-    const firstPageItems = [];
-
-    firstPageTypes.forEach((type) => {
+    derivedTcTypes.forEach((type) => {
+      const pageItems = [];
       const typeTerms = terms.filter((t) => t.type === type);
       if (typeTerms.length > 0) {
         if (type !== 'general' && type !== 'General') {
-          firstPageItems.push({ type: 'header', text: type, id: `header-${type}` });
+          pageItems.push({ type: 'header', text: type, id: `header-${type}` });
         }
         typeTerms.forEach((term) => {
-          firstPageItems.push({ type: 'term', text: term.text, id: term.id });
+          pageItems.push({ type: 'term', text: term.text, id: term.id });
         });
-        firstPageItems.push({ type: 'spacer', id: `spacer-${type}` });
+
+        pages.push({
+          items: pageItems,
+          pageNumber: pages.length + 1,
+          isFirstPage: pages.length === 0,
+        });
       }
     });
-    // Remove last spacer for this page
-    if (firstPageItems.length > 0 && firstPageItems[firstPageItems.length - 1].type === 'spacer') {
-      firstPageItems.pop();
-    }
 
-    pages.push({
-      items: firstPageItems,
-      pageNumber: 1,
-      isFirstPage: true,
-    });
-
-    currentTypeIndex = firstPageLimit;
-
-    // --- Continuation Pages ---
-    while (currentTypeIndex < totalTypes) {
-      const contLimit = TC_ITEMS_PER_CONTINUATION_PAGE;
-      const pageTypes = derivedTcTypes.slice(currentTypeIndex, currentTypeIndex + contLimit);
-      const pageItems = [];
-
-      pageTypes.forEach((type) => {
-        const typeTerms = terms.filter((t) => t.type === type);
-        if (typeTerms.length > 0) {
-          if (type !== 'general' && type !== 'General') {
-            pageItems.push({ type: 'header', text: type, id: `header-${type}` });
-          }
-          typeTerms.forEach((term) => {
-            pageItems.push({ type: 'term', text: term.text, id: term.id });
-          });
-          pageItems.push({ type: 'spacer', id: `spacer-${type}` });
-        }
-      });
-
-      // Remove last spacer
-      if (pageItems.length > 0 && pageItems[pageItems.length - 1].type === 'spacer') {
-        pageItems.pop();
-      }
-
-      pages.push({
-        items: pageItems,
-        pageNumber: pages.length + 1,
-        isFirstPage: false,
-      });
-
-      currentTypeIndex += contLimit;
+    if (pages.length === 0) {
+      return [
+        {
+          items: [],
+          pageNumber: 1,
+          isFirstPage: true,
+        },
+      ];
     }
 
     return pages;
@@ -1478,66 +1532,23 @@ const NewQuotationPage = () => {
     }
 
     const pages = [];
-    const totalTypes = derivedTechTypes.length;
-    let currentTypeIndex = 0;
 
-    // --- First Page ---
-    const firstPageLimit = TECH_ITEMS_PER_FIRST_PAGE;
-    const firstPageTypes = derivedTechTypes.slice(0, firstPageLimit);
-    const firstPageItems = [];
-
-    firstPageTypes.forEach((type) => {
+    derivedTechTypes.forEach((type) => {
+      const pageItems = [];
       const typeTech = (technicals || []).filter((t) => t.type === type);
       if (typeTech.length > 0) {
-        firstPageItems.push({ type: 'header', text: type, id: `header-${type}` });
+        pageItems.push({ type: 'header', text: type, id: `header-${type}` });
         typeTech.forEach((tech) => {
-          firstPageItems.push({ type: 'tech', text: tech.text, id: tech.id });
+          pageItems.push({ type: 'tech', text: tech.text, id: tech.id });
         });
-        firstPageItems.push({ type: 'spacer', id: `spacer-${type}` });
+
+        pages.push({
+          items: pageItems,
+          pageNumber: pages.length + 1,
+          isFirstPage: pages.length === 0,
+        });
       }
     });
-
-    if (firstPageItems.length > 0 && firstPageItems[firstPageItems.length - 1].type === 'spacer') {
-      firstPageItems.pop();
-    }
-
-    pages.push({
-      items: firstPageItems,
-      pageNumber: 1,
-      isFirstPage: true,
-    });
-
-    currentTypeIndex = firstPageLimit;
-
-    // --- Continuation Pages ---
-    while (currentTypeIndex < totalTypes) {
-      const contLimit = TECH_ITEMS_PER_CONTINUATION_PAGE;
-      const pageTypes = derivedTechTypes.slice(currentTypeIndex, currentTypeIndex + contLimit);
-      const pageItems = [];
-
-      pageTypes.forEach((type) => {
-        const typeTech = (technicals || []).filter((t) => t.type === type);
-        if (typeTech.length > 0) {
-          pageItems.push({ type: 'header', text: type, id: `header-${type}` });
-          typeTech.forEach((tech) => {
-            pageItems.push({ type: 'tech', text: tech.text, id: tech.id });
-          });
-          pageItems.push({ type: 'spacer', id: `spacer-${type}` });
-        }
-      });
-
-      if (pageItems.length > 0 && pageItems[pageItems.length - 1].type === 'spacer') {
-        pageItems.pop();
-      }
-
-      pages.push({
-        items: pageItems,
-        pageNumber: pages.length + 1,
-        isFirstPage: false,
-      });
-
-      currentTypeIndex += contLimit;
-    }
 
     return pages;
   };
@@ -1699,6 +1710,17 @@ const NewQuotationPage = () => {
                     disabled={isReadOnly}
                     className="w-full"
                   />
+                  <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox
+                      id="daysShow"
+                      checked={daysShow}
+                      onCheckedChange={(checked) => setDaysShow(!!checked)}
+                      disabled={isReadOnly}
+                    />
+                    <Label htmlFor="daysShow" className="cursor-pointer select-none">
+                      Show Days Column?
+                    </Label>
+                  </div>
                   <div className="flex items-center space-x-2 pt-2">
                     <Checkbox
                       id="discountShow"
@@ -1877,7 +1899,7 @@ const NewQuotationPage = () => {
                     />
                   )}
                 </div>
-                <div>
+                <div className="hidden">
                   <Label>Client Address</Label>
                   <Textarea
                     className="min-h-[100px]"
@@ -1889,7 +1911,7 @@ const NewQuotationPage = () => {
                     disabled={isReadOnly}
                   />
                 </div>
-                <div>
+                <div className="hidden">
                   <Label>GSTIN</Label>
                   <div className="flex items-center gap-4">
                     <Input
@@ -2403,12 +2425,19 @@ const NewQuotationPage = () => {
                         <table className="quote-items-table w-full table-fixed mb-8 mt-2">
                           <colgroup>
                             <col style={{ width: '2%' }} />
-                            <col style={{ width: documentType === 'Quotation' ? '27%' : '30%' }} />
+                            <col
+                              style={{
+                                width:
+                                  documentType === 'Quotation' ? (daysShow ? '27%' : '31%') : '30%',
+                              }}
+                            />
                             <col style={{ width: '5%' }} />
                             <col style={{ width: '4%' }} />
                             <col style={{ width: '4%' }} />
                             <col style={{ width: '3%' }} />
-                            {documentType === 'Quotation' && <col style={{ width: '4%' }} />}
+                            {documentType === 'Quotation' && daysShow && (
+                              <col style={{ width: '4%' }} />
+                            )}
                             <col style={{ width: '6%' }} />
                             <col style={{ width: '5%' }} />
                           </colgroup>
@@ -2450,7 +2479,7 @@ const NewQuotationPage = () => {
                               >
                                 Qty
                               </th>
-                              {documentType === 'Quotation' && (
+                              {documentType === 'Quotation' && daysShow && (
                                 <th
                                   className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
                                   style={{ color: 'rgb(33, 112, 187)' }}
@@ -2639,7 +2668,7 @@ const NewQuotationPage = () => {
                                       {item.qty}
                                     </span>
                                   </td>
-                                  {documentType === 'Quotation' && (
+                                  {documentType === 'Quotation' && daysShow && (
                                     <td
                                       className={cn(
                                         'py-0 px-1 text-center text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
@@ -2859,6 +2888,27 @@ const NewQuotationPage = () => {
                                     </span>
                                   </div>
                                 )}
+                                <div className="mt-2 text-xs text-gray-600 italic">
+                                  <span>
+                                    * This is a computer generated quotation and does not require a
+                                    physical signature.
+                                  </span>
+                                </div>
+                                <div>
+                                  {/* Company Seal */}
+                                  <div className="flex justify-end mt-4">
+                                    <div className="text-center flex flex-col items-center">
+                                      <img
+                                        src={`${import.meta.env.BASE_URL}company-seal.png`}
+                                        alt="Company Seal"
+                                        className="w-24 h-24 object-contain"
+                                      />
+                                      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mt-1">
+                                        For EDGE2 Engineering Solutions India Pvt. Ltd.
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </>
@@ -2917,7 +2967,7 @@ const NewQuotationPage = () => {
                       <div className="text-gray-500 text-sm flex-1">
                         {/* Bank + Signatory (Grid) */}
                         <div
-                          className={`grid ${selectedBank?.qr_code_url ? 'grid-cols-[1.5fr_0.8fr_1fr]' : 'grid-cols-[1.5fr_1fr]'} gap-4 mt-2 text-left text-xs`}
+                          className={`grid ${selectedBank?.qr_code_url ? 'grid-cols-2' : 'grid-cols-2'} gap-4 mt-2 text-left text-xs`}
                         >
                           {/* Bank Details */}
                           <div>
@@ -2974,9 +3024,9 @@ const NewQuotationPage = () => {
                               <img
                                 src={selectedBank.qr_code_url}
                                 alt="UPI QR Code"
-                                className="w-24 h-24 object-contain"
+                                className="upi-qr-code-img object-contain"
                               />
-                              <span className="text-[8px] text-gray-400 font-bold uppercase tracking-wider mt-1">
+                              <span className="hidden text-[8px] text-gray-400 font-bold uppercase tracking-wider mt-1">
                                 Scan to Pay
                               </span>
                             </div>
@@ -2999,12 +3049,12 @@ const NewQuotationPage = () => {
                             </table>
                           </div>
                         </div> */}
-                          <div className="flex items-center justify-center h-24 pl-0">
+                          {/* <div className="flex items-center justify-center h-24 pl-0">
                             <h2 className="font-semibold text-[10px] text-center">
                               * This is a computer generated {documentType.toLowerCase()} and does
                               not require a physical signature.
                             </h2>
-                          </div>
+                          </div> */}
                         </div>
 
                         {/* Payment Received Details - Only for Tax Invoice */}
@@ -3152,9 +3202,7 @@ const NewQuotationPage = () => {
                       <div className="a4-page-content">
                         <div className="text-left text-gray-500 text-sm">
                           <h2 className="font-semibold text-lg mb-4 text-center">
-                            {tcIndex === 0
-                              ? 'Terms & Conditions'
-                              : 'Terms & Conditions (Continued)'}
+                            Terms & Conditions
                           </h2>
 
                           {tcPage.items.length === 0 ? (
@@ -3244,11 +3292,7 @@ const NewQuotationPage = () => {
                         </span>
                       </div>
                       <div className="a4-page-content">
-                        {page.isFirstPage && (
-                          <h2 className="font-semibold text-lg mb-6 text-center pb-2">
-                            Technicals
-                          </h2>
-                        )}
+                        <h2 className="font-semibold text-lg mb-6 text-center pb-2">Technicals</h2>
                         <div className="space-y-4">
                           {page.items.map((item) => {
                             if (item.type === 'header') {
