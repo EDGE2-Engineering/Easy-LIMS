@@ -2431,8 +2431,8 @@ const NewQuotationPage = () => {
                                   documentType === 'Quotation' ? (daysShow ? '27%' : '31%') : '30%',
                               }}
                             />
-                            <col style={{ width: '5%' }} />
                             <col style={{ width: '4%' }} />
+                            <col style={{ width: '5%' }} />
                             <col style={{ width: '4%' }} />
                             <col style={{ width: '3%' }} />
                             {documentType === 'Quotation' && daysShow && (
@@ -2601,7 +2601,7 @@ const NewQuotationPage = () => {
                                   </td>
                                   <td
                                     className={cn(
-                                      'py-0 px-1 text-center text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
+                                      'py-0 px-1 text-center text-gray-600 font-medium text-[10px] align-top border-r border-l border-gray-200',
                                       getCellClasses('none')
                                     )}
                                   >
