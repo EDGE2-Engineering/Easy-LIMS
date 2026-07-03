@@ -1472,7 +1472,18 @@ const NewQuotationPage = () => {
     }
 
     // Each line is 15px (line-height) + row vertical padding (py-2 is 8px top/bottom = 16px)
-    return totalLines * 15 + 16;
+    let totalHeight = totalLines * 15 + 16;
+
+    // Add height of package name row (30px) for the first item in a package group
+    if (item.packageGroupId) {
+      const groupItems = items.filter((x) => x.packageGroupId === item.packageGroupId);
+      const isFirstInGroup = groupItems[0]?.id === item.id;
+      if (isFirstInGroup) {
+        totalHeight += 30;
+      }
+    }
+
+    return totalHeight;
   };
 
   const paginateItems = () => {
@@ -2604,11 +2615,15 @@ const NewQuotationPage = () => {
                                 item.packageGroupId &&
                                 hoveredPackageGroupId === item.packageGroupId;
 
+                              const itemIndex = items.findIndex((x) => x.id === item.id);
+                              const nextItem = items[itemIndex + 1];
+                              const nextItemIsPackage = nextItem && nextItem.packageGroupId;
+
                               const getCellClasses = (cellPosition) => {
                                 if (!isHoveredGroup) return '';
                                 let cls = ' ';
-                                if (isFirstInGroup) cls += 'package-group-border-t border-t-2 ';
-                                if (isLastInGroup) cls += 'package-group-border-b border-b-2 ';
+                                if (isLastInGroup && !nextItemIsPackage)
+                                  cls += 'package-group-border-b border-b-2 ';
                                 if (cellPosition === 'left')
                                   cls += 'package-group-border-l border-l-2 ';
                                 if (cellPosition === 'right')
@@ -2619,8 +2634,8 @@ const NewQuotationPage = () => {
                               const getPersistentCellClasses = () => {
                                 if (!item.packageGroupId) return '';
                                 let cls = ' ';
-                                if (isFirstInGroup) cls += 'package-group-persistent-t ';
-                                if (isLastInGroup) cls += 'package-group-persistent-b ';
+                                if (isLastInGroup && !nextItemIsPackage)
+                                  cls += 'package-group-persistent-b ';
                                 return cls;
                               };
 
@@ -2644,158 +2659,159 @@ const NewQuotationPage = () => {
                               }
 
                               return (
-                                <tr
-                                  key={item.id}
-                                  className={cn(
-                                    'border-b border-gray-50 transition-colors',
-                                    item.packageGroupId &&
-                                      hoveredPackageGroupId === item.packageGroupId &&
-                                      'bg-red-50/70'
+                                <React.Fragment key={item.id}>
+                                  {item.packageGroupId && isFirstInGroup && (
+                                    <tr
+                                      className={cn(
+                                        'transition-colors border-b border-gray-200',
+                                        isHoveredGroup ? 'bg-red-50/70' : 'bg-gray-50'
+                                      )}
+                                      onMouseEnter={() =>
+                                        setHoveredPackageGroupId(item.packageGroupId)
+                                      }
+                                      onMouseLeave={() => setHoveredPackageGroupId(null)}
+                                    >
+                                      <td
+                                        colSpan={documentType === 'Quotation' && daysShow ? 8 : 7}
+                                        className={cn(
+                                          'py-2 px-2 font-black text-[10px] text-gray-900 uppercase tracking-widest text-left border-l border-r border-gray-200 bg-gray-50',
+                                          isHoveredGroup && 'package-group-border-l border-l-2'
+                                        )}
+                                      >
+                                        Package: {item.packageName.toUpperCase()}
+                                      </td>
+                                      <td
+                                        className={cn(
+                                          'print:hidden align-top border-r border-gray-200 bg-gray-50',
+                                          isHoveredGroup && 'package-group-border-r border-r-2'
+                                        )}
+                                      ></td>
+                                    </tr>
                                   )}
-                                  onMouseEnter={() =>
-                                    item.packageGroupId &&
-                                    setHoveredPackageGroupId(item.packageGroupId)
-                                  }
-                                  onMouseLeave={() => setHoveredPackageGroupId(null)}
-                                >
-                                  <td
+                                  <tr
+                                    key={item.id}
                                     className={cn(
-                                      'py-0 px-1 text-gray-500 text-[9px] align-center border-r border-l border-gray-200 relative',
-                                      getCellClasses('left'),
-                                      getPersistentCellClasses()
+                                      'border-b border-gray-50 transition-colors',
+                                      item.packageGroupId &&
+                                        hoveredPackageGroupId === item.packageGroupId &&
+                                        'bg-red-50/70'
                                     )}
+                                    onMouseEnter={() =>
+                                      item.packageGroupId &&
+                                      setHoveredPackageGroupId(item.packageGroupId)
+                                    }
+                                    onMouseLeave={() => setHoveredPackageGroupId(null)}
                                   >
-                                    {slNo}.
-                                    {isHoveredGroup && (
-                                      <div className="absolute -top-7 left-0 bg-emerald-600 text-white text-[9px] font-bold px-2 py-1 rounded-t-md flex items-center gap-1.5 shadow-md z-20 whitespace-nowrap print:hidden animate-in fade-in duration-100">
-                                        <span>Package: {item.packageName}</span>
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeletePackage(item.packageGroupId);
-                                          }}
-                                          className="bg-emerald-700 hover:bg-emerald-800 text-white transition-colors p-0.5 rounded ml-1"
-                                          title="Delete entire package"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      </div>
-                                    )}
-                                  </td>
-                                  <td
-                                    className={cn(
-                                      'py-0 px-1 text-gray-900 align-top border-r border-l border-gray-200',
-                                      getCellClasses('none'),
-                                      getPersistentCellClasses()
-                                    )}
-                                  >
-                                    <p className="font-small text-xs whitespace-pre-wrap">
-                                      {item.description.trim()}
-                                    </p>
-                                    <p
-                                      className="text-xs text-gray-500 capitalize italic"
-                                      style={{ fontSize: '10px' }}
+                                    <td
+                                      className={cn(
+                                        'py-0 px-1 text-gray-500 text-[9px] align-center border-r border-l border-gray-200 relative',
+                                        getCellClasses('left'),
+                                        getPersistentCellClasses()
+                                      )}
                                     >
-                                      {getDocumentItemTypeLabel(item.type)}
-                                    </p>
-                                    {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS &&
-                                      (() => {
-                                        const values = [
-                                          item.methodOfSampling && item.methodOfSampling !== 'NA'
-                                            ? `Method: ${item.methodOfSampling}`
-                                            : null,
+                                      {slNo}.
+                                      {isHoveredGroup && (
+                                        <div className="absolute -top-7 left-0 bg-emerald-600 text-white text-[9px] font-bold px-2 py-1 rounded-t-md flex items-center gap-1.5 shadow-md z-20 whitespace-nowrap print:hidden animate-in fade-in duration-100">
+                                          <span>Package: {item.packageName}</span>
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeletePackage(item.packageGroupId);
+                                            }}
+                                            className="bg-emerald-700 hover:bg-emerald-800 text-white transition-colors p-0.5 rounded ml-1"
+                                            title="Delete entire package"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td
+                                      className={cn(
+                                        'py-0 px-1 text-gray-900 align-top border-r border-l border-gray-200',
+                                        getCellClasses('none'),
+                                        getPersistentCellClasses()
+                                      )}
+                                    >
+                                      <p className="font-small text-xs whitespace-pre-wrap">
+                                        {item.description.trim()}
+                                      </p>
+                                      <p
+                                        className="text-xs text-gray-500 capitalize italic"
+                                        style={{ fontSize: '10px' }}
+                                      >
+                                        {getDocumentItemTypeLabel(item.type)}
+                                      </p>
+                                      {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS &&
+                                        (() => {
+                                          const values = [
+                                            item.methodOfSampling && item.methodOfSampling !== 'NA'
+                                              ? `Method: ${item.methodOfSampling}`
+                                              : null,
 
-                                          typeof item.numBHs === 'number' && item.numBHs > 0
-                                            ? `BHs: ${item.numBHs}`
-                                            : null,
+                                            typeof item.numBHs === 'number' && item.numBHs > 0
+                                              ? `BHs: ${item.numBHs}`
+                                              : null,
 
-                                          item.measure && item.measure !== 'NA'
-                                            ? `Measure: ${item.measure}`
-                                            : null,
-                                        ].filter(Boolean);
+                                            item.measure && item.measure !== 'NA'
+                                              ? `Measure: ${item.measure}`
+                                              : null,
+                                          ].filter(Boolean);
 
-                                        return values.length ? (
-                                          <p className="mt-1 text-xs text-gray-400">
-                                            {values.join('   |   ')}
-                                          </p>
-                                        ) : null;
-                                      })()}
-                                  </td>
-                                  <td
-                                    className={cn(
-                                      'py-0 px-1 text-center text-gray-600 font-medium text-[10px] align-top border-r border-l border-gray-200',
-                                      getCellClasses('none'),
-                                      getPersistentCellClasses()
-                                    )}
-                                  >
-                                    {item.hsnCode || '—'}
-                                  </td>
-                                  <td
-                                    className={cn(
-                                      'py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
-                                      getCellClasses('none'),
-                                      getPersistentCellClasses()
-                                    )}
-                                  >
-                                    <Rupee />
-                                    <span
-                                      contentEditable={!isReadOnly}
-                                      suppressContentEditableWarning
-                                      onBlur={(e) =>
-                                        handleUpdateItemPrice(
-                                          item.id,
-                                          e.currentTarget.textContent,
-                                          e.currentTarget
-                                        )
-                                      }
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          e.preventDefault();
-                                          e.currentTarget.blur();
+                                          return values.length ? (
+                                            <p className="mt-1 text-xs text-gray-400">
+                                              {values.join('   |   ')}
+                                            </p>
+                                          ) : null;
+                                        })()}
+                                    </td>
+                                    <td
+                                      className={cn(
+                                        'py-0 px-1 text-center text-gray-600 font-medium text-[10px] align-top border-r border-l border-gray-200',
+                                        getCellClasses('none'),
+                                        getPersistentCellClasses()
+                                      )}
+                                    >
+                                      {item.hsnCode || '—'}
+                                    </td>
+                                    <td
+                                      className={cn(
+                                        'py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
+                                        getCellClasses('none'),
+                                        getPersistentCellClasses()
+                                      )}
+                                    >
+                                      <Rupee />
+                                      <span
+                                        contentEditable={!isReadOnly}
+                                        suppressContentEditableWarning
+                                        onBlur={(e) =>
+                                          handleUpdateItemPrice(
+                                            item.id,
+                                            e.currentTarget.textContent,
+                                            e.currentTarget
+                                          )
                                         }
-                                      }}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            e.currentTarget.blur();
+                                          }
+                                        }}
+                                      >
+                                        {item.price}
+                                      </span>
+                                    </td>
+                                    <td
+                                      className={cn(
+                                        'py-0 px-1 text-center text-gray-600 font-medium text-[10px] align-top border-r border-l border-gray-200',
+                                        getCellClasses('none'),
+                                        getPersistentCellClasses()
+                                      )}
                                     >
-                                      {item.price}
-                                    </span>
-                                  </td>
-                                  <td
-                                    className={cn(
-                                      'py-0 px-1 text-center text-gray-600 font-medium text-[10px] align-top border-r border-l border-gray-200',
-                                      getCellClasses('none'),
-                                      getPersistentCellClasses()
-                                    )}
-                                  >
-                                    {item.unit}
-                                  </td>
-                                  <td
-                                    className={cn(
-                                      'py-0 px-1 text-center text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
-                                      getCellClasses('none'),
-                                      getPersistentCellClasses()
-                                    )}
-                                  >
-                                    <span
-                                      contentEditable={!isReadOnly}
-                                      suppressContentEditableWarning
-                                      onBlur={(e) =>
-                                        handleUpdateItemQty(
-                                          item.id,
-                                          e.currentTarget.textContent,
-                                          e.currentTarget
-                                        )
-                                      }
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          e.preventDefault();
-                                          e.currentTarget.blur();
-                                        }
-                                      }}
-                                    >
-                                      {item.qty}
-                                    </span>
-                                  </td>
-                                  {documentType === 'Quotation' && daysShow && (
+                                      {item.unit}
+                                    </td>
                                     <td
                                       className={cn(
                                         'py-0 px-1 text-center text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
@@ -2803,79 +2819,108 @@ const NewQuotationPage = () => {
                                         getPersistentCellClasses()
                                       )}
                                     >
-                                      {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS ||
-                                      item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS ||
-                                      item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING ? (
-                                        <span
-                                          contentEditable={!isReadOnly}
-                                          suppressContentEditableWarning
-                                          onBlur={(e) =>
-                                            handleUpdateItemNumDays(
-                                              item.id,
-                                              e.currentTarget.textContent,
-                                              e.currentTarget
-                                            )
+                                      <span
+                                        contentEditable={!isReadOnly}
+                                        suppressContentEditableWarning
+                                        onBlur={(e) =>
+                                          handleUpdateItemQty(
+                                            item.id,
+                                            e.currentTarget.textContent,
+                                            e.currentTarget
+                                          )
+                                        }
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            e.currentTarget.blur();
                                           }
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                              e.preventDefault();
-                                              e.currentTarget.blur();
+                                        }}
+                                      >
+                                        {item.qty}
+                                      </span>
+                                    </td>
+                                    {documentType === 'Quotation' && daysShow && (
+                                      <td
+                                        className={cn(
+                                          'py-0 px-1 text-center text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
+                                          getCellClasses('none'),
+                                          getPersistentCellClasses()
+                                        )}
+                                      >
+                                        {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS ||
+                                        item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS ||
+                                        item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING ? (
+                                          <span
+                                            contentEditable={!isReadOnly}
+                                            suppressContentEditableWarning
+                                            onBlur={(e) =>
+                                              handleUpdateItemNumDays(
+                                                item.id,
+                                                e.currentTarget.textContent,
+                                                e.currentTarget
+                                              )
                                             }
-                                          }}
-                                        >
-                                          {item.numDays ?? 1}
-                                        </span>
-                                      ) : (
-                                        '—'
+                                            onKeyDown={(e) => {
+                                              if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                e.currentTarget.blur();
+                                              }
+                                            }}
+                                          >
+                                            {item.numDays ?? 1}
+                                          </span>
+                                        ) : (
+                                          '—'
+                                        )}
+                                      </td>
+                                    )}
+                                    <td
+                                      className={cn(
+                                        'py-0 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200',
+                                        getCellClasses('right'),
+                                        getPersistentCellClasses()
+                                      )}
+                                    >
+                                      <Rupee />
+                                      {item.total.toLocaleString()}
+                                    </td>
+                                    <td className="print:hidden align-top">
+                                      {!isReadOnly && (
+                                        <div className="inline-flex items-center gap-0">
+                                          <button
+                                            onClick={() => handleMoveItemUp(slNo - 1)}
+                                            disabled={isUpDisabled}
+                                            className={cn(
+                                              'text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors',
+                                              item.packageGroupId && !isFirstInGroup && 'hidden'
+                                            )}
+                                            title="Move Up"
+                                          >
+                                            <ChevronUp className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleMoveItemDown(slNo - 1)}
+                                            disabled={isDownDisabled}
+                                            className={cn(
+                                              'text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors',
+                                              item.packageGroupId && !isFirstInGroup && 'hidden'
+                                            )}
+                                            title="Move Down"
+                                          >
+                                            <ChevronDown className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteItem(item.id)}
+                                            className="text-red-400 hover:text-red-600 p-0 transition-colors"
+                                            title="Delete"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </button>
+                                        </div>
                                       )}
                                     </td>
-                                  )}
-                                  <td
-                                    className={cn(
-                                      'py-0 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200',
-                                      getCellClasses('right'),
-                                      getPersistentCellClasses()
-                                    )}
-                                  >
-                                    <Rupee />
-                                    {item.total.toLocaleString()}
-                                  </td>
-                                  <td className="print:hidden align-top">
-                                    {!isReadOnly && (
-                                      <div className="inline-flex items-center gap-0">
-                                        <button
-                                          onClick={() => handleMoveItemUp(slNo - 1)}
-                                          disabled={isUpDisabled}
-                                          className={cn(
-                                            'text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors',
-                                            item.packageGroupId && !isFirstInGroup && 'hidden'
-                                          )}
-                                          title="Move Up"
-                                        >
-                                          <ChevronUp className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          onClick={() => handleMoveItemDown(slNo - 1)}
-                                          disabled={isDownDisabled}
-                                          className={cn(
-                                            'text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors',
-                                            item.packageGroupId && !isFirstInGroup && 'hidden'
-                                          )}
-                                          title="Move Down"
-                                        >
-                                          <ChevronDown className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          onClick={() => handleDeleteItem(item.id)}
-                                          className="text-red-400 hover:text-red-600 p-0 transition-colors"
-                                          title="Delete"
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </button>
-                                      </div>
-                                    )}
-                                  </td>
-                                </tr>
+                                  </tr>
+                                </React.Fragment>
                               );
                             })}
                             {page.items.length === 0 && (

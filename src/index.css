@@ -837,10 +837,6 @@
 }
 
 /* Package group persistent boundary border styling */
-.a4-container .package-group-persistent-t,
-.dark .a4-container .package-group-persistent-t {
-  border-top: 1.5px solid #000000 !important;
-}
 .a4-container .package-group-persistent-b,
 .dark .a4-container .package-group-persistent-b {
   border-bottom: 1.5px solid #000000 !important;
