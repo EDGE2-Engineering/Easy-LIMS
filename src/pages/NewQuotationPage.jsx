@@ -1323,8 +1323,56 @@ const NewQuotationPage = () => {
     if (index === 0) return; // Already at the top
     setItems((prev) => {
       const newItems = [...prev];
-      [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
-      return newItems;
+      const currentItem = newItems[index];
+
+      if (currentItem.packageGroupId) {
+        // Move entire package group UP
+        const groupId = currentItem.packageGroupId;
+        const groupStart = newItems.findIndex((x) => x.packageGroupId === groupId);
+        const groupItems = newItems.filter((x) => x.packageGroupId === groupId);
+        const groupLength = groupItems.length;
+
+        if (groupStart === 0) return prev; // Already at the top
+
+        const targetIndex = groupStart - 1;
+        const targetItem = newItems[targetIndex];
+
+        if (targetItem.packageGroupId) {
+          // Above is another package group
+          const otherGroupId = targetItem.packageGroupId;
+          const otherGroupStart = newItems.findIndex((x) => x.packageGroupId === otherGroupId);
+          const otherGroupItems = newItems.filter((x) => x.packageGroupId === otherGroupId);
+
+          // Reconstruct array by swapping blocks
+          const before = newItems.slice(0, otherGroupStart);
+          const after = newItems.slice(groupStart + groupLength);
+          return [...before, ...groupItems, ...otherGroupItems, ...after];
+        } else {
+          // Above is a single non-package item
+          const before = newItems.slice(0, targetIndex);
+          const after = newItems.slice(groupStart + groupLength);
+          return [...before, ...groupItems, targetItem, ...after];
+        }
+      } else {
+        // Move single non-package item UP
+        const targetIndex = index - 1;
+        const targetItem = newItems[targetIndex];
+
+        if (targetItem.packageGroupId) {
+          // Above is a package group
+          const otherGroupId = targetItem.packageGroupId;
+          const otherGroupStart = newItems.findIndex((x) => x.packageGroupId === otherGroupId);
+          const otherGroupItems = newItems.filter((x) => x.packageGroupId === otherGroupId);
+
+          const before = newItems.slice(0, otherGroupStart);
+          const after = newItems.slice(index + 1);
+          return [...before, currentItem, ...otherGroupItems, ...after];
+        } else {
+          // Standard swap
+          [newItems[targetIndex], newItems[index]] = [newItems[index], newItems[targetIndex]];
+          return newItems;
+        }
+      }
     });
   };
 
@@ -1332,8 +1380,54 @@ const NewQuotationPage = () => {
     if (index === items.length - 1) return; // Already at the bottom
     setItems((prev) => {
       const newItems = [...prev];
-      [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
-      return newItems;
+      const currentItem = newItems[index];
+
+      if (currentItem.packageGroupId) {
+        // Move entire package group DOWN
+        const groupId = currentItem.packageGroupId;
+        const groupStart = newItems.findIndex((x) => x.packageGroupId === groupId);
+        const groupItems = newItems.filter((x) => x.packageGroupId === groupId);
+        const groupLength = groupItems.length;
+        const groupEnd = groupStart + groupLength - 1;
+
+        if (groupEnd === newItems.length - 1) return prev; // Already at the bottom
+
+        const targetIndex = groupEnd + 1;
+        const targetItem = newItems[targetIndex];
+
+        if (targetItem.packageGroupId) {
+          // Below is another package group
+          const otherGroupId = targetItem.packageGroupId;
+          const otherGroupItems = newItems.filter((x) => x.packageGroupId === otherGroupId);
+
+          const before = newItems.slice(0, groupStart);
+          const after = newItems.slice(targetIndex + otherGroupItems.length);
+          return [...before, ...otherGroupItems, ...groupItems, ...after];
+        } else {
+          // Below is a single non-package item
+          const before = newItems.slice(0, groupStart);
+          const after = newItems.slice(targetIndex + 1);
+          return [...before, targetItem, ...groupItems, ...after];
+        }
+      } else {
+        // Move single non-package item DOWN
+        const targetIndex = index + 1;
+        const targetItem = newItems[targetIndex];
+
+        if (targetItem.packageGroupId) {
+          // Below is a package group
+          const otherGroupId = targetItem.packageGroupId;
+          const otherGroupItems = newItems.filter((x) => x.packageGroupId === otherGroupId);
+
+          const before = newItems.slice(0, index);
+          const after = newItems.slice(targetIndex + otherGroupItems.length);
+          return [...before, ...otherGroupItems, currentItem, ...after];
+        } else {
+          // Standard swap
+          [newItems[index], newItems[targetIndex]] = [newItems[targetIndex], newItems[index]];
+          return newItems;
+        }
+      }
     });
   };
 
@@ -2522,6 +2616,33 @@ const NewQuotationPage = () => {
                                 return cls;
                               };
 
+                              const getPersistentCellClasses = () => {
+                                if (!item.packageGroupId) return '';
+                                let cls = ' ';
+                                if (isFirstInGroup) cls += 'package-group-persistent-t ';
+                                if (isLastInGroup) cls += 'package-group-persistent-b ';
+                                return cls;
+                              };
+
+                              const isFirstItemInTable = slNo === 1;
+                              const isLastItemInTable = slNo === items.length;
+
+                              let isUpDisabled = isFirstItemInTable;
+                              let isDownDisabled = isLastItemInTable;
+
+                              if (item.packageGroupId) {
+                                const groupStart = items.findIndex(
+                                  (x) => x.packageGroupId === item.packageGroupId
+                                );
+                                const groupLength = items.filter(
+                                  (x) => x.packageGroupId === item.packageGroupId
+                                ).length;
+                                const groupEnd = groupStart + groupLength - 1;
+
+                                isUpDisabled = groupStart === 0;
+                                isDownDisabled = groupEnd === items.length - 1;
+                              }
+
                               return (
                                 <tr
                                   key={item.id}
@@ -2540,7 +2661,8 @@ const NewQuotationPage = () => {
                                   <td
                                     className={cn(
                                       'py-0 px-1 text-gray-500 text-[9px] align-center border-r border-l border-gray-200 relative',
-                                      getCellClasses('left')
+                                      getCellClasses('left'),
+                                      getPersistentCellClasses()
                                     )}
                                   >
                                     {slNo}.
@@ -2564,7 +2686,8 @@ const NewQuotationPage = () => {
                                   <td
                                     className={cn(
                                       'py-0 px-1 text-gray-900 align-top border-r border-l border-gray-200',
-                                      getCellClasses('none')
+                                      getCellClasses('none'),
+                                      getPersistentCellClasses()
                                     )}
                                   >
                                     <p className="font-small text-xs whitespace-pre-wrap">
@@ -2602,7 +2725,8 @@ const NewQuotationPage = () => {
                                   <td
                                     className={cn(
                                       'py-0 px-1 text-center text-gray-600 font-medium text-[10px] align-top border-r border-l border-gray-200',
-                                      getCellClasses('none')
+                                      getCellClasses('none'),
+                                      getPersistentCellClasses()
                                     )}
                                   >
                                     {item.hsnCode || '—'}
@@ -2610,7 +2734,8 @@ const NewQuotationPage = () => {
                                   <td
                                     className={cn(
                                       'py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
-                                      getCellClasses('none')
+                                      getCellClasses('none'),
+                                      getPersistentCellClasses()
                                     )}
                                   >
                                     <Rupee />
@@ -2637,7 +2762,8 @@ const NewQuotationPage = () => {
                                   <td
                                     className={cn(
                                       'py-0 px-1 text-center text-gray-600 font-medium text-[10px] align-top border-r border-l border-gray-200',
-                                      getCellClasses('none')
+                                      getCellClasses('none'),
+                                      getPersistentCellClasses()
                                     )}
                                   >
                                     {item.unit}
@@ -2645,7 +2771,8 @@ const NewQuotationPage = () => {
                                   <td
                                     className={cn(
                                       'py-0 px-1 text-center text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
-                                      getCellClasses('none')
+                                      getCellClasses('none'),
+                                      getPersistentCellClasses()
                                     )}
                                   >
                                     <span
@@ -2672,7 +2799,8 @@ const NewQuotationPage = () => {
                                     <td
                                       className={cn(
                                         'py-0 px-1 text-center text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
-                                        getCellClasses('none')
+                                        getCellClasses('none'),
+                                        getPersistentCellClasses()
                                       )}
                                     >
                                       {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS ||
@@ -2705,7 +2833,8 @@ const NewQuotationPage = () => {
                                   <td
                                     className={cn(
                                       'py-0 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200',
-                                      getCellClasses('right')
+                                      getCellClasses('right'),
+                                      getPersistentCellClasses()
                                     )}
                                   >
                                     <Rupee />
@@ -2713,20 +2842,25 @@ const NewQuotationPage = () => {
                                   </td>
                                   <td className="print:hidden align-top">
                                     {!isReadOnly && (
-                                      // <div className="flex items-center justify-center gap-0">
                                       <div className="inline-flex items-center gap-0">
                                         <button
                                           onClick={() => handleMoveItemUp(slNo - 1)}
-                                          disabled={slNo === 1}
-                                          className="text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors"
+                                          disabled={isUpDisabled}
+                                          className={cn(
+                                            'text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors',
+                                            item.packageGroupId && !isFirstInGroup && 'hidden'
+                                          )}
                                           title="Move Up"
                                         >
                                           <ChevronUp className="w-4 h-4" />
                                         </button>
                                         <button
                                           onClick={() => handleMoveItemDown(slNo - 1)}
-                                          disabled={slNo === items.length}
-                                          className="text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors"
+                                          disabled={isDownDisabled}
+                                          className={cn(
+                                            'text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors',
+                                            item.packageGroupId && !isFirstInGroup && 'hidden'
+                                          )}
                                           title="Move Down"
                                         >
                                           <ChevronDown className="w-4 h-4" />
