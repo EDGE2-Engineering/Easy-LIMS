@@ -242,6 +242,7 @@ const NewQuotationPage = () => {
   const [discount, setDiscount] = useState(0);
   const [discountShow, setDiscountShow] = useState(true);
   const [daysShow, setDaysShow] = useState(true);
+  const [sealShow, setSealShow] = useState(true);
   const [isInterstate, setIsInterstate] = useState(false);
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -262,9 +263,10 @@ const NewQuotationPage = () => {
       discount,
       discountShow,
       daysShow,
+      sealShow,
       isInterstate,
     }),
-    [quoteDetails, items, documentType, discount, discountShow, daysShow, isInterstate]
+    [quoteDetails, items, documentType, discount, discountShow, daysShow, sealShow, isInterstate]
   );
 
   // Compute aggregated T&C and Technicals from items, merging with legacy manually selected ones if present
@@ -331,6 +333,7 @@ const NewQuotationPage = () => {
       discount: 0,
       discountShow: true,
       daysShow: true,
+      sealShow: true,
       isInterstate: false,
     };
     setLastSavedData(JSON.stringify(initialSnapshot));
@@ -413,6 +416,7 @@ const NewQuotationPage = () => {
               documentType,
               discount,
               discountShow,
+              sealShow,
             });
           try {
             const parsed = JSON.parse(prevSaved);
@@ -574,6 +578,8 @@ const NewQuotationPage = () => {
             content.discountShow !== undefined ? String(content.discountShow) === 'true' : true;
           const loadedDaysShow =
             content.daysShow !== undefined ? String(content.daysShow) === 'true' : true;
+          const loadedSealShow =
+            content.sealShow !== undefined ? String(content.sealShow) === 'true' : true;
           const loadedIsInterstate =
             content.isInterstate !== undefined ? String(content.isInterstate) === 'true' : false;
 
@@ -590,6 +596,7 @@ const NewQuotationPage = () => {
           setDiscount(loadedDiscount);
           setDiscountShow(loadedDiscountShow);
           setDaysShow(loadedDaysShow);
+          setSealShow(loadedSealShow);
           setIsInterstate(loadedIsInterstate);
           setSavedRecordId(data.id);
           setDocumentCreatorId(data.created_by);
@@ -602,6 +609,7 @@ const NewQuotationPage = () => {
             discount: loadedDiscount,
             discountShow: loadedDiscountShow,
             daysShow: loadedDaysShow,
+            sealShow: loadedSealShow,
             isInterstate: loadedIsInterstate,
           };
           setLastSavedData(JSON.stringify(snapshot));
@@ -687,6 +695,7 @@ const NewQuotationPage = () => {
                     documentType: docType,
                     discount,
                     discountShow,
+                    sealShow,
                   });
                 try {
                   const parsed = JSON.parse(prevSaved);
@@ -848,6 +857,7 @@ const NewQuotationPage = () => {
           discount,
           discountShow,
           daysShow,
+          sealShow,
           isInterstate,
         },
         job_id: resolvedJobId,
@@ -875,6 +885,7 @@ const NewQuotationPage = () => {
             discount,
             discountShow,
             daysShow,
+            sealShow,
             isInterstate,
           };
           setLastSavedData(JSON.stringify(snapshot));
@@ -910,6 +921,7 @@ const NewQuotationPage = () => {
             discount,
             discountShow,
             daysShow,
+            sealShow,
             isInterstate,
           };
           setLastSavedData(JSON.stringify(snapshot));
@@ -1817,17 +1829,6 @@ const NewQuotationPage = () => {
                   />
                   <div className="flex items-center space-x-2 pt-2">
                     <Checkbox
-                      id="daysShow"
-                      checked={daysShow}
-                      onCheckedChange={(checked) => setDaysShow(!!checked)}
-                      disabled={isReadOnly}
-                    />
-                    <Label htmlFor="daysShow" className="cursor-pointer select-none">
-                      Show Days Column?
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 pt-2">
-                    <Checkbox
                       id="discountShow"
                       checked={discountShow}
                       onCheckedChange={(checked) => setDiscountShow(!!checked)}
@@ -1839,7 +1840,30 @@ const NewQuotationPage = () => {
                   </div>
                 </div>
               </div>
-
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center space-x-2 pt-2">
+                  <Checkbox
+                    id="daysShow"
+                    checked={daysShow}
+                    onCheckedChange={(checked) => setDaysShow(!!checked)}
+                    disabled={isReadOnly}
+                  />
+                  <Label htmlFor="daysShow" className="cursor-pointer select-none">
+                    Show Days Column?
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 pt-2">
+                  <Checkbox
+                    id="sealShow"
+                    checked={sealShow}
+                    onCheckedChange={(checked) => setSealShow(!!checked)}
+                    disabled={isReadOnly}
+                  />
+                  <Label htmlFor="sealShow" className="cursor-pointer select-none">
+                    Show Company Seal?
+                  </Label>
+                </div>
+              </div>
               {/* <h2 className="text-lg font-semibold mb-4 flex items-center">
                                 <FileText className="w-5 h-5 mr-2 text-primary" />
                                 Client Details
@@ -2704,7 +2728,7 @@ const NewQuotationPage = () => {
                                   >
                                     <td
                                       className={cn(
-                                        'py-0 px-1 text-gray-500 text-[9px] align-center border-r border-l border-gray-200 relative',
+                                        'py-0 px-1 text-gray-500 text-[9px] align-top border-r border-l border-gray-200 relative',
                                         getCellClasses('left'),
                                         getPersistentCellClasses()
                                       )}
@@ -3069,25 +3093,27 @@ const NewQuotationPage = () => {
                                 )}
                                 <div className="mt-2 text-xs text-gray-600 italic">
                                   <span>
-                                    * This is a computer generated quotation and does not require a
-                                    physical signature.
+                                    * This is a computer generated {documentType.toLowerCase()} and
+                                    does not require a physical signature.
                                   </span>
                                 </div>
-                                <div>
-                                  {/* Company Seal */}
-                                  <div className="flex justify-end mt-4">
-                                    <div className="text-center flex flex-col items-center">
-                                      <img
-                                        src={`${import.meta.env.BASE_URL}company-seal.png`}
-                                        alt="Company Seal"
-                                        className="w-24 h-24 object-contain"
-                                      />
-                                      <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mt-1">
-                                        For EDGE2 Engineering Solutions India Pvt. Ltd.
-                                      </p>
+                                {sealShow && (
+                                  <div>
+                                    {/* Company Seal */}
+                                    <div className="flex justify-end mt-4">
+                                      <div className="text-center flex flex-col items-center">
+                                        <img
+                                          src={`${import.meta.env.BASE_URL}company-seal.png`}
+                                          alt="Company Seal"
+                                          className="w-24 h-24 object-contain"
+                                        />
+                                        <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mt-1">
+                                          For EDGE2 Engineering Solutions India Pvt. Ltd.
+                                        </p>
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
+                                )}
                               </div>
                             </div>
                           </>
