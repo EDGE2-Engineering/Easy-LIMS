@@ -212,6 +212,7 @@ export default function AdminTicketsManager({ id: propId }) {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [deptFilter, setDeptFilter] = useState('all');
   const [authorFilter, setAuthorFilter] = useState('all');
+  const [reportedByFilter, setReportedByFilter] = useState('all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [datePreset, setDatePreset] = useState('custom');
@@ -220,6 +221,17 @@ export default function AdminTicketsManager({ id: propId }) {
   const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Inline editing states for Ticket Detail page
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState('');
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [descValue, setDescValue] = useState('');
+
+  // Drag-over states for the three attachment drop zones
+  const [dragOverCreate, setDragOverCreate] = useState(false);
+  const [dragOverDetail, setDragOverDetail] = useState(false);
+  const [dragOverComment, setDragOverComment] = useState(false);
 
   // ───────────────────────────── Data Fetching ──────────────────────────────
 
@@ -340,11 +352,20 @@ export default function AdminTicketsManager({ id: propId }) {
     priorityFilter,
     deptFilter,
     authorFilter,
+    reportedByFilter,
     fromDate,
     toDate,
     sortField,
     sortOrder,
   ]);
+
+  // Initializing inline edit values when details change
+  useEffect(() => {
+    if (ticketDetails) {
+      setTitleValue(ticketDetails.title);
+      setDescValue(ticketDetails.description || '');
+    }
+  }, [ticketDetails]);
 
   // ─────────────────────────── Schema Helpers ───────────────────────────────
 
@@ -419,6 +440,26 @@ export default function AdminTicketsManager({ id: propId }) {
       ]);
     });
     e.target.value = '';
+  };
+
+  const handleDrop = (e, targetSetter) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = Array.from(e.dataTransfer.files || []);
+    files.forEach((file) => {
+      if (file.size > 8 * 1024 * 1024) {
+        toast({
+          title: 'File Too Large',
+          description: `"${file.name}" exceeds the 8MB limit.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+      targetSetter((prev) => [
+        ...prev,
+        { name: file.name, size: file.size, type: file.type, fileObject: file },
+      ]);
+    });
   };
 
   const handleDownloadAttachment = (fileObj) => {
@@ -753,6 +794,7 @@ export default function AdminTicketsManager({ id: propId }) {
     setPriorityFilter('all');
     setDeptFilter('all');
     setAuthorFilter('all');
+    setReportedByFilter('all');
     setFromDate('');
     setToDate('');
     setDatePreset('custom');
@@ -779,6 +821,11 @@ export default function AdminTicketsManager({ id: propId }) {
     if (priorityFilter !== 'all' && ticket.priority !== priorityFilter) return false;
     if (deptFilter !== 'all' && ticket.department !== deptFilter) return false;
     if (authorFilter === 'me' && ticket.created_by !== user.id) return false;
+    if (
+      reportedByFilter !== 'all' &&
+      (ticket.creator?.username || ticket.creator?.full_name) !== reportedByFilter
+    )
+      return false;
 
     if (fromDate || toDate) {
       const d = new Date(ticket.created_at);
@@ -889,7 +936,8 @@ export default function AdminTicketsManager({ id: propId }) {
     statusFilter !== 'all' ||
     priorityFilter !== 'all' ||
     deptFilter !== 'all' ||
-    authorFilter !== 'all';
+    authorFilter !== 'all' ||
+    reportedByFilter !== 'all';
 
   // ─────────────────────────── Schema Error Screen ──────────────────────────
 
@@ -1027,14 +1075,31 @@ export default function AdminTicketsManager({ id: propId }) {
                   className="hidden"
                   onChange={(e) => handleAttachmentUpload(e, setTicketAttachments)}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
+                <div
                   onClick={() => document.getElementById('ticket-file').click()}
-                  className="h-14 border-dashed border-2 rounded-xl flex items-center justify-center gap-2 border-gray-200 text-gray-500 hover:text-primary hover:border-primary/40 font-bold transition-all text-xs"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOverCreate(true);
+                  }}
+                  onDragLeave={() => setDragOverCreate(false)}
+                  onDrop={(e) => {
+                    handleDrop(e, setTicketAttachments);
+                    setDragOverCreate(false);
+                  }}
+                  className={`h-20 border-dashed border-2 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer font-bold transition-all text-xs select-none ${
+                    dragOverCreate
+                      ? 'border-primary bg-primary/5 text-primary scale-[1.01]'
+                      : 'border-gray-200 text-gray-500 hover:text-primary hover:border-primary/40 hover:bg-primary/5'
+                  }`}
                 >
-                  <Paperclip className="w-4 h-4 text-gray-400" /> Select Files to Upload
-                </Button>
+                  <Paperclip
+                    className={`w-4 h-4 ${dragOverCreate ? 'text-primary' : 'text-gray-400'}`}
+                  />
+                  <span>
+                    {dragOverCreate ? 'Drop files here' : 'Drag & drop files or click to browse'}
+                  </span>
+                  <span className="text-[9px] font-normal text-gray-400">Max 8MB per file</span>
+                </div>
                 {ticketAttachments.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                     {ticketAttachments.map((f, i) => (
@@ -1093,20 +1158,6 @@ export default function AdminTicketsManager({ id: propId }) {
   }
 
   // ─────────────────────────── DEDICATED DETAIL/EDIT PAGE ───────────────────
-
-  // States for inline editing
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [titleValue, setTitleValue] = useState('');
-  const [editingDesc, setEditingDesc] = useState(false);
-  const [descValue, setDescValue] = useState('');
-
-  // Initializing inline edit values when details change
-  useEffect(() => {
-    if (ticketDetails) {
-      setTitleValue(ticketDetails.title);
-      setDescValue(ticketDetails.description || '');
-    }
-  }, [ticketDetails]);
 
   const saveField = async (fieldName, value) => {
     try {
@@ -1530,11 +1581,36 @@ export default function AdminTicketsManager({ id: propId }) {
                   />
                   <div
                     onClick={() => document.getElementById('direct-ticket-file').click()}
-                    className="h-20 border-dashed border-2 rounded-xl flex flex-col items-center justify-center border-gray-200 hover:border-primary hover:bg-primary/5 text-gray-500 hover:text-primary transition-all cursor-pointer"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverDetail(true);
+                    }}
+                    onDragLeave={() => setDragOverDetail(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOverDetail(false);
+                      if (submittingEdit) return;
+                      // For the detail page we immediately upload dropped files
+                      const syntheticE = { target: { files: e.dataTransfer.files, value: '' } };
+                      handleImmediateUpload(syntheticE);
+                    }}
+                    className={`h-20 border-dashed border-2 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer select-none transition-all ${
+                      dragOverDetail
+                        ? 'border-primary bg-primary/5 text-primary scale-[1.01]'
+                        : 'border-gray-200 text-gray-500 hover:border-primary hover:bg-primary/5 hover:text-primary'
+                    }`}
                   >
-                    <Paperclip className="w-5 h-5 text-slate-400 mb-1" />
+                    <Paperclip
+                      className={`w-5 h-5 mb-0.5 ${dragOverDetail ? 'text-primary' : 'text-slate-400'}`}
+                    />
                     <span className="text-xs font-semibold">
-                      Drop files to attach, or <strong className="text-blue-600">browse</strong>
+                      {dragOverDetail ? (
+                        'Drop to upload'
+                      ) : (
+                        <>
+                          <strong className="text-blue-600">Browse</strong> or drag &amp; drop files
+                        </>
+                      )}
                     </span>
                     <span className="text-[9px] text-slate-400 mt-0.5">Max 8MB per file</span>
                   </div>
@@ -1844,12 +1920,42 @@ export default function AdminTicketsManager({ id: propId }) {
                       {(user?.fullName || 'Me').substring(0, 2)}
                     </div>
                     <div className="flex-1 space-y-2">
-                      <Textarea
-                        placeholder="Add a comment..."
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        className="min-h-[85px] w-full border border-gray-200 rounded-xl bg-white text-gray-800 dark:text-gray-200 text-xs p-3 resize-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none"
-                      />
+                      <div
+                        className="relative"
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setDragOverComment(true);
+                        }}
+                        onDragLeave={(e) => {
+                          // Only clear if leaving the wrapper entirely (not a child)
+                          if (!e.currentTarget.contains(e.relatedTarget)) setDragOverComment(false);
+                        }}
+                        onDrop={(e) => {
+                          handleDrop(e, setCommentAttachments);
+                          setDragOverComment(false);
+                        }}
+                      >
+                        <Textarea
+                          placeholder={
+                            dragOverComment ? 'Drop files to attach...' : 'Add a comment...'
+                          }
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          className={`min-h-[85px] w-full border rounded-xl bg-white text-gray-800 dark:text-gray-200 text-xs p-3 resize-none outline-none transition-all ${
+                            dragOverComment
+                              ? 'border-blue-400 ring-2 ring-blue-100 dark:ring-blue-900/30 bg-blue-50/40'
+                              : 'border-gray-200 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30'
+                          }`}
+                        />
+                        {dragOverComment && (
+                          <div className="absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-1.5 pointer-events-none">
+                            <Paperclip className="w-5 h-5 text-blue-500" />
+                            <span className="text-xs font-bold text-blue-600">
+                              Drop files to attach
+                            </span>
+                          </div>
+                        )}
+                      </div>
                       {commentAttachments.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
                           {commentAttachments.map((f, i) => (
@@ -1989,36 +2095,6 @@ export default function AdminTicketsManager({ id: propId }) {
 
               <div className="grid grid-cols-3 gap-y-3.5 text-xs items-center">
                 <span className="text-slate-500 dark:text-slate-400 font-semibold col-span-1">
-                  Department
-                </span>
-                <span className="text-slate-800 dark:text-slate-200 font-bold col-span-2 capitalize">
-                  {editable ? (
-                    <div className="w-full">
-                      <Select
-                        value={editTicketForm.department}
-                        onValueChange={(val) => {
-                          setEditTicketForm((prev) => ({ ...prev, department: val }));
-                          saveField('department', val);
-                        }}
-                      >
-                        <SelectTrigger className="w-full h-9 text-xs bg-white border-gray-200 rounded-lg">
-                          <SelectValue placeholder="Select Department" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {DEPARTMENTS.map((d) => (
-                            <SelectItem key={d.id} value={d.name} className="text-xs">
-                              {d.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ) : (
-                    ticketDetails.department
-                  )}
-                </span>
-
-                <span className="text-slate-500 dark:text-slate-400 font-semibold col-span-1">
                   Status
                 </span>
                 <span className="text-slate-800 dark:text-slate-200 font-bold col-span-2 capitalize">
@@ -2049,6 +2125,36 @@ export default function AdminTicketsManager({ id: propId }) {
                     ticketDetails.status
                   )}
                 </span>
+                <span className="text-slate-500 dark:text-slate-400 font-semibold col-span-1">
+                  Department
+                </span>
+                <span className="text-slate-800 dark:text-slate-200 font-bold col-span-2 capitalize">
+                  {editable ? (
+                    <div className="w-full">
+                      <Select
+                        value={editTicketForm.department}
+                        onValueChange={(val) => {
+                          setEditTicketForm((prev) => ({ ...prev, department: val }));
+                          saveField('department', val);
+                        }}
+                      >
+                        <SelectTrigger className="w-full h-9 text-xs bg-white border-gray-200 rounded-lg">
+                          <SelectValue placeholder="Select Department" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DEPARTMENTS.map((d) => (
+                            <SelectItem key={d.id} value={d.name} className="text-xs">
+                              {d.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    ticketDetails.department
+                  )}
+                </span>
+
                 <span className="text-slate-500 dark:text-slate-400 font-semibold col-span-1">
                   Priority
                 </span>
@@ -2410,6 +2516,35 @@ export default function AdminTicketsManager({ id: propId }) {
                 <SelectContent>
                   <SelectItem value="all">All Tickets</SelectItem>
                   <SelectItem value="me">Created By Me</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Reported By */}
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                Reported By
+              </Label>
+              <Select value={reportedByFilter} onValueChange={setReportedByFilter}>
+                <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
+                  <SelectValue placeholder="All Users" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  {Array.from(
+                    new Map(
+                      tickets
+                        .filter((t) => t.creator)
+                        .map((t) => [
+                          t.creator.username || t.creator.full_name,
+                          t.creator.full_name,
+                        ])
+                    ).entries()
+                  ).map(([key, name]) => (
+                    <SelectItem key={key} value={key}>
+                      {name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

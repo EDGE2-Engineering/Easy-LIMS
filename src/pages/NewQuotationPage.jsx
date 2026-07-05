@@ -2702,7 +2702,7 @@ const NewQuotationPage = () => {
                                           isHoveredGroup && 'package-group-border-l border-l-2'
                                         )}
                                       >
-                                        Package: {item.packageName.toUpperCase()}
+                                        {item.packageName.toUpperCase()}
                                       </td>
                                       <td
                                         className={cn(
@@ -2736,7 +2736,7 @@ const NewQuotationPage = () => {
                                       {slNo}.
                                       {isHoveredGroup && (
                                         <div className="absolute -top-7 left-0 bg-emerald-600 text-white text-[9px] font-bold px-2 py-1 rounded-t-md flex items-center gap-1.5 shadow-md z-20 whitespace-nowrap print:hidden animate-in fade-in duration-100">
-                                          <span>Package: {item.packageName}</span>
+                                          <span>{item.packageName}</span>
                                           <button
                                             type="button"
                                             onClick={(e) => {
