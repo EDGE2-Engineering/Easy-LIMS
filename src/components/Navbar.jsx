@@ -524,6 +524,17 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
 
                       <button
                         onClick={() => {
+                          navigate('/settings/tickets');
+                          setDropdownOpen(false);
+                        }}
+                        className="w-full flex items-center space-x-3 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-primary transition-colors"
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>Tickets</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
                           setDropdownOpen(false);
                           handleLogout();
                         }}
@@ -636,6 +647,17 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
                 >
                   {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                   <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    navigate('/settings/tickets');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center space-x-3 p-4 rounded-2xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all"
+                >
+                  <FileText className="w-5 h-5" />
+                  <span>Tickets</span>
                 </button>
 
                 <button

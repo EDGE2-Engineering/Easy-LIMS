@@ -76,6 +76,7 @@ const AdminPage = () => {
     client_pricing: VIEWS.CLIENT_PRICING,
     organization: VIEWS.ORGANIZATION,
     my_leaves: VIEWS.MY_LEAVES,
+    tickets: VIEWS.TICKETS,
   };
 
   useEffect(() => {

@@ -45,6 +45,9 @@ const MroDashboard = lazyWithRetry(() => import('@/components/admin/MroDashboard
 const HRDashboard = lazyWithRetry(() => import('@/components/admin/HRDashboard.jsx'));
 const InquiriesManager = lazyWithRetry(() => import('@/components/admin/InquiriesManager.jsx'));
 const MyLeaves = lazyWithRetry(() => import('@/components/admin/MyLeaves.jsx'));
+const AdminTicketsManager = lazyWithRetry(
+  () => import('@/components/admin/AdminTicketsManager.jsx')
+);
 
 const COMPONENT_MAP = {
   [VIEWS.DASHBOARD]: AdminDashboard,
@@ -65,6 +68,7 @@ const COMPONENT_MAP = {
   [VIEWS.HR_DASHBOARD]: HRDashboard,
   [VIEWS.INQUIRIES]: InquiriesManager,
   [VIEWS.MY_LEAVES]: MyLeaves,
+  [VIEWS.TICKETS]: AdminTicketsManager,
 };
 
 const ConfigDrivenPage = ({ viewName, subView, id }) => {

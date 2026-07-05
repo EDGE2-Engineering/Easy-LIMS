@@ -35,10 +35,10 @@ export const MATERIALS = [
 ];
 
 export const DEPARTMENTS = [
-  { id: 1, name: 'Chemical Analysis' },
-  { id: 2, name: 'Physical Testing' },
-  { id: 3, name: 'Soil Investigation' },
-  { id: 4, name: 'Non-Destructive Testing (NDT)' },
+  { id: 1, name: 'Accounts' },
+  { id: 2, name: 'Testing' },
+  { id: 3, name: 'HR' },
+  { id: 4, name: 'Material Receiving' },
 ];
 
 export const ROLES = {
@@ -120,6 +120,7 @@ export const VIEWS = {
   HR_DASHBOARD: 'HR Dashboard',
   INQUIRIES: 'Inquiries',
   MY_LEAVES: 'My Leaves',
+  TICKETS: 'Tickets',
 };
 
 export const ACTIONS = {
@@ -555,26 +556,41 @@ export const APP_CONFIG = {
     [ROLES.ADMIN.slug]: Object.values(VIEWS).filter(
       (v) => v !== VIEWS.ANALYST_DASHBOARD && v !== VIEWS.ACCOUNTS_DASHBOARD
     ),
-    [ROLES.ANALYST.slug]: [VIEWS.ANALYST_DASHBOARD, VIEWS.JOBS, VIEWS.SETTINGS, VIEWS.MY_LEAVES],
+    [ROLES.ANALYST.slug]: [
+      VIEWS.ANALYST_DASHBOARD,
+      VIEWS.JOBS,
+      VIEWS.SETTINGS,
+      VIEWS.MY_LEAVES,
+      VIEWS.TICKETS,
+    ],
     [ROLES.TECHNICIAN.slug]: [
       VIEWS.TECHNICIAN_DASHBOARD,
       VIEWS.JOBS,
       VIEWS.TESTING,
       VIEWS.MY_LEAVES,
+      VIEWS.TICKETS,
     ],
-    [ROLES.MRO.slug]: [VIEWS.MRO_DASHBOARD, VIEWS.JOBS, VIEWS.SETTINGS, VIEWS.MY_LEAVES],
+    [ROLES.MRO.slug]: [
+      VIEWS.MRO_DASHBOARD,
+      VIEWS.JOBS,
+      VIEWS.SETTINGS,
+      VIEWS.MY_LEAVES,
+      VIEWS.TICKETS,
+    ],
     [ROLES.ACCOUNTS.slug]: [
       VIEWS.ACCOUNTS_DASHBOARD,
       VIEWS.DOCUMENTS,
       VIEWS.EXPENSES,
       VIEWS.SETTINGS,
       VIEWS.MY_LEAVES,
+      VIEWS.TICKETS,
     ],
     [ROLES.HUMAN_RESOURCE.slug]: [
       VIEWS.HR_DASHBOARD,
       VIEWS.WORK_LOG,
       VIEWS.APPROVALS,
       VIEWS.MY_LEAVES,
+      VIEWS.TICKETS,
     ],
   },
 };
