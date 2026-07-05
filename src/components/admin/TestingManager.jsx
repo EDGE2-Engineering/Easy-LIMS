@@ -27,8 +27,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { computeSoilSbcValues, computeRockSbcValues } from '@/utils/sbcCalculators';
-import { usePermissions } from '@/hooks/usePermissions';
-import { useWorkflow } from '@/hooks/useWorkflow';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
@@ -75,8 +73,6 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
   const [rlValuesNote, setRlValuesNote] = useState('R.L. Values are assumed.');
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
-  const { canAction } = usePermissions();
-  const { transition, isTransitioning } = useWorkflow();
   const { settings } = useSettings();
 
   useEffect(() => {
