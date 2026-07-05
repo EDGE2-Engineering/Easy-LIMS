@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { DEPARTMENTS } from '@/data/config';
+import { DEPARTMENTS, ROLES } from '@/data/config';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Plus,
   Search,
@@ -155,6 +165,8 @@ export default function AdminTicketsManager({ id: propId }) {
   const [loadingTickets, setLoadingTickets] = useState(true);
   const [schemaError, setSchemaError] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [deletingTicket, setDeletingTicket] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Single Ticket Edit/Detail States
   const [ticketDetails, setTicketDetails] = useState(null);
@@ -190,6 +202,9 @@ export default function AdminTicketsManager({ id: propId }) {
   const [newComment, setNewComment] = useState('');
   const [commentAttachments, setCommentAttachments] = useState([]);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [editingComment, setEditingComment] = useState(null); // comment id being edited
+  const [editCommentValue, setEditCommentValue] = useState('');
+  const [savingComment, setSavingComment] = useState(false);
 
   // Search / Filter / Sort / Pagination States
   const [searchTerm, setSearchTerm] = useState('');
@@ -337,6 +352,52 @@ export default function AdminTicketsManager({ id: propId }) {
     setRetrying(true);
     await fetchTickets();
     setRetrying(false);
+  };
+
+  const handleDeleteTicket = async () => {
+    if (!ticketDetails) return;
+    setDeletingTicket(true);
+    try {
+      // Gather all storage file paths: from ticket attachments and all comment attachments
+      const allPaths = [];
+
+      // Ticket-level attachments
+      (ticketDetails.attachments || []).forEach((a) => {
+        if (a.path) allPaths.push(a.path);
+      });
+
+      // Comment attachments — fetch them first
+      const { data: commentRows } = await supabase
+        .from('ticket_comments')
+        .select('attachments')
+        .eq('ticket_id', ticketDetails.id);
+
+      (commentRows || []).forEach((row) => {
+        (row.attachments || []).forEach((a) => {
+          if (a.path) allPaths.push(a.path);
+        });
+      });
+
+      // Delete all storage files (ignore errors — files may have already been deleted)
+      if (allPaths.length > 0) {
+        await supabase.storage.from('ticket-attachments').remove(allPaths);
+      }
+
+      // Delete the ticket row — cascade deletes ticket_comments and ticket_history via FK
+      const { error } = await supabase.from('tickets').delete().eq('id', ticketDetails.id);
+      if (error) throw error;
+
+      toast({
+        title: 'Ticket Deleted',
+        description: `TKT-${ticketDetails.id} has been permanently deleted.`,
+      });
+      navigate('/settings/tickets');
+    } catch (err) {
+      toast({ title: 'Error Deleting Ticket', description: err.message, variant: 'destructive' });
+    } finally {
+      setDeletingTicket(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   // ─────────────────────────── Attachment Helpers ───────────────────────────
@@ -530,6 +591,72 @@ export default function AdminTicketsManager({ id: propId }) {
       toast({ title: 'Error Adding Comment', description: err.message, variant: 'destructive' });
     } finally {
       setSubmittingComment(false);
+    }
+  };
+
+  const handleEditComment = async (comment) => {
+    if (!editCommentValue.trim()) return;
+    setSavingComment(true);
+    try {
+      const { error } = await supabase
+        .from('ticket_comments')
+        .update({ comment: editCommentValue })
+        .eq('id', comment.id);
+      if (error) throw error;
+
+      // Log to history
+      try {
+        await supabase.from('ticket_history').insert({
+          ticket_id: ticketDetails.id,
+          user_id: user.id,
+          field_name: 'comment',
+          old_value: comment.comment,
+          new_value: editCommentValue,
+        });
+      } catch (histErr) {
+        console.warn('Could not insert history record:', histErr.message);
+      }
+
+      setEditingComment(null);
+      setEditCommentValue('');
+      fetchComments(ticketIdParam);
+      fetchTicketHistory(ticketDetails.id);
+    } catch (err) {
+      toast({ title: 'Error Editing Comment', description: err.message, variant: 'destructive' });
+    } finally {
+      setSavingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (comment) => {
+    try {
+      // Delete storage files attached to this comment
+      const paths = (comment.attachments || []).filter((a) => a.path).map((a) => a.path);
+      if (paths.length > 0) {
+        await supabase.storage.from('ticket-attachments').remove(paths);
+      }
+
+      const { error } = await supabase.from('ticket_comments').delete().eq('id', comment.id);
+      if (error) throw error;
+
+      // Log to history
+      try {
+        await supabase.from('ticket_history').insert({
+          ticket_id: ticketDetails.id,
+          user_id: user.id,
+          field_name: 'comment_deleted',
+          old_value: comment.comment,
+          new_value: 'Comment deleted',
+        });
+      } catch (histErr) {
+        console.warn('Could not insert history record:', histErr.message);
+      }
+
+      fetchComments(ticketIdParam);
+      fetchTicketHistory(ticketDetails.id);
+      toast({ title: 'Comment Deleted' });
+    } catch (err) {
+      toast({ title: 'Error Deleting Comment', description: err.message, variant: 'destructive' });
     }
   };
 
@@ -1146,15 +1273,68 @@ export default function AdminTicketsManager({ id: propId }) {
               TKT-{ticketDetails.id}
             </span>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/settings/tickets')}
-            className="h-8 px-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-1 text-xs"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to List
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/settings/tickets')}
+              className="h-8 px-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-1 text-xs"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to List
+            </Button>
+            {user?.role === ROLES.SUPER_ADMIN.slug && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={deletingTicket}
+                className="h-8 px-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-1 text-xs"
+                title="Delete Ticket"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent className="max-w-md">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+                <Trash2 className="w-5 h-5" /> Delete Ticket TKT-{ticketDetails.id}?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+                This action <strong>cannot be undone</strong>. Deleting this ticket will permanently
+                remove:
+                <ul className="mt-2 space-y-1 list-disc list-inside text-xs">
+                  <li>The ticket and all its details</li>
+                  <li>All comments and their attachments</li>
+                  <li>All activity history records</li>
+                  <li>All uploaded files from storage</li>
+                </ul>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deletingTicket}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteTicket}
+                disabled={deletingTicket}
+                className="bg-red-600 hover:bg-red-700 text-white focus:ring-red-600"
+              >
+                {deletingTicket ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 mr-2 animate-spin" /> Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5 mr-2" /> Yes, Delete Permanently
+                  </>
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Title Heading Area */}
         <div className="mb-4">
@@ -1492,7 +1672,10 @@ export default function AdminTicketsManager({ id: propId }) {
                       </p>
                     ) : (
                       comments.map((comment) => (
-                        <div key={comment.id} className="flex gap-3 items-start text-xs">
+                        <div
+                          key={comment.id}
+                          className="flex gap-3 items-start text-xs group/comment"
+                        >
                           <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold uppercase flex items-center justify-center shrink-0 text-xs border border-gray-200">
                             {(comment.author?.full_name || 'U').substring(0, 2)}
                           </div>
@@ -1502,18 +1685,89 @@ export default function AdminTicketsManager({ id: propId }) {
                               <span className="font-bold text-slate-800 dark:text-slate-200">
                                 {comment.author?.full_name || 'User'}
                               </span>
-                              <span className="text-[10px] text-slate-400">
-                                {new Date(comment.created_at).toLocaleString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-slate-400">
+                                  {new Date(comment.created_at).toLocaleString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                                {/* Edit / Delete actions — shown on hover */}
+                                {editingComment !== comment.id && (
+                                  <div className="flex items-center gap-0.5 opacity-0 group-hover/comment:opacity-100 transition-opacity ml-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingComment(comment.id);
+                                        setEditCommentValue(comment.comment);
+                                      }}
+                                      className="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
+                                      title="Edit comment"
+                                    >
+                                      <Pencil className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteComment(comment)}
+                                      className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                                      title="Delete comment"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                              {comment.comment}
-                            </p>
+
+                            {/* Inline edit mode vs read mode */}
+                            {editingComment === comment.id ? (
+                              <div className="space-y-2 mt-1">
+                                <Textarea
+                                  value={editCommentValue}
+                                  onChange={(e) => setEditCommentValue(e.target.value)}
+                                  className="min-h-[70px] w-full border border-gray-200 rounded-xl bg-white text-gray-800 dark:text-gray-200 text-xs p-2.5 resize-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none"
+                                  autoFocus
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    disabled={savingComment}
+                                    onClick={() => handleEditComment(comment)}
+                                    className="h-7 text-[10px] px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg"
+                                  >
+                                    {savingComment ? (
+                                      <>
+                                        <RefreshCw className="w-2.5 h-2.5 mr-1 animate-spin" />{' '}
+                                        Saving...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Check className="w-2.5 h-2.5 mr-1" /> Save
+                                      </>
+                                    )}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setEditingComment(null);
+                                      setEditCommentValue('');
+                                    }}
+                                    className="h-7 text-[10px] px-3 text-slate-500 font-bold rounded-lg"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                                {comment.comment}
+                              </p>
+                            )}
 
                             {comment.attachments?.length > 0 && (
                               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-800/50">
