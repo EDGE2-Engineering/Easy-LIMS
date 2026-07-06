@@ -337,7 +337,13 @@ const JobsManager = ({ id }) => {
     try {
       const { data, error } = await supabase.from('documents').select('*').eq('job_id', jobId);
       if (error) throw error;
-      setLinkedDocs(data || []);
+      const sorted = (data || []).sort((a, b) => {
+        if (a.document_type === 'Quotation' && b.document_type === 'Quotation') {
+          return (b.version || 1) - (a.version || 1);
+        }
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+      setLinkedDocs(sorted);
     } catch (error) {
       console.error('Error fetching linked documents:', error);
     }
@@ -1393,7 +1399,9 @@ const JobsManager = ({ id }) => {
                               {doc.document_type}
                             </div>
                             <div className="font-mono text-xs font-bold text-gray-700">
-                              {doc.quote_number}
+                              {doc.document_type === 'Quotation'
+                                ? `${doc.quote_number}/R${doc.version || 1}`
+                                : doc.quote_number}
                             </div>
                           </div>
                           <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-primary" />

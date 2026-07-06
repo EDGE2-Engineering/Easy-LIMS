@@ -3445,7 +3445,8 @@ CREATE TABLE "public"."documents" (
     "id" bigint NOT NULL,
     "created_by" bigint NOT NULL,
     "client_id" bigint NOT NULL,
-    "job_id" bigint NOT NULL
+    "job_id" bigint NOT NULL,
+    "version" integer DEFAULT 1 NOT NULL
 );
 
 
@@ -5053,7 +5054,7 @@ ALTER TABLE ONLY "public"."sampling_to_terms_conditions"
 --
 
 ALTER TABLE ONLY "public"."documents"
-    ADD CONSTRAINT "saved_records_quote_number_key" UNIQUE ("quote_number");
+    ADD CONSTRAINT "saved_records_quote_number_version_key" UNIQUE ("quote_number", "version");
 
 
 --

@@ -193,6 +193,12 @@ const NewQuotationPage = () => {
   const [loadedDocumentType, setLoadedDocumentType] = useState(null);
   const [isSavingRecord, setIsSavingRecord] = useState(false);
   const [lastSavedData, setLastSavedData] = useState(null);
+  const [currentVersion, setCurrentVersion] = useState(1);
+  const [docVersions, setDocVersions] = useState([]);
+  const [showVersionSwitchConfirm, setShowVersionSwitchConfirm] = useState(false);
+  const [targetVersionToLoad, setTargetVersionToLoad] = useState(null);
+  const [showSaveAsNewConfirm, setShowSaveAsNewConfirm] = useState(false);
+  const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
   const [linkedJobId, setLinkedJobId] = useState(searchParams.get('jobId') || null);
   const [documentCreatorId, setDocumentCreatorId] = useState(null);
   const [showAutoJobDialog, setShowAutoJobDialog] = useState(false);
@@ -371,6 +377,7 @@ const NewQuotationPage = () => {
     setSavedRecordId(null);
     setDocumentCreatorId(null);
     setLoadedDocumentType(null);
+    setCurrentVersion(1);
 
     const initialSnapshot = {
       quoteDetails: defaultQuoteDetails,
@@ -647,6 +654,7 @@ const NewQuotationPage = () => {
           setSavedRecordId(data.id);
           setDocumentCreatorId(data.created_by);
           if (data.job_id) setLinkedJobId(data.job_id);
+          setCurrentVersion(data.version || 1);
 
           const snapshot = {
             quoteDetails: loadedQuoteDetails,
@@ -675,11 +683,37 @@ const NewQuotationPage = () => {
       }
     };
 
-    const id = pathId || searchParams.get('id');
+    const id = searchParams.get('id') || pathId;
     if (id && !isSavingRecord) {
       loadFromSupabase(id);
     }
   }, [searchParams, pathId, isSavingRecord]); // Removed clients from dependencies to break loop
+
+  const loadDocVersions = async (quoteNumber) => {
+    if (!quoteNumber) {
+      setDocVersions([]);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('documents')
+        .select('id, version')
+        .eq('quote_number', quoteNumber)
+        .order('version', { ascending: true });
+      if (error) throw error;
+      setDocVersions(data || []);
+    } catch (err) {
+      console.error('Failed to load document versions:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (quoteDetails.quoteNumber && documentType === 'Quotation') {
+      loadDocVersions(quoteDetails.quoteNumber);
+    } else {
+      setDocVersions([]);
+    }
+  }, [quoteDetails.quoteNumber, documentType, savedRecordId]);
 
   // Load job details if jobId is present in searchParams (to pre-fill for a new document)
   useEffect(() => {
@@ -909,6 +943,7 @@ const NewQuotationPage = () => {
         job_id: resolvedJobId,
         created_by: userId,
         updated_at: new Date().toISOString(),
+        version: savedRecordId && !isTypeChanged ? (currentVersion || 1) : 1,
       };
 
       let error;
@@ -1016,6 +1051,7 @@ const NewQuotationPage = () => {
       } catch (notifyErr) {
         console.error('Error sending Telegram notification:', notifyErr);
       }
+      return true;
     } catch (err) {
       console.error('Error saving record:', err);
 
@@ -1038,6 +1074,7 @@ const NewQuotationPage = () => {
         description: finalErrorMessage,
         variant: 'destructive',
       });
+      return false;
     } finally {
       setIsSavingRecord(false);
       // Reset the navigation ref after a delay to ensure the URL has changed in the browser
@@ -1045,6 +1082,184 @@ const NewQuotationPage = () => {
         isNavigatingRef.current = false;
       }, 1000);
     }
+  };
+
+  const handleSaveAsNewVersion = async () => {
+    if (!user) {
+      toast({
+        title: 'Authentication Required',
+        description: 'You must be logged in to save to the database.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    if (isSavingRecord) return false;
+    setIsSavingRecord(true);
+
+    try {
+      const { data: existingVersions, error: versionErr } = await supabase
+        .from('documents')
+        .select('version')
+        .eq('quote_number', quoteDetails.quoteNumber);
+
+      if (versionErr) throw versionErr;
+
+      let nextVer = 1;
+      if (existingVersions && existingVersions.length > 0) {
+        const maxVer = Math.max(...existingVersions.map((v) => v.version || 1));
+        nextVer = maxVer + 1;
+      }
+
+      let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
+      if (isNaN(userId) && user.username) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id')
+          .eq('username', user.username)
+          .maybeSingle();
+        if (userData) userId = userData.id;
+      }
+
+      if (isNaN(userId)) {
+        throw new Error('Unable to determine a valid numeric User ID. Please try logging out and back in.');
+      }
+
+      const selectedClient = clients.find(
+        (c) => (c.clientName || '').trim() === (quoteDetails.clientName || '').trim()
+      );
+      const clientId = selectedClient?.id || null;
+
+      let resolvedJobId = linkedJobId || searchParams.get('jobId') || null;
+
+      const updatedQuoteDetails = { ...quoteDetails, quoteNumber: quoteDetails.quoteNumber };
+
+      const recordData = {
+        quote_number: quoteDetails.quoteNumber,
+        document_type: documentType,
+        client_id: clientId,
+        payment_date: quoteDetails.paymentDate || null,
+        payment_mode: quoteDetails.paymentMode || null,
+        bank_details: quoteDetails.bankDetails || null,
+        content: {
+          quoteDetails: updatedQuoteDetails,
+          items,
+          discount,
+          discountShow,
+          daysShow,
+          sealShow,
+          isInterstate,
+        },
+        job_id: resolvedJobId,
+        created_by: userId,
+        updated_at: new Date().toISOString(),
+        version: nextVer,
+      };
+
+      const { data, error: insertErr } = await supabase
+        .from('documents')
+        .insert([recordData])
+        .select()
+        .single();
+
+      if (insertErr) throw insertErr;
+
+      setSavedRecordId(data.id);
+      setLoadedDocumentType(documentType);
+      setCurrentVersion(nextVer);
+      setQuoteDetails(updatedQuoteDetails);
+
+      const snapshot = {
+        quoteDetails: updatedQuoteDetails,
+        items,
+        documentType,
+        discount,
+        discountShow,
+        daysShow,
+        sealShow,
+        isInterstate,
+      };
+      setLastSavedData(JSON.stringify(snapshot));
+
+      toast({
+        title: 'Success',
+        description: `Quotation saved as new version (V${nextVer}).`,
+      });
+
+      try {
+        const message =
+          `📄 *Quotation Saved as New Version*\n\n` +
+          `Number: \`${quoteDetails.quoteNumber}/R${nextVer}\`\n` +
+          `Client: \`${quoteDetails.clientName}\`\n` +
+          `Saved By: \`${user.fullName}\``;
+        await sendTelegramNotification(message);
+      } catch (notifyErr) {
+        console.error('Error sending Telegram notification:', notifyErr);
+      }
+
+      isNavigatingRef.current = true;
+      navigate(`/doc/${data.id}`, { replace: true });
+      return true;
+    } catch (err) {
+      console.error('Error saving new version:', err);
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to save new version.',
+        variant: 'destructive',
+      });
+      return false;
+    } finally {
+      setIsSavingRecord(false);
+    }
+  };
+
+  const handleVersionChange = (newVal) => {
+    const selected = docVersions.find((v) => String(v.version) === String(newVal));
+    if (!selected) return;
+
+    if (isDirty) {
+      setTargetVersionToLoad(selected);
+      setShowVersionSwitchConfirm(true);
+    } else {
+      navigate(`/doc/${selected.id}`);
+    }
+  };
+
+  const handleDiscardAndSwitch = () => {
+    if (!targetVersionToLoad) return;
+    setShowVersionSwitchConfirm(false);
+    const currentSnapshot = {
+      quoteDetails,
+      items,
+      documentType,
+      discount,
+      discountShow,
+      daysShow,
+      sealShow,
+      isInterstate,
+    };
+    setLastSavedData(JSON.stringify(currentSnapshot));
+    navigate(`/doc/${targetVersionToLoad.id}`);
+    setTargetVersionToLoad(null);
+  };
+
+  const handleSaveAndSwitch = async () => {
+    if (!targetVersionToLoad) return;
+    setShowVersionSwitchConfirm(false);
+    const success = await handleSaveToDatabase();
+    if (success) {
+      navigate(`/doc/${targetVersionToLoad.id}`);
+    }
+    setTargetVersionToLoad(null);
+  };
+
+  const getFormattedDocNumber = (fallback = 'Pending') => {
+    const baseNum = quoteDetails.quoteNumber;
+    if (!baseNum) return fallback;
+    if (documentType === 'Quotation') {
+      return `${baseNum}/R${currentVersion || 1}`;
+    }
+    return baseNum;
   };
 
   const getAppropiatePrice = (itemId, type, clientId) => {
@@ -1129,7 +1344,7 @@ const NewQuotationPage = () => {
       const message =
         `🖨️ *Print/PDF Action*\n\n` +
         `Document: \`${documentType}\`\n` +
-        `Number: \`${quoteDetails.quoteNumber}\`\n` +
+        `Number: \`${getFormattedDocNumber()}\`\n` +
         `Client: \`${quoteDetails.clientName}\`\n` +
         `Action By: \`${user?.fullName || 'Unknown User'}\``;
       await sendTelegramNotification(message);
@@ -1879,22 +2094,63 @@ const NewQuotationPage = () => {
                 <ArrowLeft className="w-6 h-6" />
               </button>
             )}
-            <h1 className="text-1xl font-bold text-gray-900">Create new {documentType}</h1>
+            <h1 className="text-1xl font-bold text-gray-900">Compose {documentType}</h1>
           </div>
           <div className="flex items-center gap-2">
             {!isReadOnly && (
-              <Button
-                onClick={handleSaveToDatabase}
-                disabled={isSavingRecord}
-                className="bg-green-800 hover:bg-green-900 text-white"
-              >
-                {isSavingRecord ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
+              <>
+                {documentType === 'Quotation' && savedRecordId && (
+                  <div className="flex items-center gap-2 mr-2">
+                    <Select
+                      value={String(currentVersion)}
+                      onValueChange={handleVersionChange}
+                    >
+                      <SelectTrigger className="w-[120px] h-9">
+                        <SelectValue placeholder="Version" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {docVersions.map((v) => (
+                          <SelectItem key={v.id} value={String(v.version)}>
+                            Version {v.version}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
-                {savedRecordId ? 'Update' : 'Save'} {documentType}
-              </Button>
+                <Button
+                  onClick={() => {
+                    if (documentType === 'Quotation' && savedRecordId) {
+                      setShowUpdateConfirm(true);
+                    } else {
+                      handleSaveToDatabase();
+                    }
+                  }}
+                  disabled={isSavingRecord}
+                  className="bg-green-800 hover:bg-green-900 text-white"
+                >
+                  {isSavingRecord ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  {savedRecordId ? 'Update' : 'Save'} {documentType}
+                </Button>
+                {documentType === 'Quotation' && savedRecordId && (
+                  <Button
+                    onClick={() => setShowSaveAsNewConfirm(true)}
+                    disabled={isSavingRecord}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white"
+                  >
+                    {isSavingRecord ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Plus className="w-4 h-4 mr-2" />
+                    )}
+                    Save as new version
+                  </Button>
+                )}
+              </>
             )}
             <Button onClick={triggerPrint} className="bg-blue-800 hover:bg-blue-900 text-white">
               <Printer className="w-4 h-4 mr-2" /> Print PDF
@@ -2595,7 +2851,7 @@ const NewQuotationPage = () => {
                                 </h3>
                                 <p className="text-gray-500 mt-1 text-xs break-all">
                                   {quoteDetails.quoteNumber ? (
-                                    `${quoteDetails.quoteNumber}`
+                                    getFormattedDocNumber()
                                   ) : (
                                     <span className="text-red-500 italic">Pending</span>
                                   )}
@@ -2718,7 +2974,7 @@ const NewQuotationPage = () => {
                           <div className="pb-1 mb-2">
                             <h3 className="text-sm font-bold text-gray-900">
                               {documentType}{' '}
-                              {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : ''}{' '}
+                              {quoteDetails.quoteNumber ? getFormattedDocNumber() : ''}{' '}
                               (continued)
                             </h3>
                           </div>
@@ -3322,7 +3578,7 @@ const NewQuotationPage = () => {
                         <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
                         <span>
                           {documentType}{' '}
-                          {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
+                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
                           Page {page.pageNumber} of {totalPages}
                         </span>
                       </div>
@@ -3434,30 +3690,6 @@ const NewQuotationPage = () => {
                               </span>
                             </div>
                           )}
-
-                          {/* Authorized Signatory */}
-                          {/* <div className="flex flex-col items-center">
-                            <h2 className="font-semibold mb-20 text-sm">Authorized Signatory</h2>
-                            <table className="w-full text-xs border-collapse">
-                              <tbody>
-                                <tr className="text-center">
-                                  <td className="py-1">
-                                    For EDGE2 Engineering Solutions India Pvt. Ltd.
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td className="py-1 h-10"></td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        </div> */}
-                          {/* <div className="flex items-center justify-center h-24 pl-0">
-                            <h2 className="font-semibold text-[10px] text-center">
-                              * This is a computer generated {documentType.toLowerCase()} and does
-                              not require a physical signature.
-                            </h2>
-                          </div> */}
                         </div>
 
                         {/* Payment Received Details - Only for Tax Invoice */}
@@ -3506,28 +3738,6 @@ const NewQuotationPage = () => {
                           </div>
                         )}
 
-                        {/* Payment Terms */}
-                        <div className="mt-6 pt-4 border-t hidden">
-                          <h2 className="font-semibold text-left mb-3">Payment Terms</h2>
-                          <div
-                            className={`font-bold italic text-xs whitespace-pre-wrap outline-none ${!isReadOnly ? 'hover:bg-[#f9fafb] focus:bg-[#ffffff] focus:ring-1 focus:ring-[#e5e7eb] rounded p-1 -ml-1 transition-colors' : ''}`}
-                            contentEditable={!isReadOnly}
-                            suppressContentEditableWarning
-                            onBlur={(e) => {
-                              setQuoteDetails((prev) => ({
-                                ...prev,
-                                paymentTerms: e.currentTarget.innerText,
-                              }));
-                            }}
-                          >
-                            {quoteDetails.paymentTerms !== undefined
-                              ? quoteDetails.paymentTerms
-                              : settings?.payment_terms
-                                ? settings.payment_terms
-                                : `• Advance Payment of 60% + GST (${taxTotalPercent}%) along with Work order as mobilization advance.\n• Mobilization of Men and Machines shall be done in 3–5 days after the confirmation of Advance Payment.\n• Balance Payment to be done after completion of field work.`}
-                          </div>
-                        </div>
-
                         {/* General Terms & Conditions */}
                         <div className="mt-6 pt-4 border-t">
                           <h2 className="font-semibold text-left mb-3">
@@ -3557,7 +3767,7 @@ const NewQuotationPage = () => {
                       <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
                       <span>
                         {documentType}{' '}
-                        {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
+                        {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
                         Page {totalItemPages + 1} of {totalPages}
                       </span>
                     </div>
@@ -3637,7 +3847,7 @@ const NewQuotationPage = () => {
                         <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
                         <span>
                           {documentType}{' '}
-                          {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
+                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
                           Page {totalItemPages + 1 + (payIndex + 1)} of{' '}
                           {totalPages}
                         </span>
@@ -3730,7 +3940,7 @@ const NewQuotationPage = () => {
                         <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
                         <span>
                           {documentType}{' '}
-                          {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
+                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
                           Page {totalItemPages + 1 + payPages.length + (tcIndex + 1)} of {totalPages}
                         </span>
                       </div>
@@ -3811,7 +4021,7 @@ const NewQuotationPage = () => {
                         <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
                         <span>
                           {documentType}{' '}
-                          {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
+                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
                           Page {totalItemPages + 1 + payPages.length + tcPages.length + (techIndex + 1)} of{' '}
                           {totalPages}
                         </span>
@@ -3845,6 +4055,100 @@ const NewQuotationPage = () => {
                 className="bg-amber-600 hover:bg-amber-700 text-white"
               >
                 Leave and Discard
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={showVersionSwitchConfirm}
+          onOpenChange={(open) => {
+            if (!open) {
+              setShowVersionSwitchConfirm(false);
+              setTargetVersionToLoad(null);
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center text-amber-600">
+                Unsaved Changes
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                You have unsaved changes in the current version. Do you want to save them before switching to Version {targetVersionToLoad?.version}?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+              <AlertDialogCancel
+                onClick={() => {
+                  setShowVersionSwitchConfirm(false);
+                  setTargetVersionToLoad(null);
+                }}
+              >
+                Cancel
+              </AlertDialogCancel>
+              <Button
+                variant="destructive"
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={handleDiscardAndSwitch}
+              >
+                Discard & Switch
+              </Button>
+              <Button
+                className="bg-green-800 hover:bg-green-900 text-white"
+                onClick={handleSaveAndSwitch}
+              >
+                Save & Switch
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={showSaveAsNewConfirm} onOpenChange={setShowSaveAsNewConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center text-primary">
+                Save as New Version
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to save this quotation as a new version? This will create Version {docVersions.length + 1} and copy all current details to it.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setShowSaveAsNewConfirm(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setShowSaveAsNewConfirm(false);
+                  handleSaveAsNewVersion();
+                }}
+                className="bg-emerald-700 hover:bg-emerald-800 text-white"
+              >
+                Confirm
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={showUpdateConfirm} onOpenChange={setShowUpdateConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center text-primary">
+                Update Quotation Version
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to update the current version (Version {currentVersion}) of this quotation? All changes will overwrite the current version.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setShowUpdateConfirm(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setShowUpdateConfirm(false);
+                  handleSaveToDatabase();
+                }}
+                className="bg-green-800 hover:bg-green-900 text-white"
+              >
+                Confirm
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ReactSelect from 'react-select';
 import {
   Search,
@@ -234,7 +234,34 @@ const DocumentsManager = () => {
     new Set(documents.map((r) => r.clients?.client_name).filter(Boolean))
   ).sort();
 
-  const filteredDocuments = documents.filter((r) => {
+  const groupedDocuments = useMemo(() => {
+    const groups = {};
+    for (const doc of documents) {
+      const key = doc.quote_number || `pending-${doc.id}`;
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(doc);
+    }
+
+    const result = [];
+    for (const key in groups) {
+      const group = groups[key];
+      group.sort((a, b) => (b.version || 1) - (a.version || 1));
+
+      const latestDoc = group[0];
+      const numRevisions = latestDoc.document_type === 'Quotation' ? group.length : 1;
+
+      result.push({
+        ...latestDoc,
+        numRevisions,
+      });
+    }
+
+    return result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }, [documents]);
+
+  const filteredDocuments = groupedDocuments.filter((r) => {
     const matchesSearch =
       (r.quote_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (r.clients?.client_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
@@ -670,6 +697,10 @@ const DocumentsManager = () => {
                 </th>
 
                 <th className="text-center py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
+                  Revisions
+                </th>
+
+                <th className="text-center py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Actions
                 </th>
               </tr>
@@ -678,7 +709,7 @@ const DocumentsManager = () => {
             <tbody>
               {paginatedDocuments.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-10 text-center text-gray-500">
+                  <td colSpan={9} className="py-10 text-center text-gray-500">
                     No documents found.
                   </td>
                 </tr>
@@ -752,6 +783,10 @@ const DocumentsManager = () => {
                       >
                         {record.document_type}
                       </span>
+                    </td>
+
+                    <td className="py-4 px-2 text-center whitespace-nowrap text-gray-600 font-semibold">
+                      {record.numRevisions || 1}
                     </td>
 
                     <td className="py-4 px-2">
