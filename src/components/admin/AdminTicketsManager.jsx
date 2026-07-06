@@ -67,6 +67,7 @@ import {
   List,
   ListOrdered,
   History,
+  Eye,
 } from 'lucide-react';
 
 const RichTextEditor = ({ content, onChange }) => {
@@ -2739,7 +2740,7 @@ export default function AdminTicketsManager({ id: propId }) {
                             {ticket.title}
                           </p>
                           {ticket.description && (
-                            <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
+                            <p className="hidden text-xs text-gray-400 mt-0.5 line-clamp-1">
                               {ticket.description}
                             </p>
                           )}
@@ -2800,7 +2801,7 @@ export default function AdminTicketsManager({ id: propId }) {
                                   className="h-7 w-7"
                                   onClick={() => navigate(`/settings/tickets/${ticket.id}`)}
                                 >
-                                  <Pencil className="h-4 w-4 text-blue-600" />
+                                  <Eye className="h-4 w-4 text-blue-600" />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>View / Edit Ticket</TooltipContent>
