@@ -8,6 +8,7 @@ import { useUnitTypes } from '@/contexts/UnitTypesContext';
 import { useHSNCodes } from '@/contexts/HSNCodesContext';
 import { useTermsAndConditions } from '@/contexts/TermsAndConditionsContext';
 import { useTechnicals } from '@/contexts/TechnicalsContext';
+import { usePaymentTerms } from '@/contexts/PaymentTermsContext';
 import { useMaterials } from '@/contexts/MaterialsContext';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,7 @@ const AdminSamplingManager = () => {
   const { hsnCodes } = useHSNCodes();
   const { terms } = useTermsAndConditions();
   const { technicals } = useTechnicals();
+  const { paymentTerms } = usePaymentTerms();
   const { materials } = useMaterials();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -130,6 +132,7 @@ const AdminSamplingManager = () => {
       hsnCode: '',
       tcList: [],
       techList: [],
+      paymentTermsList: [],
       numDays: 1,
     });
     setIsAddingNew(true);
@@ -398,6 +401,25 @@ const AdminSamplingManager = () => {
               styles={themedReactSelectStyles()}
             />
           </div>
+
+          <div className="space-y-2">
+            <Label>Payment Terms</Label>
+            <ReactSelect
+              isMulti
+              options={[...new Set(paymentTerms.map((t) => t.type))].map((type) => ({
+                value: type,
+                label: type,
+              }))}
+              className="basic-multi-select"
+              classNamePrefix="select"
+              placeholder="Select Payment Terms..."
+              value={editingItem.paymentTermsList?.map((t) => ({ value: t, label: t })) || []}
+              onChange={(options) =>
+                handleChange('paymentTermsList', options ? options.map((o) => o.value) : [])
+              }
+              styles={themedReactSelectStyles()}
+            />
+          </div>
         </div>
       </div>
     );
@@ -574,6 +596,12 @@ const AdminSamplingManager = () => {
                         <span className="font-semibold text-primary">T&C:</span>{' '}
                         {Array.isArray(item.tcList) && item.tcList.length > 0
                           ? item.tcList.join(', ')
+                          : '-'}
+                      </p>
+                      <p>
+                        <span className="font-semibold text-primary">Payment Terms:</span>{' '}
+                        {Array.isArray(item.paymentTermsList) && item.paymentTermsList.length > 0
+                          ? item.paymentTermsList.join(', ')
                           : '-'}
                       </p>
                     </div>

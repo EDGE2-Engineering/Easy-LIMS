@@ -19,6 +19,7 @@ import { useUnitTypes } from '@/contexts/UnitTypesContext';
 import { useHSNCodes } from '@/contexts/HSNCodesContext';
 import { useTermsAndConditions } from '@/contexts/TermsAndConditionsContext';
 import { useTechnicals } from '@/contexts/TechnicalsContext';
+import { usePaymentTerms } from '@/contexts/PaymentTermsContext';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +54,7 @@ const AdminFieldTestsManager = () => {
   const { hsnCodes } = useHSNCodes();
   const { terms } = useTermsAndConditions();
   const { technicals } = useTechnicals();
+  const { paymentTerms } = usePaymentTerms();
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -145,6 +147,7 @@ const AdminFieldTestsManager = () => {
       hsnCode: '',
       tcList: [],
       techList: [],
+      paymentTermsList: [],
       numDays: 1,
     });
     setIsAddingNew(true);
@@ -482,6 +485,34 @@ const AdminFieldTestsManager = () => {
               styles={themedReactSelectStyles()}
             />
           </div>
+
+          <div className="space-y-2 md:col-span-1">
+            <Label>Payment Terms</Label>
+            <ReactSelect
+              isMulti
+              name="paymentTermsList"
+              options={[...new Set(paymentTerms.map((t) => t.type))].map((type) => ({
+                value: type,
+                label: type,
+              }))}
+              className="basic-multi-select"
+              classNamePrefix="select"
+              placeholder="Select Payment Terms..."
+              value={
+                editingFieldTest?.paymentTermsList?.map((type) => ({
+                  value: type,
+                  label: type,
+                })) || []
+              }
+              onChange={(selectedOptions) => {
+                handleChange(
+                  'paymentTermsList',
+                  selectedOptions ? selectedOptions.map((option) => option.value) : []
+                );
+              }}
+              styles={themedReactSelectStyles()}
+            />
+          </div>
         </div>
       </div>
     );
@@ -720,6 +751,12 @@ const AdminFieldTestsManager = () => {
                         <span className="font-semibold text-primary">T&C:</span>{' '}
                         {Array.isArray(fieldTest.tcList) && fieldTest.tcList.length > 0
                           ? fieldTest.tcList.join(', ')
+                          : '-'}
+                      </p>
+                      <p>
+                        <span className="font-semibold text-primary">Payment Terms:</span>{' '}
+                        {Array.isArray(fieldTest.paymentTermsList) && fieldTest.paymentTermsList.length > 0
+                          ? fieldTest.paymentTermsList.join(', ')
                           : '-'}
                       </p>
                     </div>

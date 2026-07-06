@@ -38,6 +38,7 @@ import AdminHSNCodesManager from './AdminHSNCodesManager';
 import AdminSettingsManager from './AdminSettingsManager';
 import AdminTermsManager from './AdminTermsManager';
 import AdminTechnicalsManager from './AdminTechnicalsManager';
+import AdminPaymentTermsManager from './AdminPaymentTermsManager';
 import AdminCollectionCentersManager from './AdminCollectionCentersManager';
 import AdminMaterialsManager from './AdminMaterialsManager';
 import AdminUsersManager from './AdminUsersManager';
@@ -54,6 +55,7 @@ const TAB_COMPONENTS = {
   hsn_codes: <AdminHSNCodesManager />,
   terms: <AdminTermsManager />,
   technicals: <AdminTechnicalsManager />,
+  payment_terms: <AdminPaymentTermsManager />,
   payment_settings: <AdminSettingsManager />,
   collection_centers: <AdminCollectionCentersManager />,
   bearing_capacity: <AdminBearingCapacityManager />,
@@ -171,6 +173,22 @@ const AdminSystemSettings = ({ id }) => {
                 </TooltipTrigger>
                 <TooltipContent className="bg-gray-900 text-white border-gray-800">
                   <p className="text-xs">Manage technical specifications and standards</p>
+                </TooltipContent>
+              </Tooltip>
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="payment_terms"
+              className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4" /> Payment Terms
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                  <p className="text-xs">Manage payment terms and clauses</p>
                 </TooltipContent>
               </Tooltip>
             </TabsTrigger>
@@ -294,6 +312,13 @@ const AdminSystemSettings = ({ id }) => {
           className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
         >
           <AdminTechnicalsManager />
+        </TabsContent>
+
+        <TabsContent
+          value="payment_terms"
+          className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
+        >
+          <AdminPaymentTermsManager />
         </TabsContent>
 
         <TabsContent

@@ -43,7 +43,6 @@ const AdminSettingsManager = () => {
     tax_cgst: '',
     tax_sgst: '',
     tax_igst: '',
-    payment_terms: '',
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -68,7 +67,6 @@ const AdminSettingsManager = () => {
         tax_cgst: settings.tax_cgst || '',
         tax_sgst: settings.tax_sgst || '',
         tax_igst: settings.tax_igst || '',
-        payment_terms: settings.payment_terms || '',
       });
       setHasInitialized(true);
     }
@@ -84,7 +82,6 @@ const AdminSettingsManager = () => {
       await updateSetting('tax_cgst', localSettings.tax_cgst);
       await updateSetting('tax_sgst', localSettings.tax_sgst);
       await updateSetting('tax_igst', localSettings.tax_igst);
-      await updateSetting('payment_terms', localSettings.payment_terms);
 
       toast({ title: 'Settings Saved', description: 'General settings updated successfully.' });
     } catch (error) {
@@ -557,22 +554,6 @@ const AdminSettingsManager = () => {
               </p>
             </div>
           )}
-        </div>
-
-        {/* Payment Terms Section */}
-        <div className="space-y-4 pt-6 border-t border-gray-200 mt-6">
-          <h3 className="text-lg font-semibold">Payment Terms</h3>
-          <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-2">
-              <Label className="hidden">Payment Terms</Label>
-              <Textarea
-                rows={5}
-                value={localSettings.payment_terms}
-                onChange={(e) => handleChange('payment_terms', e.target.value)}
-                placeholder="e.g. Payment should be made within 30 days of the invoice date."
-              />
-            </div>
-          </div>
         </div>
       </div>
     </div>

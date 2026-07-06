@@ -84,6 +84,12 @@ const SamplingProvider = ({ children }) => {
         }
         return s.tech_list ? [s.tech_list] : [];
       })(),
+      paymentTermsList: (() => {
+        if (s.sampling_to_payment_terms && s.sampling_to_payment_terms.length > 0)
+          return s.sampling_to_payment_terms.map((t) => t.payment_terms?.type).filter(Boolean);
+        if (Array.isArray(s.paymentTermsList)) return s.paymentTermsList;
+        return [];
+      })(),
       createdAt: s.created_at || new Date().toISOString(),
     };
   }, []);
@@ -112,7 +118,8 @@ const SamplingProvider = ({ children }) => {
           `
                     *,
                     sampling_to_technicals ( technicals ( type ) ),
-                    sampling_to_terms_conditions ( terms_and_conditions ( type ) )
+                    sampling_to_terms_conditions ( terms_and_conditions ( type ) ),
+                    sampling_to_payment_terms ( payment_terms ( type ) )
                 `
         )
         .order('created_at', { ascending: true });
@@ -211,6 +218,20 @@ const SamplingProvider = ({ children }) => {
           }
         }
 
+        // Sync Payment Terms
+        await supabase.from('sampling_to_payment_terms').delete().eq('sampling_id', id);
+        if (updatedItem.paymentTermsList?.length > 0) {
+          const { data: payTerms } = await supabase
+            .from('payment_terms')
+            .select('id')
+            .in('type', updatedItem.paymentTermsList);
+          if (payTerms?.length > 0) {
+            await supabase
+              .from('sampling_to_payment_terms')
+              .insert(payTerms.map((t) => ({ sampling_id: id, payment_term_id: t.id })));
+          }
+        }
+
         logAudit({
           userId: currentUserId,
           entityType: 'sampling',
@@ -272,6 +293,19 @@ const SamplingProvider = ({ children }) => {
               await supabase
                 .from('sampling_to_technicals')
                 .insert(techs.map((t) => ({ sampling_id: id, technical_id: t.id })));
+            }
+          }
+
+          // Sync Payment Terms
+          if (newItem.paymentTermsList?.length > 0) {
+            const { data: payTerms } = await supabase
+              .from('payment_terms')
+              .select('id')
+              .in('type', newItem.paymentTermsList);
+            if (payTerms?.length > 0) {
+              await supabase
+                .from('sampling_to_payment_terms')
+                .insert(payTerms.map((t) => ({ sampling_id: id, payment_term_id: t.id })));
             }
           }
 

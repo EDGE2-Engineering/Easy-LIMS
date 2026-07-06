@@ -42,6 +42,12 @@ const FieldTestsProvider = ({ children }) => {
         if (Array.isArray(ft.tech_list || ft.techList)) return ft.tech_list || ft.techList;
         return ft.tech_list || ft.techList || [];
       })(),
+      paymentTermsList: (() => {
+        if (ft.field_test_to_payment_terms)
+          return ft.field_test_to_payment_terms.map((x) => x.payment_terms?.type).filter(Boolean);
+        if (Array.isArray(ft.paymentTermsList)) return ft.paymentTermsList;
+        return [];
+      })(),
       createdAt: ft.created_at || new Date().toISOString(),
     };
   }, []);
@@ -72,7 +78,8 @@ const FieldTestsProvider = ({ children }) => {
           `
                     *,
                     field_test_to_technicals ( technicals ( type ) ),
-                    field_test_to_terms_conditions ( terms_and_conditions ( type ) )
+                    field_test_to_terms_conditions ( terms_and_conditions ( type ) ),
+                    field_test_to_payment_terms ( payment_terms ( type ) )
                 `
         )
         .order('created_at', { ascending: true });
@@ -204,6 +211,20 @@ const FieldTestsProvider = ({ children }) => {
           }
         }
 
+        // Sync Payment Terms
+        await supabase.from('field_test_to_payment_terms').delete().eq('field_test_id', id);
+        if (updatedFieldTest.paymentTermsList?.length > 0) {
+          const { data: payTerms } = await supabase
+            .from('payment_terms')
+            .select('id')
+            .in('type', updatedFieldTest.paymentTermsList);
+          if (payTerms?.length > 0) {
+            await supabase
+              .from('field_test_to_payment_terms')
+              .insert(payTerms.map((t) => ({ field_test_id: id, payment_term_id: t.id })));
+          }
+        }
+
         logAudit({
           userId: userId || currentUserId,
           entityType: 'field_test',
@@ -264,6 +285,19 @@ const FieldTestsProvider = ({ children }) => {
               await supabase
                 .from('field_test_to_technicals')
                 .insert(techs.map((t) => ({ field_test_id: id, technical_id: t.id })));
+            }
+          }
+
+          // Sync Payment Terms
+          if (newFieldTest.paymentTermsList?.length > 0) {
+            const { data: payTerms } = await supabase
+              .from('payment_terms')
+              .select('id')
+              .in('type', newFieldTest.paymentTermsList);
+            if (payTerms?.length > 0) {
+              await supabase
+                .from('field_test_to_payment_terms')
+                .insert(payTerms.map((t) => ({ field_test_id: id, payment_term_id: t.id })));
             }
           }
 

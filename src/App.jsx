@@ -11,6 +11,7 @@ import { UnitTypesProvider } from '@/contexts/UnitTypesContext';
 import { HSNCodesProvider } from '@/contexts/HSNCodesContext';
 import { TermsAndConditionsProvider } from '@/contexts/TermsAndConditionsContext';
 import { TechnicalsProvider } from '@/contexts/TechnicalsContext';
+import { PaymentTermsProvider } from '@/contexts/PaymentTermsContext';
 import { MaterialsProvider } from '@/contexts/MaterialsContext';
 import { SamplingProvider } from '@/contexts/SamplingContext';
 import { PackagesProvider } from '@/contexts/PackagesContext';
@@ -114,41 +115,43 @@ function App() {
                               <MaterialsProvider>
                                 <TermsAndConditionsProvider>
                                   <TechnicalsProvider>
-                                    <ExpensesProvider>
-                                      <BankAccountsProvider>
-                                        <BankStatementsProvider>
-                                          <Helmet>
-                                            <title>{getSiteContent().global?.siteName}</title>
-                                            <link
-                                              rel="preconnect"
-                                              href="https://fonts.googleapis.com"
-                                            />
-                                            <link
-                                              rel="preconnect"
-                                              href="https://fonts.gstatic.com"
-                                              crossOrigin="anonymous"
-                                            />
-                                            <link
-                                              href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
-                                              rel="stylesheet"
-                                            />
-                                          </Helmet>
-                                          <div className="min-h-screen bg-background text-foreground">
-                                            <TooltipProvider>
-                                              <RouterProvider
-                                                router={router}
-                                                future={{
-                                                  v7_startTransition: true,
-                                                  v7_relativeSplatPath: true,
-                                                }}
+                                    <PaymentTermsProvider>
+                                      <ExpensesProvider>
+                                        <BankAccountsProvider>
+                                          <BankStatementsProvider>
+                                            <Helmet>
+                                              <title>{getSiteContent().global?.siteName}</title>
+                                              <link
+                                                rel="preconnect"
+                                                href="https://fonts.googleapis.com"
                                               />
-                                            </TooltipProvider>
-                                            <Toaster />
-                                            <UpdateDetector />
-                                          </div>
-                                        </BankStatementsProvider>
-                                      </BankAccountsProvider>
-                                    </ExpensesProvider>
+                                              <link
+                                                rel="preconnect"
+                                                href="https://fonts.gstatic.com"
+                                                crossOrigin="anonymous"
+                                              />
+                                              <link
+                                                href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+                                                rel="stylesheet"
+                                              />
+                                            </Helmet>
+                                            <div className="min-h-screen bg-background text-foreground">
+                                              <TooltipProvider>
+                                                <RouterProvider
+                                                  router={router}
+                                                  future={{
+                                                    v7_startTransition: true,
+                                                    v7_relativeSplatPath: true,
+                                                  }}
+                                                />
+                                              </TooltipProvider>
+                                              <Toaster />
+                                              <UpdateDetector />
+                                            </div>
+                                          </BankStatementsProvider>
+                                        </BankAccountsProvider>
+                                      </ExpensesProvider>
+                                    </PaymentTermsProvider>
                                   </TechnicalsProvider>
                                 </TermsAndConditionsProvider>
                               </MaterialsProvider>

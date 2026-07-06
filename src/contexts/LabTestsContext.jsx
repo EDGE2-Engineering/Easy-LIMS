@@ -55,6 +55,12 @@ const LabTestsProvider = ({ children }) => {
         if (Array.isArray(t.tech_list || t.techList)) return t.tech_list || t.techList;
         return t.tech_list || t.techList || [];
       })(),
+      paymentTermsList: (() => {
+        if (t.lab_test_to_payment_terms)
+          return t.lab_test_to_payment_terms.map((x) => x.payment_terms?.type).filter(Boolean);
+        if (Array.isArray(t.paymentTermsList)) return t.paymentTermsList;
+        return [];
+      })(),
       createdAt: t.created_at || new Date().toISOString(),
     };
   }, []);
@@ -83,7 +89,8 @@ const LabTestsProvider = ({ children }) => {
           `
                     *,
                     lab_test_to_technicals ( technicals ( type ) ),
-                    lab_test_to_terms_conditions ( terms_and_conditions ( type ) )
+                    lab_test_to_terms_conditions ( terms_and_conditions ( type ) ),
+                    lab_test_to_payment_terms ( payment_terms ( type ) )
                 `
         )
         .order('created_at', { ascending: true });
@@ -211,6 +218,20 @@ const LabTestsProvider = ({ children }) => {
           }
         }
 
+        // Sync Payment Terms
+        await supabase.from('lab_test_to_payment_terms').delete().eq('lab_test_id', id);
+        if (updatedTest.paymentTermsList?.length > 0) {
+          const { data: payTerms } = await supabase
+            .from('payment_terms')
+            .select('id')
+            .in('type', updatedTest.paymentTermsList);
+          if (payTerms?.length > 0) {
+            await supabase
+              .from('lab_test_to_payment_terms')
+              .insert(payTerms.map((term) => ({ lab_test_id: id, payment_term_id: term.id })));
+          }
+        }
+
         logAudit({
           userId: currentUserId,
           entityType: 'lab_test',
@@ -259,6 +280,19 @@ const LabTestsProvider = ({ children }) => {
               await supabase
                 .from('lab_test_to_technicals')
                 .insert(techs.map((tech) => ({ lab_test_id: id, technical_id: tech.id })));
+            }
+          }
+
+          // Sync Payment Terms
+          if (newTest.paymentTermsList?.length > 0) {
+            const { data: payTerms } = await supabase
+              .from('payment_terms')
+              .select('id')
+              .in('type', newTest.paymentTermsList);
+            if (payTerms?.length > 0) {
+              await supabase
+                .from('lab_test_to_payment_terms')
+                .insert(payTerms.map((term) => ({ lab_test_id: id, payment_term_id: term.id })));
             }
           }
 

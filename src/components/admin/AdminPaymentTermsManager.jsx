@@ -1,0 +1,308 @@
+import React, { useState } from 'react';
+import { Plus, Edit, Trash2, Save, Search, AlertCircle, CreditCard } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { usePaymentTerms } from '@/contexts/PaymentTermsContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Card, CardContent } from '@/components/ui/card';
+
+const AdminPaymentTermsManager = () => {
+  const { paymentTerms, loading, addPaymentTerm, updatePaymentTerm, deletePaymentTerm } = usePaymentTerms();
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [editingTerm, setEditingTerm] = useState(null);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    isOpen: false,
+    id: null,
+    text: '',
+  });
+
+  const filteredTerms = paymentTerms.filter(
+    (t) =>
+      t.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (t.type && t.type.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const handleEdit = (term) => {
+    setEditingTerm({ ...term });
+    setIsAddingNew(false);
+  };
+
+  const handleAddNew = () => {
+    setEditingTerm({ text: '', type: 'general' });
+    setIsAddingNew(true);
+  };
+
+  const handleSave = async () => {
+    if (!editingTerm.text.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Payment terms text cannot be empty.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!editingTerm.type || !editingTerm.type.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Type cannot be empty.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      if (isAddingNew) {
+        await addPaymentTerm(editingTerm.text, editingTerm.type);
+        toast({
+          title: 'Payment Terms Added',
+          description: 'New payment terms have been successfully added.',
+        });
+      } else {
+        await updatePaymentTerm(editingTerm.id, editingTerm.text, editingTerm.type);
+        toast({
+          title: 'Payment Terms Updated',
+          description: 'Payment terms have been updated.',
+        });
+      }
+      setEditingTerm(null);
+      setIsAddingNew(false);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save payment terms.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteClick = (term) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      id: term.id,
+      text: term.text,
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (deleteConfirmation.id) {
+      try {
+        await deletePaymentTerm(deleteConfirmation.id);
+        toast({
+          title: 'Payment Terms Deleted',
+          description: 'The payment terms have been removed.',
+          variant: 'destructive',
+        });
+      } catch (error) {
+        console.error('Error deleting payment terms:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to delete payment terms.',
+          variant: 'destructive',
+        });
+      }
+    }
+    setDeleteConfirmation({ isOpen: false, id: null, text: '' });
+  };
+
+  if (loading && paymentTerms.length === 0) {
+    return <div className="p-8 text-center text-gray-500">Loading payment terms...</div>;
+  }
+
+  if (editingTerm) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-sm animate-in slide-in-from-right-4 duration-300">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold">
+            {isAddingNew ? 'Add New Payment Terms' : 'Edit Payment Terms'}
+          </h2>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setEditingTerm(null)} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              className="bg-primary hover:bg-primary-dark text-white"
+              disabled={isSaving}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {isSaving ? 'Saving...' : 'Save'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-4 w-full">
+          <div className="space-y-2">
+            <Label>Type</Label>
+            <Input
+              value={editingTerm.type || ''}
+              onChange={(e) => setEditingTerm({ ...editingTerm, type: e.target.value })}
+              placeholder="e.g. General, Advance, Installment"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Payment Terms Text</Label>
+            <Textarea
+              value={editingTerm.text}
+              onChange={(e) => setEditingTerm({ ...editingTerm, text: e.target.value })}
+              placeholder="e.g. 50% advance, 50% upon delivery."
+              rows={20}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 w-full pb-12">
+      {/* Standardized Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-2xl">
+              <CreditCard className="w-6 h-6 text-primary" />
+            </div>
+            Payment Terms
+          </h1>
+          <p className="text-gray-500 font-medium mt-1 uppercase text-[10px] tracking-widest ml-1">
+            Manage standard payment terms for documents
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="relative flex-grow">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Search payment terms..."
+            className="pl-10 w-full h-10 text-sm bg-gray-50/50 border-gray-200 rounded-xl focus:ring-primary focus:border-primary transition-all shadow-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={handleAddNew}
+              className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
+            >
+              <Plus className="w-4 h-4 mr-2" /> Add Payment Terms
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+            <p className="text-xs">Create new standard payment terms</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
+      <div className="grid gap-4">
+        {filteredTerms.map((term) => (
+          <Card key={term.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4 flex justify-between items-start gap-4">
+              <div className="flex gap-3 items-start w-full">
+                <div className="mt-1 bg-gray-100 p-2 rounded-full shrink-0">
+                  <CreditCard className="w-4 h-4 text-gray-600" />
+                </div>
+                <div className="space-y-1 w-full">
+                  {term.type && (
+                    <span className="inline-block px-1 py-0.5 rounded text-sm font-bold bg-blue-100 text-blue-800">
+                      {term.type}
+                    </span>
+                  )}
+                  <p className="text-gray-800 whitespace-pre-wrap text-sm leading-relaxed pl-1">
+                    {term.text}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-1 shrink-0">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(term)}>
+                      <Edit className="w-4 h-4 text-gray-600" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                    <p className="text-xs">Edit this term</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(term)}>
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                    <p className="text-xs">Permanently delete this term</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {filteredTerms.length === 0 && (
+          <div className="p-8 text-center text-gray-400 italic border border-dashed rounded-lg">
+            No payment terms found.
+          </div>
+        )}
+      </div>
+
+      <AlertDialog
+        open={deleteConfirmation.isOpen}
+        onOpenChange={(isOpen) =>
+          !isOpen && setDeleteConfirmation({ ...deleteConfirmation, isOpen: false })
+        }
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center text-red-600">
+              <AlertCircle className="w-5 h-5 mr-2" />
+              Delete Payment Terms?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete these payment terms? This action cannot be undone.
+              <div className="mt-2 p-2 bg-gray-50 rounded text-sm italic border-l-2 border-gray-300">
+                "
+                {deleteConfirmation.text.length > 50
+                  ? deleteConfirmation.text.substring(0, 50) + '...'
+                  : deleteConfirmation.text}
+                "
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Yes, Delete It
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
+export default AdminPaymentTermsManager;

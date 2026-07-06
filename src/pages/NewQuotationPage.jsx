@@ -19,6 +19,7 @@ import {
   BriefcaseBusiness,
   Drill,
   SwatchBook,
+  Unlink,
 } from 'lucide-react';
 import {
   Link,
@@ -44,6 +45,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTermsAndConditions } from '@/contexts/TermsAndConditionsContext';
 import { useTechnicals } from '@/contexts/TechnicalsContext';
+import { usePaymentTerms } from '@/contexts/PaymentTermsContext';
 import { useBankAccounts } from '@/contexts/BankAccountsContext';
 import Rupee from '@/components/Rupee';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -180,6 +182,7 @@ const NewQuotationPage = () => {
   const { bankAccounts, loading: accountsLoading } = useBankAccounts();
   const { terms } = useTermsAndConditions();
   const { technicals } = useTechnicals();
+  const { paymentTerms } = usePaymentTerms();
   const { user, isStandard } = useAuth();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -227,6 +230,7 @@ const NewQuotationPage = () => {
       selectedBankId: '',
       selectedTcTypes: [],
       selectedTechTypes: [],
+      selectedPaymentTermsTypes: [],
     }),
     [user?.fullName]
   );
@@ -236,6 +240,7 @@ const NewQuotationPage = () => {
   const [newItemType, setNewItemType] = useState(DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS);
   const [selectedItemId, setSelectedItemId] = useState('');
   const [selectedPackageId, setSelectedPackageId] = useState('');
+  const [targetPackageGroupId, setTargetPackageGroupId] = useState('');
   const [hoveredPackageGroupId, setHoveredPackageGroupId] = useState(null);
   const [qty, setQty] = useState(1);
   const [documentType, setDocumentType] = useState(searchParams.get('type') || 'Quotation'); // 'Tax Invoice', 'Quotation', 'Proforma Invoice', 'Purchase Order', or 'Delivery Challan'
@@ -269,6 +274,22 @@ const NewQuotationPage = () => {
     [quoteDetails, items, documentType, discount, discountShow, daysShow, sealShow, isInterstate]
   );
 
+  const uniquePackageGroups = useMemo(() => {
+    const groups = [];
+    const seen = new Set();
+    items.forEach((item) => {
+      if (item.packageGroupId && !seen.has(item.packageGroupId)) {
+        seen.add(item.packageGroupId);
+        groups.push({
+          packageGroupId: item.packageGroupId,
+          packageId: item.packageId,
+          packageName: item.packageName,
+        });
+      }
+    });
+    return groups;
+  }, [items]);
+
   // Compute aggregated T&C and Technicals from items, merging with legacy manually selected ones if present
   const derivedTcTypes = useMemo(() => {
     const itemTcTypes = items.flatMap((item) => item.tcList || []);
@@ -281,6 +302,29 @@ const NewQuotationPage = () => {
     const legacyTechTypes = quoteDetails.selectedTechTypes || [];
     return [...new Set([...itemTechTypes, ...legacyTechTypes])];
   }, [items, quoteDetails.selectedTechTypes]);
+
+  const derivedPaymentTermsTypes = useMemo(() => {
+    const itemPaymentTermsTypes = items.flatMap((item) => {
+      if (Array.isArray(item.paymentTermsList) && item.paymentTermsList.length > 0) {
+        return item.paymentTermsList;
+      }
+      // Fallback lookup for historical documents
+      let fallbackList = [];
+      if (item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS) {
+        const matched = (labTests || []).find((t) => String(t.id) === String(item.sourceId));
+        if (matched) fallbackList = matched.paymentTermsList || [];
+      } else if (item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
+        const matched = (fieldTests || []).find((t) => String(t.id) === String(item.sourceId));
+        if (matched) fallbackList = matched.paymentTermsList || [];
+      } else if (item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
+        const matched = (samplingData || []).find((t) => String(t.id) === String(item.sourceId));
+        if (matched) fallbackList = matched.paymentTermsList || [];
+      }
+      return fallbackList;
+    });
+    const legacyPaymentTermsTypes = quoteDetails.selectedPaymentTermsTypes || [];
+    return [...new Set([...itemPaymentTermsTypes, ...legacyPaymentTermsTypes])];
+  }, [items, quoteDetails.selectedPaymentTermsTypes, labTests, fieldTests, samplingData]);
 
   // Navigation guard for unsaved changes (Browser back/forward/links)
   const isDirty = useMemo(() => {
@@ -311,6 +355,8 @@ const NewQuotationPage = () => {
     setItems([]);
     setNewItemType(DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS);
     setSelectedItemId('');
+    setSelectedPackageId('');
+    setTargetPackageGroupId('');
     setQty(1);
     setDocumentType('Quotation');
     setDiscount(0);
@@ -424,7 +470,7 @@ const NewQuotationPage = () => {
               parsed.quoteDetails.generatedBy = user.fullName;
               return JSON.stringify(parsed);
             }
-          } catch (e) {}
+          } catch (e) { }
           return prevSaved;
         });
 
@@ -703,7 +749,7 @@ const NewQuotationPage = () => {
                     parsed.quoteDetails = newDetails;
                     return JSON.stringify(parsed);
                   }
-                } catch (e) {}
+                } catch (e) { }
                 return prevSaved;
               });
 
@@ -1129,35 +1175,61 @@ const NewQuotationPage = () => {
       const clientId = clients.find((c) => c.clientName === quoteDetails.clientName)?.id;
       const finalPrice = getAppropiatePrice(selectedItemId, newItemType, clientId);
 
-      setItems((prev) => [
-        ...prev,
-        {
-          id: Date.now(), // unique ID for row
-          sourceId: selectedItemId,
-          type: newItemType,
-          description,
-          unit,
-          price: Number(finalPrice),
-          qty: Number(qty),
-          numDays: Number(itemData.numDays ?? 1) || 1,
-          total: Number(finalPrice) * Number(qty),
-          hsnCode: itemData.hsnCode || '',
-          tcList: itemData.tcList || itemData.tc_list || [],
-          techList: itemData.techList || itemData.tech_list || [],
-          // Include new service fields if it's a service
-          ...(newItemType === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS && itemData
-            ? {
-                methodOfSampling: itemData.methodOfSampling || itemData.method_of_sampling || 'NA',
-                numBHs: itemData.numBHs ?? itemData.num_bhs ?? 0,
-                measure: itemData.measure || 'NA',
-              }
-            : {}),
-        },
-      ]);
+      const newItem = {
+        id: Date.now(), // unique ID for row
+        sourceId: selectedItemId,
+        type: newItemType,
+        description,
+        unit,
+        price: Number(finalPrice),
+        qty: Number(qty),
+        numDays: Number(itemData.numDays ?? 1) || 1,
+        total: Number(finalPrice) * Number(qty),
+        hsnCode: itemData.hsnCode || '',
+        tcList: itemData.tcList || itemData.tc_list || [],
+        techList: itemData.techList || itemData.tech_list || [],
+        paymentTermsList: itemData.paymentTermsList || itemData.payment_terms_list || [],
+        // Include new service fields if it's a service
+        ...(newItemType === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS && itemData
+          ? {
+            methodOfSampling: itemData.methodOfSampling || itemData.method_of_sampling || 'NA',
+            numBHs: itemData.numBHs ?? itemData.num_bhs ?? 0,
+            measure: itemData.measure || 'NA',
+          }
+          : {}),
+      };
+
+      if (targetPackageGroupId) {
+        const group = uniquePackageGroups.find((g) => g.packageGroupId === targetPackageGroupId);
+        if (group) {
+          newItem.packageGroupId = group.packageGroupId;
+          newItem.packageId = group.packageId;
+          newItem.packageName = group.packageName;
+        }
+      }
+
+      setItems((prev) => {
+        if (newItem.packageGroupId) {
+          let lastIndex = -1;
+          for (let idx = prev.length - 1; idx >= 0; idx--) {
+            if (prev[idx].packageGroupId === newItem.packageGroupId) {
+              lastIndex = idx;
+              break;
+            }
+          }
+          if (lastIndex !== -1) {
+            const newItems = [...prev];
+            newItems.splice(lastIndex + 1, 0, newItem);
+            return newItems;
+          }
+        }
+        return [...prev, newItem];
+      });
 
       // Reset selection
       setSelectedItemId('');
       setQty(1);
+      setTargetPackageGroupId('');
     }
   };
 
@@ -1213,15 +1285,16 @@ const NewQuotationPage = () => {
           hsnCode: itemData.hsnCode || '',
           tcList: itemData.tcList || itemData.tc_list || [],
           techList: itemData.techList || itemData.tech_list || [],
+          paymentTermsList: itemData.paymentTermsList || itemData.payment_terms_list || [],
           packageGroupId,
           packageId: packageData.id,
           packageName: packageData.name,
           ...(pkgItem.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS && itemData
             ? {
-                methodOfSampling: itemData.methodOfSampling || itemData.method_of_sampling || 'NA',
-                numBHs: itemData.numBHs ?? itemData.num_bhs ?? 0,
-                measure: itemData.measure || 'NA',
-              }
+              methodOfSampling: itemData.methodOfSampling || itemData.method_of_sampling || 'NA',
+              numBHs: itemData.numBHs ?? itemData.num_bhs ?? 0,
+              measure: itemData.measure || 'NA',
+            }
             : {}),
         });
       }
@@ -1272,10 +1345,10 @@ const NewQuotationPage = () => {
       prev.map((item) =>
         item.id === rowId
           ? {
-              ...item,
-              price: newPrice,
-              total: newPrice * Number(item.qty || 0),
-            }
+            ...item,
+            price: newPrice,
+            total: newPrice * Number(item.qty || 0),
+          }
           : item
       )
     );
@@ -1297,10 +1370,10 @@ const NewQuotationPage = () => {
       prev.map((item) =>
         item.id === rowId
           ? {
-              ...item,
-              qty: newQty,
-              total: Number(item.price || 0) * newQty,
-            }
+            ...item,
+            qty: newQty,
+            total: Number(item.price || 0) * newQty,
+          }
           : item
       )
     );
@@ -1322,124 +1395,164 @@ const NewQuotationPage = () => {
       prev.map((item) =>
         item.id === rowId
           ? {
-              ...item,
-              numDays: newNumDays,
-              total: Number(item.price || 0) * Number(item.qty || 0),
-            }
+            ...item,
+            numDays: newNumDays,
+            total: Number(item.price || 0) * Number(item.qty || 0),
+          }
           : item
       )
     );
   };
 
   const handleMoveItemUp = (index) => {
-    if (index === 0) return; // Already at the top
+    if (index === 0) return;
     setItems((prev) => {
       const newItems = [...prev];
-      const currentItem = newItems[index];
+      const item = { ...newItems[index] };
+      const targetItem = { ...newItems[index - 1] };
 
-      if (currentItem.packageGroupId) {
-        // Move entire package group UP
-        const groupId = currentItem.packageGroupId;
-        const groupStart = newItems.findIndex((x) => x.packageGroupId === groupId);
-        const groupItems = newItems.filter((x) => x.packageGroupId === groupId);
-        const groupLength = groupItems.length;
-
-        if (groupStart === 0) return prev; // Already at the top
-
-        const targetIndex = groupStart - 1;
-        const targetItem = newItems[targetIndex];
-
-        if (targetItem.packageGroupId) {
-          // Above is another package group
-          const otherGroupId = targetItem.packageGroupId;
-          const otherGroupStart = newItems.findIndex((x) => x.packageGroupId === otherGroupId);
-          const otherGroupItems = newItems.filter((x) => x.packageGroupId === otherGroupId);
-
-          // Reconstruct array by swapping blocks
-          const before = newItems.slice(0, otherGroupStart);
-          const after = newItems.slice(groupStart + groupLength);
-          return [...before, ...groupItems, ...otherGroupItems, ...after];
-        } else {
-          // Above is a single non-package item
-          const before = newItems.slice(0, targetIndex);
-          const after = newItems.slice(groupStart + groupLength);
-          return [...before, ...groupItems, targetItem, ...after];
+      // Adjust package properties
+      if (item.packageGroupId && targetItem.packageGroupId) {
+        if (item.packageGroupId !== targetItem.packageGroupId) {
+          // Move into a different package group
+          item.packageGroupId = targetItem.packageGroupId;
+          item.packageId = targetItem.packageId;
+          item.packageName = targetItem.packageName;
         }
-      } else {
-        // Move single non-package item UP
-        const targetIndex = index - 1;
-        const targetItem = newItems[targetIndex];
-
-        if (targetItem.packageGroupId) {
-          // Above is a package group
-          const otherGroupId = targetItem.packageGroupId;
-          const otherGroupStart = newItems.findIndex((x) => x.packageGroupId === otherGroupId);
-          const otherGroupItems = newItems.filter((x) => x.packageGroupId === otherGroupId);
-
-          const before = newItems.slice(0, otherGroupStart);
-          const after = newItems.slice(index + 1);
-          return [...before, currentItem, ...otherGroupItems, ...after];
-        } else {
-          // Standard swap
-          [newItems[targetIndex], newItems[index]] = [newItems[index], newItems[targetIndex]];
-          return newItems;
-        }
+      } else if (!item.packageGroupId && targetItem.packageGroupId) {
+        // Non-package item moving UP past a package item enters the package group
+        item.packageGroupId = targetItem.packageGroupId;
+        item.packageId = targetItem.packageId;
+        item.packageName = targetItem.packageName;
+      } else if (item.packageGroupId && !targetItem.packageGroupId) {
+        // Package item moving UP past a non-package item exits the package group
+        delete item.packageGroupId;
+        delete item.packageId;
+        delete item.packageName;
       }
+
+      // Swap
+      newItems[index] = targetItem;
+      newItems[index - 1] = item;
+
+      return newItems;
     });
   };
 
   const handleMoveItemDown = (index) => {
-    if (index === items.length - 1) return; // Already at the bottom
+    setItems((prev) => {
+      if (index === prev.length - 1) return prev;
+      const newItems = [...prev];
+      const item = { ...newItems[index] };
+      const targetItem = { ...newItems[index + 1] };
+
+      // Adjust package properties
+      if (item.packageGroupId && targetItem.packageGroupId) {
+        if (item.packageGroupId !== targetItem.packageGroupId) {
+          // Move into a different package group
+          item.packageGroupId = targetItem.packageGroupId;
+          item.packageId = targetItem.packageId;
+          item.packageName = targetItem.packageName;
+        }
+      } else if (!item.packageGroupId && targetItem.packageGroupId) {
+        // Non-package item moving DOWN past a package item enters the package group
+        item.packageGroupId = targetItem.packageGroupId;
+        item.packageId = targetItem.packageId;
+        item.packageName = targetItem.packageName;
+      } else if (item.packageGroupId && !targetItem.packageGroupId) {
+        // Package item moving DOWN past a non-package item exits the package group
+        delete item.packageGroupId;
+        delete item.packageId;
+        delete item.packageName;
+      }
+
+      // Swap
+      newItems[index] = targetItem;
+      newItems[index + 1] = item;
+
+      return newItems;
+    });
+  };
+
+  const handleMovePackageUp = (packageGroupId) => {
     setItems((prev) => {
       const newItems = [...prev];
-      const currentItem = newItems[index];
+      const groupStart = newItems.findIndex((x) => x.packageGroupId === packageGroupId);
+      if (groupStart <= 0) return prev; // Already at the top
 
-      if (currentItem.packageGroupId) {
-        // Move entire package group DOWN
-        const groupId = currentItem.packageGroupId;
-        const groupStart = newItems.findIndex((x) => x.packageGroupId === groupId);
-        const groupItems = newItems.filter((x) => x.packageGroupId === groupId);
-        const groupLength = groupItems.length;
-        const groupEnd = groupStart + groupLength - 1;
+      const groupItems = newItems.filter((x) => x.packageGroupId === packageGroupId);
+      const groupLength = groupItems.length;
 
-        if (groupEnd === newItems.length - 1) return prev; // Already at the bottom
+      const targetIndex = groupStart - 1;
+      const targetItem = newItems[targetIndex];
 
-        const targetIndex = groupEnd + 1;
-        const targetItem = newItems[targetIndex];
+      if (targetItem.packageGroupId) {
+        // Above is another package group
+        const otherGroupId = targetItem.packageGroupId;
+        const otherGroupStart = newItems.findIndex((x) => x.packageGroupId === otherGroupId);
+        const otherGroupItems = newItems.filter((x) => x.packageGroupId === otherGroupId);
 
-        if (targetItem.packageGroupId) {
-          // Below is another package group
-          const otherGroupId = targetItem.packageGroupId;
-          const otherGroupItems = newItems.filter((x) => x.packageGroupId === otherGroupId);
-
-          const before = newItems.slice(0, groupStart);
-          const after = newItems.slice(targetIndex + otherGroupItems.length);
-          return [...before, ...otherGroupItems, ...groupItems, ...after];
-        } else {
-          // Below is a single non-package item
-          const before = newItems.slice(0, groupStart);
-          const after = newItems.slice(targetIndex + 1);
-          return [...before, targetItem, ...groupItems, ...after];
-        }
+        // Swap contiguous package blocks
+        const before = newItems.slice(0, otherGroupStart);
+        const after = newItems.slice(groupStart + groupLength);
+        return [...before, ...groupItems, ...otherGroupItems, ...after];
       } else {
-        // Move single non-package item DOWN
-        const targetIndex = index + 1;
-        const targetItem = newItems[targetIndex];
-
-        if (targetItem.packageGroupId) {
-          // Below is a package group
-          const otherGroupId = targetItem.packageGroupId;
-          const otherGroupItems = newItems.filter((x) => x.packageGroupId === otherGroupId);
-
-          const before = newItems.slice(0, index);
-          const after = newItems.slice(targetIndex + otherGroupItems.length);
-          return [...before, ...otherGroupItems, currentItem, ...after];
-        } else {
-          // Standard swap
-          [newItems[index], newItems[targetIndex]] = [newItems[targetIndex], newItems[index]];
-          return newItems;
-        }
+        // Above is a single non-package item
+        const before = newItems.slice(0, targetIndex);
+        const after = newItems.slice(groupStart + groupLength);
+        return [...before, ...groupItems, targetItem, ...after];
       }
+    });
+  };
+
+  const handleMovePackageDown = (packageGroupId) => {
+    setItems((prev) => {
+      const newItems = [...prev];
+      const groupStart = newItems.findIndex((x) => x.packageGroupId === packageGroupId);
+      if (groupStart === -1) return prev;
+
+      const groupItems = newItems.filter((x) => x.packageGroupId === packageGroupId);
+      const groupLength = groupItems.length;
+      const groupEnd = groupStart + groupLength - 1;
+
+      if (groupEnd >= newItems.length - 1) return prev; // Already at bottom
+
+      const targetIndex = groupEnd + 1;
+      const targetItem = newItems[targetIndex];
+
+      if (targetItem.packageGroupId) {
+        // Below is another package group
+        const otherGroupId = targetItem.packageGroupId;
+        const otherGroupItems = newItems.filter((x) => x.packageGroupId === otherGroupId);
+
+        const before = newItems.slice(0, groupStart);
+        const after = newItems.slice(targetIndex + otherGroupItems.length);
+        return [...before, ...otherGroupItems, ...groupItems, ...after];
+      } else {
+        // Below is a single non-package item
+        const before = newItems.slice(0, groupStart);
+        const after = newItems.slice(targetIndex + 1);
+        return [...before, targetItem, ...groupItems, ...after];
+      }
+    });
+  };
+
+  const handleUngroupPackage = (packageGroupId) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.packageGroupId === packageGroupId) {
+          const newItem = { ...item };
+          delete newItem.packageGroupId;
+          delete newItem.packageId;
+          delete newItem.packageName;
+          return newItem;
+        }
+        return item;
+      })
+    );
+    toast({
+      title: 'Package dissolved',
+      description: 'Package items have been converted to individual parameters.',
     });
   };
 
@@ -1670,14 +1783,44 @@ const NewQuotationPage = () => {
     return pages;
   };
 
+  const paginatePaymentTerms = () => {
+    if (!derivedPaymentTermsTypes || derivedPaymentTermsTypes.length === 0) {
+      return [];
+    }
+
+    const pages = [];
+
+    derivedPaymentTermsTypes.forEach((type) => {
+      const pageItems = [];
+      const typePay = (paymentTerms || []).filter((t) => t.type === type);
+      if (typePay.length > 0) {
+        if (type !== 'general' && type !== 'General') {
+          pageItems.push({ type: 'header', text: type, id: `header-${type}` });
+        }
+        typePay.forEach((pay) => {
+          pageItems.push({ type: 'pay', text: pay.text, id: pay.id });
+        });
+
+        pages.push({
+          items: pageItems,
+          pageNumber: pages.length + 1,
+          isFirstPage: pages.length === 0,
+        });
+      }
+    });
+
+    return pages;
+  };
+
   const itemPages = paginateItems();
   const totalItemPages = itemPages.length;
 
   const tcPages = paginateTerms();
   const techPages = paginateTechnicals();
+  const payPages = paginatePaymentTerms();
 
   // Total pages calculation
-  const totalPages = totalItemPages + 1 + tcPages.length + techPages.length;
+  const totalPages = totalItemPages + 1 + tcPages.length + techPages.length + payPages.length;
   const selectedDocumentItemType =
     DOCUMENT_ITEM_TYPE_OPTIONS.find((itemType) => itemType.key === newItemType) ||
     DOCUMENT_ITEM_TYPE_OPTIONS[0];
@@ -1776,7 +1919,7 @@ const NewQuotationPage = () => {
                   <SelectTrigger
                     className={cn(
                       (!!searchParams.get('type') || !!savedRecordId) &&
-                        'bg-gray-100 cursor-not-allowed'
+                      'bg-gray-100 cursor-not-allowed'
                     )}
                   >
                     <SelectValue placeholder="Select Type" />
@@ -2257,9 +2400,9 @@ const NewQuotationPage = () => {
                         value={
                           selectedPackageId
                             ? {
-                                value: selectedPackageId,
-                                label: packages.find((p) => p.id === selectedPackageId)?.name,
-                              }
+                              value: selectedPackageId,
+                              label: packages.find((p) => p.id === selectedPackageId)?.name,
+                            }
                             : null
                         }
                         onChange={(option) => setSelectedPackageId(option ? option.value : '')}
@@ -2327,9 +2470,9 @@ const NewQuotationPage = () => {
                     value={
                       selectedItemId
                         ? {
-                            value: selectedItemId,
-                            label: getSelectedItemDisplayLabel(),
-                          }
+                          value: selectedItemId,
+                          label: getSelectedItemDisplayLabel(),
+                        }
                         : null
                     }
                     onChange={(option) => setSelectedItemId(option ? option.value : '')}
@@ -2350,6 +2493,38 @@ const NewQuotationPage = () => {
                     disabled={isReadOnly}
                   />
                 </div>
+
+                {uniquePackageGroups.length > 0 && (
+                  <div>
+                    <Label>Associate with Package Group (Optional)</Label>
+                    <ReactSelect
+                      className="mt-1"
+                      classNamePrefix="react-select"
+                      isDisabled={isReadOnly}
+                      options={[
+                        { value: '', label: 'None (Add as Independent Item)' },
+                        ...uniquePackageGroups.map((g) => ({
+                          value: g.packageGroupId,
+                          label: g.packageName,
+                        })),
+                      ]}
+                      value={
+                        targetPackageGroupId
+                          ? {
+                            value: targetPackageGroupId,
+                            label: uniquePackageGroups.find(
+                              (g) => g.packageGroupId === targetPackageGroupId
+                            )?.packageName,
+                          }
+                          : { value: '', label: 'None (Add as Independent Item)' }
+                      }
+                      onChange={(option) => setTargetPackageGroupId(option ? option.value : '')}
+                      placeholder="Select package group..."
+                      isSearchable
+                      styles={themedReactSelectStyles({ minHeight: '44px', borderRadius: '0.75rem' })}
+                    />
+                  </div>
+                )}
 
                 <Button
                   onClick={handleAddItem}
@@ -2469,13 +2644,12 @@ const NewQuotationPage = () => {
 
                             {/* Client, Contractor, Project Details - Columns */}
                             <div
-                              className={`grid ${
-                                quoteDetails.contractorName &&
+                              className={`grid ${quoteDetails.contractorName &&
                                 quoteDetails.contractorName.trim() &&
                                 quoteDetails.contractorName.trim() !== '-'
-                                  ? 'grid-cols-3'
-                                  : 'grid-cols-2'
-                              } gap-6 mb-2 text-sm py-0 border-b`}
+                                ? 'grid-cols-3'
+                                : 'grid-cols-2'
+                                } gap-6 mb-2 text-sm py-0 border-b`}
                             >
                               {/* Column 1: Client */}
                               <div className="space-y-1">
@@ -2545,7 +2719,7 @@ const NewQuotationPage = () => {
                             <h3 className="text-sm font-bold text-gray-900">
                               {documentType}{' '}
                               {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : ''}{' '}
-                              (Continued)
+                              (continued)
                             </h3>
                           </div>
                         )}
@@ -2666,21 +2840,8 @@ const NewQuotationPage = () => {
                               const isFirstItemInTable = slNo === 1;
                               const isLastItemInTable = slNo === items.length;
 
-                              let isUpDisabled = isFirstItemInTable;
-                              let isDownDisabled = isLastItemInTable;
-
-                              if (item.packageGroupId) {
-                                const groupStart = items.findIndex(
-                                  (x) => x.packageGroupId === item.packageGroupId
-                                );
-                                const groupLength = items.filter(
-                                  (x) => x.packageGroupId === item.packageGroupId
-                                ).length;
-                                const groupEnd = groupStart + groupLength - 1;
-
-                                isUpDisabled = groupStart === 0;
-                                isDownDisabled = groupEnd === items.length - 1;
-                              }
+                              const isUpDisabled = isFirstItemInTable;
+                              const isDownDisabled = isLastItemInTable;
 
                               return (
                                 <React.Fragment key={item.id}>
@@ -2706,10 +2867,49 @@ const NewQuotationPage = () => {
                                       </td>
                                       <td
                                         className={cn(
-                                          'print:hidden align-top border-r border-gray-200 bg-gray-50',
+                                          'print:hidden align-top border-r border-gray-200 bg-gray-50 py-1.5 px-0 text-left',
                                           isHoveredGroup && 'package-group-border-r border-r-2'
                                         )}
-                                      ></td>
+                                      >
+                                        {!isReadOnly && (
+                                          <div className="inline-flex items-center gap-1.0 justify-end">
+                                            <button
+                                              type="button"
+                                              onClick={() => handleMovePackageUp(item.packageGroupId)}
+                                              disabled={groupItems[0]?.id === items[0]?.id}
+                                              className="text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors p-0"
+                                              title="Move entire package group up"
+                                            >
+                                              <ChevronUp className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleMovePackageDown(item.packageGroupId)}
+                                              disabled={groupItems[groupItems.length - 1]?.id === items[items.length - 1]?.id}
+                                              className="text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors p-0"
+                                              title="Move entire package group down"
+                                            >
+                                              <ChevronDown className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleUngroupPackage(item.packageGroupId)}
+                                              className="text-blue-400 hover:text-blue-600 transition-colors p-0 hidden"
+                                              title="Ungroup package (Convert parameters to individual items)"
+                                            >
+                                              <Unlink className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleDeletePackage(item.packageGroupId)}
+                                              className="text-red-400 hover:text-red-600 transition-colors p-0"
+                                              title="Delete entire package"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          </div>
+                                        )}
+                                      </td>
                                     </tr>
                                   )}
                                   <tr
@@ -2717,8 +2917,8 @@ const NewQuotationPage = () => {
                                     className={cn(
                                       'border-b border-gray-50 transition-colors',
                                       item.packageGroupId &&
-                                        hoveredPackageGroupId === item.packageGroupId &&
-                                        'bg-red-50/70'
+                                      hoveredPackageGroupId === item.packageGroupId &&
+                                      'bg-red-50/70'
                                     )}
                                     onMouseEnter={() =>
                                       item.packageGroupId &&
@@ -2872,8 +3072,8 @@ const NewQuotationPage = () => {
                                         )}
                                       >
                                         {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS ||
-                                        item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS ||
-                                        item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING ? (
+                                          item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS ||
+                                          item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING ? (
                                           <span
                                             contentEditable={!isReadOnly}
                                             suppressContentEditableWarning
@@ -2914,10 +3114,7 @@ const NewQuotationPage = () => {
                                           <button
                                             onClick={() => handleMoveItemUp(slNo - 1)}
                                             disabled={isUpDisabled}
-                                            className={cn(
-                                              'text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors',
-                                              item.packageGroupId && !isFirstInGroup && 'hidden'
-                                            )}
+                                            className="text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors"
                                             title="Move Up"
                                           >
                                             <ChevronUp className="w-4 h-4" />
@@ -2925,10 +3122,7 @@ const NewQuotationPage = () => {
                                           <button
                                             onClick={() => handleMoveItemDown(slNo - 1)}
                                             disabled={isDownDisabled}
-                                            className={cn(
-                                              'text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors',
-                                              item.packageGroupId && !isFirstInGroup && 'hidden'
-                                            )}
+                                            className="text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors"
                                             title="Move Down"
                                           >
                                             <ChevronDown className="w-4 h-4" />
@@ -3040,8 +3234,8 @@ const NewQuotationPage = () => {
                                     <Rupee />
                                     {roundAmount(
                                       calculateTotal() *
-                                        (1 - discount / 100) *
-                                        (1 + taxTotalPercent / 100)
+                                      (1 - discount / 100) *
+                                      (1 + taxTotalPercent / 100)
                                     ).toLocaleString()}
                                   </span>
                                 </div>
@@ -3063,9 +3257,9 @@ const NewQuotationPage = () => {
                                           <Rupee />
                                           {roundAmount(
                                             calculateTotal() *
-                                              (1 - discount / 100) *
-                                              (1 + taxTotalPercent / 100) -
-                                              Number(quoteDetails.paymentAmount)
+                                            (1 - discount / 100) *
+                                            (1 + taxTotalPercent / 100) -
+                                            Number(quoteDetails.paymentAmount)
                                           ).toLocaleString()}
                                         </span>
                                       </div>
@@ -3077,8 +3271,8 @@ const NewQuotationPage = () => {
                                     {numberToWords(
                                       roundAmount(
                                         calculateTotal() *
-                                          (1 - discount / 100) *
-                                          (1 + taxTotalPercent / 100)
+                                        (1 - discount / 100) *
+                                        (1 + taxTotalPercent / 100)
                                       )
                                     )}{' '}
                                     /-
@@ -3309,7 +3503,7 @@ const NewQuotationPage = () => {
                         )}
 
                         {/* Payment Terms */}
-                        <div className="mt-6 pt-4 border-t">
+                        <div className="mt-6 pt-4 border-t hidden">
                           <h2 className="font-semibold text-left mb-3">Payment Terms</h2>
                           <div
                             className={`font-bold italic text-xs whitespace-pre-wrap outline-none ${!isReadOnly ? 'hover:bg-[#f9fafb] focus:bg-[#ffffff] focus:ring-1 focus:ring-[#e5e7eb] rounded p-1 -ml-1 transition-colors' : ''}`}
@@ -3366,6 +3560,88 @@ const NewQuotationPage = () => {
                   </div>
                 </div>
 
+                {/* Payment Terms Pages */}
+                {payPages.map((page, payIndex) => (
+                  <div
+                    key={`pay-page-wrapper-${payIndex}`}
+                    className="a4-scale-wrapper mx-auto"
+                    style={{
+                      width: `${794 * previewScale}px`,
+                      height: `${1122.5 * previewScale}px`,
+                      marginBottom: `${48 * previewScale}px`,
+                    }}
+                  >
+                    <div
+                      className="a4-container"
+                      style={{
+                        transform: `scale(${previewScale})`,
+                        transformOrigin: 'top left',
+                        margin: 0,
+                      }}
+                    >
+                      {/* Watermark */}
+                      <div
+                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                        style={{
+                          transform: 'rotate(-55deg)',
+                          zIndex: 0,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '42pt',
+                            fontWeight: 700,
+                            color: 'rgba(0,0,0,0.02)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          EDGE2 Engineering Solutions India Pvt. Ltd.
+                        </span>
+                      </div>
+                      <div className="a4-page-content">
+                        <h2 className="font-semibold text-lg mb-6 text-center pb-2">Payment Terms{payIndex > 0 ? ' (continued)' : ''}</h2>
+                        <div className="space-y-4">
+                          {page.items.map((item) => {
+                            if (item.type === 'header') {
+                              return (
+                                <h3
+                                  key={item.id}
+                                  className="font-bold text-sm text-gray-800 border-l-4 border-primary pl-2 mb-2"
+                                >
+                                  {item.text}
+                                </h3>
+                              );
+                            } else if (item.type === 'pay') {
+                              return (
+                                <div
+                                  key={item.id}
+                                  className="text-xs text-gray-700 leading-relaxed mb-1 pl-2"
+                                >
+                                  <p className="whitespace-pre-wrap">{item.text}</p>
+                                </div>
+                              );
+                            } else if (item.type === 'spacer') {
+                              return <div key={item.id} className="h-4"></div>;
+                            }
+                            return null;
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Page Footer */}
+                      <div className="a4-page-footer">
+                        <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
+                        <span>
+                          {documentType}{' '}
+                          {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
+                          Page {totalItemPages + 1 + (payIndex + 1)} of{' '}
+                          {totalPages}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
                 {/* T&C Pages */}
                 {tcPages.map((tcPage, tcIndex) => (
                   <div
@@ -3407,7 +3683,7 @@ const NewQuotationPage = () => {
                       <div className="a4-page-content">
                         <div className="text-left text-gray-500 text-sm">
                           <h2 className="font-semibold text-lg mb-4 text-center">
-                            Terms & Conditions
+                            Terms & Conditions{tcIndex > 0 ? ' (continued)' : ''}
                           </h2>
 
                           {tcPage.items.length === 0 ? (
@@ -3451,7 +3727,7 @@ const NewQuotationPage = () => {
                         <span>
                           {documentType}{' '}
                           {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
-                          Page {totalItemPages + 2 + tcIndex} of {totalPages}
+                          Page {totalItemPages + 1 + payPages.length + (tcIndex + 1)} of {totalPages}
                         </span>
                       </div>
                     </div>
@@ -3497,7 +3773,7 @@ const NewQuotationPage = () => {
                         </span>
                       </div>
                       <div className="a4-page-content">
-                        <h2 className="font-semibold text-lg mb-6 text-center pb-2">Technicals</h2>
+                        <h2 className="font-semibold text-lg mb-6 text-center pb-2">Technicals{techIndex > 0 ? ' (continued)' : ''}</h2>
                         <div className="space-y-4">
                           {page.items.map((item) => {
                             if (item.type === 'header') {
@@ -3532,7 +3808,7 @@ const NewQuotationPage = () => {
                         <span>
                           {documentType}{' '}
                           {quoteDetails.quoteNumber ? `${quoteDetails.quoteNumber}` : 'Pending'} |
-                          Page {totalItemPages + 1 + tcPages.length + (techIndex + 1)} of{' '}
+                          Page {totalItemPages + 1 + payPages.length + tcPages.length + (techIndex + 1)} of{' '}
                           {totalPages}
                         </span>
                       </div>

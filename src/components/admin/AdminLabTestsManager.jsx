@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useHSNCodes } from '@/contexts/HSNCodesContext';
 import { useTermsAndConditions } from '@/contexts/TermsAndConditionsContext';
 import { useTechnicals } from '@/contexts/TechnicalsContext';
+import { usePaymentTerms } from '@/contexts/PaymentTermsContext';
 import { useMaterials } from '@/contexts/MaterialsContext';
 
 import { sendTelegramNotification } from '@/lib/notifier';
@@ -52,6 +53,7 @@ const AdminLabTestsManager = () => {
   const { hsnCodes } = useHSNCodes();
   const { terms } = useTermsAndConditions();
   const { technicals } = useTechnicals();
+  const { paymentTerms } = usePaymentTerms();
   const { materials } = useMaterials();
   const { user } = useAuth();
 
@@ -154,6 +156,7 @@ const AdminLabTestsManager = () => {
       hsnCode: '',
       tcList: [],
       techList: [],
+      paymentTermsList: [],
     });
     setIsAddingNew(true);
   };
@@ -472,6 +475,34 @@ const AdminLabTestsManager = () => {
               styles={themedReactSelectStyles()}
             />
           </div>
+
+          <div className="space-y-2 md:col-span-1">
+            <Label>Payment Terms</Label>
+            <ReactSelect
+              isMulti
+              name="paymentTermsList"
+              options={[...new Set(paymentTerms.map((t) => t.type))].map((type) => ({
+                value: type,
+                label: type,
+              }))}
+              className="basic-multi-select"
+              classNamePrefix="select"
+              placeholder="Select Payment Terms..."
+              value={
+                editingLabTest?.paymentTermsList?.map((type) => ({
+                  value: type,
+                  label: type,
+                })) || []
+              }
+              onChange={(selectedOptions) => {
+                handleChange(
+                  'paymentTermsList',
+                  selectedOptions ? selectedOptions.map((option) => option.value) : []
+                );
+              }}
+              styles={themedReactSelectStyles()}
+            />
+          </div>
         </div>
       </div>
     );
@@ -671,6 +702,12 @@ const AdminLabTestsManager = () => {
                         <span className="font-semibold text-primary">T&C:</span>{' '}
                         {Array.isArray(labTest.tcList) && labTest.tcList.length > 0
                           ? labTest.tcList.join(', ')
+                          : '-'}
+                      </p>
+                      <p>
+                        <span className="font-semibold text-primary">Payment Terms:</span>{' '}
+                        {Array.isArray(labTest.paymentTermsList) && labTest.paymentTermsList.length > 0
+                          ? labTest.paymentTermsList.join(', ')
                           : '-'}
                       </p>
                     </div>
