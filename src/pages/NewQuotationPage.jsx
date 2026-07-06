@@ -2727,22 +2727,26 @@ const NewQuotationPage = () => {
                         {/* Table */}
                         <table className="quote-items-table w-full table-fixed mb-8 mt-2">
                           <colgroup>
-                            <col style={{ width: '2%' }} />
+                            <col style={{ width: '4%' }} />
                             <col
                               style={{
                                 width:
-                                  documentType === 'Quotation' ? (daysShow ? '27%' : '31%') : '30%',
+                                  documentType === 'Quotation'
+                                    ? daysShow
+                                      ? '48%'
+                                      : '53%'
+                                    : '53%',
                               }}
                             />
-                            <col style={{ width: '4%' }} />
-                            <col style={{ width: '5%' }} />
-                            <col style={{ width: '4%' }} />
-                            <col style={{ width: '3%' }} />
-                            {documentType === 'Quotation' && daysShow && (
-                              <col style={{ width: '4%' }} />
-                            )}
+                            <col style={{ width: '8%' }} />
+                            <col style={{ width: '10%' }} />
                             <col style={{ width: '6%' }} />
                             <col style={{ width: '5%' }} />
+                            {documentType === 'Quotation' && daysShow && (
+                              <col style={{ width: '5%' }} />
+                            )}
+                            <col style={{ width: '14%' }} />
+                            <col className="print:hidden" style={{ width: '50px' }} />
                           </colgroup>
                           <thead>
                             <tr>
