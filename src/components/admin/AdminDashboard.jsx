@@ -49,18 +49,27 @@ const AdminDashboard = () => {
     totalStaff: 0,
     totalClients: 0,
     expenditures: {
+      lastWeek: 0,
       week: 0,
+      lastMonth: 0,
       month: 0,
+      lastThreeMonths: 0,
       year: 0,
     },
     quotations: {
+      lastWeek: 0,
       week: 0,
+      lastMonth: 0,
       month: 0,
+      lastThreeMonths: 0,
       year: 0,
     },
     invoices: {
+      lastWeek: 0,
       week: 0,
+      lastMonth: 0,
       month: 0,
+      lastThreeMonths: 0,
       year: 0,
     },
     pendingLeaves: 0,
@@ -213,6 +222,11 @@ const AdminDashboard = () => {
       if (expErr) throw expErr;
 
       const firstDayOfMonthStr = formatDate(new Date(now.getFullYear(), now.getMonth(), 1));
+      const lastDayOfLastMonthStr = formatDate(new Date(now.getFullYear(), now.getMonth(), 0));
+      const firstDayOfLastMonthStr = formatDate(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+      const firstDayOfThreeMonthsAgoStr = formatDate(
+        new Date(now.getFullYear(), now.getMonth() - 3, 1)
+      );
 
       // Get first day of current week (assuming Monday)
       const d = new Date(now);
@@ -220,22 +234,35 @@ const AdminDashboard = () => {
       const diff = d.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
       const firstDayOfWeekStr = formatDate(new Date(d.setDate(diff)));
 
+      // Get last week range (Mon–Sun of previous week)
+      const lastWeekEnd = new Date(d);
+      lastWeekEnd.setDate(lastWeekEnd.getDate() - 1); // last Sunday
+      const lastWeekStart = new Date(lastWeekEnd);
+      lastWeekStart.setDate(lastWeekStart.getDate() - 6); // last Monday
+      const firstDayOfLastWeekStr = formatDate(lastWeekStart);
+      const lastDayOfLastWeekStr = formatDate(lastWeekEnd);
+
       const currentYear = String(now.getFullYear());
       const expMetrics = (expenses || []).reduce(
         (acc, e) => {
           const amount = Number(e.amount) || 0;
           const dateStr = e.date || ''; // YYYY-MM-DD
 
-          // Only count expenses from the current year
           if (dateStr.startsWith(currentYear)) {
             acc.year += amount;
             if (dateStr >= firstDayOfMonthStr) acc.month += amount;
             if (dateStr >= firstDayOfWeekStr) acc.week += amount;
+            if (dateStr >= firstDayOfThreeMonthsAgoStr && dateStr < firstDayOfMonthStr)
+              acc.lastThreeMonths += amount;
           }
+          if (dateStr >= firstDayOfLastMonthStr && dateStr <= lastDayOfLastMonthStr)
+            acc.lastMonth += amount;
+          if (dateStr >= firstDayOfLastWeekStr && dateStr <= lastDayOfLastWeekStr)
+            acc.lastWeek += amount;
 
           return acc;
         },
-        { week: 0, month: 0, year: 0 }
+        { lastWeek: 0, week: 0, lastMonth: 0, month: 0, lastThreeMonths: 0, year: 0 }
       );
 
       // 7. Fetch Quotations & Invoices
@@ -271,11 +298,17 @@ const AdminDashboard = () => {
               acc.year += total;
               if (dateStr >= firstDayOfMonthStr) acc.month += total;
               if (dateStr >= firstDayOfWeekStr) acc.week += total;
+              if (dateStr >= firstDayOfThreeMonthsAgoStr && dateStr < firstDayOfMonthStr)
+                acc.lastThreeMonths += total;
             }
+            if (dateStr >= firstDayOfLastMonthStr && dateStr <= lastDayOfLastMonthStr)
+              acc.lastMonth += total;
+            if (dateStr >= firstDayOfLastWeekStr && dateStr <= lastDayOfLastWeekStr)
+              acc.lastWeek += total;
 
             return acc;
           },
-          { week: 0, month: 0, year: 0 }
+          { lastWeek: 0, week: 0, lastMonth: 0, month: 0, lastThreeMonths: 0, year: 0 }
         );
       };
 
@@ -864,8 +897,11 @@ const AdminDashboard = () => {
                         </div>
                         <div className="space-y-4">
                           {[
+                            { label: 'Last Week', value: stats.expenditures.lastWeek },
                             { label: 'This Week', value: stats.expenditures.week },
+                            { label: 'Last Month', value: stats.expenditures.lastMonth },
                             { label: 'This Month', value: stats.expenditures.month },
+                            { label: 'Last 3 Months', value: stats.expenditures.lastThreeMonths },
                             { label: 'This Year', value: stats.expenditures.year },
                           ].map((exp, idx) => (
                             <div key={idx} className="space-y-2">
@@ -884,9 +920,7 @@ const AdminDashboard = () => {
                                     width:
                                       exp.label === 'This Year'
                                         ? '100%'
-                                        : exp.label === 'This Month'
-                                          ? `${Math.min(100, (exp.value / (stats.expenditures.year || 1)) * 100)}%`
-                                          : `${Math.min(100, (exp.value / (stats.expenditures.month || 1)) * 100)}%`,
+                                        : `${Math.min(100, (exp.value / (stats.expenditures.year || 1)) * 100)}%`,
                                   }}
                                 />
                               </div>
@@ -926,8 +960,11 @@ const AdminDashboard = () => {
                         </div>
                         <div className="space-y-4">
                           {[
+                            { label: 'Last Week', value: stats.quotations.lastWeek },
                             { label: 'This Week', value: stats.quotations.week },
+                            { label: 'Last Month', value: stats.quotations.lastMonth },
                             { label: 'This Month', value: stats.quotations.month },
+                            { label: 'Last 3 Months', value: stats.quotations.lastThreeMonths },
                             { label: 'This Year', value: stats.quotations.year },
                           ].map((quote, idx) => (
                             <div key={idx} className="space-y-2">
@@ -952,9 +989,7 @@ const AdminDashboard = () => {
                                     width:
                                       quote.label === 'This Year'
                                         ? '100%'
-                                        : quote.label === 'This Month'
-                                          ? `${Math.min(100, (quote.value / (stats.quotations.year || 1)) * 100)}%`
-                                          : `${Math.min(100, (quote.value / (stats.quotations.month || 1)) * 100)}%`,
+                                        : `${Math.min(100, (quote.value / (stats.quotations.year || 1)) * 100)}%`,
                                   }}
                                 />
                               </div>
@@ -994,8 +1029,11 @@ const AdminDashboard = () => {
                         </div>
                         <div className="space-y-4">
                           {[
+                            { label: 'Last Week', value: stats.invoices.lastWeek },
                             { label: 'This Week', value: stats.invoices.week },
+                            { label: 'Last Month', value: stats.invoices.lastMonth },
                             { label: 'This Month', value: stats.invoices.month },
+                            { label: 'Last 3 Months', value: stats.invoices.lastThreeMonths },
                             { label: 'This Year', value: stats.invoices.year },
                           ].map((invoice, idx) => (
                             <div key={idx} className="space-y-2">
@@ -1020,9 +1058,7 @@ const AdminDashboard = () => {
                                     width:
                                       invoice.label === 'This Year'
                                         ? '100%'
-                                        : invoice.label === 'This Month'
-                                          ? `${Math.min(100, (invoice.value / (stats.invoices.year || 1)) * 100)}%`
-                                          : `${Math.min(100, (invoice.value / (stats.invoices.month || 1)) * 100)}%`,
+                                        : `${Math.min(100, (invoice.value / (stats.invoices.year || 1)) * 100)}%`,
                                   }}
                                 />
                               </div>
