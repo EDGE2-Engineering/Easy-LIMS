@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { useReactToPrint } from 'react-to-print';
+import QuotationContent from '@/components/QuotationContent';
+import PagedPreview from '@/components/PagedPreview';
 import {
   Plus,
   Trash2,
@@ -20,6 +21,9 @@ import {
   Drill,
   SwatchBook,
   Unlink,
+  ArrowUp,
+  ArrowDown,
+  ListOrdered,
 } from 'lucide-react';
 import {
   Link,
@@ -83,7 +87,7 @@ import {
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { sendTelegramNotification } from '@/lib/notifier';
-import { A4_PRINT_PAGE_STYLE } from '@/utils/a4PrintStyles';
+// Paged.js CSS is loaded as a static asset: /quotation-print.css
 
 // Helper function to convert number to words (Indian numbering system)
 const numberToWords = (num) => {
@@ -1292,32 +1296,8 @@ const NewQuotationPage = () => {
     }
   };
 
-  const componentRef = useRef();
-  const handlePrint = useReactToPrint({
-    contentRef: componentRef,
-    documentTitle: `${documentType}_${quoteDetails.quoteNumber}`,
-    pageStyle: A4_PRINT_PAGE_STYLE,
-  });
-
-  // Responsive preview: scale A4 pages to fit the available panel width at any screen resolution.
-  // CSS zoom (unlike transform: scale) adjusts layout dimensions, so pages + gaps all shrink
-  // proportionally — no overflow, no page merging, no horizontal scrollbar needed.
-  const previewWrapperRef = useRef(null);
-  const [previewScale, setPreviewScale] = useState(1);
-
-  useEffect(() => {
-    const A4_NATIVE_WIDTH = 794; // 210mm at 96 DPI CSS pixels
-    const SIDE_PADDING = 48; // combined horizontal padding of the preview wrapper
-    const recalcScale = () => {
-      if (!previewWrapperRef.current) return;
-      const available = previewWrapperRef.current.clientWidth - SIDE_PADDING;
-      setPreviewScale(parseFloat(Math.min(1, available / A4_NATIVE_WIDTH).toFixed(4)));
-    };
-    recalcScale();
-    const ro = new ResizeObserver(recalcScale);
-    if (previewWrapperRef.current) ro.observe(previewWrapperRef.current);
-    return () => ro.disconnect();
-  }, []);
+  // Paged.js preview ref — exposes print() method
+  const pagedPreviewRef = useRef(null);
 
   const triggerPrint = async () => {
     // Handle "Saving" state to prevent race conditions
@@ -1348,10 +1328,9 @@ const NewQuotationPage = () => {
         `Client: \`${quoteDetails.clientName}\`\n` +
         `Action By: \`${user?.fullName || 'Unknown User'}\``;
       await sendTelegramNotification(message);
-    } catch (error) {
-      console.error('Error sending print notification:', error);
-    }
-    handlePrint();
+    } catch (_) {}
+
+    pagedPreviewRef.current?.print();
   };
 
   const handleAddItem = () => {
@@ -1778,264 +1757,6 @@ const NewQuotationPage = () => {
   // Always floor to nearest rupee (remove decimal portion)
   const roundAmount = (value) => Math.floor(value);
 
-  // T&C and Technicals still use count-based pagination (fixed limits, no dynamic height needed for those)
-  const TC_ITEMS_PER_FIRST_PAGE = 12;
-  const TC_ITEMS_PER_CONTINUATION_PAGE = 16;
-  const TECH_ITEMS_PER_FIRST_PAGE = 12;
-  const TECH_ITEMS_PER_CONTINUATION_PAGE = 16;
-
-  const estimateItemHeight = (item) => {
-    // Description width is 30% of printable area.
-    // Printable area inside padding is 190mm ≈ 718px. 30% is 215px.
-    // Standard text-xs font size is 12px. An average character width is ~6px.
-    // So characters per line = Math.floor(215 / 6) ≈ 35.
-    const charsPerLine = 35;
-
-    const description = item.description || '';
-    const lines = description.split('\n');
-    let descriptionLineCount = 0;
-    lines.forEach((line) => {
-      descriptionLineCount += Math.max(1, Math.ceil(line.length / charsPerLine));
-    });
-
-    // 1 line for item type label ("Field Test", "Lab Test", etc.)
-    let totalLines = descriptionLineCount + 1;
-
-    // If it's a field test with additional details (Method, BHs, Measure)
-    const hasFieldDetails =
-      item.type === 'service' &&
-      ((item.methodOfSampling && item.methodOfSampling !== 'NA') ||
-        (typeof item.numBHs === 'number' && item.numBHs > 0) ||
-        (item.measure && item.measure !== 'NA'));
-    if (hasFieldDetails) {
-      totalLines += 1;
-    }
-
-    // Each line is 15px (line-height) + row vertical padding (py-2 is 8px top/bottom = 16px)
-    let totalHeight = totalLines * 15 + 16;
-
-    // Add height of package name row (30px) for the first item in a package group
-    if (item.packageGroupId) {
-      const groupItems = items.filter((x) => x.packageGroupId === item.packageGroupId);
-      const isFirstInGroup = groupItems[0]?.id === item.id;
-      if (isFirstInGroup) {
-        totalHeight += 30;
-      }
-    }
-
-    return totalHeight;
-  };
-
-  const paginateItems = () => {
-    const pages = [];
-    if (items.length === 0) {
-      pages.push({
-        items: [],
-        pageNumber: 1,
-        isFirstPage: true,
-        isContinuation: false,
-      });
-      return pages;
-    }
-
-    // A4 inner content height: 297mm − 10mm top padding − 4mm bottom padding at 96 DPI ≈ 1070px
-    const PAGE_HEIGHT = 1070;
-    // a4-page-footer: font-size 10px + padding-top 12px ≈ 30px
-    const FOOTER_HEIGHT = 30;
-    // First page header: company/logo row (~100px) + client/project 3-col grid (~160px) + "created by" line (~16px) + borders/margins (~44px)
-    const FIRST_PAGE_HEADER_HEIGHT = 320;
-    // Continuation mini-header: h3 text-lg + border-b + pb-3 mb-4 ≈ 50px
-    const CONTINUATION_PAGE_HEADER_HEIGHT = 50;
-    // thead row: py-3 cells = 12px×2 padding + ~14px text ≈ 40px
-    const TABLE_HEADER_HEIGHT = 40;
-    // The <table> has mb-8 (32px margin-bottom) — must be subtracted from usable area on every page
-    const TABLE_BOTTOM_MARGIN = 32;
-    // Totals block: subtotal + CGST + SGST + total-tax + grand-total + amount-in-words + space-y-3 gaps ≈ 180px
-    const TOTALS_HEIGHT = 180;
-
-    let currentPageItems = [];
-    let currentPageIndex = 1;
-    let currentHeight = 0;
-
-    const getPageCapacity = (pageIdx, isLastPage) => {
-      const headerH = pageIdx === 1 ? FIRST_PAGE_HEADER_HEIGHT : CONTINUATION_PAGE_HEADER_HEIGHT;
-      const baseCapacity =
-        PAGE_HEIGHT - headerH - TABLE_HEADER_HEIGHT - FOOTER_HEIGHT - TABLE_BOTTOM_MARGIN;
-      return isLastPage ? baseCapacity - TOTALS_HEIGHT : baseCapacity;
-    };
-
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const itemHeight = estimateItemHeight(item);
-      const isLastItem = i === items.length - 1;
-
-      const currentCapacityWithTotals = getPageCapacity(currentPageIndex, true);
-      const currentCapacityWithoutTotals = getPageCapacity(currentPageIndex, false);
-
-      if (currentPageItems.length === 0) {
-        // Always add at least one item per page to avoid infinite loops for oversized items
-        currentPageItems.push(item);
-        currentHeight += itemHeight;
-      } else if (isLastItem) {
-        // Last item: must fit together with the totals/summary block on the same page
-        if (currentHeight + itemHeight <= currentCapacityWithTotals) {
-          currentPageItems.push(item);
-          currentHeight += itemHeight;
-        } else {
-          // Doesn't fit with totals — close current page, open a new final page
-          pages.push({
-            items: currentPageItems,
-            pageNumber: currentPageIndex,
-            isFirstPage: currentPageIndex === 1,
-            isContinuation: currentPageIndex > 1,
-          });
-          currentPageIndex++;
-          currentPageItems = [item];
-          currentHeight = itemHeight;
-        }
-      } else {
-        // Non-last item: fill the full page (totals appear only on the final items page)
-        if (currentHeight + itemHeight <= currentCapacityWithoutTotals) {
-          currentPageItems.push(item);
-          currentHeight += itemHeight;
-        } else {
-          // Doesn't fit — start a new page
-          pages.push({
-            items: currentPageItems,
-            pageNumber: currentPageIndex,
-            isFirstPage: currentPageIndex === 1,
-            isContinuation: currentPageIndex > 1,
-          });
-          currentPageIndex++;
-          currentPageItems = [item];
-          currentHeight = itemHeight;
-        }
-      }
-    }
-
-    // Add the final page
-    if (currentPageItems.length > 0) {
-      pages.push({
-        items: currentPageItems,
-        pageNumber: currentPageIndex,
-        isFirstPage: currentPageIndex === 1,
-        isContinuation: currentPageIndex > 1,
-      });
-    }
-
-    return pages;
-  };
-
-  const paginateTerms = () => {
-    if (!derivedTcTypes || derivedTcTypes.length === 0) {
-      return [
-        {
-          items: [],
-          pageNumber: 1,
-          isFirstPage: true,
-        },
-      ]; // Empty page if nothing selected
-    }
-
-    const pages = [];
-
-    derivedTcTypes.forEach((type) => {
-      const pageItems = [];
-      const typeTerms = terms.filter((t) => t.type === type);
-      if (typeTerms.length > 0) {
-        if (type !== 'general' && type !== 'General') {
-          pageItems.push({ type: 'header', text: type, id: `header-${type}` });
-        }
-        typeTerms.forEach((term) => {
-          pageItems.push({ type: 'term', text: term.text, id: term.id });
-        });
-
-        pages.push({
-          items: pageItems,
-          pageNumber: pages.length + 1,
-          isFirstPage: pages.length === 0,
-        });
-      }
-    });
-
-    if (pages.length === 0) {
-      return [
-        {
-          items: [],
-          pageNumber: 1,
-          isFirstPage: true,
-        },
-      ];
-    }
-
-    return pages;
-  };
-
-  const paginateTechnicals = () => {
-    if (!derivedTechTypes || derivedTechTypes.length === 0) {
-      return [];
-    }
-
-    const pages = [];
-
-    derivedTechTypes.forEach((type) => {
-      const pageItems = [];
-      const typeTech = (technicals || []).filter((t) => t.type === type);
-      if (typeTech.length > 0) {
-        pageItems.push({ type: 'header', text: type, id: `header-${type}` });
-        typeTech.forEach((tech) => {
-          pageItems.push({ type: 'tech', text: tech.text, id: tech.id });
-        });
-
-        pages.push({
-          items: pageItems,
-          pageNumber: pages.length + 1,
-          isFirstPage: pages.length === 0,
-        });
-      }
-    });
-
-    return pages;
-  };
-
-  const paginatePaymentTerms = () => {
-    if (!derivedPaymentTermsTypes || derivedPaymentTermsTypes.length === 0) {
-      return [];
-    }
-
-    const pages = [];
-
-    derivedPaymentTermsTypes.forEach((type) => {
-      const pageItems = [];
-      const typePay = (paymentTerms || []).filter((t) => t.type === type);
-      if (typePay.length > 0) {
-        if (type !== 'general' && type !== 'General') {
-          pageItems.push({ type: 'header', text: type, id: `header-${type}` });
-        }
-        typePay.forEach((pay) => {
-          pageItems.push({ type: 'pay', text: pay.text, id: pay.id });
-        });
-
-        pages.push({
-          items: pageItems,
-          pageNumber: pages.length + 1,
-          isFirstPage: pages.length === 0,
-        });
-      }
-    });
-
-    return pages;
-  };
-
-  const itemPages = paginateItems();
-  const totalItemPages = itemPages.length;
-
-  const tcPages = paginateTerms();
-  const techPages = paginateTechnicals();
-  const payPages = paginatePaymentTerms();
-
-  // Total pages calculation
-  const totalPages = totalItemPages + 1 + tcPages.length + techPages.length + payPages.length;
   const selectedDocumentItemType =
     DOCUMENT_ITEM_TYPE_OPTIONS.find((itemType) => itemType.key === newItemType) ||
     DOCUMENT_ITEM_TYPE_OPTIONS[0];
@@ -2791,1245 +2512,197 @@ const NewQuotationPage = () => {
                 </Button>
               </div>
             </div>
+
+            {/* Manage Items Card */}
+            {items.length > 0 && (
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
+                <h2 className="text-lg font-semibold mb-4 flex items-center justify-between text-gray-900 border-b pb-2">
+                  <span className="flex items-center">
+                    <ListOrdered className="w-5 h-5 mr-2 text-primary" />
+                    Added Items &amp; Packages ({items.length})
+                  </span>
+                </h2>
+                
+                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
+                  {(() => {
+                    let currentPkgGroupId = null;
+                    return items.map((item, index) => {
+                      const showPkgHeader = item.packageGroupId && item.packageGroupId !== currentPkgGroupId;
+                      currentPkgGroupId = item.packageGroupId;
+
+                      return (
+                        <div key={item.id} className="space-y-2">
+                          {showPkgHeader && (
+                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 flex items-center justify-between mt-2">
+                              <span className="text-xs font-bold text-blue-800 flex items-center gap-1">
+                                📦 {item.packageName}
+                              </span>
+                              <div className="flex gap-1">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleMovePackageUp(item.packageGroupId)}
+                                  className="w-6 h-6 hover:bg-blue-100"
+                                  title="Move Package Up"
+                                  disabled={isReadOnly}
+                                >
+                                  <ArrowUp className="w-3 h-3 text-blue-700" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleMovePackageDown(item.packageGroupId)}
+                                  className="w-6 h-6 hover:bg-blue-100"
+                                  title="Move Package Down"
+                                  disabled={isReadOnly}
+                                >
+                                  <ArrowDown className="w-3 h-3 text-blue-700" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleUngroupPackage(item.packageGroupId)}
+                                  className="w-6 h-6 hover:bg-blue-100"
+                                  title="Dissolve Package"
+                                  disabled={isReadOnly}
+                                >
+                                  <Unlink className="w-3 h-3 text-blue-700" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleDeletePackage(item.packageGroupId)}
+                                  className="w-6 h-6 hover:bg-red-100"
+                                  title="Delete Package"
+                                  disabled={isReadOnly}
+                                >
+                                  <Trash2 className="w-3 h-3 text-red-600" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className={`p-3 rounded-xl border ${item.packageGroupId ? 'border-l-4 border-l-blue-500 border-gray-100 ml-4 bg-blue-50/10' : 'border-gray-200 bg-white'} hover:shadow-sm transition-shadow`}>
+                            <div className="flex justify-between items-start gap-2 mb-2">
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                                  Sl No. {index + 1} &bull; {item.type === 'service' ? 'Field Test' : item.type === 'lab' ? 'Lab Test' : 'Sampling'}
+                                </span>
+                                <span className="text-xs font-semibold text-gray-900 line-clamp-2" title={item.description}>
+                                  {item.description}
+                                </span>
+                              </div>
+                              <div className="flex gap-1 shrink-0">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleMoveItemUp(index)}
+                                  className="w-6 h-6 hover:bg-gray-100"
+                                  disabled={index === 0 || isReadOnly}
+                                  title="Move Up"
+                                >
+                                  <ArrowUp className="w-3 h-3 text-gray-600" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleMoveItemDown(index)}
+                                  className="w-6 h-6 hover:bg-gray-100"
+                                  disabled={index === items.length - 1 || isReadOnly}
+                                  title="Move Down"
+                                >
+                                  <ArrowDown className="w-3 h-3 text-gray-600" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleDeleteItem(item.id)}
+                                  className="w-6 h-6 hover:bg-red-50"
+                                  disabled={isReadOnly}
+                                  title="Delete Item"
+                                >
+                                  <Trash2 className="w-3 h-3 text-red-600" />
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <Label className="text-[10px] text-gray-500">Price (₹)</Label>
+                                <Input
+                                  type="number"
+                                  value={item.price}
+                                  onChange={(e) => handleUpdateItemPrice(item.id, e.target.value)}
+                                  className="h-8 text-xs px-2 mt-0.5"
+                                  disabled={isReadOnly}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[10px] text-gray-500">Qty</Label>
+                                <Input
+                                  type="number"
+                                  value={item.qty}
+                                  onChange={(e) => handleUpdateItemQty(item.id, e.target.value)}
+                                  className="h-8 text-xs px-2 mt-0.5"
+                                  disabled={isReadOnly}
+                                />
+                              </div>
+                              {documentType === 'Quotation' && daysShow && (
+                                <div>
+                                  <Label className="text-[10px] text-gray-500">Days</Label>
+                                  <Input
+                                    type="number"
+                                    value={item.numDays ?? 1}
+                                    onChange={(e) => handleUpdateItemNumDays(item.id, e.target.value)}
+                                    className="h-8 text-xs px-2 mt-0.5"
+                                    disabled={isReadOnly}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column: Preview */}
           <div className="lg:col-span-2">
-            <div
-              ref={previewWrapperRef}
-              className="a4-preview-wrapper rounded-xl border border-gray-100 min-h-[600px] print-container shadow-inner"
-            >
-              {/* Printable Area Root */}
-              <div ref={componentRef} id="printable-quote-root">
-                {/* Dynamically render quotation pages based on items */}
-                {itemPages.map((page, pageIndex) => (
-                  <div
-                    key={`quote-page-wrapper-${page.pageNumber}`}
-                    className="a4-scale-wrapper mx-auto"
-                    style={{
-                      width: `${794 * previewScale}px`,
-                      height: `${1122.5 * previewScale}px`,
-                      marginBottom: `${48 * previewScale}px`,
-                    }}
-                  >
-                    <div
-                      className="a4-container"
-                      id={pageIndex === 0 ? 'printable-quote' : undefined}
-                      style={{
-                        transform: `scale(${previewScale})`,
-                        transformOrigin: 'top left',
-                        margin: 0,
-                      }}
-                    >
-                      {/* Watermark */}
-                      <div
-                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                        style={{
-                          transform: 'rotate(-55deg)',
-                          zIndex: 0,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: '42pt',
-                            fontWeight: 700,
-                            color: 'rgba(0,0,0,0.02)',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          EDGE2 Engineering Solutions India Pvt. Ltd.
-                        </span>
-                      </div>
-                      <div className="a4-page-content">
-                        {/* Header - only on first page */}
-                        {page.isFirstPage && (
-                          <>
-                            <div className="flex justify-between items-start gap-2 border-b pb-4 mb-2 min-w-0 max-w-full overflow-hidden">
-                              <div className="w-[30%] min-w-0 shrink">
-                                <h3 className="text-lg font-bold text-gray-900 tracking-tight">
-                                  {documentType.toUpperCase()}
-                                </h3>
-                                <p className="text-gray-500 mt-1 text-xs break-all">
-                                  {quoteDetails.quoteNumber ? (
-                                    getFormattedDocNumber()
-                                  ) : (
-                                    <span className="text-red-500 italic">Pending</span>
-                                  )}
-                                </p>
-                                <p className="text-gray-500 mt-1 text-xs">
-                                  Date: {format(new Date(quoteDetails.date), 'dd MMM yyyy')}
-                                </p>
-                              </div>
-
-                              <div className="w-[70%] min-w-0 shrink flex items-center gap-2 text-right">
-                                <div className="text-right min-w-0 flex-1">
-                                  <h2 className="font-bold text-lg">
-                                    EDGE2 Engineering Solutions India Pvt. Ltd.
-                                  </h2>
-                                  <p className="text-gray-600 text-xs">
-                                    Shivaganga Arcade, B35/130, 6th Cross, 6th Block,
-                                    Vishweshwaraiah Layout, Ullal Upanagar,
-                                  </p>
-                                  <p className="text-gray-600 text-xs">
-                                    Bangalore - 560056, Karnataka
-                                  </p>
-                                  <p className="text-gray-600 text-xs">
-                                    <span className="font-bold">PAN:</span> AACCE1702A,{' '}
-                                    <span className="font-bold">GSTIN:</span> 29AACCE1702A1ZD
-                                  </p>
-                                  <p className="text-gray-600 text-xs">
-                                    <span className="font-bold">Phone:</span> 09448377127 /
-                                    09880973810 / 080-50056086
-                                  </p>
-                                  <p className="text-gray-600 text-xs flex justify-end gap-4">
-                                    <span>
-                                      <span className="font-bold">Email:</span> info@edge2.in
-                                    </span>
-                                    <span>
-                                      <span className="font-bold">Website:</span> https://edge2.in
-                                    </span>
-                                  </p>
-                                </div>
-                                <img
-                                  src={`${import.meta.env.BASE_URL}edge2-logo.png`}
-                                  alt="EDGE2 Logo"
-                                  className="w-16 h-16 object-contain flex-shrink-0"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Client, Contractor, Project Details - Columns */}
-                            <div
-                              className={`grid ${quoteDetails.contractorName &&
-                                quoteDetails.contractorName.trim() &&
-                                quoteDetails.contractorName.trim() !== '-'
-                                ? 'grid-cols-3'
-                                : 'grid-cols-2'
-                                } gap-6 mb-2 text-sm py-0 border-b`}
-                            >
-                              {/* Column 1: Client */}
-                              <div className="space-y-1">
-                                <h3 className="text-gray-500 font-semibold uppercase tracking-wide border-b pb-1 mb-2">
-                                  Client
-                                </h3>
-                                <p className="font-bold text-gray-900 text-xs">
-                                  {quoteDetails.clientName || '-'}
-                                </p>
-                                <p className="text-gray-600 whitespace-pre-wrap text-xs">
-                                  {quoteDetails.clientAddress}
-                                </p>
-
-                                <p className="text-gray-600 mt-1 text-xs">
-                                  Name: {quoteDetails.name || '-'}
-                                </p>
-                                <p className="text-gray-600 mt-1 text-xs">
-                                  Email: {quoteDetails.email || '-'}
-                                </p>
-                                <p className="text-gray-600 text-xs">
-                                  Phone: {quoteDetails.phone || '-'}
-                                </p>
-                                <p className="text-gray-600 mt-1 text-xs">
-                                  GSTIN: {quoteDetails.gstin || '-'}
-                                </p>
-                              </div>
-
-                              {/* Column 2: Contractor */}
-                              {quoteDetails.contractorName &&
-                                quoteDetails.contractorName.trim() &&
-                                quoteDetails.contractorName.trim() !== '-' && (
-                                  <div className="space-y-1 border-l pl-2">
-                                    <h3 className="text-gray-500 font-semibold uppercase tracking-wide border-b pb-1 mb-2">
-                                      Contractor
-                                    </h3>
-                                    <p className="font-bold text-gray-900 text-xs">
-                                      {quoteDetails.contractorName || '-'}
-                                    </p>
-                                    <p className="text-gray-600 whitespace-pre-wrap text-xs">
-                                      {quoteDetails.contractorAddress}
-                                    </p>
-                                  </div>
-                                )}
-
-                              {/* Column 3: Project */}
-                              <div className="space-y-1 border-l pl-2">
-                                <h3 className="text-gray-500 font-semibold uppercase tracking-wide border-b pb-1 mb-2">
-                                  Project Details
-                                </h3>
-                                <p className="font-bold text-gray-900 text-xs">
-                                  {quoteDetails.projectName || '-'}
-                                </p>
-                                <p className="text-gray-600 whitespace-pre-wrap text-xs">
-                                  {quoteDetails.projectAddress}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-xs text-right">
-                              Created by: {quoteDetails.generatedBy}
-                            </div>
-                          </>
-                        )}
-
-                        {/* Continuation page header */}
-                        {page.isContinuation && (
-                          <div className="pb-1 mb-2">
-                            <h3 className="text-sm font-bold text-gray-900">
-                              {documentType}{' '}
-                              {quoteDetails.quoteNumber ? getFormattedDocNumber() : ''}{' '}
-                              (continued)
-                            </h3>
-                          </div>
-                        )}
-
-                        {/* Table */}
-                        <table className="quote-items-table w-full table-fixed mb-8 mt-2">
-                          <colgroup>
-                            <col style={{ width: '4%' }} />
-                            <col
-                              style={{
-                                width:
-                                  documentType === 'Quotation'
-                                    ? daysShow
-                                      ? '48%'
-                                      : '53%'
-                                    : '53%',
-                              }}
-                            />
-                            <col style={{ width: '8%' }} />
-                            <col style={{ width: '10%' }} />
-                            <col style={{ width: '6%' }} />
-                            <col style={{ width: '5%' }} />
-                            {documentType === 'Quotation' && daysShow && (
-                              <col style={{ width: '5%' }} />
-                            )}
-                            <col style={{ width: '14%' }} />
-                            <col className="print:hidden" style={{ width: '50px' }} />
-                          </colgroup>
-                          <thead>
-                            <tr>
-                              <th
-                                className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
-                                style={{ color: 'rgb(33, 112, 187)' }}
-                              >
-                                Sl No
-                              </th>
-                              <th
-                                className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
-                                style={{ color: 'rgb(33, 112, 187)' }}
-                              >
-                                Description
-                              </th>
-                              <th
-                                className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
-                                style={{ color: 'rgb(33, 112, 187)' }}
-                              >
-                                HSN / SAC
-                              </th>
-                              <th
-                                className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
-                                style={{ color: 'rgb(33, 112, 187)' }}
-                              >
-                                Price Per Unit
-                              </th>
-                              <th
-                                className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
-                                style={{ color: 'rgb(33, 112, 187)' }}
-                              >
-                                Unit
-                              </th>
-                              <th
-                                className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
-                                style={{ color: 'rgb(33, 112, 187)' }}
-                              >
-                                Qty
-                              </th>
-                              {documentType === 'Quotation' && daysShow && (
-                                <th
-                                  className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
-                                  style={{ color: 'rgb(33, 112, 187)' }}
-                                >
-                                  Days
-                                </th>
-                              )}
-                              <th
-                                className="text-right border border-gray-200 py-3 px-1 font-semibold text-xs"
-                                style={{ color: 'rgb(33, 112, 187)' }}
-                              >
-                                Total
-                              </th>
-                              <th className="print:hidden"></th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {page.items.map((item, index) => {
-                              const slNo = items.findIndex((x) => x.id === item.id) + 1;
-
-                              const groupItems = item.packageGroupId
-                                ? items.filter((x) => x.packageGroupId === item.packageGroupId)
-                                : [];
-                              const isFirstInGroup = groupItems[0]?.id === item.id;
-                              const isLastInGroup =
-                                groupItems[groupItems.length - 1]?.id === item.id;
-                              const isHoveredGroup =
-                                item.packageGroupId &&
-                                hoveredPackageGroupId === item.packageGroupId;
-
-                              const itemIndex = items.findIndex((x) => x.id === item.id);
-                              const nextItem = items[itemIndex + 1];
-                              const nextItemIsPackage = nextItem && nextItem.packageGroupId;
-
-                              const getCellClasses = (cellPosition) => {
-                                if (!isHoveredGroup) return '';
-                                let cls = ' ';
-                                if (isLastInGroup && !nextItemIsPackage)
-                                  cls += 'package-group-border-b border-b-2 ';
-                                if (cellPosition === 'left')
-                                  cls += 'package-group-border-l border-l-2 ';
-                                if (cellPosition === 'right')
-                                  cls += 'package-group-border-r border-r-2 ';
-                                return cls;
-                              };
-
-                              const getPersistentCellClasses = () => {
-                                if (!item.packageGroupId) return '';
-                                let cls = ' ';
-                                if (isLastInGroup && !nextItemIsPackage)
-                                  cls += 'package-group-persistent-b ';
-                                return cls;
-                              };
-
-                              const isFirstItemInTable = slNo === 1;
-                              const isLastItemInTable = slNo === items.length;
-
-                              const isUpDisabled = isFirstItemInTable;
-                              const isDownDisabled = isLastItemInTable;
-
-                              return (
-                                <React.Fragment key={item.id}>
-                                  {item.packageGroupId && isFirstInGroup && (
-                                    <tr
-                                      className={cn(
-                                        'transition-colors border-b border-gray-200',
-                                        isHoveredGroup ? 'bg-red-50/70' : 'bg-gray-50'
-                                      )}
-                                      onMouseEnter={() =>
-                                        setHoveredPackageGroupId(item.packageGroupId)
-                                      }
-                                      onMouseLeave={() => setHoveredPackageGroupId(null)}
-                                    >
-                                      <td
-                                        colSpan={documentType === 'Quotation' && daysShow ? 8 : 7}
-                                        className={cn(
-                                          'py-2 px-2 font-black text-[10px] text-gray-900 uppercase tracking-widest text-left border-l border-r border-gray-200 bg-gray-50',
-                                          isHoveredGroup && 'package-group-border-l border-l-2'
-                                        )}
-                                      >
-                                        {item.packageName.toUpperCase()}
-                                      </td>
-                                      <td
-                                        className={cn(
-                                          'print:hidden align-top border-r border-gray-200 bg-gray-50 py-1.5 px-0 text-left',
-                                          isHoveredGroup && 'package-group-border-r border-r-2'
-                                        )}
-                                      >
-                                        {!isReadOnly && (
-                                          <div className="inline-flex items-center gap-1.0 justify-end">
-                                            <button
-                                              type="button"
-                                              onClick={() => handleMovePackageUp(item.packageGroupId)}
-                                              disabled={groupItems[0]?.id === items[0]?.id}
-                                              className="text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors p-0"
-                                              title="Move entire package group up"
-                                            >
-                                              <ChevronUp className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => handleMovePackageDown(item.packageGroupId)}
-                                              disabled={groupItems[groupItems.length - 1]?.id === items[items.length - 1]?.id}
-                                              className="text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors p-0"
-                                              title="Move entire package group down"
-                                            >
-                                              <ChevronDown className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => handleUngroupPackage(item.packageGroupId)}
-                                              className="text-blue-400 hover:text-blue-600 transition-colors p-0 hidden"
-                                              title="Ungroup package (Convert parameters to individual items)"
-                                            >
-                                              <Unlink className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => handleDeletePackage(item.packageGroupId)}
-                                              className="text-red-400 hover:text-red-600 transition-colors p-0"
-                                              title="Delete entire package"
-                                            >
-                                              <Trash2 className="w-4 h-4" />
-                                            </button>
-                                          </div>
-                                        )}
-                                      </td>
-                                    </tr>
-                                  )}
-                                  <tr
-                                    key={item.id}
-                                    className={cn(
-                                      'border-b border-gray-50 transition-colors',
-                                      item.packageGroupId &&
-                                      hoveredPackageGroupId === item.packageGroupId &&
-                                      'bg-red-50/70'
-                                    )}
-                                    onMouseEnter={() =>
-                                      item.packageGroupId &&
-                                      setHoveredPackageGroupId(item.packageGroupId)
-                                    }
-                                    onMouseLeave={() => setHoveredPackageGroupId(null)}
-                                  >
-                                    <td
-                                      className={cn(
-                                        'py-0 px-1 text-gray-500 text-[9px] align-top border-r border-l border-gray-200 relative',
-                                        getCellClasses('left'),
-                                        getPersistentCellClasses()
-                                      )}
-                                    >
-                                      {slNo}.
-                                      {isHoveredGroup && (
-                                        <div className="absolute -top-7 left-0 bg-emerald-600 text-white text-[9px] font-bold px-2 py-1 rounded-t-md flex items-center gap-1.5 shadow-md z-20 whitespace-nowrap print:hidden animate-in fade-in duration-100">
-                                          <span>{item.packageName}</span>
-                                          <button
-                                            type="button"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleDeletePackage(item.packageGroupId);
-                                            }}
-                                            className="bg-emerald-700 hover:bg-emerald-800 text-white transition-colors p-0.5 rounded ml-1"
-                                            title="Delete entire package"
-                                          >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                          </button>
-                                        </div>
-                                      )}
-                                    </td>
-                                    <td
-                                      className={cn(
-                                        'py-0 px-1 text-gray-900 align-top border-r border-l border-gray-200',
-                                        getCellClasses('none'),
-                                        getPersistentCellClasses()
-                                      )}
-                                    >
-                                      <p className="font-small text-xs whitespace-pre-wrap">
-                                        {item.description.trim()}
-                                      </p>
-                                      <p
-                                        className="text-xs text-gray-500 capitalize italic"
-                                        style={{ fontSize: '10px' }}
-                                      >
-                                        {getDocumentItemTypeLabel(item.type)}
-                                      </p>
-                                      {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS &&
-                                        (() => {
-                                          const values = [
-                                            item.methodOfSampling && item.methodOfSampling !== 'NA'
-                                              ? `Method: ${item.methodOfSampling}`
-                                              : null,
-
-                                            typeof item.numBHs === 'number' && item.numBHs > 0
-                                              ? `BHs: ${item.numBHs}`
-                                              : null,
-
-                                            item.measure && item.measure !== 'NA'
-                                              ? `Measure: ${item.measure}`
-                                              : null,
-                                          ].filter(Boolean);
-
-                                          return values.length ? (
-                                            <p className="mt-1 text-xs text-gray-400">
-                                              {values.join('   |   ')}
-                                            </p>
-                                          ) : null;
-                                        })()}
-                                    </td>
-                                    <td
-                                      className={cn(
-                                        'py-0 px-1 text-center text-gray-600 font-medium text-[10px] align-top border-r border-l border-gray-200',
-                                        getCellClasses('none'),
-                                        getPersistentCellClasses()
-                                      )}
-                                    >
-                                      {item.hsnCode || '—'}
-                                    </td>
-                                    <td
-                                      className={cn(
-                                        'py-0 px-1 text-right text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
-                                        getCellClasses('none'),
-                                        getPersistentCellClasses()
-                                      )}
-                                    >
-                                      <Rupee />
-                                      <span
-                                        contentEditable={!isReadOnly}
-                                        suppressContentEditableWarning
-                                        onBlur={(e) =>
-                                          handleUpdateItemPrice(
-                                            item.id,
-                                            e.currentTarget.textContent,
-                                            e.currentTarget
-                                          )
-                                        }
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            e.currentTarget.blur();
-                                          }
-                                        }}
-                                      >
-                                        {item.price}
-                                      </span>
-                                    </td>
-                                    <td
-                                      className={cn(
-                                        'py-0 px-1 text-center text-gray-600 font-medium text-[10px] align-top border-r border-l border-gray-200',
-                                        getCellClasses('none'),
-                                        getPersistentCellClasses()
-                                      )}
-                                    >
-                                      {item.unit}
-                                    </td>
-                                    <td
-                                      className={cn(
-                                        'py-0 px-1 text-center text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
-                                        getCellClasses('none'),
-                                        getPersistentCellClasses()
-                                      )}
-                                    >
-                                      <span
-                                        contentEditable={!isReadOnly}
-                                        suppressContentEditableWarning
-                                        onBlur={(e) =>
-                                          handleUpdateItemQty(
-                                            item.id,
-                                            e.currentTarget.textContent,
-                                            e.currentTarget
-                                          )
-                                        }
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            e.currentTarget.blur();
-                                          }
-                                        }}
-                                      >
-                                        {item.qty}
-                                      </span>
-                                    </td>
-                                    {documentType === 'Quotation' && daysShow && (
-                                      <td
-                                        className={cn(
-                                          'py-0 px-1 text-center text-gray-600 font-medium text-xs align-top border-r border-l border-gray-200',
-                                          getCellClasses('none'),
-                                          getPersistentCellClasses()
-                                        )}
-                                      >
-                                        {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS ||
-                                          item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS ||
-                                          item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING ? (
-                                          <span
-                                            contentEditable={!isReadOnly}
-                                            suppressContentEditableWarning
-                                            onBlur={(e) =>
-                                              handleUpdateItemNumDays(
-                                                item.id,
-                                                e.currentTarget.textContent,
-                                                e.currentTarget
-                                              )
-                                            }
-                                            onKeyDown={(e) => {
-                                              if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                e.currentTarget.blur();
-                                              }
-                                            }}
-                                          >
-                                            {item.numDays ?? 1}
-                                          </span>
-                                        ) : (
-                                          '—'
-                                        )}
-                                      </td>
-                                    )}
-                                    <td
-                                      className={cn(
-                                        'py-0 px-1 text-right text-gray-900 font-medium text-xs align-top border-r border-l border-gray-200',
-                                        getCellClasses('right'),
-                                        getPersistentCellClasses()
-                                      )}
-                                    >
-                                      <Rupee />
-                                      {item.total.toLocaleString()}
-                                    </td>
-                                    <td className="print:hidden align-top">
-                                      {!isReadOnly && (
-                                        <div className="inline-flex items-center gap-0">
-                                          <button
-                                            onClick={() => handleMoveItemUp(slNo - 1)}
-                                            disabled={isUpDisabled}
-                                            className="text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors"
-                                            title="Move Up"
-                                          >
-                                            <ChevronUp className="w-4 h-4" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleMoveItemDown(slNo - 1)}
-                                            disabled={isDownDisabled}
-                                            className="text-gray-400 hover:text-gray-600 p-0 disabled:opacity-30 transition-colors"
-                                            title="Move Down"
-                                          >
-                                            <ChevronDown className="w-4 h-4" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleDeleteItem(item.id)}
-                                            className="text-red-400 hover:text-red-600 p-0 transition-colors"
-                                            title="Delete"
-                                          >
-                                            <Trash2 className="w-4 h-4" />
-                                          </button>
-                                        </div>
-                                      )}
-                                    </td>
-                                  </tr>
-                                </React.Fragment>
-                              );
-                            })}
-                            {page.items.length === 0 && (
-                              <tr>
-                                <td
-                                  colSpan={documentType === 'Quotation' ? '8' : '7'}
-                                  className="py-8 text-center text-gray-400 italic"
-                                >
-                                  No items added yet.
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-
-                        {/* Footer Totals, Bank Details, Payment Terms - only on last quotation page */}
-                        {pageIndex === itemPages.length - 1 && (
-                          <>
-                            {/* Footer Totals */}
-                            <div className="flex justify-left">
-                              <div className="w-full space-y-3">
-                                <div className="flex justify-between text-gray-600 text-xs">
-                                  <span>Subtotal</span>
-                                  <span>
-                                    <Rupee />
-                                    {calculateTotal().toLocaleString()}
-                                  </span>
-                                </div>
-                                {discountShow && discount > 0 && (
-                                  <div className="flex justify-between text-green-600 text-xs">
-                                    <span>Discount ({discount}%)</span>
-                                    <span>
-                                      - <Rupee />
-                                      {(calculateTotal() * (discount / 100)).toLocaleString(
-                                        undefined,
-                                        { maximumFractionDigits: 2 }
-                                      )}
-                                    </span>
-                                  </div>
-                                )}
-                                {isInterstate ? (
-                                  <div className="flex justify-between text-gray-600 text-xs">
-                                    <span>IGST ({taxIGST}%)</span>
-                                    <span>
-                                      <Rupee />
-                                      {(
-                                        calculateTotal() *
-                                        (1 - discount / 100) *
-                                        (taxIGST / 100)
-                                      ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <>
-                                    <div className="flex justify-between text-gray-600 text-xs">
-                                      <span>CGST ({taxCGST}%)</span>
-                                      <span>
-                                        <Rupee />
-                                        {(
-                                          calculateTotal() *
-                                          (1 - discount / 100) *
-                                          (taxCGST / 100)
-                                        ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between text-gray-600 text-xs">
-                                      <span>SGST ({taxSGST}%)</span>
-                                      <span>
-                                        <Rupee />
-                                        {(
-                                          calculateTotal() *
-                                          (1 - discount / 100) *
-                                          (taxSGST / 100)
-                                        ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                      </span>
-                                    </div>
-                                  </>
-                                )}
-                                <div className="flex justify-between text-gray-600 text-xs font-medium">
-                                  <span>Total Tax Amount</span>
-                                  <span>
-                                    <Rupee />
-                                    {(
-                                      calculateTotal() *
-                                      (1 - discount / 100) *
-                                      (taxTotalPercent / 100)
-                                    ).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
-                                  <span>Total</span>
-                                  <span>
-                                    <Rupee />
-                                    {roundAmount(
-                                      calculateTotal() *
-                                      (1 - discount / 100) *
-                                      (1 + taxTotalPercent / 100)
-                                    ).toLocaleString()}
-                                  </span>
-                                </div>
-                                {documentType === 'Tax Invoice' &&
-                                  quoteDetails.paymentAmount > 0 && (
-                                    <>
-                                      <div className="flex justify-between text-xs text-red-600">
-                                        <span>Less: Payment Received</span>
-                                        <span>
-                                          - <Rupee />
-                                          {roundAmount(
-                                            Number(quoteDetails.paymentAmount)
-                                          ).toLocaleString()}
-                                        </span>
-                                      </div>
-                                      <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
-                                        <span>Balance Due</span>
-                                        <span>
-                                          <Rupee />
-                                          {roundAmount(
-                                            calculateTotal() *
-                                            (1 - discount / 100) *
-                                            (1 + taxTotalPercent / 100) -
-                                            Number(quoteDetails.paymentAmount)
-                                          ).toLocaleString()}
-                                        </span>
-                                      </div>
-                                    </>
-                                  )}
-                                <div className="mt-2 text-xs text-gray-600 italic">
-                                  <span className="font-medium">Amount in Words: Rupees </span>
-                                  <span>
-                                    {numberToWords(
-                                      roundAmount(
-                                        calculateTotal() *
-                                        (1 - discount / 100) *
-                                        (1 + taxTotalPercent / 100)
-                                      )
-                                    )}{' '}
-                                    /-
-                                  </span>
-                                </div>
-                                {discount > 0 && (
-                                  <div className="mt-2 text-xs text-gray-600 italic">
-                                    <span className="font-medium">
-                                      Note: Discount included in the above amount.
-                                    </span>
-                                  </div>
-                                )}
-                                <div className="mt-2 text-xs text-gray-600 italic">
-                                  <span>
-                                    * This is a computer generated {documentType.toLowerCase()} and
-                                    does not require a physical signature.
-                                  </span>
-                                </div>
-                                {sealShow && (
-                                  <div>
-                                    {/* Company Seal */}
-                                    <div className="flex justify-end mt-4">
-                                      <div className="text-center flex flex-col items-center">
-                                        <img
-                                          src={`${import.meta.env.BASE_URL}company-seal.png`}
-                                          alt="Company Seal"
-                                          className="w-24 h-24 object-contain"
-                                        />
-                                        <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mt-1">
-                                          For EDGE2 Engineering Solutions India Pvt. Ltd.
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                      {/* Page Footer */}
-                      <div className="a4-page-footer">
-                        <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
-                        <span>
-                          {documentType}{' '}
-                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
-                          Page {page.pageNumber} of {totalPages}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Page 2: Bank */}
-                <div
-                  className="a4-scale-wrapper mx-auto"
-                  style={{
-                    width: `${794 * previewScale}px`,
-                    height: `${1122.5 * previewScale}px`,
-                    marginBottom: `${48 * previewScale}px`,
-                  }}
-                >
-                  <div
-                    className="a4-container"
-                    style={{
-                      transform: `scale(${previewScale})`,
-                      transformOrigin: 'top left',
-                      margin: 0,
-                    }}
-                  >
-                    {/* Watermark */}
-                    <div
-                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                      style={{
-                        transform: 'rotate(-55deg)',
-                        zIndex: 0,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: '42pt',
-                          fontWeight: 700,
-                          color: 'rgba(0,0,0,0.02)',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        EDGE2 Engineering Solutions India Pvt. Ltd.
-                      </span>
-                    </div>
-                    <div className="a4-page-content flex flex-col">
-                      <div className="text-gray-500 text-sm flex-1">
-                        {/* Bank + Signatory (Grid) */}
-                        <div
-                          className={`grid ${selectedBank?.qr_code_url ? 'grid-cols-2' : 'grid-cols-2'} gap-4 mt-2 text-left text-xs`}
-                        >
-                          {/* Bank Details */}
-                          <div>
-                            <h2 className="font-semibold mb-4 text-sm">Bank Details</h2>
-                            <table className="w-full text-xs border-collapse">
-                              <tbody>
-                                <tr>
-                                  <td className="py-1 font-semibold w-32">Name:</td>
-                                  <td className="py-1">
-                                    {selectedBank?.bank_account_holder_name ||
-                                      settings?.bank_account_holder_name ||
-                                      'EDGE2 Engineering Solutions India Pvt. Ltd.'}
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td className="py-1 font-semibold">A/c. No:</td>
-                                  <td className="py-1">
-                                    {selectedBank?.bank_account_number ||
-                                      settings?.bank_account_number ||
-                                      '560321000022687'}
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td className="py-1 font-semibold">IFSC Code:</td>
-                                  <td className="py-1">
-                                    {selectedBank?.ifsc_code ||
-                                      settings?.ifsc_code ||
-                                      'UBIN0907634'}
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td className="py-1 font-semibold">Branch:</td>
-                                  <td className="py-1">
-                                    {selectedBank?.branch_name ||
-                                      settings?.branch_name ||
-                                      'Bangalore - Peenya'}
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td className="py-1 font-semibold">Bank:</td>
-                                  <td className="py-1">
-                                    {selectedBank?.bank_name ||
-                                      settings?.bank_name ||
-                                      'Union Bank of India'}
-                                  </td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-
-                          {/* QR Code (if available) */}
-                          {selectedBank?.qr_code_url && (
-                            <div className="flex flex-col items-center justify-center pl-0">
-                              <img
-                                src={selectedBank.qr_code_url}
-                                alt="UPI QR Code"
-                                className="upi-qr-code-img object-contain"
-                              />
-                              <span className="hidden text-[8px] text-gray-400 font-bold uppercase tracking-wider mt-1">
-                                Scan to Pay
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Payment Received Details - Only for Tax Invoice */}
-                        {documentType === 'Tax Invoice' && quoteDetails.paymentDate && (
-                          <div className="mt-6 pt-4 border-t">
-                            <h2 className="font-semibold text-left mb-3 text-sm">
-                              Payment Received Details
-                            </h2>
-                            <table className="w-full text-xs border-collapse">
-                              <tbody>
-                                <tr>
-                                  <td className="py-1 font-semibold w-40">
-                                    Payment Received Date:
-                                  </td>
-                                  <td className="py-1">
-                                    {format(new Date(quoteDetails.paymentDate), 'dd MMM yyyy')}
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td className="py-1 font-semibold">Mode of Payment:</td>
-                                  <td className="py-1">{quoteDetails.paymentMode}</td>
-                                </tr>
-                                {quoteDetails.paymentAmount && (
-                                  <tr>
-                                    <td className="py-1 font-semibold">Amount Received:</td>
-                                    <td className="py-1">
-                                      <Rupee />
-                                      {Number(quoteDetails.paymentAmount).toLocaleString(
-                                        undefined,
-                                        {
-                                          minimumFractionDigits: 2,
-                                          maximumFractionDigits: 2,
-                                        }
-                                      )}
-                                    </td>
-                                  </tr>
-                                )}
-                                {quoteDetails.bankDetails && (
-                                  <tr>
-                                    <td className="py-1 font-semibold">Transaction Details:</td>
-                                    <td className="py-1">{quoteDetails.bankDetails}</td>
-                                  </tr>
-                                )}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-
-                        {/* General Terms & Conditions */}
-                        <div className="mt-6 pt-4 border-t">
-                          <h2 className="font-semibold text-left mb-3">
-                            General Terms & Conditions
-                          </h2>
-                          <div
-                            className={`text-xs whitespace-pre-wrap outline-none ${!isReadOnly ? 'hover:bg-[#f9fafb] focus:bg-[#ffffff] focus:ring-1 focus:ring-[#e5e7eb] rounded p-1 -ml-1 transition-colors' : ''}`}
-                            contentEditable={!isReadOnly}
-                            suppressContentEditableWarning
-                            onBlur={(e) => {
-                              setQuoteDetails((prev) => ({
-                                ...prev,
-                                generalTerms: e.currentTarget.innerText,
-                              }));
-                            }}
-                          >
-                            {quoteDetails.generalTerms !== undefined
-                              ? quoteDetails.generalTerms
-                              : `- This quotation is valid for 30 days only\n- GST @ 18% as given above\n- Billing will be made based on the actual quantity involved in work\n- Any quantities exceeding the quantities mentioned above will be subject to additional charges\n- The rates quoted in this offer are valid only for the quantum of this scope of quotation. If there is any reduction in the quantity, the rates are subject to an increase accordingly and present quotation stands invalid\n- Reports will be issued only after confirmation of 100% full payment`}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Page Footer */}
-                    <div className="a4-page-footer">
-                      <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
-                      <span>
-                        {documentType}{' '}
-                        {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
-                        Page {totalItemPages + 1} of {totalPages}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Payment Terms Pages */}
-                {payPages.map((page, payIndex) => (
-                  <div
-                    key={`pay-page-wrapper-${payIndex}`}
-                    className="a4-scale-wrapper mx-auto"
-                    style={{
-                      width: `${794 * previewScale}px`,
-                      height: `${1122.5 * previewScale}px`,
-                      marginBottom: `${48 * previewScale}px`,
-                    }}
-                  >
-                    <div
-                      className="a4-container"
-                      style={{
-                        transform: `scale(${previewScale})`,
-                        transformOrigin: 'top left',
-                        margin: 0,
-                      }}
-                    >
-                      {/* Watermark */}
-                      <div
-                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                        style={{
-                          transform: 'rotate(-55deg)',
-                          zIndex: 0,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: '42pt',
-                            fontWeight: 700,
-                            color: 'rgba(0,0,0,0.02)',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          EDGE2 Engineering Solutions India Pvt. Ltd.
-                        </span>
-                      </div>
-                      <div className="a4-page-content">
-                        <h2 className="font-semibold text-lg mb-6 text-center pb-2">Payment Terms{payIndex > 0 ? ' (continued)' : ''}</h2>
-                        <div className="space-y-4">
-                          {page.items.map((item) => {
-                            if (item.type === 'header') {
-                              return (
-                                <h3
-                                  key={item.id}
-                                  className="font-bold text-sm text-gray-800 border-l-4 border-primary pl-2 mb-2"
-                                >
-                                  {item.text}
-                                </h3>
-                              );
-                            } else if (item.type === 'pay') {
-                              return (
-                                <div
-                                  key={item.id}
-                                  className="text-xs text-gray-700 leading-relaxed mb-1 pl-2"
-                                >
-                                  <p className="whitespace-pre-wrap">{item.text}</p>
-                                </div>
-                              );
-                            } else if (item.type === 'spacer') {
-                              return <div key={item.id} className="h-4"></div>;
-                            }
-                            return null;
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Page Footer */}
-                      <div className="a4-page-footer">
-                        <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
-                        <span>
-                          {documentType}{' '}
-                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
-                          Page {totalItemPages + 1 + (payIndex + 1)} of{' '}
-                          {totalPages}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {/* T&C Pages */}
-                {tcPages.map((tcPage, tcIndex) => (
-                  <div
-                    key={`tc-page-wrapper-${tcIndex}`}
-                    className="a4-scale-wrapper mx-auto"
-                    style={{
-                      width: `${794 * previewScale}px`,
-                      height: `${1122.5 * previewScale}px`,
-                      marginBottom: `${48 * previewScale}px`,
-                    }}
-                  >
-                    <div
-                      className="a4-container"
-                      style={{
-                        transform: `scale(${previewScale})`,
-                        transformOrigin: 'top left',
-                        margin: 0,
-                      }}
-                    >
-                      {/* Watermark */}
-                      <div
-                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                        style={{
-                          transform: 'rotate(-55deg)',
-                          zIndex: 0,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: '42pt',
-                            fontWeight: 700,
-                            color: 'rgba(0,0,0,0.02)',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          EDGE2 Engineering Solutions India Pvt. Ltd.
-                        </span>
-                      </div>
-                      <div className="a4-page-content">
-                        <div className="text-left text-gray-500 text-sm">
-                          <h2 className="font-semibold text-lg mb-4 text-center">
-                            Terms & Conditions{tcIndex > 0 ? ' (continued)' : ''}
-                          </h2>
-
-                          {tcPage.items.length === 0 ? (
-                            <div className="text-center italic text-gray-400 py-10">
-                              No Terms & Conditions selected.
-                            </div>
-                          ) : (
-                            <div className="space-y-1">
-                              {tcPage.items.map((item, idx) => {
-                                if (item.type === 'header') {
-                                  return (
-                                    <h3
-                                      key={item.id}
-                                      className="font-bold text-sm text-gray-800 border-l-4 border-primary pl-2 mb-2"
-                                    >
-                                      {item.text}
-                                    </h3>
-                                  );
-                                } else if (item.type === 'term') {
-                                  return (
-                                    <div
-                                      key={item.id}
-                                      className="flex gap-2 text-xs leading-relaxed mb-1"
-                                    >
-                                      <span className="whitespace-pre-line pl-2">{item.text}</span>
-                                    </div>
-                                  );
-                                } else if (item.type === 'spacer') {
-                                  return <div key={item.id} className="h-2"></div>;
-                                }
-                                return null;
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Page Footer */}
-                      <div className="a4-page-footer">
-                        <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
-                        <span>
-                          {documentType}{' '}
-                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
-                          Page {totalItemPages + 1 + payPages.length + (tcIndex + 1)} of {totalPages}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Technical Pages */}
-                {techPages.map((page, techIndex) => (
-                  <div
-                    key={`tech-page-wrapper-${techIndex}`}
-                    className="a4-scale-wrapper mx-auto"
-                    style={{
-                      width: `${794 * previewScale}px`,
-                      height: `${1122.5 * previewScale}px`,
-                      marginBottom: `${48 * previewScale}px`,
-                    }}
-                  >
-                    <div
-                      className="a4-container"
-                      style={{
-                        transform: `scale(${previewScale})`,
-                        transformOrigin: 'top left',
-                        margin: 0,
-                      }}
-                    >
-                      {/* Watermark */}
-                      <div
-                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                        style={{
-                          transform: 'rotate(-55deg)',
-                          zIndex: 0,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: '42pt',
-                            fontWeight: 700,
-                            color: 'rgba(0,0,0,0.02)',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          EDGE2 Engineering Solutions India Pvt. Ltd.
-                        </span>
-                      </div>
-                      <div className="a4-page-content">
-                        <h2 className="font-semibold text-lg mb-6 text-center pb-2">Technicals{techIndex > 0 ? ' (continued)' : ''}</h2>
-                        <div className="space-y-4">
-                          {page.items.map((item) => {
-                            if (item.type === 'header') {
-                              return (
-                                <h3
-                                  key={item.id}
-                                  className="font-bold text-sm text-gray-800 border-l-4 border-primary pl-2 mb-2"
-                                >
-                                  {item.text}
-                                </h3>
-                              );
-                            } else if (item.type === 'tech') {
-                              return (
-                                <div
-                                  key={item.id}
-                                  className="text-xs text-gray-700 leading-relaxed mb-1 pl-2"
-                                >
-                                  <p className="whitespace-pre-wrap">{item.text}</p>
-                                </div>
-                              );
-                            } else if (item.type === 'spacer') {
-                              return <div key={item.id} className="h-4"></div>;
-                            }
-                            return null;
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Page Footer */}
-                      <div className="a4-page-footer">
-                        <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
-                        <span>
-                          {documentType}{' '}
-                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
-                          Page {totalItemPages + 1 + payPages.length + tcPages.length + (techIndex + 1)} of{' '}
-                          {totalPages}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="rounded-xl border border-gray-100 min-h-[600px] shadow-inner bg-gray-100 overflow-hidden">
+              <PagedPreview
+                ref={pagedPreviewRef}
+                documentTitle={`${documentType}_${quoteDetails.quoteNumber || 'draft'}`}
+                contentNode={
+                  <QuotationContent
+                    quoteDetails={quoteDetails}
+                    items={items}
+                    documentType={documentType}
+                    discount={discount}
+                    discountShow={discountShow}
+                    daysShow={daysShow}
+                    sealShow={sealShow}
+                    isInterstate={isInterstate}
+                    selectedBank={selectedBank}
+                    settings={settings}
+                    currentVersion={currentVersion}
+                    derivedPaymentTermsTypes={derivedPaymentTermsTypes}
+                    derivedTcTypes={derivedTcTypes}
+                    derivedTechTypes={derivedTechTypes}
+                    paymentTerms={paymentTerms}
+                    terms={terms}
+                    technicals={technicals}
+                    taxCGST={taxCGST}
+                    taxSGST={taxSGST}
+                    taxIGST={taxIGST}
+                    taxTotalPercent={taxTotalPercent}
+                    baseUrl={import.meta.env.BASE_URL}
+                  />
+                }
+              />
             </div>
           </div>
         </div>

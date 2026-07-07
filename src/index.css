@@ -60,6 +60,7 @@
 }
 
 @layer utilities {
+
   .text-maroon,
   .text-primary {
     color: #1a4332;
@@ -259,6 +260,7 @@
   background-color: rgba(59, 130, 246, 0.25) !important;
   color: inherit !important;
 }
+
 .dark .a4-container *::-moz-selection,
 .dark .a4-page *::-moz-selection {
   background-color: rgba(59, 130, 246, 0.25) !important;
@@ -435,7 +437,7 @@
     max-width: 100% !important;
   }
 
-  .a4-container .flex > * {
+  .a4-container .flex>* {
     min-width: 0 !important;
     max-width: 100% !important;
   }
@@ -581,6 +583,7 @@
   --rs-primary-600: #133225;
   --rs-primary-700: #0f271d;
 }
+
 .rs-theme-dark {
   --rs-primary-500: #2f8f67;
   --rs-primary-600: #277a58;
@@ -653,6 +656,7 @@
   color: hsl(var(--muted-foreground)) !important;
   opacity: 0.5;
 }
+
 .app-datepicker-root .rs-picker-toggle-clean:hover {
   color: hsl(var(--foreground)) !important;
   opacity: 1;
@@ -690,10 +694,12 @@
   font-weight: 600 !important;
   font-size: 0.875rem !important;
 }
+
 .rs-picker-menu .rs-calendar-header-backward,
 .rs-picker-menu .rs-calendar-header-forward {
   color: hsl(var(--muted-foreground)) !important;
 }
+
 .rs-picker-menu .rs-calendar-header-backward:hover,
 .rs-picker-menu .rs-calendar-header-forward:hover,
 .rs-picker-menu .rs-calendar-header-title:hover {
@@ -716,11 +722,7 @@
 }
 
 /* Hover */
-.rs-picker-menu
-  .rs-calendar-table-cell:not(.rs-calendar-table-cell-disabled):not(
-    .rs-calendar-table-cell-selected
-  )
-  .rs-calendar-table-cell-content:hover {
+.rs-picker-menu .rs-calendar-table-cell:not(.rs-calendar-table-cell-disabled):not(.rs-calendar-table-cell-selected) .rs-calendar-table-cell-content:hover {
   background-color: hsl(var(--accent)) !important;
   color: hsl(var(--accent-foreground)) !important;
 }
@@ -747,6 +749,7 @@
 .rs-picker-menu .rs-calendar-table-cell-disabled .rs-calendar-table-cell-content {
   color: hsl(var(--muted-foreground)) !important;
 }
+
 .rs-picker-menu .rs-btn-link {
   color: hsl(var(--primary)) !important;
   font-weight: 600 !important;
@@ -757,22 +760,25 @@
   background-color: hsl(var(--popover)) !important;
   border-top: 1px solid hsl(var(--border)) !important;
 }
+
 .rs-picker-menu .rs-calendar-month-dropdown-cell-content {
   color: hsl(var(--foreground)) !important;
   border-radius: 0.375rem !important;
 }
-.rs-picker-menu
-  .rs-calendar-month-dropdown-cell:not(.rs-calendar-month-dropdown-cell-active)
-  .rs-calendar-month-dropdown-cell-content:hover {
+
+.rs-picker-menu .rs-calendar-month-dropdown-cell:not(.rs-calendar-month-dropdown-cell-active) .rs-calendar-month-dropdown-cell-content:hover {
   background-color: hsl(var(--accent)) !important;
 }
+
 .rs-picker-menu .rs-calendar-month-dropdown-cell-active .rs-calendar-month-dropdown-cell-content {
   background-color: hsl(var(--primary)) !important;
   color: hsl(var(--primary-foreground)) !important;
 }
+
 .rs-picker-menu .rs-calendar-month-dropdown-year {
   color: hsl(var(--muted-foreground)) !important;
 }
+
 .rs-picker-menu .rs-calendar-month-dropdown-year-active {
   color: hsl(var(--primary)) !important;
   font-weight: 600 !important;
@@ -823,14 +829,17 @@
 .dark .a4-container .package-group-border-t {
   border-top-color: #f87171 !important;
 }
+
 .a4-container .package-group-border-b,
 .dark .a4-container .package-group-border-b {
   border-bottom-color: #f87171 !important;
 }
+
 .a4-container .package-group-border-l,
 .dark .a4-container .package-group-border-l {
   border-left-color: #f87171 !important;
 }
+
 .a4-container .package-group-border-r,
 .dark .a4-container .package-group-border-r {
   border-right-color: #f87171 !important;
@@ -847,9 +856,11 @@
   min-height: 140px;
   outline: none;
 }
+
 .tiptap p {
   margin-bottom: 0.5rem;
 }
+
 .tiptap ul,
 .rich-text-content ul {
   list-style-type: disc !important;
@@ -857,6 +868,7 @@
   margin-top: 0.5rem !important;
   margin-bottom: 0.5rem !important;
 }
+
 .tiptap ol,
 .rich-text-content ol {
   list-style-type: decimal !important;
@@ -864,18 +876,22 @@
   margin-top: 0.5rem !important;
   margin-bottom: 0.5rem !important;
 }
+
 .tiptap li,
 .rich-text-content li {
   margin-bottom: 0.25rem !important;
 }
+
 .tiptap strong,
 .rich-text-content strong {
   font-weight: bold !important;
 }
+
 .tiptap em,
 .rich-text-content em {
   font-style: italic !important;
 }
+
 .tiptap u,
 .rich-text-content u {
   text-decoration: underline !important;
