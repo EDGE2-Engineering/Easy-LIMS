@@ -74,7 +74,7 @@ const AdminLabTestsManager = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const fileImportRef = useRef(null);
 
-  const uniqueMaterials = ['all', ...materials.map((m) => m.name)];
+  const uniqueMaterials = ['all', ...materials.map((m) => m.id.toString())];
 
   const filteredLabTests = labTests.filter((t) => {
     const matchesSearch =
@@ -82,7 +82,18 @@ const AdminLabTestsManager = () => {
       (t.price?.toString() || '').includes(searchTerm) ||
       (t.hsnCode?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (t.group?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (Array.isArray(t.materials) ? t.materials.join(', ') : t.materials || '')
+      (Array.isArray(t.materials)
+        ? t.materials
+            .map(
+              (id) =>
+                materials.find((m) => String(m.id) === String(id) || m.name === id)?.name || id
+            )
+            .join(', ')
+        : materials.find((m) => String(m.id) === String(t.materials) || m.name === t.materials)
+            ?.name ||
+          t.materials ||
+          ''
+      )
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       (t.testMethodSpecification?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
@@ -91,8 +102,13 @@ const AdminLabTestsManager = () => {
     const matchesMaterial =
       filterMaterial === 'all' ||
       (Array.isArray(t.materials)
-        ? t.materials.includes(filterMaterial)
-        : t.materials === filterMaterial);
+        ? t.materials.some(
+            (id) =>
+              String(id) === String(filterMaterial) ||
+              materials.find((m) => String(m.id) === String(filterMaterial))?.name === id
+          )
+        : String(t.materials) === String(filterMaterial) ||
+          materials.find((m) => String(m.id) === String(filterMaterial))?.name === t.materials);
 
     return matchesSearch && matchesMaterial;
   });
@@ -330,17 +346,19 @@ const AdminLabTestsManager = () => {
             <ReactSelect
               isMulti
               name="materials"
-              options={materials.map((m) => ({ value: m.name, label: m.name }))}
+              options={materials.map((m) => ({ value: m.id.toString(), label: m.name }))}
               className="basic-multi-select"
               classNamePrefix="select"
               placeholder="Select Materials..."
               value={
                 editingLabTest?.materials
-                  ?.filter((m) => materials.some((mat) => mat.name === m))
-                  ?.map((m) => ({
-                    value: m,
-                    label: m,
-                  })) || []
+                  ?.map((mId) => {
+                    const mat = materials.find(
+                      (mat) => String(mat.id) === String(mId) || mat.name === mId
+                    );
+                    return mat ? { value: mat.id.toString(), label: mat.name } : null;
+                  })
+                  ?.filter(Boolean) || []
               }
               onChange={(selectedOptions) => {
                 handleChange(
@@ -548,11 +566,17 @@ const AdminLabTestsManager = () => {
                   <SelectValue placeholder="Materials" />
                 </SelectTrigger>
                 <SelectContent>
-                  {uniqueMaterials.map((m) => (
-                    <SelectItem key={m} value={m}>
-                      {m === 'all' ? 'All Materials' : m}
-                    </SelectItem>
-                  ))}
+                  {uniqueMaterials.map((mId) => {
+                    const name =
+                      mId === 'all'
+                        ? 'All Materials'
+                        : materials.find((m) => String(m.id) === String(mId))?.name || mId;
+                    return (
+                      <SelectItem key={mId} value={mId}>
+                        {name}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -669,8 +693,21 @@ const AdminLabTestsManager = () => {
                       <p>
                         <span className="font-semibold text-primary">Materials:</span>{' '}
                         {Array.isArray(labTest.materials)
-                          ? labTest.materials.join(', ')
-                          : labTest.materials || '-'}
+                          ? labTest.materials
+                              .map(
+                                (id) =>
+                                  materials.find(
+                                    (m) => String(m.id) === String(id) || m.name === id
+                                  )?.name || id
+                              )
+                              .join(', ')
+                          : materials.find(
+                              (m) =>
+                                String(m.id) === String(labTest.materials) ||
+                                m.name === labTest.materials
+                            )?.name ||
+                            labTest.materials ||
+                            '-'}
                       </p>
 
                       <p>
@@ -706,7 +743,8 @@ const AdminLabTestsManager = () => {
                       </p>
                       <p>
                         <span className="font-semibold text-primary">Payment Terms:</span>{' '}
-                        {Array.isArray(labTest.paymentTermsList) && labTest.paymentTermsList.length > 0
+                        {Array.isArray(labTest.paymentTermsList) &&
+                        labTest.paymentTermsList.length > 0
                           ? labTest.paymentTermsList.join(', ')
                           : '-'}
                       </p>

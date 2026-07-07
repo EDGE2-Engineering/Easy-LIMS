@@ -477,7 +477,7 @@ const NewQuotationPage = () => {
               parsed.quoteDetails.generatedBy = user.fullName;
               return JSON.stringify(parsed);
             }
-          } catch (e) { }
+          } catch (e) {}
           return prevSaved;
         });
 
@@ -783,7 +783,7 @@ const NewQuotationPage = () => {
                     parsed.quoteDetails = newDetails;
                     return JSON.stringify(parsed);
                   }
-                } catch (e) { }
+                } catch (e) {}
                 return prevSaved;
               });
 
@@ -943,7 +943,7 @@ const NewQuotationPage = () => {
         job_id: resolvedJobId,
         created_by: userId,
         updated_at: new Date().toISOString(),
-        version: savedRecordId && !isTypeChanged ? (currentVersion || 1) : 1,
+        version: savedRecordId && !isTypeChanged ? currentVersion || 1 : 1,
       };
 
       let error;
@@ -1122,7 +1122,9 @@ const NewQuotationPage = () => {
       }
 
       if (isNaN(userId)) {
-        throw new Error('Unable to determine a valid numeric User ID. Please try logging out and back in.');
+        throw new Error(
+          'Unable to determine a valid numeric User ID. Please try logging out and back in.'
+        );
       }
 
       const selectedClient = clients.find(
@@ -1407,10 +1409,10 @@ const NewQuotationPage = () => {
         // Include new service fields if it's a service
         ...(newItemType === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS && itemData
           ? {
-            methodOfSampling: itemData.methodOfSampling || itemData.method_of_sampling || 'NA',
-            numBHs: itemData.numBHs ?? itemData.num_bhs ?? 0,
-            measure: itemData.measure || 'NA',
-          }
+              methodOfSampling: itemData.methodOfSampling || itemData.method_of_sampling || 'NA',
+              numBHs: itemData.numBHs ?? itemData.num_bhs ?? 0,
+              measure: itemData.measure || 'NA',
+            }
           : {}),
       };
 
@@ -1506,10 +1508,10 @@ const NewQuotationPage = () => {
           packageName: packageData.name,
           ...(pkgItem.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS && itemData
             ? {
-              methodOfSampling: itemData.methodOfSampling || itemData.method_of_sampling || 'NA',
-              numBHs: itemData.numBHs ?? itemData.num_bhs ?? 0,
-              measure: itemData.measure || 'NA',
-            }
+                methodOfSampling: itemData.methodOfSampling || itemData.method_of_sampling || 'NA',
+                numBHs: itemData.numBHs ?? itemData.num_bhs ?? 0,
+                measure: itemData.measure || 'NA',
+              }
             : {}),
         });
       }
@@ -1560,10 +1562,10 @@ const NewQuotationPage = () => {
       prev.map((item) =>
         item.id === rowId
           ? {
-            ...item,
-            price: newPrice,
-            total: newPrice * Number(item.qty || 0),
-          }
+              ...item,
+              price: newPrice,
+              total: newPrice * Number(item.qty || 0),
+            }
           : item
       )
     );
@@ -1585,10 +1587,10 @@ const NewQuotationPage = () => {
       prev.map((item) =>
         item.id === rowId
           ? {
-            ...item,
-            qty: newQty,
-            total: Number(item.price || 0) * newQty,
-          }
+              ...item,
+              qty: newQty,
+              total: Number(item.price || 0) * newQty,
+            }
           : item
       )
     );
@@ -1610,10 +1612,10 @@ const NewQuotationPage = () => {
       prev.map((item) =>
         item.id === rowId
           ? {
-            ...item,
-            numDays: newNumDays,
-            total: Number(item.price || 0) * Number(item.qty || 0),
-          }
+              ...item,
+              numDays: newNumDays,
+              total: Number(item.price || 0) * Number(item.qty || 0),
+            }
           : item
       )
     );
@@ -2101,10 +2103,7 @@ const NewQuotationPage = () => {
               <>
                 {documentType === 'Quotation' && savedRecordId && (
                   <div className="flex items-center gap-2 mr-2">
-                    <Select
-                      value={String(currentVersion)}
-                      onValueChange={handleVersionChange}
-                    >
+                    <Select value={String(currentVersion)} onValueChange={handleVersionChange}>
                       <SelectTrigger className="w-[120px] h-9">
                         <SelectValue placeholder="Version" />
                       </SelectTrigger>
@@ -2175,7 +2174,7 @@ const NewQuotationPage = () => {
                   <SelectTrigger
                     className={cn(
                       (!!searchParams.get('type') || !!savedRecordId) &&
-                      'bg-gray-100 cursor-not-allowed'
+                        'bg-gray-100 cursor-not-allowed'
                     )}
                   >
                     <SelectValue placeholder="Select Type" />
@@ -2656,9 +2655,9 @@ const NewQuotationPage = () => {
                         value={
                           selectedPackageId
                             ? {
-                              value: selectedPackageId,
-                              label: packages.find((p) => p.id === selectedPackageId)?.name,
-                            }
+                                value: selectedPackageId,
+                                label: packages.find((p) => p.id === selectedPackageId)?.name,
+                              }
                             : null
                         }
                         onChange={(option) => setSelectedPackageId(option ? option.value : '')}
@@ -2726,9 +2725,9 @@ const NewQuotationPage = () => {
                     value={
                       selectedItemId
                         ? {
-                          value: selectedItemId,
-                          label: getSelectedItemDisplayLabel(),
-                        }
+                            value: selectedItemId,
+                            label: getSelectedItemDisplayLabel(),
+                          }
                         : null
                     }
                     onChange={(option) => setSelectedItemId(option ? option.value : '')}
@@ -2767,17 +2766,20 @@ const NewQuotationPage = () => {
                       value={
                         targetPackageGroupId
                           ? {
-                            value: targetPackageGroupId,
-                            label: uniquePackageGroups.find(
-                              (g) => g.packageGroupId === targetPackageGroupId
-                            )?.packageName,
-                          }
+                              value: targetPackageGroupId,
+                              label: uniquePackageGroups.find(
+                                (g) => g.packageGroupId === targetPackageGroupId
+                              )?.packageName,
+                            }
                           : { value: '', label: 'None (Add as Independent Item)' }
                       }
                       onChange={(option) => setTargetPackageGroupId(option ? option.value : '')}
                       placeholder="Select package group..."
                       isSearchable
-                      styles={themedReactSelectStyles({ minHeight: '44px', borderRadius: '0.75rem' })}
+                      styles={themedReactSelectStyles({
+                        minHeight: '44px',
+                        borderRadius: '0.75rem',
+                      })}
                     />
                   </div>
                 )}
@@ -2900,12 +2902,13 @@ const NewQuotationPage = () => {
 
                             {/* Client, Contractor, Project Details - Columns */}
                             <div
-                              className={`grid ${quoteDetails.contractorName &&
+                              className={`grid ${
+                                quoteDetails.contractorName &&
                                 quoteDetails.contractorName.trim() &&
                                 quoteDetails.contractorName.trim() !== '-'
-                                ? 'grid-cols-3'
-                                : 'grid-cols-2'
-                                } gap-6 mb-2 text-sm py-0 border-b`}
+                                  ? 'grid-cols-3'
+                                  : 'grid-cols-2'
+                              } gap-6 mb-2 text-sm py-0 border-b`}
                             >
                               {/* Column 1: Client */}
                               <div className="space-y-1">
@@ -2974,8 +2977,7 @@ const NewQuotationPage = () => {
                           <div className="pb-1 mb-2">
                             <h3 className="text-sm font-bold text-gray-900">
                               {documentType}{' '}
-                              {quoteDetails.quoteNumber ? getFormattedDocNumber() : ''}{' '}
-                              (continued)
+                              {quoteDetails.quoteNumber ? getFormattedDocNumber() : ''} (continued)
                             </h3>
                           </div>
                         )}
@@ -2987,11 +2989,7 @@ const NewQuotationPage = () => {
                             <col
                               style={{
                                 width:
-                                  documentType === 'Quotation'
-                                    ? daysShow
-                                      ? '48%'
-                                      : '53%'
-                                    : '53%',
+                                  documentType === 'Quotation' ? (daysShow ? '48%' : '53%') : '53%',
                               }}
                             />
                             <col style={{ width: '8%' }} />
@@ -3135,7 +3133,9 @@ const NewQuotationPage = () => {
                                           <div className="inline-flex items-center gap-1.0 justify-end">
                                             <button
                                               type="button"
-                                              onClick={() => handleMovePackageUp(item.packageGroupId)}
+                                              onClick={() =>
+                                                handleMovePackageUp(item.packageGroupId)
+                                              }
                                               disabled={groupItems[0]?.id === items[0]?.id}
                                               className="text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors p-0"
                                               title="Move entire package group up"
@@ -3144,8 +3144,13 @@ const NewQuotationPage = () => {
                                             </button>
                                             <button
                                               type="button"
-                                              onClick={() => handleMovePackageDown(item.packageGroupId)}
-                                              disabled={groupItems[groupItems.length - 1]?.id === items[items.length - 1]?.id}
+                                              onClick={() =>
+                                                handleMovePackageDown(item.packageGroupId)
+                                              }
+                                              disabled={
+                                                groupItems[groupItems.length - 1]?.id ===
+                                                items[items.length - 1]?.id
+                                              }
                                               className="text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-colors p-0"
                                               title="Move entire package group down"
                                             >
@@ -3153,7 +3158,9 @@ const NewQuotationPage = () => {
                                             </button>
                                             <button
                                               type="button"
-                                              onClick={() => handleUngroupPackage(item.packageGroupId)}
+                                              onClick={() =>
+                                                handleUngroupPackage(item.packageGroupId)
+                                              }
                                               className="text-blue-400 hover:text-blue-600 transition-colors p-0 hidden"
                                               title="Ungroup package (Convert parameters to individual items)"
                                             >
@@ -3161,7 +3168,9 @@ const NewQuotationPage = () => {
                                             </button>
                                             <button
                                               type="button"
-                                              onClick={() => handleDeletePackage(item.packageGroupId)}
+                                              onClick={() =>
+                                                handleDeletePackage(item.packageGroupId)
+                                              }
                                               className="text-red-400 hover:text-red-600 transition-colors p-0"
                                               title="Delete entire package"
                                             >
@@ -3177,8 +3186,8 @@ const NewQuotationPage = () => {
                                     className={cn(
                                       'border-b border-gray-50 transition-colors',
                                       item.packageGroupId &&
-                                      hoveredPackageGroupId === item.packageGroupId &&
-                                      'bg-red-50/70'
+                                        hoveredPackageGroupId === item.packageGroupId &&
+                                        'bg-red-50/70'
                                     )}
                                     onMouseEnter={() =>
                                       item.packageGroupId &&
@@ -3332,8 +3341,8 @@ const NewQuotationPage = () => {
                                         )}
                                       >
                                         {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS ||
-                                          item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS ||
-                                          item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING ? (
+                                        item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS ||
+                                        item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING ? (
                                           <span
                                             contentEditable={!isReadOnly}
                                             suppressContentEditableWarning
@@ -3494,8 +3503,8 @@ const NewQuotationPage = () => {
                                     <Rupee />
                                     {roundAmount(
                                       calculateTotal() *
-                                      (1 - discount / 100) *
-                                      (1 + taxTotalPercent / 100)
+                                        (1 - discount / 100) *
+                                        (1 + taxTotalPercent / 100)
                                     ).toLocaleString()}
                                   </span>
                                 </div>
@@ -3517,9 +3526,9 @@ const NewQuotationPage = () => {
                                           <Rupee />
                                           {roundAmount(
                                             calculateTotal() *
-                                            (1 - discount / 100) *
-                                            (1 + taxTotalPercent / 100) -
-                                            Number(quoteDetails.paymentAmount)
+                                              (1 - discount / 100) *
+                                              (1 + taxTotalPercent / 100) -
+                                              Number(quoteDetails.paymentAmount)
                                           ).toLocaleString()}
                                         </span>
                                       </div>
@@ -3531,8 +3540,8 @@ const NewQuotationPage = () => {
                                     {numberToWords(
                                       roundAmount(
                                         calculateTotal() *
-                                        (1 - discount / 100) *
-                                        (1 + taxTotalPercent / 100)
+                                          (1 - discount / 100) *
+                                          (1 + taxTotalPercent / 100)
                                       )
                                     )}{' '}
                                     /-
@@ -3578,8 +3587,8 @@ const NewQuotationPage = () => {
                         <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
                         <span>
                           {documentType}{' '}
-                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
-                          Page {page.pageNumber} of {totalPages}
+                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} | Page{' '}
+                          {page.pageNumber} of {totalPages}
                         </span>
                       </div>
                     </div>
@@ -3767,8 +3776,8 @@ const NewQuotationPage = () => {
                       <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
                       <span>
                         {documentType}{' '}
-                        {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
-                        Page {totalItemPages + 1} of {totalPages}
+                        {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} | Page{' '}
+                        {totalItemPages + 1} of {totalPages}
                       </span>
                     </div>
                   </div>
@@ -3813,7 +3822,9 @@ const NewQuotationPage = () => {
                         </span>
                       </div>
                       <div className="a4-page-content">
-                        <h2 className="font-semibold text-lg mb-6 text-center pb-2">Payment Terms{payIndex > 0 ? ' (continued)' : ''}</h2>
+                        <h2 className="font-semibold text-lg mb-6 text-center pb-2">
+                          Payment Terms{payIndex > 0 ? ' (continued)' : ''}
+                        </h2>
                         <div className="space-y-4">
                           {page.items.map((item) => {
                             if (item.type === 'header') {
@@ -3847,9 +3858,8 @@ const NewQuotationPage = () => {
                         <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
                         <span>
                           {documentType}{' '}
-                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
-                          Page {totalItemPages + 1 + (payIndex + 1)} of{' '}
-                          {totalPages}
+                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} | Page{' '}
+                          {totalItemPages + 1 + (payIndex + 1)} of {totalPages}
                         </span>
                       </div>
                     </div>
@@ -3940,8 +3950,8 @@ const NewQuotationPage = () => {
                         <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
                         <span>
                           {documentType}{' '}
-                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
-                          Page {totalItemPages + 1 + payPages.length + (tcIndex + 1)} of {totalPages}
+                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} | Page{' '}
+                          {totalItemPages + 1 + payPages.length + (tcIndex + 1)} of {totalPages}
                         </span>
                       </div>
                     </div>
@@ -3987,7 +3997,9 @@ const NewQuotationPage = () => {
                         </span>
                       </div>
                       <div className="a4-page-content">
-                        <h2 className="font-semibold text-lg mb-6 text-center pb-2">Technicals{techIndex > 0 ? ' (continued)' : ''}</h2>
+                        <h2 className="font-semibold text-lg mb-6 text-center pb-2">
+                          Technicals{techIndex > 0 ? ' (continued)' : ''}
+                        </h2>
                         <div className="space-y-4">
                           {page.items.map((item) => {
                             if (item.type === 'header') {
@@ -4021,9 +4033,9 @@ const NewQuotationPage = () => {
                         <span>EDGE2 Engineering Solutions India Pvt. Ltd.</span>
                         <span>
                           {documentType}{' '}
-                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} |
-                          Page {totalItemPages + 1 + payPages.length + tcPages.length + (techIndex + 1)} of{' '}
-                          {totalPages}
+                          {quoteDetails.quoteNumber ? getFormattedDocNumber() : 'Pending'} | Page{' '}
+                          {totalItemPages + 1 + payPages.length + tcPages.length + (techIndex + 1)}{' '}
+                          of {totalPages}
                         </span>
                       </div>
                     </div>
@@ -4075,7 +4087,8 @@ const NewQuotationPage = () => {
                 Unsaved Changes
               </AlertDialogTitle>
               <AlertDialogDescription>
-                You have unsaved changes in the current version. Do you want to save them before switching to Version {targetVersionToLoad?.version}?
+                You have unsaved changes in the current version. Do you want to save them before
+                switching to Version {targetVersionToLoad?.version}?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
@@ -4111,11 +4124,14 @@ const NewQuotationPage = () => {
                 Save as New Version
               </AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to save this quotation as a new version? This will create Version {docVersions.length + 1} and copy all current details to it.
+                Are you sure you want to save this quotation as a new version? This will create
+                Version {docVersions.length + 1} and copy all current details to it.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setShowSaveAsNewConfirm(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setShowSaveAsNewConfirm(false)}>
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => {
                   setShowSaveAsNewConfirm(false);
@@ -4136,11 +4152,14 @@ const NewQuotationPage = () => {
                 Update Quotation Version
               </AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to update the current version (Version {currentVersion}) of this quotation? All changes will overwrite the current version.
+                Are you sure you want to update the current version (Version {currentVersion}) of
+                this quotation? All changes will overwrite the current version.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setShowUpdateConfirm(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setShowUpdateConfirm(false)}>
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => {
                   setShowUpdateConfirm(false);

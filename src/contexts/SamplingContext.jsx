@@ -189,7 +189,20 @@ const SamplingProvider = ({ children }) => {
           throw new Error(`Failed to update sampling: ${error.message}`);
         }
 
-        // NOTE: 'materials' DB table not yet provisioned — materials are stored in UI state only
+        // Sync Materials
+        await supabase.from('sampling_to_materials').delete().eq('sampling_id', id);
+        if (updatedItem.materials?.length > 0) {
+          const { data: mats } = await supabase
+            .from('materials')
+            .select('id')
+            .in('name', updatedItem.materials);
+          if (mats?.length > 0) {
+            await supabase
+              .from('sampling_to_materials')
+              .insert(mats.map((m) => ({ sampling_id: id, material_id: m.id })));
+          }
+        }
+
         // Sync T&C
         await supabase.from('sampling_to_terms_conditions').delete().eq('sampling_id', id);
         if (updatedItem.tcList?.length > 0) {
@@ -269,7 +282,19 @@ const SamplingProvider = ({ children }) => {
         if (data && data.length > 0) {
           const id = data[0].id;
 
-          // NOTE: 'materials' DB table not yet provisioned — materials are stored in UI state only
+          // Sync Materials
+          if (newItem.materials?.length > 0) {
+            const { data: mats } = await supabase
+              .from('materials')
+              .select('id')
+              .in('name', newItem.materials);
+            if (mats?.length > 0) {
+              await supabase
+                .from('sampling_to_materials')
+                .insert(mats.map((m) => ({ sampling_id: id, material_id: m.id })));
+            }
+          }
+
           // Sync T&C
           if (newItem.tcList?.length > 0) {
             const { data: terms } = await supabase

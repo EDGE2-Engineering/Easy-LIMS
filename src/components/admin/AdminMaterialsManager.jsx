@@ -31,7 +31,7 @@ const AdminMaterialsManager = () => {
   });
 
   const filteredMaterials = materials.filter((m) =>
-    m.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (m.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleEdit = (material) => {
@@ -163,26 +163,14 @@ const AdminMaterialsManager = () => {
             <Button
               onClick={handleAddNew}
               className="bg-primary hover:bg-primary-dark text-white h-10 px-6 rounded-xl shadow-sm text-sm font-semibold shrink-0"
-              disabled
             >
               <Plus className="w-4 h-4 mr-2" /> Add Material
             </Button>
           </TooltipTrigger>
           <TooltipContent className="bg-gray-900 text-white border-gray-800">
-            <p className="text-xs">Editing is disabled. Update src/data/config.js instead.</p>
+            <p className="text-xs">Add a new material to the database</p>
           </TooltipContent>
         </Tooltip>
-      </div>
-
-      <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-        <div className="text-sm text-amber-800">
-          <p className="font-semibold">Static Configuration Mode</p>
-          <p>
-            The materials list is currently managed via the <code>src/data/config.js</code> file.
-            Adding or editing materials through this UI is disabled to prevent data loss.
-          </p>
-        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -211,17 +199,12 @@ const AdminMaterialsManager = () => {
                     <div className="flex justify-end gap-1">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(material)}
-                            disabled
-                          >
-                            <Edit className="w-4 h-4 text-gray-400" />
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(material)}>
+                            <Edit className="w-4 h-4 text-gray-500 hover:text-primary transition-colors" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                          <p className="text-xs">Editing disabled</p>
+                          <p className="text-xs">Edit material details</p>
                         </TooltipContent>
                       </Tooltip>
 
@@ -231,13 +214,12 @@ const AdminMaterialsManager = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDeleteClick(material)}
-                            disabled
                           >
-                            <Trash2 className="w-4 h-4 text-gray-300" />
+                            <Trash2 className="w-4 h-4 text-red-500 hover:text-red-700 transition-colors" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                          <p className="text-xs">Deletion disabled</p>
+                          <p className="text-xs">Delete this material</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>

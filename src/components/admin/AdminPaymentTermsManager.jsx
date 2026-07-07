@@ -20,7 +20,8 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 
 const AdminPaymentTermsManager = () => {
-  const { paymentTerms, loading, addPaymentTerm, updatePaymentTerm, deletePaymentTerm } = usePaymentTerms();
+  const { paymentTerms, loading, addPaymentTerm, updatePaymentTerm, deletePaymentTerm } =
+    usePaymentTerms();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingTerm, setEditingTerm] = useState(null);

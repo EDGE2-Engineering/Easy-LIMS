@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -253,8 +253,13 @@ function SoilTypeSelect({ value, onChange }) {
   );
 }
 
-export default function GeotechTestForm({ value, onChange, materialCategory }) {
-  const [activeTab, setActiveTab] = useState('borehole');
+export default function GeotechTestForm({ value, onChange, materialCategory, enabledForms }) {
+  const defaultTab = enabledForms?.length > 0 ? enabledForms[0] : 'borehole';
+  const [activeTab, setActiveTab] = useState(defaultTab);
+
+  useEffect(() => {
+    setActiveTab(defaultTab);
+  }, [defaultTab]);
   const [sieveError, setSieveError] = useState(null); // { boreholeIndex, depthIndex, message }
 
   // Overburden correction table from Settings → System → Overburden
@@ -296,23 +301,43 @@ export default function GeotechTestForm({ value, onChange, materialCategory }) {
     maxDepths: initialMaxDepths,
     latitudes: value?.latitudes || [],
     longitudes: value?.longitudes || [],
-    labTestResults: value?.labTestResults || [
-      [
-        {
-          depth: '',
-          bulkDensity: '',
-          moistureContent: '',
-          grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' },
-          atterbergLimits: {
-            liquidLimit: '',
-            plasticLimit: '',
-            plasticityIndex: '',
-          },
-          specificGravity: '',
-          freeSwellIndex: '',
-        },
-      ],
-    ],
+    labTestResults: value?.labTestResults
+      ? value.labTestResults.map((boreholeResults) =>
+          boreholeResults.map((entry) => ({
+            depth: entry.depth ?? '',
+            bulkDensity: entry.bulkDensity ?? '',
+            moistureContent: entry.moistureContent ?? '',
+            grainSizeDistribution: {
+              gravel: entry.grainSizeDistribution?.gravel ?? '',
+              sand: entry.grainSizeDistribution?.sand ?? '',
+              siltAndClay: entry.grainSizeDistribution?.siltAndClay ?? '',
+            },
+            atterbergLimits: {
+              liquidLimit: entry.atterbergLimits?.liquidLimit ?? '',
+              plasticLimit: entry.atterbergLimits?.plasticLimit ?? '',
+              plasticityIndex: entry.atterbergLimits?.plasticityIndex ?? '',
+            },
+            specificGravity: entry.specificGravity ?? '',
+            freeSwellIndex: entry.freeSwellIndex ?? '',
+          }))
+        )
+      : [
+          [
+            {
+              depth: '',
+              bulkDensity: '',
+              moistureContent: '',
+              grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' },
+              atterbergLimits: {
+                liquidLimit: '',
+                plasticLimit: '',
+                plasticityIndex: '',
+              },
+              specificGravity: '',
+              freeSwellIndex: '',
+            },
+          ],
+        ],
     chemicalAnalysis: value?.chemicalAnalysis || [
       {
         phValue: '',
@@ -789,41 +814,51 @@ export default function GeotechTestForm({ value, onChange, materialCategory }) {
       </AlertDialog>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-white rounded-lg p-1 shadow-sm mb-4 flex flex-wrap h-auto gap-1">
-          <TabsTrigger
-            value="borehole"
-            className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2"
-            title="Manage borehole logs, sampling, and SPT data"
-          >
-            <FlaskConical className="w-4 h-4" /> Borehole
-          </TabsTrigger>
-          <TabsTrigger
-            value="lab"
-            className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2"
-            title="Manage laboratory test results for soil samples"
-          >
-            <TestTube className="w-4 h-4" /> Lab Tests
-          </TabsTrigger>
-          <TabsTrigger
-            value="sieve"
-            className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2"
-            title="Manage detailed grain size analysis data"
-          >
-            <Layers className="w-4 h-4" /> Sieve Analysis
-          </TabsTrigger>
-          <TabsTrigger
-            value="subsoil"
-            className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2"
-            title="Manage sub-soil profile descriptions"
-          >
-            <ArrowDownFromLine className="w-4 h-4" /> Sub-Soil Profile
-          </TabsTrigger>
-          <TabsTrigger
-            value="directshear"
-            className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2"
-            title="Manage direct shear test results"
-          >
-            <TestTube className="w-4 h-4" /> Direct Shear
-          </TabsTrigger>
+          {(!enabledForms || enabledForms.includes('borehole')) && (
+            <TabsTrigger
+              value="borehole"
+              className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2"
+              title="Manage borehole logs, sampling, and SPT data"
+            >
+              <FlaskConical className="w-4 h-4" /> Borehole
+            </TabsTrigger>
+          )}
+          {(!enabledForms || enabledForms.includes('lab')) && (
+            <TabsTrigger
+              value="lab"
+              className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2"
+              title="Manage laboratory test results for soil samples"
+            >
+              <TestTube className="w-4 h-4" /> Lab Tests
+            </TabsTrigger>
+          )}
+          {(!enabledForms || enabledForms.includes('sieve')) && (
+            <TabsTrigger
+              value="sieve"
+              className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2"
+              title="Manage detailed grain size analysis data"
+            >
+              <Layers className="w-4 h-4" /> Sieve Analysis
+            </TabsTrigger>
+          )}
+          {(!enabledForms || enabledForms.includes('subsoil')) && (
+            <TabsTrigger
+              value="subsoil"
+              className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2"
+              title="Manage sub-soil profile descriptions"
+            >
+              <ArrowDownFromLine className="w-4 h-4" /> Sub-Soil Profile
+            </TabsTrigger>
+          )}
+          {(!enabledForms || enabledForms.includes('directshear')) && (
+            <TabsTrigger
+              value="directshear"
+              className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2"
+              title="Manage direct shear test results"
+            >
+              <TestTube className="w-4 h-4" /> Direct Shear
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* BOREHOLE TAB */}

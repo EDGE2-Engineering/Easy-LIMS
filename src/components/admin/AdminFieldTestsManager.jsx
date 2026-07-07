@@ -755,7 +755,8 @@ const AdminFieldTestsManager = () => {
                       </p>
                       <p>
                         <span className="font-semibold text-primary">Payment Terms:</span>{' '}
-                        {Array.isArray(fieldTest.paymentTermsList) && fieldTest.paymentTermsList.length > 0
+                        {Array.isArray(fieldTest.paymentTermsList) &&
+                        fieldTest.paymentTermsList.length > 0
                           ? fieldTest.paymentTermsList.join(', ')
                           : '-'}
                       </p>

@@ -29,7 +29,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { format } from 'date-fns';
-import { WORKFLOW_STATES, ROLES, MATERIALS } from '@/data/config';
+import { WORKFLOW_STATES, ROLES } from '@/data/config';
+import { useMaterials } from '@/contexts/MaterialsContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,7 +71,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, isStandard } = useAuth();
-  const materials = MATERIALS;
+  const { materials } = useMaterials();
 
   // Management State (Consistent with AdminServicesManager)
   const [editingRecord, setEditingRecord] = useState(null);

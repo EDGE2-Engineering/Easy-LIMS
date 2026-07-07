@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSettings } from '@/contexts/SettingsContext';
-import { MATERIALS } from '@/data/config';
+import { useMaterials } from '@/contexts/MaterialsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -10,7 +10,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 const SETTING_PREFIX = 'unit_weight_bulk_';
 
 const AdminUnitWeightsManager = () => {
-  const { settings, updateSetting, loading } = useSettings();
+  const { settings, updateSetting, loading: settingsLoading } = useSettings();
+  const { materials, loading: materialsLoading } = useMaterials();
+  const loading = settingsLoading || materialsLoading;
   const { toast } = useToast();
   const [localWeights, setLocalWeights] = useState({});
   const [isSaving, setIsSaving] = useState(false);
@@ -18,16 +20,16 @@ const AdminUnitWeightsManager = () => {
 
   // Initialise local state from persisted settings
   useEffect(() => {
-    if (!loading && settings && !hasInitialized) {
+    if (!loading && settings && !hasInitialized && materials.length > 0) {
       const weights = {};
-      MATERIALS.forEach((mat) => {
+      materials.forEach((mat) => {
         const key = SETTING_PREFIX + mat.id;
         weights[mat.id] = settings[key] !== undefined ? String(settings[key]) : '';
       });
       setLocalWeights(weights);
       setHasInitialized(true);
     }
-  }, [loading, settings, hasInitialized]);
+  }, [loading, settings, hasInitialized, materials]);
 
   const handleChange = useCallback((materialId, value) => {
     setLocalWeights((prev) => ({ ...prev, [materialId]: value }));
@@ -36,7 +38,7 @@ const AdminUnitWeightsManager = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      for (const mat of MATERIALS) {
+      for (const mat of materials) {
         const key = SETTING_PREFIX + mat.id;
         const value = localWeights[mat.id];
         if (value !== '' && value !== undefined) {
@@ -129,7 +131,7 @@ const AdminUnitWeightsManager = () => {
               </tr>
             </thead>
             <tbody>
-              {MATERIALS.map((mat) => {
+              {materials.map((mat) => {
                 const bulkVal = localWeights[mat.id] ?? '';
                 const effectiveVal = computeEffective(bulkVal);
 

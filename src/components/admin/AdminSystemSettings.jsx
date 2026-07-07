@@ -41,6 +41,7 @@ import AdminTechnicalsManager from './AdminTechnicalsManager';
 import AdminPaymentTermsManager from './AdminPaymentTermsManager';
 import AdminCollectionCentersManager from './AdminCollectionCentersManager';
 import AdminMaterialsManager from './AdminMaterialsManager';
+import AdminMaterialFormsManager from './AdminMaterialFormsManager';
 import AdminUsersManager from './AdminUsersManager';
 import AdminBearingCapacityManager from './AdminBearingCapacityManager';
 import AdminBankStatementsManager from './AdminBankStatementsManager';
@@ -56,6 +57,8 @@ const TAB_COMPONENTS = {
   terms: <AdminTermsManager />,
   technicals: <AdminTechnicalsManager />,
   payment_terms: <AdminPaymentTermsManager />,
+  materials: <AdminMaterialsManager />,
+  material_forms: <AdminMaterialFormsManager />,
   payment_settings: <AdminSettingsManager />,
   collection_centers: <AdminCollectionCentersManager />,
   bearing_capacity: <AdminBearingCapacityManager />,
@@ -194,6 +197,38 @@ const AdminSystemSettings = ({ id }) => {
             </TabsTrigger>
 
             <TabsTrigger
+              value="materials"
+              className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2">
+                    <SwatchBook className="w-4 h-4" /> Materials
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                  <p className="text-xs">Manage system materials list</p>
+                </TooltipContent>
+              </Tooltip>
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="material_forms"
+              className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2">
+                    <TestTube className="w-4 h-4" /> Material Forms
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                  <p className="text-xs">Associate testing input forms with materials</p>
+                </TooltipContent>
+              </Tooltip>
+            </TabsTrigger>
+
+            <TabsTrigger
               value="payment_settings"
               className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
             >
@@ -266,7 +301,7 @@ const AdminSystemSettings = ({ id }) => {
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center gap-2">
+                    <div className="hidden flex items-center gap-2">
                       <Landmark className="w-4 h-4" /> Statements
                     </div>
                   </TooltipTrigger>
@@ -319,6 +354,20 @@ const AdminSystemSettings = ({ id }) => {
           className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
         >
           <AdminPaymentTermsManager />
+        </TabsContent>
+
+        <TabsContent
+          value="materials"
+          className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
+        >
+          <AdminMaterialsManager />
+        </TabsContent>
+
+        <TabsContent
+          value="material_forms"
+          className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
+        >
+          <AdminMaterialFormsManager />
         </TabsContent>
 
         <TabsContent

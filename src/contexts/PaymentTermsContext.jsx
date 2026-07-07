@@ -123,9 +123,7 @@ const PaymentTermsProvider = ({ children }) => {
   );
 
   return (
-    <PaymentTermsContext.Provider value={contextValue}>
-      {children}
-    </PaymentTermsContext.Provider>
+    <PaymentTermsContext.Provider value={contextValue}>{children}</PaymentTermsContext.Provider>
   );
 };
 

@@ -43,7 +43,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { WORKFLOW_STATES, MATERIALS, ROLES, ACTIONS } from '@/data/config';
+import { WORKFLOW_STATES, ROLES, ACTIONS } from '@/data/config';
+import { useMaterials } from '@/contexts/MaterialsContext';
 import { useWorkflowConfig } from '@/contexts/WorkflowContext';
 import {
   AlertDialog,
@@ -66,6 +67,7 @@ import Rupee from '@/components/Rupee';
 import { format } from 'date-fns';
 
 const JobsManager = ({ id }) => {
+  const { materials } = useMaterials();
   const [records, setRecords] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1664,7 +1666,8 @@ const JobsManager = ({ id }) => {
                           <tr key={i} className="hover:bg-gray-50/30 transition-colors">
                             <td className="p-3 font-bold text-gray-900">{s.sample_code}</td>
                             <td className="p-3 text-gray-500">
-                              {MATERIALS.find((m) => m.id === s.material_type)?.name ||
+                              {materials.find((m) => String(m.id) === String(s.material_type))
+                                ?.name ||
                                 s.material_type ||
                                 '-'}
                             </td>

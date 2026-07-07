@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Search,
   Loader2,
@@ -38,7 +38,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { MATERIALS, ROLES } from '@/data/config';
+import { ROLES } from '@/data/config';
+import { useMaterials } from '@/contexts/MaterialsContext';
 import GeotechTestForm from './GeotechTestForm';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -62,6 +63,47 @@ const MANUAL_GEOTECH_FIELDS = [
 ];
 
 const TestingManager = ({ initialJobId, onClose, onSave }) => {
+  const { materials, materialFormAssociations } = useMaterials();
+  const getMaterialAndForms = useCallback(
+    (cat) => {
+      const material = materials.find((m) => String(m.id) === String(cat) || m.name === cat);
+      const materialName = material?.name || cat;
+
+      // Hardcoded bypass: Soil, Rock, and Soil and Rock always use their solidly built out geotech forms only.
+      const lowerName = String(materialName).toLowerCase().trim();
+      if (['soil', 'rock', 'soil and rock'].includes(lowerName)) {
+        return {
+          material,
+          forms: ['borehole', 'sieve', 'lab', 'subsoil', 'directshear'],
+          isGeotech: true,
+          isRegular: false,
+        };
+      }
+
+      if (!material) {
+        return {
+          material: null,
+          forms: ['regular'],
+          isGeotech: false,
+          isRegular: true,
+        };
+      }
+      const forms = materialFormAssociations
+        .filter((a) => String(a.material_id) === String(material.id))
+        .map((a) => a.form_type);
+      const hasGeotech = forms.some((f) =>
+        ['borehole', 'sieve', 'lab', 'subsoil', 'directshear'].includes(f)
+      );
+      const hasRegular = forms.includes('regular');
+      return {
+        material,
+        forms: forms.length > 0 ? forms : ['regular'],
+        isGeotech: hasGeotech,
+        isRegular: hasRegular || forms.length === 0,
+      };
+    },
+    [materials, materialFormAssociations]
+  );
   const [jobDetails, setJobDetails] = useState(null);
   const [samples, setSamples] = useState([]);
   const [testResults, setTestResults] = useState({}); // { category: { testName: { values: {}, remarks: "" } } }
@@ -81,13 +123,13 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
 
   // Restore saved entryMode and rlValuesNote from GeotechData when opening a geotech category dialog
   useEffect(() => {
-    if (selectedCategory && GEOTECH_NAMES.includes(selectedCategory)) {
+    if (selectedCategory && getMaterialAndForms(selectedCategory).isGeotech) {
       const saved = testResults[selectedCategory]?.GeotechData?.methodOfBoring;
       if (saved) setEntryMode(saved);
       const savedRl = testResults[selectedCategory]?.GeotechData?.rlValuesNote;
       if (savedRl) setRlValuesNote(savedRl);
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, getMaterialAndForms]);
 
   const fetchData = async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -240,14 +282,14 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
     );
   if (!jobDetails) return null;
 
-  // Derive category names by looking up each sample's material_type in the MATERIALS config
+  // Derive category names by looking up each sample's material_type in the materials context
   const sampleCategories = [
     ...new Set(
       samples
         .map((s) => {
           if (!s.material_type) return null;
-          const mat = MATERIALS.find((m) => m.id === s.material_type);
-          return mat ? mat.name : null;
+          const mat = materials.find((m) => String(m.id) === String(s.material_type));
+          return mat ? String(mat.id) : null;
         })
         .filter(Boolean)
     ),
@@ -268,7 +310,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
       : allCategories.filter((c) => {
           if (user?.role !== ROLES.TECHNICIAN.slug) return false;
           if (techCapabilities.includes(c) || dataCats.includes(c)) return true;
-          if (isSoilTech && GEOTECH_NAMES.includes(c)) return true;
+          if (isSoilTech && getMaterialAndForms(c).isGeotech) return true;
           return false;
         });
 
@@ -316,22 +358,29 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                             after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-0.5 after:bg-primary after:scale-x-0 after:transition-transform after:duration-200
                                             data-[state=active]:after:scale-x-100 mt-0"
               >
-                {cat}
+                {materials.find((m) => String(m.id) === String(cat))?.name || cat}
               </TabsTrigger>
             ))}
           </TabsList>
 
           {visibleCategories.map((cat) => {
-            const assignedTestTypes = (jobDetails.test_types || {})[cat] || [];
+            const materialName = materials.find((m) => String(m.id) === String(cat))?.name;
+            const assignedTestTypes =
+              (jobDetails.test_types || {})[cat] ||
+              (materialName ? (jobDetails.test_types || {})[materialName] : []) ||
+              [];
             const dataTestTypes = Object.keys(testResults[cat] || {}).filter(
               (k) => k !== 'GeotechData' && k !== 'ManualData'
             );
             const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
+            const { isGeotech, isRegular, forms } = getMaterialAndForms(cat);
             return (
               <TabsContent key={cat} value={cat} className="space-y-6 outline-none mt-0">
-                {!GEOTECH_NAMES.includes(cat) && (
+                {isRegular && (
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-gray-800">{cat} Test Data</h4>
+                    <h4 className="text-sm font-bold text-gray-800">
+                      {materialName || cat} Test Data
+                    </h4>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -341,17 +390,17 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                           className="h-8 text-xs"
                         >
                           <Edit className="w-3 h-3 mr-1" />
-                          Edit {cat} Test Data
+                          Edit {materialName || cat} Test Data
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                        <p className="text-xs">Open data entry form for {cat}</p>
+                        <p className="text-xs">Open data entry form for {materialName || cat}</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
-                  {GEOTECH_NAMES.includes(cat) && (
+                  {isGeotech && (
                     <div className="bg-white p-6 rounded-none border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full md:col-span-2 lg:col-span-3">
                       <div>
                         <div className="flex items-center justify-between mb-0">
@@ -367,11 +416,13 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                 className="h-8 text-xs"
                               >
                                 <Edit className="w-3 h-3 mr-1" />
-                                Edit {cat} Test Data
+                                Edit {materialName || cat} Test Data
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent className="bg-gray-900 text-white border-gray-800">
-                              <p className="text-xs">Open data entry form for {cat}</p>
+                              <p className="text-xs">
+                                Open data entry form for {materialName || cat}
+                              </p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
@@ -582,16 +633,19 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
 
                                     if (normalizedSbcDetails.length === 0) return null;
 
+                                    const resolvedName = materialName || cat;
                                     const soilSbcs = normalizedSbcDetails.filter(
                                       ({ d }) =>
                                         d &&
-                                        (cat === 'Soil' ||
+                                        (resolvedName === 'Soil' ||
                                           d.foundationType === 'Soil' ||
-                                          (cat === 'Soil and Rock' && d.foundationType !== 'Rock'))
+                                          (resolvedName === 'Soil and Rock' &&
+                                            d.foundationType !== 'Rock'))
                                     );
                                     const rockSbcs = normalizedSbcDetails.filter(
                                       ({ d }) =>
-                                        d && (cat === 'Rock' || d.foundationType === 'Rock')
+                                        d &&
+                                        (resolvedName === 'Rock' || d.foundationType === 'Rock')
                                     );
 
                                     const renderSbcTable = (isRock, rows) => {
@@ -1125,7 +1179,9 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
           <DialogHeader className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
             <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-800">
               <FlaskConical className="w-5 h-5 text-primary" />
-              {selectedCategory} Test Data Entry
+              {materials.find((m) => String(m.id) === String(selectedCategory))?.name ||
+                selectedCategory}{' '}
+              Test Data Entry
             </DialogTitle>
           </DialogHeader>
           {selectedCategory && (
@@ -1134,7 +1190,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                 {selectedCategory && (
                   <div className="space-y-4">
                     {/* Entry Mode Selection - Only for Geotech categories */}
-                    {GEOTECH_NAMES.includes(selectedCategory) && (
+                    {getMaterialAndForms(selectedCategory).isGeotech && (
                       <div className="flex items-center gap-4 p-2 bg-gray-50 rounded-xl border border-gray-100">
                         <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                           Entry Mode
@@ -1186,14 +1242,18 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                     )}
 
                     {/* Drilling Form (Geotech Only) */}
-                    {GEOTECH_NAMES.includes(selectedCategory) && (
+                    {getMaterialAndForms(selectedCategory).isGeotech && (
                       <div className="space-y-4 rounded-xl border border-gray-100 p-4 bg-white shadow-sm mb-4">
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2 mb-2">
                           Geotechnical Inputs
                         </h3>
                         <GeotechTestForm
-                          materialCategory={selectedCategory}
+                          materialCategory={
+                            materials.find((m) => String(m.id) === String(selectedCategory))
+                              ?.name || selectedCategory
+                          }
                           value={testResults[selectedCategory]?.['GeotechData'] || {}}
+                          enabledForms={getMaterialAndForms(selectedCategory).forms}
                           onChange={(val) => {
                             console.log('[GeotechTestForm onChange] maxDepths:', val?.maxDepths);
                             setTestResults((prev) => ({
@@ -1209,12 +1269,17 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                     )}
 
                     {/* Regular Tests (non-geotech categories only) */}
-                    {!GEOTECH_NAMES.includes(selectedCategory) && (
+                    {getMaterialAndForms(selectedCategory).isRegular && (
                       <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {(() => {
+                            const materialName = materials.find(
+                              (m) => String(m.id) === String(selectedCategory)
+                            )?.name;
                             const assignedTestTypes =
-                              (jobDetails.test_types || {})[selectedCategory] || [];
+                              (jobDetails.test_types || {})[selectedCategory] ||
+                              (materialName ? (jobDetails.test_types || {})[materialName] : []) ||
+                              [];
                             const dataTestTypes = Object.keys(
                               testResults[selectedCategory] || {}
                             ).filter((k) => k !== 'GeotechData' && k !== 'ManualData');
