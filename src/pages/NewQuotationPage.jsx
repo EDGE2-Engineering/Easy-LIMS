@@ -1914,44 +1914,66 @@ const NewQuotationPage = () => {
 
   const paginateTerms = () => {
     if (!derivedTcTypes || derivedTcTypes.length === 0) {
-      return [
-        {
-          items: [],
-          pageNumber: 1,
-          isFirstPage: true,
-        },
-      ]; // Empty page if nothing selected
+      return [{ items: [], pageNumber: 1, isFirstPage: true }];
     }
 
-    const pages = [];
+    // Height constants (match paginatePaymentTerms)
+    const PAGE_HEIGHT = 1070;
+    const FOOTER_HEIGHT = 30;
+    // "Terms & Conditions" h2 heading + mb-4: ~38px
+    const PAGE_TITLE_HEIGHT = 38;
+    const USABLE_HEIGHT = PAGE_HEIGHT - FOOTER_HEIGHT - PAGE_TITLE_HEIGHT;
 
+    const CHARS_PER_LINE = 95;
+    const LINE_HEIGHT = 18;
+    const ITEM_MARGIN = 8;  // mb-2
+    const HEADER_HEIGHT = 28;
+
+    const estimateItemHeight = (text) => {
+      const lines = (text || '').split('\n');
+      let lineCount = 0;
+      lines.forEach((line) => {
+        lineCount += Math.max(1, Math.ceil((line.length || 1) / CHARS_PER_LINE));
+      });
+      return lineCount * LINE_HEIGHT + ITEM_MARGIN;
+    };
+
+    // Build a flat ordered list across all selected types
+    const allItems = [];
     derivedTcTypes.forEach((type) => {
-      const pageItems = [];
       const typeTerms = terms.filter((t) => t.type === type);
-      if (typeTerms.length > 0) {
-        if (type !== 'general' && type !== 'General') {
-          pageItems.push({ type: 'header', text: type, id: `header-${type}` });
-        }
-        typeTerms.forEach((term) => {
-          pageItems.push({ type: 'term', text: term.text, id: term.id });
-        });
+      if (typeTerms.length === 0) return;
 
-        pages.push({
-          items: pageItems,
-          pageNumber: pages.length + 1,
-          isFirstPage: pages.length === 0,
-        });
+      if (type !== 'general' && type !== 'General') {
+        allItems.push({ type: 'header', text: type, id: `header-${type}`, height: HEADER_HEIGHT });
       }
+      typeTerms.forEach((term) => {
+        allItems.push({ type: 'term', text: term.text, id: term.id, height: estimateItemHeight(term.text) });
+      });
     });
 
-    if (pages.length === 0) {
-      return [
-        {
-          items: [],
-          pageNumber: 1,
-          isFirstPage: true,
-        },
-      ];
+    if (allItems.length === 0) {
+      return [{ items: [], pageNumber: 1, isFirstPage: true }];
+    }
+
+    // Pack into pages by height budget
+    const pages = [];
+    let currentPageItems = [];
+    let currentHeight = 0;
+
+    allItems.forEach((item) => {
+      const fits = currentHeight + item.height <= USABLE_HEIGHT;
+      if (!fits && currentPageItems.length > 0) {
+        pages.push({ items: currentPageItems, pageNumber: pages.length + 1, isFirstPage: pages.length === 0 });
+        currentPageItems = [];
+        currentHeight = 0;
+      }
+      currentPageItems.push(item);
+      currentHeight += item.height;
+    });
+
+    if (currentPageItems.length > 0) {
+      pages.push({ items: currentPageItems, pageNumber: pages.length + 1, isFirstPage: pages.length === 0 });
     }
 
     return pages;
@@ -1989,31 +2011,76 @@ const NewQuotationPage = () => {
       return [];
     }
 
-    const pages = [];
     const edits = quoteDetails.paymentTermsEdits || {};
 
-    derivedPaymentTermsTypes.forEach((type) => {
-      const pageItems = [];
-      const typePay = (paymentTerms || []).filter((t) => t.type === type);
-      if (typePay.length > 0) {
-        if (type !== 'general' && type !== 'General') {
-          pageItems.push({ type: 'header', text: type, id: `header-${type}` });
-        }
-        typePay.forEach((pay) => {
-          pageItems.push({
-            type: 'pay',
-            text: edits[pay.id] !== undefined ? edits[pay.id] : pay.text,
-            id: pay.id,
-          });
-        });
+    // A4 content height budget (matches paginateItems constants)
+    const PAGE_HEIGHT = 1070;
+    const FOOTER_HEIGHT = 30;
+    // "Payment Terms" h2 heading + mb-6: ~40px rendered height
+    const PAGE_TITLE_HEIGHT = 40;
+    const USABLE_HEIGHT = PAGE_HEIGHT - FOOTER_HEIGHT - PAGE_TITLE_HEIGHT;
 
+    // Height estimators (text-xs = 12px font, ~18px line-height; content column ~95 chars wide)
+    const CHARS_PER_LINE = 95;
+    const LINE_HEIGHT = 18; // px per line of text-xs leading-relaxed
+    const ITEM_MARGIN = 4;  // mb-1 below each item
+    const HEADER_HEIGHT = 28; // h3 bold + border-l + mb-2
+
+    const estimateItemHeight = (text) => {
+      const lines = (text || '').split('\n');
+      let lineCount = 0;
+      lines.forEach((line) => {
+        lineCount += Math.max(1, Math.ceil((line.length || 1) / CHARS_PER_LINE));
+      });
+      return lineCount * LINE_HEIGHT + ITEM_MARGIN;
+    };
+
+    // Build a flat ordered list of all items across all selected types
+    const allItems = [];
+    derivedPaymentTermsTypes.forEach((type) => {
+      const typePay = (paymentTerms || []).filter((t) => t.type === type);
+      if (typePay.length === 0) return;
+
+      if (type !== 'general' && type !== 'General') {
+        allItems.push({ type: 'header', text: type, id: `header-${type}`, height: HEADER_HEIGHT });
+      }
+      typePay.forEach((pay) => {
+        const text = edits[pay.id] !== undefined ? edits[pay.id] : pay.text;
+        allItems.push({ type: 'pay', text, id: pay.id, height: estimateItemHeight(text) });
+      });
+    });
+
+    if (allItems.length === 0) return [];
+
+    // Pack items into pages using the height budget — no artificial one-type-per-page boundary
+    const pages = [];
+    let currentPageItems = [];
+    let currentHeight = 0;
+
+    allItems.forEach((item) => {
+      const fits = currentHeight + item.height <= USABLE_HEIGHT;
+      if (!fits && currentPageItems.length > 0) {
+        // Current page is full — start a new one
         pages.push({
-          items: pageItems,
+          items: currentPageItems,
           pageNumber: pages.length + 1,
           isFirstPage: pages.length === 0,
         });
+        currentPageItems = [];
+        currentHeight = 0;
       }
+      currentPageItems.push(item);
+      currentHeight += item.height;
     });
+
+    // Push the last (possibly partial) page
+    if (currentPageItems.length > 0) {
+      pages.push({
+        items: currentPageItems,
+        pageNumber: pages.length + 1,
+        isFirstPage: pages.length === 0,
+      });
+    }
 
     return pages;
   };
@@ -3974,7 +4041,7 @@ const NewQuotationPage = () => {
                               No Terms & Conditions selected.
                             </div>
                           ) : (
-                            <div className="space-y-1">
+                            <div className="space-y-3">
                               {tcPage.items.map((item, idx) => {
                                 if (item.type === 'header') {
                                   return (
@@ -3989,7 +4056,7 @@ const NewQuotationPage = () => {
                                   return (
                                     <div
                                       key={item.id}
-                                      className="flex gap-2 text-xs leading-relaxed mb-1"
+                                      className="flex gap-2 text-xs leading-relaxed mb-2"
                                     >
                                       <span className="whitespace-pre-line pl-2">{item.text}</span>
                                     </div>
