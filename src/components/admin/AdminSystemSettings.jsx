@@ -219,7 +219,7 @@ const AdminSystemSettings = ({ id }) => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-2">
-                    <TestTube className="w-4 h-4" /> Material Forms
+                    <TestTube className="w-4 h-4" /> Testing Input Forms
                   </div>
                 </TooltipTrigger>
                 <TooltipContent className="bg-gray-900 text-white border-gray-800">

@@ -45,12 +45,7 @@ const MaterialsProvider = ({ children }) => {
 
         if (error) throw error;
 
-        // Seed default association for new material
-        if (data && data[0]) {
-          await supabase
-            .from('material_form_associations')
-            .insert([{ material_id: data[0].id, form_type: 'regular' }]);
-        }
+        // No default form associations — user assigns them explicitly via the forms manager
 
         await fetchMaterials();
         return data?.[0];

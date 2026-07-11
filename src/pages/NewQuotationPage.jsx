@@ -237,6 +237,7 @@ const NewQuotationPage = () => {
       selectedTcTypes: [],
       selectedTechTypes: [],
       selectedPaymentTermsTypes: [],
+      paymentTermsEdits: {},
     }),
     [user?.fullName]
   );
@@ -310,27 +311,10 @@ const NewQuotationPage = () => {
   }, [items, quoteDetails.selectedTechTypes]);
 
   const derivedPaymentTermsTypes = useMemo(() => {
-    const itemPaymentTermsTypes = items.flatMap((item) => {
-      if (Array.isArray(item.paymentTermsList) && item.paymentTermsList.length > 0) {
-        return item.paymentTermsList;
-      }
-      // Fallback lookup for historical documents
-      let fallbackList = [];
-      if (item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS) {
-        const matched = (labTests || []).find((t) => String(t.id) === String(item.sourceId));
-        if (matched) fallbackList = matched.paymentTermsList || [];
-      } else if (item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS) {
-        const matched = (fieldTests || []).find((t) => String(t.id) === String(item.sourceId));
-        if (matched) fallbackList = matched.paymentTermsList || [];
-      } else if (item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING) {
-        const matched = (samplingData || []).find((t) => String(t.id) === String(item.sourceId));
-        if (matched) fallbackList = matched.paymentTermsList || [];
-      }
-      return fallbackList;
-    });
-    const legacyPaymentTermsTypes = quoteDetails.selectedPaymentTermsTypes || [];
-    return [...new Set([...itemPaymentTermsTypes, ...legacyPaymentTermsTypes])];
-  }, [items, quoteDetails.selectedPaymentTermsTypes, labTests, fieldTests, samplingData]);
+    // Payment terms are always driven by the explicit document-level selection only.
+    // Terms associated with individual lab tests, field tests, or sampling items are ignored.
+    return [...new Set(quoteDetails.selectedPaymentTermsTypes || [])];
+  }, [quoteDetails.selectedPaymentTermsTypes]);
 
   // Navigation guard for unsaved changes (Browser back/forward/links)
   const isDirty = useMemo(() => {
@@ -2006,6 +1990,7 @@ const NewQuotationPage = () => {
     }
 
     const pages = [];
+    const edits = quoteDetails.paymentTermsEdits || {};
 
     derivedPaymentTermsTypes.forEach((type) => {
       const pageItems = [];
@@ -2015,7 +2000,11 @@ const NewQuotationPage = () => {
           pageItems.push({ type: 'header', text: type, id: `header-${type}` });
         }
         typePay.forEach((pay) => {
-          pageItems.push({ type: 'pay', text: pay.text, id: pay.id });
+          pageItems.push({
+            type: 'pay',
+            text: edits[pay.id] !== undefined ? edits[pay.id] : pay.text,
+            id: pay.id,
+          });
         });
 
         pages.push({
@@ -2791,6 +2780,64 @@ const NewQuotationPage = () => {
                 >
                   Add Item
                 </Button>
+              </div>
+            </div>
+
+            {/* Payment Terms and Conditions Card */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
+              <h2 className="text-lg font-semibold mb-4 flex items-center text-gray-900">
+                <CreditCard className="w-5 h-5 mr-2 text-primary" />
+                Payment Terms and Conditions
+              </h2>
+              <div className="space-y-3">
+                <div>
+                  <Label>Select Payment Terms</Label>
+                  <ReactSelect
+                    className="mt-1"
+                    classNamePrefix="react-select"
+                    isMulti
+                    isDisabled={isReadOnly}
+                    options={[
+                      ...new Map(
+                        (paymentTerms || []).map((pt) => [pt.type, { value: pt.type, label: pt.type }])
+                      ).values(),
+                    ]}
+                    value={(quoteDetails.selectedPaymentTermsTypes || []).map((t) => ({
+                      value: t,
+                      label: t,
+                    }))}
+                    onChange={(selected) =>
+                      setQuoteDetails({
+                        ...quoteDetails,
+                        selectedPaymentTermsTypes: selected ? selected.map((s) => s.value) : [],
+                      })
+                    }
+                    placeholder="Select payment term keys..."
+                    isClearable
+                    styles={themedReactSelectStyles({ minHeight: '44px', borderRadius: '0.75rem' })}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Selected terms will appear as pages in the document preview.
+                  </p>
+                </div>
+
+                {/* Selected terms preview list */}
+                {(quoteDetails.selectedPaymentTermsTypes || []).length > 0 && (
+                  <div className="space-y-1 pt-1">
+                    {(quoteDetails.selectedPaymentTermsTypes || []).map((type) => {
+                      const count = (paymentTerms || []).filter((pt) => pt.type === type).length;
+                      return (
+                        <div
+                          key={type}
+                          className="flex items-center justify-between text-xs bg-gray-50 rounded-lg px-3 py-2 border border-gray-100"
+                        >
+                          <span className="font-medium text-gray-800">{type}</span>
+                          <span className="text-gray-400">{count} item{count !== 1 ? 's' : ''}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -3840,9 +3887,21 @@ const NewQuotationPage = () => {
                               return (
                                 <div
                                   key={item.id}
-                                  className="text-xs text-gray-700 leading-relaxed mb-1 pl-2"
+                                  className={`text-xs text-gray-700 leading-relaxed mb-1 pl-2 whitespace-pre-wrap outline-none ${!isReadOnly ? 'hover:bg-[#f9fafb] focus:bg-[#ffffff] focus:ring-1 focus:ring-[#e5e7eb] rounded p-1 transition-colors' : ''}`}
+                                  contentEditable={!isReadOnly}
+                                  suppressContentEditableWarning
+                                  onBlur={(e) => {
+                                    const edited = e.currentTarget.innerText;
+                                    setQuoteDetails((prev) => ({
+                                      ...prev,
+                                      paymentTermsEdits: {
+                                        ...(prev.paymentTermsEdits || {}),
+                                        [item.id]: edited,
+                                      },
+                                    }));
+                                  }}
                                 >
-                                  <p className="whitespace-pre-wrap">{item.text}</p>
+                                  {item.text}
                                 </div>
                               );
                             } else if (item.type === 'spacer') {
