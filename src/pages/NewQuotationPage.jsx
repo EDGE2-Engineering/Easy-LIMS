@@ -1926,7 +1926,7 @@ const NewQuotationPage = () => {
 
     const CHARS_PER_LINE = 95;
     const LINE_HEIGHT = 18;
-    const ITEM_MARGIN = 8;  // mb-2
+    const ITEM_MARGIN = 8; // mb-2
     const HEADER_HEIGHT = 28;
 
     const estimateItemHeight = (text) => {
@@ -1948,7 +1948,12 @@ const NewQuotationPage = () => {
         allItems.push({ type: 'header', text: type, id: `header-${type}`, height: HEADER_HEIGHT });
       }
       typeTerms.forEach((term) => {
-        allItems.push({ type: 'term', text: term.text, id: term.id, height: estimateItemHeight(term.text) });
+        allItems.push({
+          type: 'term',
+          text: term.text,
+          id: term.id,
+          height: estimateItemHeight(term.text),
+        });
       });
     });
 
@@ -1964,7 +1969,11 @@ const NewQuotationPage = () => {
     allItems.forEach((item) => {
       const fits = currentHeight + item.height <= USABLE_HEIGHT;
       if (!fits && currentPageItems.length > 0) {
-        pages.push({ items: currentPageItems, pageNumber: pages.length + 1, isFirstPage: pages.length === 0 });
+        pages.push({
+          items: currentPageItems,
+          pageNumber: pages.length + 1,
+          isFirstPage: pages.length === 0,
+        });
         currentPageItems = [];
         currentHeight = 0;
       }
@@ -1973,7 +1982,11 @@ const NewQuotationPage = () => {
     });
 
     if (currentPageItems.length > 0) {
-      pages.push({ items: currentPageItems, pageNumber: pages.length + 1, isFirstPage: pages.length === 0 });
+      pages.push({
+        items: currentPageItems,
+        pageNumber: pages.length + 1,
+        isFirstPage: pages.length === 0,
+      });
     }
 
     return pages;
@@ -2023,7 +2036,7 @@ const NewQuotationPage = () => {
     // Height estimators (text-xs = 12px font, ~18px line-height; content column ~95 chars wide)
     const CHARS_PER_LINE = 95;
     const LINE_HEIGHT = 18; // px per line of text-xs leading-relaxed
-    const ITEM_MARGIN = 4;  // mb-1 below each item
+    const ITEM_MARGIN = 4; // mb-1 below each item
     const HEADER_HEIGHT = 28; // h3 bold + border-l + mb-2
 
     const estimateItemHeight = (text) => {
@@ -2866,7 +2879,10 @@ const NewQuotationPage = () => {
                     isDisabled={isReadOnly}
                     options={[
                       ...new Map(
-                        (paymentTerms || []).map((pt) => [pt.type, { value: pt.type, label: pt.type }])
+                        (paymentTerms || []).map((pt) => [
+                          pt.type,
+                          { value: pt.type, label: pt.type },
+                        ])
                       ).values(),
                     ]}
                     value={(quoteDetails.selectedPaymentTermsTypes || []).map((t) => ({
@@ -2899,7 +2915,9 @@ const NewQuotationPage = () => {
                           className="flex items-center justify-between text-xs bg-gray-50 rounded-lg px-3 py-2 border border-gray-100"
                         >
                           <span className="font-medium text-gray-800">{type}</span>
-                          <span className="text-gray-400">{count} item{count !== 1 ? 's' : ''}</span>
+                          <span className="text-gray-400">
+                            {count} item{count !== 1 ? 's' : ''}
+                          </span>
                         </div>
                       );
                     })}

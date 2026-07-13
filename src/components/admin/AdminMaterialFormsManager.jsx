@@ -345,7 +345,9 @@ const AdminMaterialFormsManager = () => {
             .map((m) => {
               const isSelected = String(m.id) === String(selectedMaterialId);
               const count = materialFormAssociations.filter(
-                (a) => String(a.material_id) === String(m.id) && FORM_TYPES.some((ft) => ft.id === a.form_type)
+                (a) =>
+                  String(a.material_id) === String(m.id) &&
+                  FORM_TYPES.some((ft) => ft.id === a.form_type)
               ).length;
               return (
                 <button
@@ -361,7 +363,9 @@ const AdminMaterialFormsManager = () => {
                   {count > 0 && (
                     <span
                       className={`text-[10px] px-2 py-0.5 rounded-full ${
-                        isSelected ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-500 font-bold'
+                        isSelected
+                          ? 'bg-white/20 text-white'
+                          : 'bg-gray-200 text-gray-500 font-bold'
                       }`}
                     >
                       {count} {count === 1 ? 'form' : 'forms'}
