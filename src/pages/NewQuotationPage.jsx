@@ -2294,7 +2294,27 @@ const NewQuotationPage = () => {
                     disabled={isReadOnly}
                     className="w-full"
                   />
-                  <div className="flex items-center space-x-2 pt-2">
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <div>
+                  <Label>GST Type</Label>
+                  <Select
+                    value={isInterstate ? 'IGST' : 'CGST+SGST'}
+                    onValueChange={(val) => setIsInterstate(val === 'IGST')}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select GST Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CGST+SGST">CGST+SGST</SelectItem>
+                      <SelectItem value="IGST">IGST</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end pb-2">
+                  <div className="flex items-center space-x-2">
                     <Checkbox
                       id="discountShow"
                       checked={discountShow}
@@ -2307,7 +2327,7 @@ const NewQuotationPage = () => {
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 mt-2">
                 <div className="flex items-center space-x-2 pt-2">
                   <Checkbox
                     id="daysShow"
