@@ -2,12 +2,13 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { IndianRupee, ClipboardCheck, CheckCircle2, ShieldCheck, Calendar } from 'lucide-react';
+import { IndianRupee, ClipboardCheck, CheckCircle2, ShieldCheck, Calendar, TrendingUp } from 'lucide-react';
 
 import { usePermissions } from '@/hooks/usePermissions';
 import { VIEWS } from '@/data/config';
 
 import ExpensesManager from './ExpensesManager';
+import BusinessInsightsManager from './BusinessInsightsManager';
 import LeavesManager from './LeavesManager';
 import ApprovalsManager from './ApprovalsManager';
 import AuditLogsManager from './AuditLogsManager';
@@ -25,6 +26,14 @@ const AdminOrganizationSettings = ({ id }) => {
       view: VIEWS.EXPENSES,
       component: ExpensesManager,
       description: 'Manage company expenses',
+    },
+    {
+      id: 'insights',
+      label: 'Business Insights',
+      icon: TrendingUp,
+      view: VIEWS.SETTINGS,
+      component: BusinessInsightsManager,
+      description: 'Analytical dashboards for invoicing, expenditures, and quotations',
     },
     {
       id: 'leaves',
