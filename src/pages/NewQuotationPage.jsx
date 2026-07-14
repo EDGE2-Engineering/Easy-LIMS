@@ -461,7 +461,7 @@ const NewQuotationPage = () => {
               parsed.quoteDetails.generatedBy = user.fullName;
               return JSON.stringify(parsed);
             }
-          } catch (e) {}
+          } catch (e) { }
           return prevSaved;
         });
 
@@ -767,7 +767,7 @@ const NewQuotationPage = () => {
                     parsed.quoteDetails = newDetails;
                     return JSON.stringify(parsed);
                   }
-                } catch (e) {}
+                } catch (e) { }
                 return prevSaved;
               });
 
@@ -1393,10 +1393,10 @@ const NewQuotationPage = () => {
         // Include new service fields if it's a service
         ...(newItemType === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS && itemData
           ? {
-              methodOfSampling: itemData.methodOfSampling || itemData.method_of_sampling || 'NA',
-              numBHs: itemData.numBHs ?? itemData.num_bhs ?? 0,
-              measure: itemData.measure || 'NA',
-            }
+            methodOfSampling: itemData.methodOfSampling || itemData.method_of_sampling || 'NA',
+            numBHs: itemData.numBHs ?? itemData.num_bhs ?? 0,
+            measure: itemData.measure || 'NA',
+          }
           : {}),
       };
 
@@ -1492,10 +1492,10 @@ const NewQuotationPage = () => {
           packageName: packageData.name,
           ...(pkgItem.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS && itemData
             ? {
-                methodOfSampling: itemData.methodOfSampling || itemData.method_of_sampling || 'NA',
-                numBHs: itemData.numBHs ?? itemData.num_bhs ?? 0,
-                measure: itemData.measure || 'NA',
-              }
+              methodOfSampling: itemData.methodOfSampling || itemData.method_of_sampling || 'NA',
+              numBHs: itemData.numBHs ?? itemData.num_bhs ?? 0,
+              measure: itemData.measure || 'NA',
+            }
             : {}),
         });
       }
@@ -1546,10 +1546,10 @@ const NewQuotationPage = () => {
       prev.map((item) =>
         item.id === rowId
           ? {
-              ...item,
-              price: newPrice,
-              total: newPrice * Number(item.qty || 0),
-            }
+            ...item,
+            price: newPrice,
+            total: newPrice * Number(item.qty || 0),
+          }
           : item
       )
     );
@@ -1571,10 +1571,10 @@ const NewQuotationPage = () => {
       prev.map((item) =>
         item.id === rowId
           ? {
-              ...item,
-              qty: newQty,
-              total: Number(item.price || 0) * newQty,
-            }
+            ...item,
+            qty: newQty,
+            total: Number(item.price || 0) * newQty,
+          }
           : item
       )
     );
@@ -1596,10 +1596,10 @@ const NewQuotationPage = () => {
       prev.map((item) =>
         item.id === rowId
           ? {
-              ...item,
-              numDays: newNumDays,
-              total: Number(item.price || 0) * Number(item.qty || 0),
-            }
+            ...item,
+            numDays: newNumDays,
+            total: Number(item.price || 0) * Number(item.qty || 0),
+          }
           : item
       )
     );
@@ -2243,7 +2243,7 @@ const NewQuotationPage = () => {
                   <SelectTrigger
                     className={cn(
                       (!!searchParams.get('type') || !!savedRecordId) &&
-                        'bg-gray-100 cursor-not-allowed'
+                      'bg-gray-100 cursor-not-allowed'
                     )}
                   >
                     <SelectValue placeholder="Select Type" />
@@ -2744,9 +2744,9 @@ const NewQuotationPage = () => {
                         value={
                           selectedPackageId
                             ? {
-                                value: selectedPackageId,
-                                label: packages.find((p) => p.id === selectedPackageId)?.name,
-                              }
+                              value: selectedPackageId,
+                              label: packages.find((p) => p.id === selectedPackageId)?.name,
+                            }
                             : null
                         }
                         onChange={(option) => setSelectedPackageId(option ? option.value : '')}
@@ -2814,9 +2814,9 @@ const NewQuotationPage = () => {
                     value={
                       selectedItemId
                         ? {
-                            value: selectedItemId,
-                            label: getSelectedItemDisplayLabel(),
-                          }
+                          value: selectedItemId,
+                          label: getSelectedItemDisplayLabel(),
+                        }
                         : null
                     }
                     onChange={(option) => setSelectedItemId(option ? option.value : '')}
@@ -2855,11 +2855,11 @@ const NewQuotationPage = () => {
                       value={
                         targetPackageGroupId
                           ? {
-                              value: targetPackageGroupId,
-                              label: uniquePackageGroups.find(
-                                (g) => g.packageGroupId === targetPackageGroupId
-                              )?.packageName,
-                            }
+                            value: targetPackageGroupId,
+                            label: uniquePackageGroups.find(
+                              (g) => g.packageGroupId === targetPackageGroupId
+                            )?.packageName,
+                          }
                           : { value: '', label: 'None (Add as Independent Item)' }
                       }
                       onChange={(option) => setTargetPackageGroupId(option ? option.value : '')}
@@ -3054,13 +3054,12 @@ const NewQuotationPage = () => {
 
                             {/* Client, Contractor, Project Details - Columns */}
                             <div
-                              className={`grid ${
-                                quoteDetails.contractorName &&
+                              className={`grid ${quoteDetails.contractorName &&
                                 quoteDetails.contractorName.trim() &&
                                 quoteDetails.contractorName.trim() !== '-'
-                                  ? 'grid-cols-3'
-                                  : 'grid-cols-2'
-                              } gap-6 mb-2 text-sm py-0 border-b`}
+                                ? 'grid-cols-3'
+                                : 'grid-cols-2'
+                                } gap-6 mb-2 text-sm py-0 border-b`}
                             >
                               {/* Column 1: Client */}
                               <div className="space-y-1">
@@ -3338,8 +3337,8 @@ const NewQuotationPage = () => {
                                     className={cn(
                                       'border-b border-gray-50 transition-colors',
                                       item.packageGroupId &&
-                                        hoveredPackageGroupId === item.packageGroupId &&
-                                        'bg-red-50/70'
+                                      hoveredPackageGroupId === item.packageGroupId &&
+                                      'bg-red-50/70'
                                     )}
                                     onMouseEnter={() =>
                                       item.packageGroupId &&
@@ -3493,8 +3492,8 @@ const NewQuotationPage = () => {
                                         )}
                                       >
                                         {item.type === DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS ||
-                                        item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS ||
-                                        item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING ? (
+                                          item.type === DOCUMENT_ITEM_TYPE_KEYS.LAB_TESTS ||
+                                          item.type === DOCUMENT_ITEM_TYPE_KEYS.SAMPLING ? (
                                           <span
                                             contentEditable={!isReadOnly}
                                             suppressContentEditableWarning
@@ -3655,8 +3654,8 @@ const NewQuotationPage = () => {
                                     <Rupee />
                                     {roundAmount(
                                       calculateTotal() *
-                                        (1 - discount / 100) *
-                                        (1 + taxTotalPercent / 100)
+                                      (1 - discount / 100) *
+                                      (1 + taxTotalPercent / 100)
                                     ).toLocaleString()}
                                   </span>
                                 </div>
@@ -3678,9 +3677,9 @@ const NewQuotationPage = () => {
                                           <Rupee />
                                           {roundAmount(
                                             calculateTotal() *
-                                              (1 - discount / 100) *
-                                              (1 + taxTotalPercent / 100) -
-                                              Number(quoteDetails.paymentAmount)
+                                            (1 - discount / 100) *
+                                            (1 + taxTotalPercent / 100) -
+                                            Number(quoteDetails.paymentAmount)
                                           ).toLocaleString()}
                                         </span>
                                       </div>
@@ -3692,8 +3691,8 @@ const NewQuotationPage = () => {
                                     {numberToWords(
                                       roundAmount(
                                         calculateTotal() *
-                                          (1 - discount / 100) *
-                                          (1 + taxTotalPercent / 100)
+                                        (1 - discount / 100) *
+                                        (1 + taxTotalPercent / 100)
                                       )
                                     )}{' '}
                                     /-
@@ -3981,12 +3980,13 @@ const NewQuotationPage = () => {
                           {page.items.map((item) => {
                             if (item.type === 'header') {
                               return (
-                                <h3
-                                  key={item.id}
-                                  className="font-bold text-sm text-gray-800 border-l-4 border-primary pl-2 mb-2"
-                                >
-                                  {item.text}
-                                </h3>
+                                // <h3
+                                //   key={item.id}
+                                //   className="hidden font-bold text-sm text-gray-800 border-l-4 border-primary pl-2 mb-2"
+                                // >
+                                //   {item.text}
+                                // </h3>
+                                <hr color="black" />
                               );
                             } else if (item.type === 'pay') {
                               return (
