@@ -20,6 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Dialog,
@@ -68,6 +70,7 @@ import {
   ListOrdered,
   History,
   Eye,
+  ChevronDown,
 } from 'lucide-react';
 
 const RichTextEditor = ({ content, onChange }) => {
@@ -152,6 +155,107 @@ const RichTextEditor = ({ content, onChange }) => {
   );
 };
 
+const StatusMultiSelect = ({ selected, onChange }) => {
+  const statuses = ['Open', 'In Progress', 'Resolved', 'Invalid Requirement', 'Closed'];
+
+  const toggleStatus = (status) => {
+    if (selected.includes(status)) {
+      onChange(selected.filter((s) => s !== status));
+    } else {
+      onChange([...selected, status]);
+    }
+  };
+
+  const selectAll = () => {
+    onChange(statuses);
+  };
+
+  const selectNone = () => {
+    onChange([]);
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="w-full min-h-[40px] px-3 py-1.5 text-sm bg-gray-50 border border-transparent hover:border-gray-200 rounded-xl flex items-center justify-between text-left transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
+        >
+          <div className="flex flex-wrap gap-1 items-center max-w-[90%]">
+            {selected.length === 0 ? (
+              <span className="text-gray-400 font-semibold">Select Statuses</span>
+            ) : selected.length === statuses.length ? (
+              <span className="text-gray-700 dark:text-gray-300 font-semibold">All Statuses</span>
+            ) : (
+              selected.map((status) => (
+                <Badge
+                  key={status}
+                  variant="secondary"
+                  className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-gray-200/65 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-none flex items-center gap-1"
+                >
+                  {status}
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleStatus(status);
+                    }}
+                    className="hover:bg-gray-300 dark:hover:bg-gray-700 rounded-full p-0.5 cursor-pointer"
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </span>
+                </Badge>
+              ))
+            )}
+          </div>
+          <ChevronDown className="w-4 h-4 text-gray-400 shrink-0 ml-2" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[280px] p-2 bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 shadow-xl rounded-2xl" align="start">
+        <div className="flex items-center justify-between px-2 py-1.5 border-b border-gray-100 dark:border-slate-800 mb-1">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Statuses</span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={selectAll}
+              className="text-[10px] font-bold text-primary hover:underline"
+            >
+              Select All
+            </button>
+            <button
+              type="button"
+              onClick={selectNone}
+              className="text-[10px] font-bold text-gray-400 hover:text-red-500 hover:underline"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+        <div className="space-y-0.5">
+          {statuses.map((status) => {
+            const isChecked = selected.includes(status);
+            return (
+              <div
+                key={status}
+                onClick={() => toggleStatus(status)}
+                className="flex items-center gap-2.5 px-2 py-2 hover:bg-gray-50 dark:hover:bg-slate-800/60 rounded-lg cursor-pointer transition-colors"
+              >
+                <Checkbox
+                  checked={isChecked}
+                  onCheckedChange={() => {}}
+                  className="pointer-events-none rounded-md border-gray-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                />
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  {status}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 export default function AdminTicketsManager({ id: propId }) {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
@@ -209,7 +313,7 @@ export default function AdminTicketsManager({ id: propId }) {
 
   // Search / Filter / Sort / Pagination States
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState(['Open', 'In Progress']);
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [deptFilter, setDeptFilter] = useState('all');
   const [authorFilter, setAuthorFilter] = useState('all');
@@ -791,7 +895,7 @@ export default function AdminTicketsManager({ id: propId }) {
 
   const resetAll = () => {
     setSearchTerm('');
-    setStatusFilter('all');
+    setStatusFilter(['Open', 'In Progress', 'Invalid Requirement', 'Closed']);
     setPriorityFilter('all');
     setDeptFilter('all');
     setAuthorFilter('all');
@@ -818,7 +922,7 @@ export default function AdminTicketsManager({ id: propId }) {
     )
       return false;
 
-    if (statusFilter !== 'all' && ticket.status !== statusFilter) return false;
+    if (!statusFilter.includes(ticket.status)) return false;
     if (priorityFilter !== 'all' && ticket.priority !== priorityFilter) return false;
     if (deptFilter !== 'all' && ticket.department !== deptFilter) return false;
     if (authorFilter === 'me' && ticket.created_by !== user.id) return false;
@@ -931,10 +1035,13 @@ export default function AdminTicketsManager({ id: propId }) {
     }
   };
 
+  const defaultStatuses = ['Open', 'In Progress', 'Invalid Requirement', 'Closed'];
+  const isStatusFilterActive = statusFilter.length !== defaultStatuses.length || !statusFilter.every(s => defaultStatuses.includes(s));
+
   const hasActiveFilters =
     fromDate ||
     toDate ||
-    statusFilter !== 'all' ||
+    isStatusFilterActive ||
     priorityFilter !== 'all' ||
     deptFilter !== 'all' ||
     authorFilter !== 'all' ||
@@ -2452,19 +2559,7 @@ export default function AdminTicketsManager({ id: propId }) {
               <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                 Status
               </Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="Open">Open</SelectItem>
-                  <SelectItem value="In Progress">In Progress</SelectItem>
-                  <SelectItem value="Resolved">Resolved</SelectItem>
-                  <SelectItem value="Invalid Requirement">Invalid Requirement</SelectItem>
-                  <SelectItem value="Closed">Closed</SelectItem>
-                </SelectContent>
-              </Select>
+              <StatusMultiSelect selected={statusFilter} onChange={setStatusFilter} />
             </div>
 
             {/* Priority */}
