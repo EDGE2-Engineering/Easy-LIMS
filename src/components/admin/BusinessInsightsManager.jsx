@@ -323,6 +323,10 @@ const BusinessInsightsManager = () => {
     const expenseSums = monthLabels.map(() => 0);
     const quotationSums = monthLabels.map(() => 0);
 
+    const clientMap = new Map(clients.map((c) => [String(c.id), c.client_name]));
+    const clientInvoiceMap = {};
+    const clientQuotationMap = {};
+
     // Sum Invoices
     invoices.forEach((inv) => {
       if (filterClient !== 'all' && String(inv.client_id) !== String(filterClient)) {
@@ -330,11 +334,14 @@ const BusinessInsightsManager = () => {
       }
       const dateStr = inv.created_at?.split('T')[0] || '';
       if (dateStr >= startBound && dateStr <= endBound) {
+        const docTotal = calculateDocTotal(inv);
         const key = dateStr.substring(0, 7); // "YYYY-MM"
         const idx = monthLabels.findIndex((m) => m.key === key);
         if (idx !== -1) {
-          invoiceSums[idx] += calculateDocTotal(inv);
+          invoiceSums[idx] += docTotal;
         }
+        const clientName = clientMap.get(String(inv.client_id)) || 'Unknown Client';
+        clientInvoiceMap[clientName] = (clientInvoiceMap[clientName] || 0) + docTotal;
       }
     });
 
@@ -345,11 +352,14 @@ const BusinessInsightsManager = () => {
       }
       const dateStr = quote.created_at?.split('T')[0] || '';
       if (dateStr >= startBound && dateStr <= endBound) {
+        const docTotal = calculateDocTotal(quote);
         const key = dateStr.substring(0, 7); // "YYYY-MM"
         const idx = monthLabels.findIndex((m) => m.key === key);
         if (idx !== -1) {
-          quotationSums[idx] += calculateDocTotal(quote);
+          quotationSums[idx] += docTotal;
         }
+        const clientName = clientMap.get(String(quote.client_id)) || 'Unknown Client';
+        clientQuotationMap[clientName] = (clientQuotationMap[clientName] || 0) + docTotal;
       }
     });
 
@@ -373,6 +383,21 @@ const BusinessInsightsManager = () => {
     const totalExpenses = expenseSums.reduce((a, b) => a + b, 0);
     const totalQuotations = quotationSums.reduce((a, b) => a + b, 0);
 
+    // Convert client maps to sorted arrays
+    const invoicesByClient = Object.entries(clientInvoiceMap)
+      .map(([clientName, amount]) => ({ clientName, amount }))
+      .sort((a, b) => b.amount - a.amount);
+
+    const quotationsByClient = Object.entries(clientQuotationMap)
+      .map(([clientName, amount]) => ({ clientName, amount }))
+      .sort((a, b) => b.amount - a.amount);
+
+    const clientInvoiceLabels = invoicesByClient.map((item) => item.clientName);
+    const clientInvoiceData = invoicesByClient.map((item) => item.amount);
+
+    const clientQuotationLabels = quotationsByClient.map((item) => item.clientName);
+    const clientQuotationData = quotationsByClient.map((item) => item.amount);
+
     return {
       labels: monthLabels.map((m) => m.label),
       invoiceSums,
@@ -381,8 +406,23 @@ const BusinessInsightsManager = () => {
       totalInvoices,
       totalExpenses,
       totalQuotations,
+      clientInvoiceLabels,
+      clientInvoiceData,
+      clientQuotationLabels,
+      clientQuotationData,
     };
-  }, [invoices, quotations, expenses, monthLabels, filterDateStart, filterDateEnd, taxTotalPercent, taxIGST, filterClient]);
+  }, [
+    invoices,
+    quotations,
+    expenses,
+    clients,
+    monthLabels,
+    filterDateStart,
+    filterDateEnd,
+    taxTotalPercent,
+    taxIGST,
+    filterClient,
+  ]);
 
   if (loading) {
     return (
@@ -641,6 +681,71 @@ const BusinessInsightsManager = () => {
               <InsightBarChart
                 labels={chartDatasets.labels}
                 data={chartDatasets.quotationSums}
+                title="Quoted"
+                color="rgba(16, 185, 129, 0.65)"
+              />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Client Analysis Subheading */}
+      <div className="pt-4 border-t border-gray-100 dark:border-gray-900">
+        <h3 className="text-md font-bold text-gray-800 dark:text-gray-200 tracking-tight flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-primary" /> Client Performance Analysis
+        </h3>
+        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+          Breakdown of total values by individual client
+        </p>
+      </div>
+
+      {/* Client Performance Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Invoice Amounts by Client */}
+        <Card className="border-none shadow-sm bg-white dark:bg-gray-950 rounded-2xl overflow-hidden">
+          <CardHeader className="border-b border-gray-50 bg-gray-50/20 p-5">
+            <CardTitle className="text-sm font-bold text-gray-800 dark:text-gray-200 tracking-tight flex items-center justify-between">
+              <span>Invoice Amounts by Client</span>
+              <Badge className="bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 border-none font-bold">
+                By Client
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-5">
+            {chartDatasets.clientInvoiceLabels.length === 0 ? (
+              <div className="h-[280px] flex items-center justify-center text-xs text-gray-400 italic">
+                No client invoices found in timeframe
+              </div>
+            ) : (
+              <InsightBarChart
+                labels={chartDatasets.clientInvoiceLabels}
+                data={chartDatasets.clientInvoiceData}
+                title="Invoiced"
+                color="rgba(99, 102, 241, 0.65)"
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Quotation Amounts by Client */}
+        <Card className="border-none shadow-sm bg-white dark:bg-gray-950 rounded-2xl overflow-hidden">
+          <CardHeader className="border-b border-gray-50 bg-gray-50/20 p-5">
+            <CardTitle className="text-sm font-bold text-gray-800 dark:text-gray-200 tracking-tight flex items-center justify-between">
+              <span>Quotation Amounts by Client</span>
+              <Badge className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-none font-bold">
+                By Client
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-5">
+            {chartDatasets.clientQuotationLabels.length === 0 ? (
+              <div className="h-[280px] flex items-center justify-center text-xs text-gray-400 italic">
+                No client quotations found in timeframe
+              </div>
+            ) : (
+              <InsightBarChart
+                labels={chartDatasets.clientQuotationLabels}
+                data={chartDatasets.clientQuotationData}
                 title="Quoted"
                 color="rgba(16, 185, 129, 0.65)"
               />
