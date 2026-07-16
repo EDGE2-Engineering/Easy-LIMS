@@ -78,6 +78,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [inwardOption, setInwardOption] = useState('add_samples');
+  const [showNoSamplesConfirm, setShowNoSamplesConfirm] = useState(false);
 
   const fetchClients = async () => {
     try {
@@ -742,19 +743,20 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
           </div>
         </div>
 
-        <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200/60 max-w-xl space-y-3">
+        <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200/60 space-y-3">
           <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Material Inward Option</Label>
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               type="button"
               onClick={() => {
-                setInwardOption('no_samples');
+                if (inwardOption !== 'no_samples') {
+                  setShowNoSamplesConfirm(true);
+                }
               }}
-              className={`flex-1 flex items-center justify-center p-3 rounded-xl border text-sm font-medium transition-all ${
-                inwardOption === 'no_samples'
+              className={`flex-1 flex items-center justify-center p-3 rounded-xl border text-sm font-medium transition-all ${inwardOption === 'no_samples'
                   ? 'bg-primary/5 border-primary text-primary shadow-sm'
                   : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               No material samples needed
             </button>
@@ -781,15 +783,50 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                   }));
                 }
               }}
-              className={`flex-1 flex items-center justify-center p-3 rounded-xl border text-sm font-medium transition-all ${
-                inwardOption === 'add_samples'
+              className={`flex-1 flex items-center justify-center p-3 rounded-xl border text-sm font-medium transition-all ${inwardOption === 'add_samples'
                   ? 'bg-primary/5 border-primary text-primary shadow-sm'
                   : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               Add samples
             </button>
           </div>
+          {showNoSamplesConfirm && (
+            <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-xl space-y-3 animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-semibold text-orange-800">Confirm</h4>
+                  <p className="text-xs text-orange-700 mt-1">
+                    Are you sure no material samples are needed for this job?
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowNoSamplesConfirm(false)}
+                  className="h-8 text-xs border-orange-200 text-orange-850 hover:bg-orange-100/50 bg-white"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => {
+                    setInwardOption('no_samples');
+                    setEditingRecord((prev) => ({ ...prev, samples: [] }));
+                    setShowNoSamplesConfirm(false);
+                  }}
+                  className="h-8 text-xs bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                  Confirm
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {inwardOption === 'add_samples' && (
@@ -809,147 +846,147 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
               </Button>
             </div>
 
-          <div className="grid grid-cols-1 gap-4">
-            {editingRecord.samples.map((sample, index) => (
-              <div
-                key={index}
-                className="p-4 bg-gray-50/50 rounded-xl border border-gray-100 space-y-4 relative group"
-              >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all rounded-full"
-                  onClick={() => handleRemoveSample(index)}
-                  title="Remove Sample"
+            <div className="grid grid-cols-1 gap-4">
+              {editingRecord.samples.map((sample, index) => (
+                <div
+                  key={index}
+                  className="p-4 bg-gray-50/50 rounded-xl border border-gray-100 space-y-4 relative group"
                 >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Sample Code *</Label>
-                    <Input
-                      placeholder="e.g. S1"
-                      className="h-9 text-sm"
-                      value={sample.sample_code || ''}
-                      onChange={(e) => handleSampleChange(index, 'sample_code', e.target.value)}
-                    />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all rounded-full"
+                    onClick={() => handleRemoveSample(index)}
+                    title="Remove Sample"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Sample Code *</Label>
+                      <Input
+                        placeholder="e.g. S1"
+                        className="h-9 text-sm"
+                        value={sample.sample_code || ''}
+                        onChange={(e) => handleSampleChange(index, 'sample_code', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Material Type *</Label>
+                      <Select
+                        value={sample.material_type || ''}
+                        onValueChange={(value) => handleSampleChange(index, 'material_type', value)}
+                      >
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[200px] overflow-y-auto">
+                          {materials.map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {m.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label className="text-xs">Remarks</Label>
+                      <Input
+                        placeholder="e.g. M25 Grade Concrete"
+                        className="h-9 text-sm"
+                        value={sample.sample_description || ''}
+                        onChange={(e) =>
+                          handleSampleChange(index, 'sample_description', e.target.value)
+                        }
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Material Type *</Label>
-                    <Select
-                      value={sample.material_type || ''}
-                      onValueChange={(value) => handleSampleChange(index, 'material_type', value)}
-                    >
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[200px] overflow-y-auto">
-                        {materials.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>
-                            {m.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1 md:col-span-2">
-                    <Label className="text-xs">Remarks</Label>
-                    <Input
-                      placeholder="e.g. M25 Grade Concrete"
-                      className="h-9 text-sm"
-                      value={sample.sample_description || ''}
-                      onChange={(e) =>
-                        handleSampleChange(index, 'sample_description', e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Quantity</Label>
-                    <Input
-                      type="number"
-                      placeholder="e.g. 6"
-                      className="h-9 text-sm"
-                      value={sample.quantity || ''}
-                      onChange={(e) => handleSampleChange(index, 'quantity', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Received Date</Label>
-                    <AppDatePicker
-                      className="h-10 text-sm bg-gray-50 border-transparent rounded-xl"
-                      value={sample.received_date || ''}
-                      onChange={(e) => handleSampleChange(index, 'received_date', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Time</Label>
-                    <Input
-                      type="time"
-                      className="h-9 text-sm"
-                      value={sample.received_time || ''}
-                      onChange={(e) => handleSampleChange(index, 'received_time', e.target.value)}
-                    />
-                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Quantity</Label>
+                      <Input
+                        type="number"
+                        placeholder="e.g. 6"
+                        className="h-9 text-sm"
+                        value={sample.quantity || ''}
+                        onChange={(e) => handleSampleChange(index, 'quantity', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Received Date</Label>
+                      <AppDatePicker
+                        className="h-10 text-sm bg-gray-50 border-transparent rounded-xl"
+                        value={sample.received_date || ''}
+                        onChange={(e) => handleSampleChange(index, 'received_date', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Time</Label>
+                      <Input
+                        type="time"
+                        className="h-9 text-sm"
+                        value={sample.received_time || ''}
+                        onChange={(e) => handleSampleChange(index, 'received_time', e.target.value)}
+                      />
+                    </div>
 
-                  <div className="space-y-1">
-                    <Label className="text-xs">Test Days</Label>
-                    <Input
-                      type="number"
-                      className="h-9 text-sm"
-                      value={sample.expected_test_days || ''}
-                      onChange={(e) =>
-                        handleSampleChange(index, 'expected_test_days', e.target.value)
-                      }
-                    />
+                    <div className="space-y-1">
+                      <Label className="text-xs">Test Days</Label>
+                      <Input
+                        type="number"
+                        className="h-9 text-sm"
+                        value={sample.expected_test_days || ''}
+                        onChange={(e) =>
+                          handleSampleChange(index, 'expected_test_days', e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Collection At</Label>
+                      <Select
+                        value={sample.collection_center_id?.toString()}
+                        onValueChange={(value) =>
+                          handleSampleChange(index, 'collection_center_id', value)
+                        }
+                      >
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {collectionCenters.map((cc) => (
+                            <SelectItem key={cc.id} value={cc.id.toString()}>
+                              {cc.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Received By</Label>
+                      <Select
+                        value={sample.received_by?.toString()}
+                        onValueChange={(value) => handleSampleChange(index, 'received_by', value)}
+                      >
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue placeholder="User" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {appUsers.map((u) => (
+                            <SelectItem key={u.id} value={u.id.toString()}>
+                              {u.full_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Collection At</Label>
-                    <Select
-                      value={sample.collection_center_id?.toString()}
-                      onValueChange={(value) =>
-                        handleSampleChange(index, 'collection_center_id', value)
-                      }
-                    >
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {collectionCenters.map((cc) => (
-                          <SelectItem key={cc.id} value={cc.id.toString()}>
-                            {cc.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Received By</Label>
-                    <Select
-                      value={sample.received_by?.toString()}
-                      onValueChange={(value) => handleSampleChange(index, 'received_by', value)}
-                    >
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue placeholder="User" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {appUsers.map((u) => (
-                          <SelectItem key={u.id} value={u.id.toString()}>
-                            {u.full_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     );
   }

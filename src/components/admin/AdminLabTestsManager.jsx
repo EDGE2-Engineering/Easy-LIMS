@@ -45,7 +45,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import ReactSelect from 'react-select';
-import { DOCUMENT_ITEM_TYPES } from '@/data/config';
+import { DOCUMENT_ITEM_TYPES, DEPARTMENTS } from '@/data/config';
 import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 
 const AdminLabTestsManager = () => {
@@ -305,7 +305,7 @@ const AdminLabTestsManager = () => {
     e.target.value = '';
   };
 
-  const groups = ['Physical', 'Chemical'];
+  const groups = DEPARTMENTS.map((d) => d.name);
 
   if (editingLabTest) {
     return (

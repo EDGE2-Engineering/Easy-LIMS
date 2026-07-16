@@ -38,8 +38,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ROLES } from '@/data/config';
+import { ROLES, DEPARTMENTS } from '@/data/config';
 import { useMaterials } from '@/contexts/MaterialsContext';
+import { useLabTests } from '@/contexts/LabTestsContext';
 import GeotechTestForm from './GeotechTestForm';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -64,6 +65,7 @@ const MANUAL_GEOTECH_FIELDS = [
 
 const TestingManager = ({ initialJobId, onClose, onSave }) => {
   const { materials, materialFormAssociations } = useMaterials();
+  const { labTests } = useLabTests();
   const getMaterialAndForms = useCallback(
     (cat) => {
       const material = materials.find((m) => String(m.id) === String(cat) || m.name === cat);
@@ -310,9 +312,33 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
       ? allCategories
       : allCategories.filter((c) => {
           if (user?.role !== ROLES.TECHNICIAN.slug) return false;
-          if (techCapabilities.includes(c) || dataCats.includes(c)) return true;
-          if (isSoilTech && getMaterialAndForms(c).isGeotech) return true;
-          return false;
+
+          // Check if it's geotech (Soil Investigation)
+          const isGeotechCategory = getMaterialAndForms(c).isGeotech;
+          if (isGeotechCategory) {
+            const isSoilCategory = isSoilTech || techCapabilities.includes(c) || dataCats.includes(c);
+            return isSoilCategory && user?.departments?.includes('Soil Investigation');
+          }
+
+          // Otherwise it's a regular category. Ensure they have general access:
+          if (!techCapabilities.includes(c) && !dataCats.includes(c)) return false;
+
+          // Find tests for this category (either from jobDetails.test_types or recorded in testResults)
+          const assigned = (jobDetails?.test_types || {})[c] || [];
+          const dataTestTypes = Object.keys(testResults[c] || {}).filter(
+            (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'status' && k !== 'remarks'
+          );
+          const testTypes = [...new Set([...assigned, ...dataTestTypes])];
+
+          // If there are no tests at all, don't show the category tab to technician
+          if (testTypes.length === 0) return false;
+
+          // Ensure at least one test matches the technician's department(s)
+          const hasMatchingTest = testTypes.some((testName) => {
+            const testDef = labTests.find((t) => t.testType === testName);
+            return testDef && user?.departments?.includes(testDef.group);
+          });
+          return hasMatchingTest;
         });
 
   return (
@@ -1283,25 +1309,30 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                               [];
                             const dataTestTypes = Object.keys(
                               testResults[selectedCategory] || {}
-                            ).filter((k) => k !== 'GeotechData' && k !== 'ManualData');
+                            ).filter((k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'status' && k !== 'remarks');
                             const testTypes = [
                               ...new Set([...assignedTestTypes, ...dataTestTypes]),
                             ];
 
-                            if (testTypes.length === 0) {
+                            const visibleTestTypes = isAdmin() || isAnalyst
+                              ? testTypes
+                              : testTypes.filter((testName) => {
+                                  const testDef = labTests.find((t) => t.testType === testName);
+                                  if (!testDef || !testDef.group) return true;
+                                  return user?.departments?.includes(testDef.group);
+                                });
+
+                            if (visibleTestTypes.length === 0) {
                               return (
                                 <div className="col-span-full p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
                                   <p className="text-gray-500 text-sm">
-                                    No regular tests assigned to this category.
-                                  </p>
-                                  <p className="text-xs text-gray-400 mt-1">
-                                    Assign tests in the Job Manager to see them here.
+                                    No regular tests assigned to your department for this category.
                                   </p>
                                 </div>
                               );
                             }
 
-                            return testTypes.map((testName) => (
+                            return visibleTestTypes.map((testName) => (
                               <div
                                 key={testName}
                                 className="p-4 rounded-xl border border-gray-100 bg-white shadow-sm space-y-4"

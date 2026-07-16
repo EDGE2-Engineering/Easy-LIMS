@@ -1127,37 +1127,19 @@ export default function AdminTicketsManager({ id: propId }) {
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  Department
-                </Label>
-                <select
-                  value={newTicket.department}
-                  onChange={(e) => setNewTicket({ ...newTicket, department: e.target.value })}
-                  className="w-full h-12 px-3 rounded-xl border border-gray-100 bg-gray-50/50 text-sm font-semibold focus:ring-2 focus:ring-primary/20 outline-none"
-                >
-                  {DEPARTMENTS.map((dept) => (
-                    <option key={dept.id} value={dept.name}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  Priority
-                </Label>
-                <select
-                  value={newTicket.priority}
-                  onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })}
-                  className="w-full h-12 px-3 rounded-xl border border-gray-100 bg-gray-50/50 text-sm font-semibold focus:ring-2 focus:ring-primary/20 outline-none"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                Priority
+              </Label>
+              <select
+                value={newTicket.priority}
+                onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })}
+                className="w-full h-12 px-3 rounded-xl border border-gray-100 bg-gray-50/50 text-sm font-semibold focus:ring-2 focus:ring-primary/20 outline-none"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
             </div>
 
             <div className="space-y-2 text-slate-800 dark:text-slate-200">
@@ -1586,10 +1568,7 @@ export default function AdminTicketsManager({ id: propId }) {
             </span>
           )}
 
-          {/* Department Badge */}
-          <span className="hidden inline-flex items-center h-8 px-3 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 text-slate-600 dark:text-slate-300">
-            Dept: {ticketDetails.department}
-          </span>
+
 
           {/* Priority Badge */}
           <span
@@ -2233,35 +2212,7 @@ export default function AdminTicketsManager({ id: propId }) {
                     ticketDetails.status
                   )}
                 </span>
-                <span className="text-slate-500 dark:text-slate-400 font-semibold col-span-1">
-                  Department
-                </span>
-                <span className="text-slate-800 dark:text-slate-200 font-bold col-span-2 capitalize">
-                  {editable ? (
-                    <div className="w-full">
-                      <Select
-                        value={editTicketForm.department}
-                        onValueChange={(val) => {
-                          setEditTicketForm((prev) => ({ ...prev, department: val }));
-                          saveField('department', val);
-                        }}
-                      >
-                        <SelectTrigger className="w-full h-9 text-xs bg-white border-gray-200 rounded-lg">
-                          <SelectValue placeholder="Select Department" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {DEPARTMENTS.map((d) => (
-                            <SelectItem key={d.id} value={d.name} className="text-xs">
-                              {d.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ) : (
-                    ticketDetails.department
-                  )}
-                </span>
+
 
                 <span className="text-slate-500 dark:text-slate-400 font-semibold col-span-1">
                   Priority
@@ -2498,7 +2449,6 @@ export default function AdminTicketsManager({ id: propId }) {
                 <SelectItem value="title">Title</SelectItem>
                 <SelectItem value="status">Status</SelectItem>
                 <SelectItem value="priority">Priority</SelectItem>
-                <SelectItem value="department">Department</SelectItem>
                 <SelectItem value="author">Author</SelectItem>
               </SelectContent>
             </Select>
@@ -2580,25 +2530,7 @@ export default function AdminTicketsManager({ id: propId }) {
               </Select>
             </div>
 
-            {/* Department */}
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                Department
-              </Label>
-              <Select value={deptFilter} onValueChange={setDeptFilter}>
-                <SelectTrigger className="w-full h-10 text-sm bg-gray-50 border-transparent rounded-xl">
-                  <SelectValue placeholder="All Departments" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
-                  {DEPARTMENTS.map((d) => (
-                    <SelectItem key={d.id} value={d.name}>
-                      {d.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
 
             {/* Scope */}
             <div className="space-y-2">
@@ -2779,9 +2711,6 @@ export default function AdminTicketsManager({ id: propId }) {
                   <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px]">
                     Title
                   </th>
-                  <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
-                    Department
-                  </th>
                   <th className="text-center py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                     Priority
                   </th>
@@ -2848,12 +2777,6 @@ export default function AdminTicketsManager({ id: propId }) {
                           )}
                         </td>
 
-                        {/* Department */}
-                        <td className="py-4 px-3 align-top whitespace-nowrap">
-                          <span className="text-xs font-semibold text-gray-600">
-                            {ticket.department}
-                          </span>
-                        </td>
 
                         {/* Priority */}
                         <td className="py-4 px-3 align-top text-center whitespace-nowrap">
