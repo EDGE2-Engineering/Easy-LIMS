@@ -15,7 +15,7 @@ import {
   Filter,
   X,
 } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
 import { logAudit } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import Rupee from '../Rupee';
 import { useSettings } from '@/contexts/SettingsContext';
-import { ROLES } from '@/data/config';
+import { ROLES, DEPARTMENTS } from '@/data/config';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -104,7 +104,7 @@ const DocumentsManager = () => {
     try {
       let query = supabase
         .from('documents')
-        .select('*, users(full_name), clients(client_name, gstin), jobs(project_name)');
+        .select('*, users(id, full_name, username, role, departments), clients(client_name, gstin), jobs(project_name)');
 
       if (isStandard()) {
         query = query.eq('created_by', user.id);
@@ -764,7 +764,41 @@ const DocumentsManager = () => {
                     </td>
 
                     <td className="py-4 px-2 whitespace-nowrap text-gray-600">
-                      {record.users?.full_name || '-'}
+                      {record.users ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help select-none font-semibold hover:text-primary transition-colors">
+                                {record.users.full_name || record.users.username || '-'}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800 p-3 rounded-lg shadow-md space-y-1 text-xs">
+                              <div>
+                                <span className="text-gray-400 font-medium">Role:</span>{' '}
+                                <span className="font-bold text-white capitalize">
+                                  {Object.values(ROLES).find((ro) => ro.slug === record.users.role)?.label || record.users.role || 'User'}
+                                </span>
+                              </div>
+                              {(record.users.departments || []).length > 0 && (
+                                <div>
+                                  <span className="text-gray-400 font-medium">Department:</span>{' '}
+                                  <span className="font-bold text-white">
+                                    {(record.users.departments || [])
+                                      .map((dVal) => {
+                                        const found = DEPARTMENTS.find((d) => String(d.id) === String(dVal) || d.name === dVal);
+                                        return found ? found.name : dVal;
+                                      })
+                                      .filter(Boolean)
+                                      .join(', ')}
+                                  </span>
+                                </div>
+                              )}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        '-'
+                      )}
                     </td>
 
                     <td className="py-4 px-2 text-center whitespace-nowrap">

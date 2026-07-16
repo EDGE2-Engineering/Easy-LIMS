@@ -13,7 +13,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { AppDatePicker } from '@/components/ui/AppDatePicker';
-import { APP_CONFIG, WORKFLOW_STATES } from '@/data/config';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { APP_CONFIG, WORKFLOW_STATES, ROLES, DEPARTMENTS } from '@/data/config';
 import {
   ShieldCheck,
   Search,
@@ -194,7 +195,7 @@ const AuditLogsManager = () => {
       if (!filterActivityType || filterActivityType !== 'job_workflow') {
         let qAudit = supabase
           .from('audit_logs')
-          .select('*, users:performed_by(id, full_name, username)')
+          .select('*, users:performed_by(id, full_name, username, role, departments)')
           .order('created_at', { ascending: false })
           .limit(500);
 
@@ -224,7 +225,7 @@ const AuditLogsManager = () => {
         let qWorkflow = supabase
           .from('job_workflow_logs')
           .select(
-            '*, jobs(job_code, project_name), users!job_workflow_logs_performed_by_fkey(id, full_name, username)'
+            '*, jobs(job_code, project_name), users!job_workflow_logs_performed_by_fkey(id, full_name, username, role, departments)'
           )
           .order('created_at', { ascending: false })
           .limit(500);
@@ -432,7 +433,7 @@ const AuditLogsManager = () => {
       if (!filterActivityType || filterActivityType !== 'job_workflow') {
         let qAudit = supabase
           .from('audit_logs')
-          .select('*, users:performed_by(id, full_name, username)')
+          .select('*, users:performed_by(id, full_name, username, role, departments)')
           .order('created_at', { ascending: false });
 
         if (filterUser) qAudit = qAudit.eq('performed_by', filterUser);
@@ -457,7 +458,7 @@ const AuditLogsManager = () => {
         let qWorkflow = supabase
           .from('job_workflow_logs')
           .select(
-            '*, jobs(job_code, project_name), users!job_workflow_logs_performed_by_fkey(id, full_name, username)'
+            '*, jobs(job_code, project_name), users!job_workflow_logs_performed_by_fkey(id, full_name, username, role, departments)'
           )
           .order('created_at', { ascending: false });
 
@@ -1112,14 +1113,53 @@ const AuditLogsManager = () => {
 
                     {/* User */}
                     <td className="py-3.5 px-4 align-middle">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <User className="w-3 h-3 text-primary" />
+                      {log.user ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-2 cursor-help select-none">
+                                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                  <User className="w-3 h-3 text-primary" />
+                                </div>
+                                <span className="text-xs font-semibold text-gray-800 dark:text-gray-300 truncate">
+                                  {log.user.full_name || log.user.username}
+                                </span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800 p-3 rounded-lg shadow-md space-y-1 text-xs">
+                              <div>
+                                <span className="text-gray-400 font-medium">Role:</span>{' '}
+                                <span className="font-bold text-white capitalize">
+                                  {Object.values(ROLES).find((r) => r.slug === log.user.role)?.label || log.user.role || 'User'}
+                                </span>
+                              </div>
+                              {(log.user.departments || []).length > 0 && (
+                                <div>
+                                  <span className="text-gray-400 font-medium">Department:</span>{' '}
+                                  <span className="font-bold text-white">
+                                    {(log.user.departments || [])
+                                      .map((dVal) => {
+                                        const found = DEPARTMENTS.find((d) => String(d.id) === String(dVal) || d.name === dVal);
+                                        return found ? found.name : dVal;
+                                      })
+                                      .filter(Boolean)
+                                      .join(', ')}
+                                  </span>
+                                </div>
+                              )}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <User className="w-3 h-3 text-primary" />
+                          </div>
+                          <span className="text-xs font-semibold text-gray-800 dark:text-gray-300 truncate">
+                            System
+                          </span>
                         </div>
-                        <span className="text-xs font-semibold text-gray-800 dark:text-gray-300 truncate">
-                          {log.user?.full_name || log.user?.username || 'System'}
-                        </span>
-                      </div>
+                      )}
                     </td>
 
                     {/* Action */}

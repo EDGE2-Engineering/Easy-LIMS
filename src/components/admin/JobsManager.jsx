@@ -22,7 +22,7 @@ import {
   X,
   Download,
 } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/customSupabaseClient';
 import { logAudit } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { WORKFLOW_STATES, ROLES, ACTIONS } from '@/data/config';
+import { WORKFLOW_STATES, ROLES, ACTIONS, DEPARTMENTS } from '@/data/config';
 import { useMaterials } from '@/contexts/MaterialsContext';
 import { useWorkflowConfig } from '@/contexts/WorkflowContext';
 import {
@@ -434,7 +434,7 @@ const JobsManager = ({ id }) => {
     try {
       let query = supabase
         .from('jobs')
-        .select('*, clients(client_name, client_address, gstin), users:created_by(full_name)')
+        .select('*, clients(client_name, client_address, gstin), users:created_by(id, full_name, username, role, departments)')
         .order('created_at', { ascending: false });
 
       if (!isAdmin() && user?.role !== ROLES.MRO.slug) {
@@ -2208,7 +2208,41 @@ const JobsManager = ({ id }) => {
                       {r.created_at ? format(new Date(r.created_at), 'dd MMM yyyy') : '-'}
                     </td>
                     <td className="py-4 px-2 whitespace-nowrap text-gray-600 align-top">
-                      {r.users?.full_name || r.created_by || '-'}
+                      {r.users ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help select-none font-semibold hover:text-primary transition-colors">
+                                {r.users.full_name || r.users.username || '-'}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800 p-3 rounded-lg shadow-md space-y-1 text-xs">
+                              <div>
+                                <span className="text-gray-400 font-medium">Role:</span>{' '}
+                                <span className="font-bold text-white capitalize">
+                                  {Object.values(ROLES).find((ro) => ro.slug === r.users.role)?.label || r.users.role || 'User'}
+                                </span>
+                              </div>
+                              {(r.users.departments || []).length > 0 && (
+                                <div>
+                                  <span className="text-gray-400 font-medium">Department:</span>{' '}
+                                  <span className="font-bold text-white">
+                                    {(r.users.departments || [])
+                                      .map((dVal) => {
+                                        const found = DEPARTMENTS.find((d) => String(d.id) === String(dVal) || d.name === dVal);
+                                        return found ? found.name : dVal;
+                                      })
+                                      .filter(Boolean)
+                                      .join(', ')}
+                                  </span>
+                                </div>
+                              )}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        r.created_by || '-'
+                      )}
                     </td>
                     <td className="py-4 px-2 text-center whitespace-nowrap align-top">
                       <span
