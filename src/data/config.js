@@ -1,10 +1,10 @@
 export const MATERIALS = [];
 
 export const DEPARTMENTS = [
-  { id: 1, name: 'Accounts' },
-  { id: 2, name: 'Testing' },
-  { id: 3, name: 'HR' },
-  { id: 4, name: 'Material Receiving' },
+  { id: 1, name: 'Chemical Analysis' },
+  { id: 2, name: 'Physical Testing' },
+  { id: 3, name: 'Soil Investigation' },
+  { id: 4, name: 'Non-Destructive Testing (NDT)' },
 ];
 
 export const ROLES = {

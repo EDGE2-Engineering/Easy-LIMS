@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, UserPlus, CheckCircle2, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { ROLES } from '@/data/config';
+import { ROLES, DEPARTMENTS } from '@/data/config';
 import { Label } from '@/components/ui/label';
 
 const TechnicianAssignment = ({ jobId, onComplete }) => {
@@ -26,7 +26,7 @@ const TechnicianAssignment = ({ jobId, onComplete }) => {
     try {
       const { data: users, error: userError } = await supabase
         .from('users')
-        .select('id, full_name, username, role')
+        .select('id, full_name, username, role, departments')
         .in('role', [ROLES.TECHNICIAN.slug, ROLES.ANALYST.slug])
         .eq('is_active', true)
         .order('full_name');
@@ -175,6 +175,15 @@ const TechnicianAssignment = ({ jobId, onComplete }) => {
               const isSelected = selectedTechs.includes(String(tech.id));
               const roleLabel =
                 Object.values(ROLES).find((r) => r.slug === tech.role)?.label || tech.role;
+              const deptNames = Array.isArray(tech.departments)
+                ? tech.departments
+                    .map((id) => DEPARTMENTS.find((d) => d.id === id)?.name)
+                    .filter(Boolean)
+                    .join(', ')
+                : '';
+              const finalRoleLabel = tech.role === ROLES.TECHNICIAN.slug && deptNames
+                ? `${roleLabel} (${deptNames})`
+                : roleLabel;
               return (
                 <button
                   key={tech.id}
@@ -190,7 +199,7 @@ const TechnicianAssignment = ({ jobId, onComplete }) => {
                     <span className="font-semibold text-sm">
                       {tech.full_name || tech.username}
                     </span>
-                    <span className="text-xs text-gray-400 mt-0.5">{roleLabel}</span>
+                    <span className="text-xs text-gray-400 mt-0.5">{finalRoleLabel}</span>
                   </div>
                   {isSelected && <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />}
                 </button>
