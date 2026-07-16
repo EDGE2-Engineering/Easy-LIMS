@@ -5,6 +5,7 @@ export const DEPARTMENTS = [
   { id: 2, name: 'Physical Testing' },
   { id: 3, name: 'Soil Investigation' },
   { id: 4, name: 'Non-Destructive Testing (NDT)' },
+  { id: 5, name: 'Mechanical Testing' },
 ];
 
 export const ROLES = {
