@@ -77,6 +77,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
   const [editingRecord, setEditingRecord] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [inwardOption, setInwardOption] = useState('add_samples');
 
   const fetchClients = async () => {
     try {
@@ -221,6 +222,16 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
     }
   }, [initialJobId]);
 
+  useEffect(() => {
+    if (editingRecord) {
+      if (editingRecord.samples && editingRecord.samples.length > 0) {
+        setInwardOption('add_samples');
+      } else {
+        setInwardOption('no_samples');
+      }
+    }
+  }, [editingRecord?.id]);
+
   const handleAddNew = () => {
     setEditingRecord({
       job_order_no: '',
@@ -313,7 +324,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
       toast({ title: 'Error', description: 'Please select a client', variant: 'destructive' });
       return;
     }
-    if (editingRecord.samples.length === 0) {
+    if (inwardOption === 'add_samples' && (!editingRecord.samples || editingRecord.samples.length === 0)) {
       toast({
         title: 'Error',
         description: 'Please add at least one sample',
@@ -410,7 +421,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
       }
 
       // Create/Recreate Samples
-      const samplesToInsert = editingRecord.samples.map((sample, index) => {
+      const samplesToInsert = inwardOption === 'no_samples' ? [] : editingRecord.samples.map((sample, index) => {
         const receivedBy = sample.received_by
           ? typeof sample.received_by === 'string'
             ? parseInt(sample.received_by)
@@ -453,11 +464,13 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
         };
       });
 
-      const { error: samplesError } = await supabase
-        .from('material_samples')
-        .insert(samplesToInsert);
+      if (samplesToInsert.length > 0) {
+        const { error: samplesError } = await supabase
+          .from('material_samples')
+          .insert(samplesToInsert);
 
-      if (samplesError) throw samplesError;
+        if (samplesError) throw samplesError;
+      }
 
       toast({
         title: 'Success',
@@ -729,21 +742,72 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
           </div>
         </div>
 
-        <div className="mt-8 space-y-4">
-          <div className="flex items-center justify-between border-b pb-2">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Package className="w-5 h-5 text-primary" /> Samples
-            </h3>
-            <Button
+        <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200/60 max-w-xl space-y-3">
+          <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Material Inward Option</Label>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
               type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleAddSample}
-              className="text-xs h-8"
+              onClick={() => {
+                setInwardOption('no_samples');
+              }}
+              className={`flex-1 flex items-center justify-center p-3 rounded-xl border text-sm font-medium transition-all ${
+                inwardOption === 'no_samples'
+                  ? 'bg-primary/5 border-primary text-primary shadow-sm'
+                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
             >
-              <Plus className="w-4 h-4 mr-1" /> Add Sample
-            </Button>
+              No material samples needed
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setInwardOption('add_samples');
+                if (!editingRecord.samples || editingRecord.samples.length === 0) {
+                  setEditingRecord((prev) => ({
+                    ...prev,
+                    samples: [
+                      {
+                        sample_code: '',
+                        material_type: '',
+                        sample_description: '',
+                        quantity: '',
+                        received_date: format(new Date(), 'yyyy-MM-dd'),
+                        received_time: format(new Date(), 'HH:mm'),
+                        received_by: user.id || '',
+                        collection_center_id: '',
+                        expected_test_days: 7,
+                      },
+                    ],
+                  }));
+                }
+              }}
+              className={`flex-1 flex items-center justify-center p-3 rounded-xl border text-sm font-medium transition-all ${
+                inwardOption === 'add_samples'
+                  ? 'bg-primary/5 border-primary text-primary shadow-sm'
+                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Add samples
+            </button>
           </div>
+        </div>
+
+        {inwardOption === 'add_samples' && (
+          <div className="mt-8 space-y-4">
+            <div className="flex items-center justify-between border-b pb-2">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Package className="w-5 h-5 text-primary" /> Samples
+              </h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddSample}
+                className="text-xs h-8"
+              >
+                <Plus className="w-4 h-4 mr-1" /> Add Sample
+              </Button>
+            </div>
 
           <div className="grid grid-cols-1 gap-4">
             {editingRecord.samples.map((sample, index) => (
@@ -885,6 +949,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
             ))}
           </div>
         </div>
+      )}
       </div>
     );
   }

@@ -1634,57 +1634,64 @@ const JobsManager = ({ id }) => {
                       </Button>
                     )}
                   </div>
-                  <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
-                    <table className="w-full text-left text-[11px]">
-                      <thead className="bg-gray-50 border-b">
-                        <tr>
-                          <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                            Code
-                          </th>
-                          <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                            Material Type
-                          </th>
-                          <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                            Description
-                          </th>
-                          <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-center">
-                            Qty
-                          </th>
-                          <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">
-                            Date
-                          </th>
-                          <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">
-                            Collected By
-                          </th>
-                          <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">
-                            Collected At
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                        {jobSamples.map((s, i) => (
-                          <tr key={i} className="hover:bg-gray-50/30 transition-colors">
-                            <td className="p-3 font-bold text-gray-900">{s.sample_code}</td>
-                            <td className="p-3 text-gray-500">
-                              {materials.find((m) => String(m.id) === String(s.material_type))
-                                ?.name ||
-                                s.material_type ||
-                                '-'}
-                            </td>
-                            <td className="p-3 text-gray-500">{s.sample_description}</td>
-                            <td className="p-3 text-center text-gray-500">{s.quantity}</td>
-                            <td className="p-3 text-right text-gray-400">{s.received_date}</td>
-                            <td className="p-3 text-right text-gray-400">
-                              {s.users?.full_name || '-'}
-                            </td>
-                            <td className="p-3 text-right text-gray-400">
-                              {s.collection_centers?.name || '-'}
-                            </td>
+                  {jobSamples.length === 0 ? (
+                    <div className="text-center py-8 px-4 border border-dashed rounded-xl bg-gray-50/50 text-gray-500 text-sm flex flex-col items-center gap-2">
+                      <Package className="w-8 h-8 text-gray-305" />
+                      <p>No material samples needed or registered for this job.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
+                      <table className="w-full text-left text-[11px]">
+                        <thead className="bg-gray-50 border-b">
+                          <tr>
+                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                              Code
+                            </th>
+                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                              Material Type
+                            </th>
+                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                              Description
+                            </th>
+                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-center">
+                              Qty
+                            </th>
+                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">
+                              Date
+                            </th>
+                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">
+                              Collected By
+                            </th>
+                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">
+                              Collected At
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                          {jobSamples.map((s, i) => (
+                            <tr key={i} className="hover:bg-gray-50/30 transition-colors">
+                              <td className="p-3 font-bold text-gray-900">{s.sample_code}</td>
+                              <td className="p-3 text-gray-500">
+                                {materials.find((m) => String(m.id) === String(s.material_type))
+                                  ?.name ||
+                                  s.material_type ||
+                                  '-'}
+                              </td>
+                              <td className="p-3 text-gray-500">{s.sample_description}</td>
+                              <td className="p-3 text-center text-gray-500">{s.quantity}</td>
+                              <td className="p-3 text-right text-gray-400">{s.received_date}</td>
+                              <td className="p-3 text-right text-gray-400">
+                                {s.users?.full_name || '-'}
+                              </td>
+                              <td className="p-3 text-right text-gray-400">
+                                {s.collection_centers?.name || '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
 

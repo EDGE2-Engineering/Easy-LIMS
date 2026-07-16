@@ -295,9 +295,10 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
     ),
   ];
   const dataCats = Object.keys(testResults);
+  const jobCategories = Object.keys(jobDetails?.test_types || {});
 
   const hasMaterialsGap = samples.length > 0 && sampleCategories.length === 0;
-  const allCategories = [...new Set([...sampleCategories, ...dataCats])];
+  const allCategories = [...new Set([...sampleCategories, ...jobCategories, ...dataCats])];
 
   const isAnalyst = user?.role === ROLES.ANALYST.slug;
   const isSoilTech =
