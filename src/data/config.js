@@ -584,5 +584,6 @@ export const TICKET_STATUSES = {
   RESOLVED: 'Resolved',
   INVALID_REQUIREMENT: 'Invalid Requirement',
   CLOSED: 'Closed',
+  DEFERRED: 'Deferred',
 };
 
