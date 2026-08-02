@@ -1402,7 +1402,7 @@ const JobsManager = ({ id }) => {
                             </div>
                             <div className="font-mono text-xs font-bold text-gray-700">
                               {doc.document_type === 'Quotation'
-                                ? `${doc.quote_number}/R${doc.version || 1}`
+                                ? (doc.version && doc.version > 1 ? `${doc.quote_number}/R${doc.version - 1}` : doc.quote_number)
                                 : doc.quote_number}
                             </div>
                           </div>

@@ -155,8 +155,10 @@ const RichTextEditor = ({ content, onChange }) => {
   );
 };
 
+const DEFAULT_STATUS_FILTER_VALUES = ['Open', 'In Progress', 'Need More Details', 'Needs Verification', 'Invalid Requirement', 'Verified'];
+
 const StatusMultiSelect = ({ selected, onChange }) => {
-  const statuses = ['Open', 'In Progress', 'Resolved', 'Invalid Requirement', 'Closed'];
+  const statuses = ['Open', 'In Progress', 'Need More Details', 'Needs Verification', 'Verified', 'Resolved', 'Invalid Requirement', 'Closed'];
 
   const toggleStatus = (status) => {
     if (selected.includes(status)) {
@@ -241,7 +243,7 @@ const StatusMultiSelect = ({ selected, onChange }) => {
               >
                 <Checkbox
                   checked={isChecked}
-                  onCheckedChange={() => {}}
+                  onCheckedChange={() => { }}
                   className="pointer-events-none rounded-md border-gray-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                 />
                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -313,7 +315,7 @@ export default function AdminTicketsManager({ id: propId }) {
 
   // Search / Filter / Sort / Pagination States
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState(['Open', 'In Progress']);
+  const [statusFilter, setStatusFilter] = useState(DEFAULT_STATUS_FILTER_VALUES);
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [deptFilter, setDeptFilter] = useState('all');
   const [authorFilter, setAuthorFilter] = useState('all');
@@ -847,8 +849,8 @@ export default function AdminTicketsManager({ id: propId }) {
 
   const getAllowedStatuses = (ticket) => {
     if (!ticket) return [];
-    if (isAdmin()) return ['Open', 'In Progress', 'Resolved', 'Invalid Requirement', 'Closed'];
-    if (ticket.created_by === user.id) return ['Open', 'Resolved', 'Invalid Requirement'];
+    if (isAdmin()) return ['Open', 'In Progress', 'Need more details', 'Needs Verification', 'Verified', 'Resolved', 'Invalid Requirement', 'Closed'];
+    if (ticket.created_by === user.id) return ['Open', 'Need more details', 'Needs Verification', 'Verified', 'Resolved', 'Invalid Requirement'];
     return [];
   };
 
@@ -895,7 +897,7 @@ export default function AdminTicketsManager({ id: propId }) {
 
   const resetAll = () => {
     setSearchTerm('');
-    setStatusFilter(['Open', 'In Progress', 'Invalid Requirement', 'Closed']);
+    setStatusFilter(DEFAULT_STATUS_FILTER_VALUES);
     setPriorityFilter('all');
     setDeptFilter('all');
     setAuthorFilter('all');
@@ -1024,6 +1026,12 @@ export default function AdminTicketsManager({ id: propId }) {
         return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'In Progress':
         return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'Need more details':
+        return 'bg-orange-50 text-orange-700 border-orange-200';
+      case 'Needs Verification':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'Verified':
+        return 'bg-teal-50 text-teal-700 border-teal-200';
       case 'Resolved':
         return 'bg-green-50 text-green-700 border-green-200';
       case 'Invalid Requirement':
@@ -1035,8 +1043,7 @@ export default function AdminTicketsManager({ id: propId }) {
     }
   };
 
-  const defaultStatuses = ['Open', 'In Progress', 'Invalid Requirement', 'Closed'];
-  const isStatusFilterActive = statusFilter.length !== defaultStatuses.length || !statusFilter.every(s => defaultStatuses.includes(s));
+  const isStatusFilterActive = statusFilter.length !== DEFAULT_STATUS_FILTER_VALUES.length || !statusFilter.every(s => DEFAULT_STATUS_FILTER_VALUES.includes(s));
 
   const hasActiveFilters =
     fromDate ||
@@ -1176,11 +1183,10 @@ export default function AdminTicketsManager({ id: propId }) {
                     handleDrop(e, setTicketAttachments);
                     setDragOverCreate(false);
                   }}
-                  className={`h-20 border-dashed border-2 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer font-bold transition-all text-xs select-none ${
-                    dragOverCreate
-                      ? 'border-primary bg-primary/5 text-primary scale-[1.01]'
-                      : 'border-gray-200 text-gray-500 hover:text-primary hover:border-primary/40 hover:bg-primary/5'
-                  }`}
+                  className={`h-20 border-dashed border-2 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer font-bold transition-all text-xs select-none ${dragOverCreate
+                    ? 'border-primary bg-primary/5 text-primary scale-[1.01]'
+                    : 'border-gray-200 text-gray-500 hover:text-primary hover:border-primary/40 hover:bg-primary/5'
+                    }`}
                 >
                   <Paperclip
                     className={`w-4 h-4 ${dragOverCreate ? 'text-primary' : 'text-gray-400'}`}
@@ -1527,17 +1533,22 @@ export default function AdminTicketsManager({ id: propId }) {
             <div className="w-32 hidden">
               <Select value={ticketDetails.status} onValueChange={handleStatusChange}>
                 <SelectTrigger
-                  className={`h-8 w-full font-bold text-xs border-none rounded-lg text-white shadow-sm flex items-center justify-between px-3 py-1 cursor-pointer transition-colors ${
-                    ticketDetails.status === 'Open'
-                      ? 'bg-[#0052CC] hover:bg-[#0040A3]'
-                      : ticketDetails.status === 'In Progress'
-                        ? 'bg-[#FFAB00] text-slate-900 hover:bg-[#E69A00]'
-                        : ticketDetails.status === 'Resolved'
-                          ? 'bg-[#36B37E] hover:bg-[#2A9162]'
-                          : ticketDetails.status === 'Invalid Requirement'
-                            ? 'bg-[#FF5630] hover:bg-[#DE350B]'
-                            : 'bg-[#5E6C84] hover:bg-[#4A5568]'
-                  }`}
+                  className={`h-8 w-full font-bold text-xs border-none rounded-lg text-white shadow-sm flex items-center justify-between px-3 py-1 cursor-pointer transition-colors ${ticketDetails.status === 'Open'
+                    ? 'bg-[#0052CC] hover:bg-[#0040A3]'
+                    : ticketDetails.status === 'In Progress'
+                      ? 'bg-[#FFAB00] text-slate-900 hover:bg-[#E69A00]'
+                      : ticketDetails.status === 'Need more details'
+                        ? 'bg-[#E56A54] text-white hover:bg-[#D45943]'
+                        : ticketDetails.status === 'Needs Verification'
+                          ? 'bg-[#00B8D9] text-white hover:bg-[#0097B2]'
+                          : ticketDetails.status === 'Verified'
+                            ? 'bg-[#00875A] text-white hover:bg-[#006644]'
+                            : ticketDetails.status === 'Resolved'
+                              ? 'bg-[#36B37E] hover:bg-[#2A9162]'
+                              : ticketDetails.status === 'Invalid Requirement'
+                                ? 'bg-[#FF5630] hover:bg-[#DE350B]'
+                                : 'bg-[#5E6C84] hover:bg-[#4A5568]'
+                    }`}
                 >
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -1552,17 +1563,22 @@ export default function AdminTicketsManager({ id: propId }) {
             </div>
           ) : (
             <span
-              className={`inline-flex items-center h-8 px-3 rounded-lg text-xs font-bold border text-white ${
-                ticketDetails.status === 'Open'
-                  ? 'bg-[#0052CC] border-[#0052CC]'
-                  : ticketDetails.status === 'In Progress'
-                    ? 'bg-[#FFAB00] text-slate-900 border-[#FFAB00]'
-                    : ticketDetails.status === 'Resolved'
-                      ? 'bg-[#36B37E] border-[#36B37E]'
-                      : ticketDetails.status === 'Invalid Requirement'
-                        ? 'bg-[#FF5630] border-[#FF5630]'
-                        : 'bg-[#5E6C84] border-[#5E6C84]'
-              }`}
+              className={`inline-flex items-center h-8 px-3 rounded-lg text-xs font-bold border text-white ${ticketDetails.status === 'Open'
+                ? 'bg-[#0052CC] border-[#0052CC]'
+                : ticketDetails.status === 'In Progress'
+                  ? 'bg-[#FFAB00] text-slate-900 border-[#FFAB00]'
+                  : ticketDetails.status === 'Need more details'
+                    ? 'bg-[#E56A54] border-[#E56A54]'
+                    : ticketDetails.status === 'Needs Verification'
+                      ? 'bg-[#00B8D9] border-[#00B8D9]'
+                      : ticketDetails.status === 'Verified'
+                        ? 'bg-[#00875A] border-[#00875A]'
+                        : ticketDetails.status === 'Resolved'
+                          ? 'bg-[#36B37E] border-[#36B37E]'
+                          : ticketDetails.status === 'Invalid Requirement'
+                            ? 'bg-[#FF5630] border-[#FF5630]'
+                            : 'bg-[#5E6C84] border-[#5E6C84]'
+                }`}
             >
               {ticketDetails.status}
             </span>
@@ -1572,13 +1588,12 @@ export default function AdminTicketsManager({ id: propId }) {
 
           {/* Priority Badge */}
           <span
-            className={`hidden inline-flex items-center h-8 px-3 rounded-lg text-xs font-semibold capitalize border ${
-              ticketDetails.priority === 'high'
-                ? 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/50'
-                : ticketDetails.priority === 'medium'
-                  ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/50'
-                  : 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50'
-            }`}
+            className={`hidden inline-flex items-center h-8 px-3 rounded-lg text-xs font-semibold capitalize border ${ticketDetails.priority === 'high'
+              ? 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/50'
+              : ticketDetails.priority === 'medium'
+                ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/50'
+                : 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50'
+              }`}
           >
             Priority: {ticketDetails.priority}
           </span>
@@ -1681,11 +1696,10 @@ export default function AdminTicketsManager({ id: propId }) {
                       const syntheticE = { target: { files: e.dataTransfer.files, value: '' } };
                       handleImmediateUpload(syntheticE);
                     }}
-                    className={`h-20 border-dashed border-2 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer select-none transition-all ${
-                      dragOverDetail
-                        ? 'border-primary bg-primary/5 text-primary scale-[1.01]'
-                        : 'border-gray-200 text-gray-500 hover:border-primary hover:bg-primary/5 hover:text-primary'
-                    }`}
+                    className={`h-20 border-dashed border-2 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer select-none transition-all ${dragOverDetail
+                      ? 'border-primary bg-primary/5 text-primary scale-[1.01]'
+                      : 'border-gray-200 text-gray-500 hover:border-primary hover:bg-primary/5 hover:text-primary'
+                      }`}
                   >
                     <Paperclip
                       className={`w-5 h-5 mb-0.5 ${dragOverDetail ? 'text-primary' : 'text-slate-400'}`}
@@ -1799,22 +1813,20 @@ export default function AdminTicketsManager({ id: propId }) {
                 <button
                   type="button"
                   onClick={() => setActiveTab('comments')}
-                  className={`text-xs font-bold uppercase tracking-wider pb-2 transition-colors border-b-2 -mb-2.5 px-1 ${
-                    activeTab === 'comments'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                  }`}
+                  className={`text-xs font-bold uppercase tracking-wider pb-2 transition-colors border-b-2 -mb-2.5 px-1 ${activeTab === 'comments'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    }`}
                 >
                   Comments ({comments.length})
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('history')}
-                  className={`text-xs font-bold uppercase tracking-wider pb-2 transition-colors border-b-2 -mb-2.5 px-1 ${
-                    activeTab === 'history'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                  }`}
+                  className={`text-xs font-bold uppercase tracking-wider pb-2 transition-colors border-b-2 -mb-2.5 px-1 ${activeTab === 'history'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    }`}
                 >
                   History ({ticketHistory.length})
                 </button>
@@ -2028,11 +2040,10 @@ export default function AdminTicketsManager({ id: propId }) {
                           }
                           value={newComment}
                           onChange={(e) => setNewComment(e.target.value)}
-                          className={`min-h-[85px] w-full border rounded-xl bg-white text-gray-800 dark:text-gray-200 text-xs p-3 resize-none outline-none transition-all ${
-                            dragOverComment
-                              ? 'border-blue-400 ring-2 ring-blue-100 dark:ring-blue-900/30 bg-blue-50/40'
-                              : 'border-gray-200 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30'
-                          }`}
+                          className={`min-h-[85px] w-full border rounded-xl bg-white text-gray-800 dark:text-gray-200 text-xs p-3 resize-none outline-none transition-all ${dragOverComment
+                            ? 'border-blue-400 ring-2 ring-blue-100 dark:ring-blue-900/30 bg-blue-50/40'
+                            : 'border-gray-200 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30'
+                            }`}
                         />
                         {dragOverComment && (
                           <div className="absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-1.5 pointer-events-none">
@@ -2141,7 +2152,7 @@ export default function AdminTicketsManager({ id: propId }) {
                               {hist.field_name}
                             </strong>
                             {hist.field_name !== 'description' &&
-                            hist.field_name !== 'attachments' ? (
+                              hist.field_name !== 'attachments' ? (
                               <>
                                 {' from '}
                                 <span className="font-semibold text-red-600 dark:text-red-400 line-through px-1">
@@ -2198,7 +2209,7 @@ export default function AdminTicketsManager({ id: propId }) {
                           <SelectValue placeholder="Select Status" />
                         </SelectTrigger>
                         <SelectContent>
-                          {['Open', 'In Progress', 'Resolved', 'Invalid Requirement', 'Closed'].map(
+                          {['Open', 'In Progress', 'Need more details', 'Needs Verification', 'Verified', 'Resolved', 'Invalid Requirement', 'Closed'].map(
                             (st) => (
                               <SelectItem key={st} value={st} className="text-xs">
                                 {st}

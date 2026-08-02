@@ -325,7 +325,7 @@ const AdminDashboard = () => {
       const fetchTodayDocs = supabase
         .from('documents')
         .select(
-          'id, quote_number, document_type, created_at, clients(client_name), users:created_by(full_name, username)'
+          'id, quote_number, version, document_type, created_at, clients(client_name), users:created_by(full_name, username)'
         )
         .gte('created_at', startOfTodayISO)
         .then((res) => res.data || [])
@@ -371,7 +371,9 @@ const AdminDashboard = () => {
           id: `doc-${doc.id}`,
           type: 'document',
           title: `New ${doc.document_type || 'Document'} Created by ${userName}`,
-          detail: doc.quote_number,
+          detail: doc.document_type === 'Quotation' && doc.version && doc.version > 1
+            ? `${doc.quote_number}/R${doc.version - 1}`
+            : doc.quote_number,
           subtitle: doc.clients?.client_name || 'No Client Name',
           timestamp: doc.created_at,
           originalId: doc.id,

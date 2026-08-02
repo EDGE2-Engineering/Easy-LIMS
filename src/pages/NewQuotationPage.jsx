@@ -238,6 +238,13 @@ const NewQuotationPage = () => {
       selectedTechTypes: [],
       selectedPaymentTermsTypes: [],
       paymentTermsEdits: {},
+
+      deliveryNote: '',
+      referenceNoAndDate: '',
+      buyersOrderNo: '',
+      dispatchDocNo: '',
+      dispatchedThrough: '',
+      termsOfDelivery: '',
     }),
     [user?.fullName]
   );
@@ -1175,7 +1182,7 @@ const NewQuotationPage = () => {
       try {
         const message =
           `📄 *Quotation Saved as New Version*\n\n` +
-          `Number: \`${quoteDetails.quoteNumber}/R${nextVer}\`\n` +
+          `Number: \`${quoteDetails.quoteNumber}${nextVer > 1 ? `/R${nextVer - 1}` : ''}\`\n` +
           `Client: \`${quoteDetails.clientName}\`\n` +
           `Saved By: \`${user.fullName}\``;
         await sendTelegramNotification(message);
@@ -1243,7 +1250,7 @@ const NewQuotationPage = () => {
     const baseNum = quoteDetails.quoteNumber;
     if (!baseNum) return fallback;
     if (documentType === 'Quotation') {
-      return `${baseNum}/R${currentVersion || 1}`;
+      return currentVersion && currentVersion > 1 ? `${baseNum}/R${currentVersion - 1}` : baseNum;
     }
     return baseNum;
   };
@@ -1387,6 +1394,7 @@ const NewQuotationPage = () => {
         numDays: Number(itemData.numDays ?? 1) || 1,
         total: Number(finalPrice) * Number(qty),
         hsnCode: itemData.hsnCode || '',
+        itemCode: '',
         tcList: itemData.tcList || itemData.tc_list || [],
         techList: itemData.techList || itemData.tech_list || [],
         paymentTermsList: itemData.paymentTermsList || itemData.payment_terms_list || [],
@@ -1484,6 +1492,7 @@ const NewQuotationPage = () => {
           numDays: Number(itemData.numDays ?? 1) || 1,
           total: Number(finalPrice) * Number(pkgItem.qty || 1),
           hsnCode: itemData.hsnCode || '',
+          itemCode: '',
           tcList: itemData.tcList || itemData.tc_list || [],
           techList: itemData.techList || itemData.tech_list || [],
           paymentTermsList: itemData.paymentTermsList || itemData.payment_terms_list || [],
@@ -1528,6 +1537,19 @@ const NewQuotationPage = () => {
 
   const handleDeleteItem = (rowId) => {
     setItems((prev) => prev.filter((item) => item.id !== rowId));
+  };
+
+  const handleUpdateItemCode = (rowId, codeValue) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === rowId
+          ? {
+              ...item,
+              itemCode: codeValue,
+            }
+          : item
+      )
+    );
   };
 
   const handleUpdateItemPrice = (rowId, priceValue, editableElement) => {
@@ -2604,6 +2626,42 @@ const NewQuotationPage = () => {
               </div>
             </div>
 
+            {/* Tax Invoice Details Section - Only for Tax Invoice */}
+            {documentType === 'Tax Invoice' && (
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
+                <h2 className="text-lg font-semibold mb-4 flex items-center text-gray-900">
+                  <FileText className="w-5 h-5 mr-2 text-primary" />
+                  Tax Invoice Details
+                </h2>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Purchase Order No.</Label>
+                      <Input
+                        value={quoteDetails.buyersOrderNo || ''}
+                        onChange={(e) =>
+                          setQuoteDetails({ ...quoteDetails, buyersOrderNo: e.target.value })
+                        }
+                        placeholder="Enter Purchase Order No."
+                        disabled={isReadOnly}
+                      />
+                    </div>
+                    <div>
+                      <Label>Terms of Delivery</Label>
+                      <Input
+                        value={quoteDetails.termsOfDelivery || ''}
+                        onChange={(e) =>
+                          setQuoteDetails({ ...quoteDetails, termsOfDelivery: e.target.value })
+                        }
+                        placeholder="Enter Terms of Delivery"
+                        disabled={isReadOnly}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Billing & Bank Selection Section */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
               <h2 className="text-lg font-semibold mb-4 flex items-center text-gray-900">
@@ -3117,6 +3175,21 @@ const NewQuotationPage = () => {
                                 </p>
                               </div>
                             </div>
+
+                            {/* Tax Invoice Details - Only for Tax Invoice */}
+                            {documentType === 'Tax Invoice' && (
+                              <div className="grid grid-cols-2 border-t border-l border-gray-200 rounded-md text-xs mt-2 mb-3 overflow-hidden bg-gray-50/20">
+                                <div className="p-2 border-r border-b border-gray-200 min-w-0">
+                                  <span className="font-semibold text-gray-500 block uppercase tracking-wider text-[9px] leading-tight">Purchase Order No.</span>
+                                  <span className="text-gray-900 font-medium block truncate" title={quoteDetails.buyersOrderNo}>{quoteDetails.buyersOrderNo || '-'}</span>
+                                </div>
+                                <div className="p-2 border-r border-b border-gray-200 min-w-0">
+                                  <span className="font-semibold text-gray-500 block uppercase tracking-wider text-[9px] leading-tight">Terms of Delivery</span>
+                                  <span className="text-gray-900 font-medium block truncate" title={quoteDetails.termsOfDelivery}>{quoteDetails.termsOfDelivery || '-'}</span>
+                                </div>
+                              </div>
+                            )}
+
                             <div className="text-xs text-right">
                               Created by: {quoteDetails.generatedBy}
                             </div>
@@ -3140,9 +3213,10 @@ const NewQuotationPage = () => {
                             <col
                               style={{
                                 width:
-                                  documentType === 'Quotation' ? (daysShow ? '48%' : '53%') : '53%',
+                                  documentType === 'Quotation' ? (daysShow ? '40%' : '45%') : '45%',
                               }}
                             />
+                            <col style={{ width: '8%' }} />
                             <col style={{ width: '8%' }} />
                             <col style={{ width: '10%' }} />
                             <col style={{ width: '6%' }} />
@@ -3165,7 +3239,13 @@ const NewQuotationPage = () => {
                                 className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
                                 style={{ color: 'rgb(33, 112, 187)' }}
                               >
-                                Description
+                                Description of Goods and Services
+                              </th>
+                              <th
+                                className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
+                                style={{ color: 'rgb(33, 112, 187)' }}
+                              >
+                                Item Code
                               </th>
                               <th
                                 className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
@@ -3183,7 +3263,7 @@ const NewQuotationPage = () => {
                                 className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
                                 style={{ color: 'rgb(33, 112, 187)' }}
                               >
-                                Unit
+                                UOM
                               </th>
                               <th
                                 className="text-center border border-gray-200 py-3 px-1 font-semibold text-xs"
@@ -3266,7 +3346,7 @@ const NewQuotationPage = () => {
                                       onMouseLeave={() => setHoveredPackageGroupId(null)}
                                     >
                                       <td
-                                        colSpan={documentType === 'Quotation' && daysShow ? 8 : 7}
+                                        colSpan={documentType === 'Quotation' && daysShow ? 9 : 8}
                                         className={cn(
                                           'py-2 px-2 font-black text-[10px] text-gray-900 uppercase tracking-widest text-left border-l border-r border-gray-200 bg-gray-50',
                                           isHoveredGroup && 'package-group-border-l border-l-2'
@@ -3409,6 +3489,32 @@ const NewQuotationPage = () => {
                                             </p>
                                           ) : null;
                                         })()}
+                                    </td>
+                                    <td
+                                      className={cn(
+                                        'py-0 px-1 text-center text-gray-600 font-medium text-[10px] align-top border-r border-l border-gray-200',
+                                        getCellClasses('none'),
+                                        getPersistentCellClasses()
+                                      )}
+                                    >
+                                      <span
+                                        contentEditable={!isReadOnly}
+                                        suppressContentEditableWarning
+                                        onBlur={(e) =>
+                                          handleUpdateItemCode(
+                                            item.id,
+                                            e.currentTarget.textContent
+                                          )
+                                        }
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            e.currentTarget.blur();
+                                          }
+                                        }}
+                                      >
+                                        {item.itemCode || ''}
+                                      </span>
                                     </td>
                                     <td
                                       className={cn(
@@ -3564,7 +3670,7 @@ const NewQuotationPage = () => {
                             {page.items.length === 0 && (
                               <tr>
                                 <td
-                                  colSpan={documentType === 'Quotation' ? '8' : '7'}
+                                  colSpan={documentType === 'Quotation' ? (daysShow ? '9' : '8') : '8'}
                                   className="py-8 text-center text-gray-400 italic"
                                 >
                                   No items added yet.

@@ -307,7 +307,11 @@ const AccountsDashboard = () => {
                             <FileText className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-gray-900">{doc.quote_number}</p>
+                            <p className="text-sm font-bold text-gray-900">
+                              {doc.document_type === 'Quotation' && doc.version && doc.version > 1
+                                ? `${doc.quote_number}/R${doc.version - 1}`
+                                : doc.quote_number}
+                            </p>
                             <p className="text-[10px] text-gray-400 font-black uppercase tracking-tight">
                               {doc.document_type} • {doc.clients?.client_name}
                             </p>

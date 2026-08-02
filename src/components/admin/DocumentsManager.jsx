@@ -721,7 +721,9 @@ const DocumentsManager = () => {
                   >
                     <td className="py-4 px-3 align-top whitespace-nowrap">
                       <div className="font-mono text-xs font-semibold text-gray-700">
-                        {record.quote_number}
+                        {record.document_type === 'Quotation' && record.version && record.version > 1
+                          ? `${record.quote_number}/R${record.version - 1}`
+                          : record.quote_number}
                       </div>
                     </td>
 
