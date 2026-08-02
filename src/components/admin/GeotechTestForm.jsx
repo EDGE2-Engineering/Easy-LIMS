@@ -1167,10 +1167,11 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
 
                     <div className="space-y-6">
                       {sbcEntries.map((sbcVal, entryIndex) => {
+                        const categoryLower = materialCategory?.toLowerCase().trim();
                         const type =
-                          materialCategory === 'Rock'
+                          categoryLower === 'rock'
                             ? 'Rock'
-                            : materialCategory === 'Soil'
+                            : categoryLower === 'soil'
                               ? 'Soil'
                               : sbcVal.foundationType || 'Soil';
 
@@ -1197,7 +1198,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                               )}
                             </div>
 
-                            {materialCategory === 'Soil and Rock' && (
+                            {categoryLower === 'soil and rock' && (
                               <div className="flex items-center gap-4 bg-gray-50/50 dark:bg-gray-700/50 p-2 rounded-lg border border-gray-100 dark:border-gray-600">
                                 <Label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">
                                   Foundation Material

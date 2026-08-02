@@ -212,8 +212,13 @@ const ProjectDetailsBlock = ({ data }) => {
   };
 
   const getBoreholeMaxDepth = (bh, idx) => {
-    console.log(data);
-    return data.maxDepths?.[idx] ?? '-';
+    const enteredDepth = data.maxDepths?.[idx];
+    if (enteredDepth != null && enteredDepth !== '') return enteredDepth;
+    if (bh && bh.length > 0) {
+      const lastRow = bh[bh.length - 1];
+      return lastRow.toDepth || lastRow.depth || '-';
+    }
+    return '-';
   };
 
   const numBoreholes = data.boreholeLogs?.length || 1;
@@ -475,7 +480,7 @@ const GeotechnicalExplorationBlock = ({ data }) => {
         length of cores retrieved.
         <br />
         <b>Water Level Observation:</b> The depth of ground water table (G.W.T) was checked/
-        measured in all two bore holes. Ground water table was not found in any of the bore holes
+        measured in all {numBoreholes || 'two'} bore holes. Ground water table was not found in any of the bore holes
         during the boring activity.
       </p>
 

@@ -524,7 +524,9 @@ const JobsManager = ({ id }) => {
       // Find GeotechData (Soil and Rock > Soil > Rock priority)
       let geotechData = null;
       for (const cat of ['Soil and Rock', 'Soil', 'Rock']) {
-        const entry = (testData || []).find((t) => t.category === cat);
+        const entry = (testData || []).find(
+          (t) => t.category?.toLowerCase().trim() === cat.toLowerCase()
+        );
         if (entry?.results?.GeotechData) {
           geotechData = entry.results.GeotechData;
           break;
