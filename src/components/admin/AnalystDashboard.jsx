@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Briefcase,
@@ -11,23 +12,26 @@ import {
   MessageSquare,
   Zap,
   AlertCircle,
+  Ticket,
 } from 'lucide-react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { WORKFLOW_STATES, APP_CONFIG } from '@/data/config';
+import { WORKFLOW_STATES, APP_CONFIG, TICKET_STATUSES } from '@/data/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const AnalystDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
   const [assignedJobs, setAssignedJobs] = useState([]);
   const [workflowCounts, setWorkflowCounts] = useState({});
+  const [tickets, setTickets] = useState([]);
 
   useEffect(() => {
     if (user?.id) {
@@ -69,6 +73,16 @@ const AnalystDashboard = () => {
         return acc;
       }, {});
       setWorkflowCounts(counts);
+
+      // Fetch tickets created by current user
+      const { data: ticketsData, error: ticketsError } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('created_by', user.id)
+        .order('created_at', { ascending: false });
+
+      if (ticketsError) throw ticketsError;
+      setTickets(ticketsData || []);
     } catch (error) {
       console.error('Dashboard Fetch Error:', error);
     } finally {
@@ -90,6 +104,40 @@ const AnalystDashboard = () => {
   };
 
   const getStateLabel = (state) => APP_CONFIG.workflow.states[state]?.label || state;
+
+  const getPriorityStyle = (priority) => {
+    switch (priority) {
+      case 'high':
+        return 'bg-red-50 text-red-700 border-red-200';
+      case 'medium':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      default:
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    }
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case TICKET_STATUSES.OPEN:
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case TICKET_STATUSES.IN_PROGRESS:
+        return 'bg-purple-50 text-purple-700 border-purple-200';
+      case TICKET_STATUSES.NEED_MORE_DETAILS:
+        return 'bg-orange-50 text-orange-700 border-orange-200';
+      case TICKET_STATUSES.NEEDS_VERIFICATION:
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case TICKET_STATUSES.VERIFIED:
+        return 'bg-teal-50 text-teal-700 border-teal-200';
+      case TICKET_STATUSES.RESOLVED:
+        return 'bg-green-50 text-green-700 border-green-200';
+      case TICKET_STATUSES.INVALID_REQUIREMENT:
+        return 'bg-gray-100 text-gray-600 border-gray-200';
+      case TICKET_STATUSES.CLOSED:
+        return 'bg-slate-200 text-slate-800 border-slate-300';
+      default:
+        return 'bg-slate-50 text-slate-700 border-slate-200';
+    }
+  };
 
   if (loading) {
     return (
@@ -233,6 +281,51 @@ const AnalystDashboard = () => {
                         <div className="flex items-center gap-2">
                           <Badge className="bg-primary/10 text-primary border-none shadow-none text-xs font-black uppercase">
                             {getStateLabel(job.status)}
+                          </Badge>
+                          <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-primary transition-colors" />
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden mt-6">
+              <CardHeader className="border-b border-gray-50 bg-gray-50/30 p-6">
+                <CardTitle className="text-lg font-black text-gray-900 tracking-tight flex items-center gap-2">
+                  <Ticket className="w-5 h-5 text-primary" /> My Tickets
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-gray-50 max-h-[400px] overflow-y-auto">
+                  {tickets.length === 0 ? (
+                    <div className="p-8 text-center text-gray-400 font-medium italic text-sm">
+                      No tickets created by you.
+                    </div>
+                  ) : (
+                    tickets.map((ticket) => (
+                      <div
+                        key={ticket.id}
+                        className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center group cursor-pointer"
+                        onClick={() => {
+                          navigate(`/settings/tickets/${ticket.id}`);
+                        }}
+                      >
+                        <div>
+                          <p className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">
+                            {ticket.title}
+                          </p>
+                          <p className="text-xs text-gray-500 font-medium mt-0.5">
+                            Created on {new Date(ticket.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className={`${getPriorityStyle(ticket.priority)} border-none shadow-none text-xs font-black uppercase`}>
+                            {ticket.priority}
+                          </Badge>
+                          <Badge className={`${getStatusStyle(ticket.status)} border-none shadow-none text-xs font-black uppercase`}>
+                            {ticket.status}
                           </Badge>
                           <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-primary transition-colors" />
                         </div>
