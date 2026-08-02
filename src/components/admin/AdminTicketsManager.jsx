@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { DEPARTMENTS, ROLES } from '@/data/config';
+import { DEPARTMENTS, ROLES, TICKET_STATUSES } from '@/data/config';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -155,10 +155,17 @@ const RichTextEditor = ({ content, onChange }) => {
   );
 };
 
-const DEFAULT_STATUS_FILTER_VALUES = ['Open', 'In Progress', 'Need More Details', 'Needs Verification', 'Invalid Requirement', 'Verified'];
+const DEFAULT_STATUS_FILTER_VALUES = [
+  TICKET_STATUSES.OPEN,
+  TICKET_STATUSES.IN_PROGRESS,
+  TICKET_STATUSES.NEED_MORE_DETAILS,
+  TICKET_STATUSES.NEEDS_VERIFICATION,
+  TICKET_STATUSES.INVALID_REQUIREMENT,
+  TICKET_STATUSES.VERIFIED,
+];
 
 const StatusMultiSelect = ({ selected, onChange }) => {
-  const statuses = ['Open', 'In Progress', 'Need More Details', 'Needs Verification', 'Verified', 'Resolved', 'Invalid Requirement', 'Closed'];
+  const statuses = Object.values(TICKET_STATUSES);
 
   const toggleStatus = (status) => {
     if (selected.includes(status)) {
@@ -283,7 +290,7 @@ export default function AdminTicketsManager({ id: propId }) {
     description: '',
     department: '',
     priority: 'medium',
-    status: 'Open',
+    status: TICKET_STATUSES.OPEN,
   });
   const [editTicketAttachments, setEditTicketAttachments] = useState([]);
   const [newEditAttachments, setNewEditAttachments] = useState([]);
@@ -620,7 +627,7 @@ export default function AdminTicketsManager({ id: propId }) {
           priority: newTicket.priority,
           attachments: uploadedAttachments,
           created_by: user.id,
-          status: 'Open',
+          status: TICKET_STATUSES.OPEN,
         },
       ]);
       if (error) throw error;
@@ -849,8 +856,15 @@ export default function AdminTicketsManager({ id: propId }) {
 
   const getAllowedStatuses = (ticket) => {
     if (!ticket) return [];
-    if (isAdmin()) return ['Open', 'In Progress', 'Need more details', 'Needs Verification', 'Verified', 'Resolved', 'Invalid Requirement', 'Closed'];
-    if (ticket.created_by === user.id) return ['Open', 'Need more details', 'Needs Verification', 'Verified', 'Resolved', 'Invalid Requirement'];
+    if (isAdmin()) return Object.values(TICKET_STATUSES);
+    if (ticket.created_by === user.id) return [
+      TICKET_STATUSES.OPEN,
+      TICKET_STATUSES.NEED_MORE_DETAILS,
+      TICKET_STATUSES.NEEDS_VERIFICATION,
+      TICKET_STATUSES.VERIFIED,
+      TICKET_STATUSES.RESOLVED,
+      TICKET_STATUSES.INVALID_REQUIREMENT,
+    ];
     return [];
   };
 
@@ -1022,21 +1036,21 @@ export default function AdminTicketsManager({ id: propId }) {
 
   const getStatusStyle = (status) => {
     switch (status) {
-      case 'Open':
+      case TICKET_STATUSES.OPEN:
         return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'In Progress':
+      case TICKET_STATUSES.IN_PROGRESS:
         return 'bg-purple-50 text-purple-700 border-purple-200';
-      case 'Need more details':
+      case TICKET_STATUSES.NEED_MORE_DETAILS:
         return 'bg-orange-50 text-orange-700 border-orange-200';
-      case 'Needs Verification':
+      case TICKET_STATUSES.NEEDS_VERIFICATION:
         return 'bg-amber-50 text-amber-700 border-amber-200';
-      case 'Verified':
+      case TICKET_STATUSES.VERIFIED:
         return 'bg-teal-50 text-teal-700 border-teal-200';
-      case 'Resolved':
+      case TICKET_STATUSES.RESOLVED:
         return 'bg-green-50 text-green-700 border-green-200';
-      case 'Invalid Requirement':
+      case TICKET_STATUSES.INVALID_REQUIREMENT:
         return 'bg-gray-100 text-gray-600 border-gray-200';
-      case 'Closed':
+      case TICKET_STATUSES.CLOSED:
         return 'bg-slate-200 text-slate-800 border-slate-300';
       default:
         return 'bg-slate-50 text-slate-700 border-slate-200';
@@ -1533,19 +1547,19 @@ export default function AdminTicketsManager({ id: propId }) {
             <div className="w-32 hidden">
               <Select value={ticketDetails.status} onValueChange={handleStatusChange}>
                 <SelectTrigger
-                  className={`h-8 w-full font-bold text-xs border-none rounded-lg text-white shadow-sm flex items-center justify-between px-3 py-1 cursor-pointer transition-colors ${ticketDetails.status === 'Open'
+                  className={`h-8 w-full font-bold text-xs border-none rounded-lg text-white shadow-sm flex items-center justify-between px-3 py-1 cursor-pointer transition-colors ${ticketDetails.status === TICKET_STATUSES.OPEN
                     ? 'bg-[#0052CC] hover:bg-[#0040A3]'
-                    : ticketDetails.status === 'In Progress'
+                    : ticketDetails.status === TICKET_STATUSES.IN_PROGRESS
                       ? 'bg-[#FFAB00] text-slate-900 hover:bg-[#E69A00]'
-                      : ticketDetails.status === 'Need more details'
+                      : ticketDetails.status === TICKET_STATUSES.NEED_MORE_DETAILS
                         ? 'bg-[#E56A54] text-white hover:bg-[#D45943]'
-                        : ticketDetails.status === 'Needs Verification'
+                        : ticketDetails.status === TICKET_STATUSES.NEEDS_VERIFICATION
                           ? 'bg-[#00B8D9] text-white hover:bg-[#0097B2]'
-                          : ticketDetails.status === 'Verified'
+                          : ticketDetails.status === TICKET_STATUSES.VERIFIED
                             ? 'bg-[#00875A] text-white hover:bg-[#006644]'
-                            : ticketDetails.status === 'Resolved'
+                            : ticketDetails.status === TICKET_STATUSES.RESOLVED
                               ? 'bg-[#36B37E] hover:bg-[#2A9162]'
-                              : ticketDetails.status === 'Invalid Requirement'
+                              : ticketDetails.status === TICKET_STATUSES.INVALID_REQUIREMENT
                                 ? 'bg-[#FF5630] hover:bg-[#DE350B]'
                                 : 'bg-[#5E6C84] hover:bg-[#4A5568]'
                     }`}
@@ -1563,19 +1577,19 @@ export default function AdminTicketsManager({ id: propId }) {
             </div>
           ) : (
             <span
-              className={`inline-flex items-center h-8 px-3 rounded-lg text-xs font-bold border text-white ${ticketDetails.status === 'Open'
+              className={`inline-flex items-center h-8 px-3 rounded-lg text-xs font-bold border text-white ${ticketDetails.status === TICKET_STATUSES.OPEN
                 ? 'bg-[#0052CC] border-[#0052CC]'
-                : ticketDetails.status === 'In Progress'
+                : ticketDetails.status === TICKET_STATUSES.IN_PROGRESS
                   ? 'bg-[#FFAB00] text-slate-900 border-[#FFAB00]'
-                  : ticketDetails.status === 'Need more details'
+                  : ticketDetails.status === TICKET_STATUSES.NEED_MORE_DETAILS
                     ? 'bg-[#E56A54] border-[#E56A54]'
-                    : ticketDetails.status === 'Needs Verification'
+                    : ticketDetails.status === TICKET_STATUSES.NEEDS_VERIFICATION
                       ? 'bg-[#00B8D9] border-[#00B8D9]'
-                      : ticketDetails.status === 'Verified'
+                      : ticketDetails.status === TICKET_STATUSES.VERIFIED
                         ? 'bg-[#00875A] border-[#00875A]'
-                        : ticketDetails.status === 'Resolved'
+                        : ticketDetails.status === TICKET_STATUSES.RESOLVED
                           ? 'bg-[#36B37E] border-[#36B37E]'
-                          : ticketDetails.status === 'Invalid Requirement'
+                          : ticketDetails.status === TICKET_STATUSES.INVALID_REQUIREMENT
                             ? 'bg-[#FF5630] border-[#FF5630]'
                             : 'bg-[#5E6C84] border-[#5E6C84]'
                 }`}
@@ -2209,7 +2223,7 @@ export default function AdminTicketsManager({ id: propId }) {
                           <SelectValue placeholder="Select Status" />
                         </SelectTrigger>
                         <SelectContent>
-                          {['Open', 'In Progress', 'Need more details', 'Needs Verification', 'Verified', 'Resolved', 'Invalid Requirement', 'Closed'].map(
+                          {Object.values(TICKET_STATUSES).map(
                             (st) => (
                               <SelectItem key={st} value={st} className="text-xs">
                                 {st}

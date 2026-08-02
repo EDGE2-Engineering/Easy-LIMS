@@ -574,3 +574,15 @@ export const getSiteContent = () => ({
 });
 
 export const enableInfoDiagramZoom = true;
+
+export const TICKET_STATUSES = {
+  OPEN: 'Open',
+  IN_PROGRESS: 'In Progress',
+  NEED_MORE_DETAILS: 'Need More Details',
+  NEEDS_VERIFICATION: 'Needs Verification',
+  VERIFIED: 'Verified',
+  RESOLVED: 'Resolved',
+  INVALID_REQUIREMENT: 'Invalid Requirement',
+  CLOSED: 'Closed',
+};
+
