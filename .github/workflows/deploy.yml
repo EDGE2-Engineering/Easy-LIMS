@@ -3,18 +3,23 @@ name: Deploy to AWS Lightsail
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch name to deploy'
+        required: true
+        default: 'main'
+        type: string
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: SSH and Deploy
+      - name: SSH and Deploy via Makefile
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.LIGHTSAIL_IP }}
           username: ubuntu
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
           script: |
-            cd /opt/easy-lims/app
-            git pull origin main
-            docker compose up -d --build --no-deps fastapi
+            /home/ubuntu/deploy.sh ${{ inputs.branch || 'main' }}

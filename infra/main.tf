@@ -19,7 +19,7 @@ provider "aws" {
 }
 
 # ----------------------------------------------------------------------------
-# AWS Lightsail Instance (Docker & Caddy Setup)
+# AWS Lightsail Instance (Makefile / Direct Deployment with Node.js 22 LTS)
 # ----------------------------------------------------------------------------
 
 resource "aws_lightsail_instance" "easy_lims" {
@@ -31,10 +31,78 @@ resource "aws_lightsail_instance" "easy_lims" {
   user_data = <<-EOF
               #!/bin/bash
               export DEBIAN_FRONTEND=noninteractive
-              apt-get update -y
-              apt-get install -y docker.io docker-compose-v2 git
+              export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
-              # Enable 1GB Swap Memory to prevent OOM
+              # 1. Create /home/ubuntu/deploy.sh with flock process protection
+              cat <<'DEPLOY_SCRIPT' > /home/ubuntu/deploy.sh
+              #!/bin/bash
+              set -e
+              export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+
+              # File lock to prevent concurrent executions
+              exec 200>/tmp/deploy.lock
+              flock -n 200 || { echo "Deployment script is already running. Exiting concurrent run."; exit 0; }
+
+              # Wait for system package installation (cloud-init) if npm/node is still installing
+              while ! command -v npm &> /dev/null; do
+                echo "Waiting for Node.js & npm package installation to finish..."
+                sleep 5
+              done
+
+              BRANCH="$${1:-lightsail}"
+              REPO_URL="${var.git_repo_url}"
+              APP_DIR="/home/ubuntu/Easy-LIMS"
+
+              echo "=== Deploying Easy-LIMS (Branch: $BRANCH) ==="
+
+              if [ ! -d "$APP_DIR/.git" ]; then
+                echo "Cloning repository from $REPO_URL..."
+                git clone $REPO_URL $APP_DIR
+              fi
+
+              cd $APP_DIR
+
+              echo "Fetching latest changes for branch: $BRANCH..."
+              git fetch origin
+              git checkout $BRANCH
+              git pull origin $BRANCH
+
+              # Ensure server directory exists and update .env
+              mkdir -p server
+              echo "DATABASE_URL='${var.database_url}'" > server/.env
+
+              # Clean npm cache safely
+              rm -rf ~/.npm/_cacache /tmp/npm-* 2>/dev/null || true
+
+              # Build UI frontend directly inside ui/
+              if [ -d "ui" ]; then
+                echo "Installing UI dependencies and building React frontend in ui/..."
+                cd ui
+                npm install --no-audit --no-fund
+                npm run build
+                cd ..
+                mkdir -p server/dist
+                cp -r ui/dist/* server/dist/ || true
+              fi
+
+              # Install Python dependencies and start FastAPI server
+              if [ -d "server" ]; then
+                echo "Installing Python dependencies in server/..."
+                pip3 install -r server/requirements.txt uvicorn --break-system-packages 2>/dev/null || pip3 install -r server/requirements.txt uvicorn || true
+
+                echo "Stopping existing server on port 8000..."
+                lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+
+                echo "Launching FastAPI server on http://0.0.0.0:8000..."
+                cd server
+                python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
+              fi
+              DEPLOY_SCRIPT
+
+              chmod +x /home/ubuntu/deploy.sh
+              chown ubuntu:ubuntu /home/ubuntu/deploy.sh
+
+              # 2. Enable 1GB Swap Memory to prevent OOM
               if [ ! -f /swapfile ]; then
                 fallocate -l 1G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=1024
                 chmod 600 /swapfile
@@ -43,28 +111,38 @@ resource "aws_lightsail_instance" "easy_lims" {
                 echo '/swapfile none swap sw 0 0' >> /etc/fstab
               fi
 
-              # Start & Enable Docker
-              systemctl enable docker
-              systemctl start docker
-              usermod -aG docker ubuntu || true
+              # 3. Install Node.js 22 LTS (NodeSource) and system tools
+              apt-get update -y
+              apt-get install -y curl ca-certificates gnupg
+              mkdir -p /etc/apt/keyrings
+              curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+              echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
+              apt-get update -y
+              apt-get install -y nodejs python3-pip python3-venv git unzip make lsof
 
-              # Clone application repository
-              mkdir -p /opt/easy-lims
-              cd /opt/easy-lims
+              # 4. Run initial deployment as ubuntu user for lightsail branch
+              su - ubuntu -c "/home/ubuntu/deploy.sh lightsail" || true
 
-              if [ ! -d "/opt/easy-lims/app/.git" ]; then
-                rm -rf /opt/easy-lims/app
-                git clone ${var.git_repo_url} /opt/easy-lims/app
-              fi
+              # 5. Setup systemd service for automatic startup on boot
+              cat <<'SERVICE' > /etc/systemd/system/easy-lims.service
+              [Unit]
+              Description=Easy-LIMS Application Service
+              After=network.target
 
-              cd /opt/easy-lims/app
-              git pull origin main || true
+              [Service]
+              User=ubuntu
+              WorkingDirectory=/home/ubuntu
+              ExecStart=/bin/bash /home/ubuntu/deploy.sh lightsail
+              Restart=always
+              Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-              # Environment Setup
-              echo "DATABASE_URL='${var.database_url}'" > /opt/easy-lims/app/.env
+              [Install]
+              WantedBy=multi-user.target
+              SERVICE
 
-              # Launch Docker Compose (FastAPI + Caddy)
-              docker compose up -d --build || true
+              systemctl daemon-reload
+              systemctl enable easy-lims
+              systemctl restart easy-lims
               EOF
 
   tags = {
@@ -94,6 +172,12 @@ resource "aws_lightsail_instance_public_ports" "easy_lims_ports" {
 
   port_info {
     protocol  = "tcp"
+    from_port = 8000
+    to_port   = 8000
+  }
+
+  port_info {
+    protocol  = "tcp"
     from_port = 80
     to_port   = 80
   }
@@ -102,12 +186,6 @@ resource "aws_lightsail_instance_public_ports" "easy_lims_ports" {
     protocol  = "tcp"
     from_port = 443
     to_port   = 443
-  }
-
-  port_info {
-    protocol  = "tcp"
-    from_port = 8000
-    to_port   = 8000
   }
 
   port_info {
@@ -134,14 +212,14 @@ variable "lightsail_bundle_id" {
 variable "git_repo_url" {
   description = "Git Repository URL to clone application code"
   type        = string
-  default     = "https://github.com/EDGE2-Engineering/Easy-LIMS"
+  default     = "https://github.com/EDGE2-Engineering/Easy-LIMS.git"
 }
 
 variable "database_url" {
   description = "PostgreSQL Database Connection String"
   type        = string
   sensitive   = true
-  default     = "postgresql://postgres.project_id:password@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
+  default     = "postgresql://postgres.igkdjtmcychevvaldkwf:LimasaEdgea@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
 }
 
 output "lightsail_static_ip" {
@@ -151,5 +229,5 @@ output "lightsail_static_ip" {
 
 output "application_url" {
   description = "Application URL"
-  value       = "http://${aws_lightsail_static_ip.easy_lims_ip.ip_address}"
+  value       = "http://${aws_lightsail_static_ip.easy_lims_ip.ip_address}:8000"
 }

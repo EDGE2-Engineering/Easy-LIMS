@@ -32,13 +32,17 @@ function Invoke-Install {
 
 function Invoke-Build {
     Invoke-Install
-    Write-Host "Building the project..." -ForegroundColor Green
+    Write-Host "Building UI frontend..." -ForegroundColor Green
     if (Test-Path ui) { Push-Location ui; npm run build; Pop-Location } else { npm run build }
+    Write-Host "Copying dist to server/dist..." -ForegroundColor Green
+    if (-not (Test-Path server/dist)) { New-Item -ItemType Directory -Path server/dist -Force }
+    if (Test-Path ui/dist) { Copy-Item -Recurse -Force ui/dist/* server/dist/ }
 }
 
 function Invoke-CleanBuild {
     Write-Host "Cleaning build artifacts..." -ForegroundColor Green
     if (Test-Path ui/dist) { Remove-Item -Recurse -Force ui/dist }
+    if (Test-Path server/dist) { Remove-Item -Recurse -Force server/dist }
     if (Test-Path dist) { Remove-Item -Recurse -Force dist }
 }
 
@@ -51,26 +55,35 @@ function Invoke-Clean {
 }
 
 function Invoke-Dev {
-    Invoke-Install
-    Write-Host "Starting development server on http://localhost:3000..." -ForegroundColor Green
-    if (Test-Path ui) { Push-Location ui; npm run dev; Pop-Location } else { npm run dev }
+    Invoke-Build
+    Write-Host "Installing Python dependencies..." -ForegroundColor Green
+    pip install -r server/requirements.txt uvicorn
+    Write-Host "Starting FastAPI server on http://0.0.0.0:8000..." -ForegroundColor Green
+    Push-Location server
+    python -m uvicorn main:app --host 0.0.0.0 --reload --port 8000
+    Pop-Location
 }
 
 function Invoke-Preview {
-    Write-Host "Starting preview server on http://localhost:3000..." -ForegroundColor Green
-    if (Test-Path ui) { Push-Location ui; npm run preview; Pop-Location } else { npm run preview }
+    Invoke-Build
+    Write-Host "Installing Python dependencies..." -ForegroundColor Green
+    pip install -r server/requirements.txt uvicorn
+    Write-Host "Starting FastAPI server on http://0.0.0.0:8000..." -ForegroundColor Green
+    Push-Location server
+    python -m uvicorn main:app --host 0.0.0.0 --port 8000
+    Pop-Location
 }
 
 function Invoke-Stop {
-    Write-Host "Stopping servers on port 3000..." -ForegroundColor Green
-    $connections = Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue
+    Write-Host "Stopping servers on port 8000..." -ForegroundColor Green
+    $connections = Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue
     if ($connections) {
         foreach ($c in $connections) {
             Stop-Process -Id $c.OwningProcess -Force -ErrorAction SilentlyContinue
         }
-        Write-Host "Stopped processes running on port 3000." -ForegroundColor Green
+        Write-Host "Stopped processes running on port 8000." -ForegroundColor Green
     } else {
-        Write-Host "No process found on port 3000." -ForegroundColor Yellow
+        Write-Host "No process found on port 8000." -ForegroundColor Yellow
     }
 }
 

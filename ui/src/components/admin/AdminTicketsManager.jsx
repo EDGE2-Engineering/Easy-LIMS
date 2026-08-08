@@ -394,7 +394,7 @@ export default function AdminTicketsManager({ id: propId }) {
         priority: data.priority,
         status: data.status,
       });
-      setEditTicketAttachments(data.attachments || []);
+      setEditTicketAttachments(parseAttachments(data.attachments));
       fetchComments(tId);
       fetchTicketHistory(tId);
     } catch (err) {
@@ -498,7 +498,7 @@ export default function AdminTicketsManager({ id: propId }) {
       const allPaths = [];
 
       // Ticket-level attachments
-      (ticketDetails.attachments || []).forEach((a) => {
+      parseAttachments(ticketDetails.attachments).forEach((a) => {
         if (a.path) allPaths.push(a.path);
       });
 
@@ -509,7 +509,7 @@ export default function AdminTicketsManager({ id: propId }) {
         .eq('ticket_id', ticketDetails.id);
 
       (commentRows || []).forEach((row) => {
-        (row.attachments || []).forEach((a) => {
+        parseAttachments(row.attachments).forEach((a) => {
           if (a.path) allPaths.push(a.path);
         });
       });
@@ -787,7 +787,7 @@ export default function AdminTicketsManager({ id: propId }) {
   const handleDeleteComment = async (comment) => {
     try {
       // Delete storage files attached to this comment
-      const paths = (comment.attachments || []).filter((a) => a.path).map((a) => a.path);
+      const paths = parseAttachments(comment.attachments).filter((a) => a.path).map((a) => a.path);
       if (paths.length > 0) {
         await supabase.storage.from('ticket-attachments').remove(paths);
       }
@@ -1022,6 +1022,20 @@ export default function AdminTicketsManager({ id: propId }) {
     if (file.type && file.type.startsWith('image/')) return true;
     const ext = (file.name || '').split('.').pop().toLowerCase();
     return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext);
+  };
+
+  const parseAttachments = (attachments) => {
+    if (!attachments) return [];
+    if (Array.isArray(attachments)) return attachments;
+    if (typeof attachments === 'string') {
+      try {
+        const parsed = JSON.parse(attachments);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
   };
 
   const getPriorityStyle = (priority) => {
@@ -1340,7 +1354,8 @@ export default function AdminTicketsManager({ id: propId }) {
         });
       }
 
-      const finalAttachments = [...(ticketDetails.attachments || []), ...uploadedAttachments];
+      const currentAttach = parseAttachments(ticketDetails.attachments);
+      const finalAttachments = [...currentAttach, ...uploadedAttachments];
       const { error } = await supabase
         .from('tickets')
         .update({ attachments: finalAttachments })
@@ -1354,7 +1369,7 @@ export default function AdminTicketsManager({ id: propId }) {
           ticket_id: ticketDetails.id,
           user_id: user.id,
           field_name: 'attachments',
-          old_value: `${(ticketDetails.attachments || []).length} files`,
+          old_value: `${currentAttach.length} files`,
           new_value: `${finalAttachments.length} files (Added ${uploadedAttachments.map((f) => f.name).join(', ')})`,
         });
       } catch (histErr) {
@@ -1373,8 +1388,9 @@ export default function AdminTicketsManager({ id: propId }) {
 
   const handleImmediateDeleteAttachment = async (idxToDelete) => {
     try {
-      const deletedFile = ticketDetails.attachments?.[idxToDelete];
-      const remaining = (ticketDetails.attachments || []).filter((_, i) => i !== idxToDelete);
+      const currentAttach = parseAttachments(ticketDetails.attachments);
+      const deletedFile = currentAttach[idxToDelete];
+      const remaining = currentAttach.filter((_, i) => i !== idxToDelete);
       const { error } = await supabase
         .from('tickets')
         .update({ attachments: remaining })
@@ -1387,7 +1403,7 @@ export default function AdminTicketsManager({ id: propId }) {
           ticket_id: ticketDetails.id,
           user_id: user.id,
           field_name: 'attachments',
-          old_value: `${(ticketDetails.attachments || []).length} files`,
+          old_value: `${currentAttach.length} files`,
           new_value: `${remaining.length} files (Removed ${deletedFile?.name || 'file'})`,
         });
       } catch (histErr) {
@@ -1742,9 +1758,9 @@ export default function AdminTicketsManager({ id: propId }) {
               )}
 
               {/* Attachment Grid list */}
-              {ticketDetails.attachments?.length > 0 ? (
+              {parseAttachments(ticketDetails.attachments).length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-1">
-                  {ticketDetails.attachments.map((file, idx) => (
+                  {parseAttachments(ticketDetails.attachments).map((file, idx) => (
                     <div
                       key={idx}
                       className="relative overflow-hidden rounded-xl border border-gray-200 bg-gray-50 flex flex-col group h-40 transition-shadow hover:shadow-sm"
@@ -1959,9 +1975,9 @@ export default function AdminTicketsManager({ id: propId }) {
                               </p>
                             )}
 
-                            {comment.attachments?.length > 0 && (
+                            {parseAttachments(comment.attachments).length > 0 && (
                               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-800/50">
-                                {comment.attachments.map((file, idx) => (
+                                {parseAttachments(comment.attachments).map((file, idx) => (
                                   <div
                                     key={idx}
                                     className="relative overflow-hidden rounded-xl border border-gray-200 bg-gray-50 flex flex-col group h-28 transition-shadow hover:shadow-sm"
@@ -2794,11 +2810,11 @@ export default function AdminTicketsManager({ id: propId }) {
                               {ticket.description}
                             </p>
                           )}
-                          {ticket.attachments?.length > 0 && (
+                          {parseAttachments(ticket.attachments).length > 0 && (
                             <span className="inline-flex items-center gap-1 text-[10px] text-primary font-bold mt-1">
                               <Paperclip className="w-3 h-3" />
-                              {ticket.attachments.length} file
-                              {ticket.attachments.length > 1 ? 's' : ''}
+                              {parseAttachments(ticket.attachments).length} file
+                              {parseAttachments(ticket.attachments).length > 1 ? 's' : ''}
                             </span>
                           )}
                         </td>

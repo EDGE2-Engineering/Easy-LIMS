@@ -22,13 +22,16 @@ help:
 
 # Install dependencies
 install:
-	@echo "Installing dependencies..."
-	npm install
+	@echo "Installing UI dependencies in ui/..."
+	cd ui && npm install
 
-# Build the project
+# Build the project (compiles React UI and copies dist to server/dist)
 build: install
-	@echo "Building the project..."
-	npm run build
+	@echo "Building UI frontend in ui/..."
+	cd ui && npm run build
+	@echo "Copying UI dist to server/dist..."
+	mkdir -p server/dist
+	cp -r ui/dist/* server/dist/
 
 # Build for production (alias)
 build-production: build
@@ -36,27 +39,26 @@ build-production: build
 # Clean build artifacts
 clean-build:
 	@echo "Cleaning build artifacts..."
-	rm -rf dist
+	rm -rf ui/dist server/dist
 
 # Clean everything (build artifacts and node_modules)
 clean: clean-build
 	@echo "Cleaning dependencies..."
-	rm -rf node_modules
-	rm -f package-lock.json
+	rm -rf ui/node_modules node_modules
 
 # Run development server with hot reload (Python FastAPI server on port 8000)
-dev: install
+dev: build
 	@echo "Installing python dependencies..."
-	pip install -r server/requirements.txt
-	@echo "Building UI..."
-	npm run build
-	@echo "Starting FastAPI server on http://localhost:8000..."
-	cd server && python -m uvicorn main:app --reload --port 8000
+	pip3 install --break-system-packages -r server/requirements.txt uvicorn || pip install -r server/requirements.txt uvicorn
+	@echo "Starting FastAPI server on http://0.0.0.0:8000..."
+	cd server && python3 -m uvicorn main:app --host 0.0.0.0 --reload --port 8000
 
 # Preview production build
 preview: build
-	@echo "Starting production preview on http://localhost:8000..."
-	cd server && python -m uvicorn main:app --port 8000
+	@echo "Installing python dependencies..."
+	pip3 install --break-system-packages -r server/requirements.txt uvicorn || pip install -r server/requirements.txt uvicorn
+	@echo "Starting production server on http://0.0.0.0:8000..."
+	cd server && python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
 
 # Stop running servers (kills processes on port 8000)
 stop:
