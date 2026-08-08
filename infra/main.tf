@@ -19,7 +19,7 @@ provider "aws" {
 }
 
 # ----------------------------------------------------------------------------
-# AWS Lightsail Instance (Makefile / Direct Deployment with Node.js 22 LTS)
+# AWS Lightsail Instance (Cheapest $3.50/mo Tier with Node.js 22 LTS)
 # ----------------------------------------------------------------------------
 
 resource "aws_lightsail_instance" "easy_lims" {
@@ -30,6 +30,7 @@ resource "aws_lightsail_instance" "easy_lims" {
 
   user_data = <<-EOF
               #!/bin/bash
+              # Build Trigger: Fix attachments.map error & set cheapest tier (Commit 7b6051f)
               export DEBIAN_FRONTEND=noninteractive
               export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
@@ -102,7 +103,7 @@ resource "aws_lightsail_instance" "easy_lims" {
               chmod +x /home/ubuntu/deploy.sh
               chown ubuntu:ubuntu /home/ubuntu/deploy.sh
 
-              # 2. Enable 1GB Swap Memory to prevent OOM
+              # 2. Enable 1GB Swap Memory to prevent OOM on cheapest instance
               if [ ! -f /swapfile ]; then
                 fallocate -l 1G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=1024
                 chmod 600 /swapfile
@@ -204,9 +205,9 @@ variable "aws_region" {
 }
 
 variable "lightsail_bundle_id" {
-  description = "Lightsail Bundle ID (nano_3_0, micro_3_0, small_3_0, medium_3_0)"
+  description = "Lightsail Bundle ID (nano_3_0: $3.50/mo, micro_3_0: $5/mo)"
   type        = string
-  default     = "micro_3_0" # $5/month bundle (1 GB RAM, 1 vCPU, 40 GB SSD)
+  default     = "nano_3_0" # Absolute lowest cost AWS tier: $3.50/month (512 MB RAM, 1 vCPU, 20 GB SSD)
 }
 
 variable "git_repo_url" {

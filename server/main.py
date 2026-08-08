@@ -219,18 +219,38 @@ def format_content(content: Any) -> str:
         return json.dumps(content)
     return str(content) if content is not None else "{}"
 
+def parse_id_list(val: Optional[Any]) -> List[int]:
+    if val is None or val == "":
+        return []
+    if isinstance(val, int):
+        return [val]
+    if isinstance(val, str):
+        res = []
+        for part in val.split(","):
+            part = part.strip()
+            if part.isdigit():
+                res.append(int(part))
+        return res
+    if isinstance(val, list):
+        res = []
+        for x in val:
+            res.extend(parse_id_list(x))
+        return res
+    return []
+
 @app.get("/api/documents", tags=["Documents"], summary="List, search & filter documents with pagination")
 async def list_documents(
     page: int = 1,
     limit: int = 10,
     q: Optional[str] = None,
+    id: Optional[str] = None,
     quote_number: Optional[str] = None,
     version: Optional[int] = None,
     document_type: Optional[str] = None,
     exclude_document_type: Optional[str] = None,
-    client_id: Optional[int] = None,
-    job_id: Optional[int] = None,
-    created_by: Optional[int] = None,
+    client_id: Optional[str] = None,
+    job_id: Optional[str] = None,
+    created_by: Optional[str] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
     sort_by: str = "created_at",
@@ -251,6 +271,15 @@ async def list_documents(
 
     where_parts = []
     params = []
+
+    if id is not None:
+        parsed = parse_id_list(id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"d.id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"d.id = ANY(${len(params)}::int[])")
 
     if quote_number:
         params.append(quote_number)
@@ -279,16 +308,31 @@ async def list_documents(
             where_parts.append(f"NOT (d.document_type = ANY(${len(params)}::text[]))")
 
     if client_id is not None:
-        params.append(client_id)
-        where_parts.append(f"d.client_id = ${len(params)}")
+        parsed = parse_id_list(client_id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"d.client_id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"d.client_id = ANY(${len(params)}::int[])")
 
     if job_id is not None:
-        params.append(job_id)
-        where_parts.append(f"d.job_id = ${len(params)}")
+        parsed = parse_id_list(job_id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"d.job_id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"d.job_id = ANY(${len(params)}::int[])")
 
     if created_by is not None:
-        params.append(created_by)
-        where_parts.append(f"d.created_by = ${len(params)}")
+        parsed = parse_id_list(created_by)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"d.created_by = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"d.created_by = ANY(${len(params)}::int[])")
 
     if date_from:
         params.append(date_from)
@@ -582,9 +626,10 @@ async def list_jobs(
     page: int = 1,
     limit: int = 10,
     q: Optional[str] = None,
+    id: Optional[str] = None,
     status: Optional[str] = None,
-    client_id: Optional[int] = None,
-    created_by: Optional[int] = None,
+    client_id: Optional[str] = None,
+    created_by: Optional[str] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
     sort_by: str = "created_at",
@@ -606,6 +651,15 @@ async def list_jobs(
     where_parts = []
     params = []
 
+    if id is not None:
+        parsed = parse_id_list(id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"j.id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"j.id = ANY(${len(params)}::int[])")
+
     if status:
         statuses = [s.strip() for s in status.split(",") if s.strip()]
         if len(statuses) == 1:
@@ -616,12 +670,22 @@ async def list_jobs(
             where_parts.append(f"j.status = ANY(${len(params)}::text[])")
 
     if client_id is not None:
-        params.append(client_id)
-        where_parts.append(f"j.client_id = ${len(params)}")
+        parsed = parse_id_list(client_id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"j.client_id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"j.client_id = ANY(${len(params)}::int[])")
 
     if created_by is not None:
-        params.append(created_by)
-        where_parts.append(f"j.created_by = ${len(params)}")
+        parsed = parse_id_list(created_by)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"j.created_by = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"j.created_by = ANY(${len(params)}::int[])")
 
     if date_from:
         params.append(date_from)
@@ -866,6 +930,188 @@ async def delete_job(job_id: int):
             logger.error(f"Error deleting job {job_id}: {e}")
             raise HTTPException(status_code=400, detail=str(e))
 
+class JobTechnicianAssignReq(BaseModel):
+    job_id: int
+    technician_id: int
+
+class JobWorkflowLogCreateReq(BaseModel):
+    job_id: int
+    performed_by: int
+    from_state: Optional[str] = None
+    to_state: Optional[str] = None
+    action_id: Optional[str] = None
+    remarks: Optional[str] = None
+
+class MaterialSampleCreateReq(BaseModel):
+    inward_id: int
+    sample_code: str
+    sample_name: Optional[str] = None
+    quantity: Optional[str] = None
+    status: Optional[str] = "RECEIVED"
+    received_by: Optional[int] = None
+    collection_center_id: Optional[int] = None
+    remarks: Optional[str] = None
+
+class MaterialSampleUpdateReq(BaseModel):
+    sample_code: Optional[str] = None
+    sample_name: Optional[str] = None
+    quantity: Optional[str] = None
+    status: Optional[str] = None
+    received_by: Optional[int] = None
+    collection_center_id: Optional[int] = None
+    remarks: Optional[str] = None
+
+@app.get("/api/job-technicians", tags=["Jobs"], summary="Get job technicians assignments")
+async def list_job_technicians(job_id: Optional[str] = None, technician_id: Optional[str] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    where_parts, params = [], []
+    if job_id is not None:
+        parsed = parse_id_list(job_id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"job_id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"job_id = ANY(${len(params)}::int[])")
+    if technician_id is not None:
+        parsed = parse_id_list(technician_id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"technician_id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"technician_id = ANY(${len(params)}::int[])")
+    where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM job_to_technicians {where_sql}", params)
+        return [dict(r) for r in rows]
+
+@app.post("/api/job-technicians", tags=["Jobs"], status_code=201, summary="Assign technician to job")
+async def assign_job_technician(req: JobTechnicianAssignReq):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(
+            conn,
+            "INSERT INTO job_to_technicians (job_id, technician_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING *",
+            [req.job_id, req.technician_id]
+        )
+        return dict(rows[0]) if rows else {"job_id": req.job_id, "technician_id": req.technician_id}
+
+@app.delete("/api/job-technicians", tags=["Jobs"], summary="Unassign technicians from job")
+async def unassign_job_technician(job_id: Optional[str] = None, technician_id: Optional[str] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    where_parts, params = [], []
+    if job_id is not None:
+        parsed = parse_id_list(job_id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"job_id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"job_id = ANY(${len(params)}::int[])")
+    if technician_id is not None:
+        parsed = parse_id_list(technician_id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"technician_id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"technician_id = ANY(${len(params)}::int[])")
+    if not where_parts:
+        raise HTTPException(status_code=400, detail="Must provide job_id or technician_id")
+    where_sql = "WHERE " + " AND ".join(where_parts)
+    async with db_pool.acquire() as conn:
+        await fetch_with_coerced_params(conn, f"DELETE FROM job_to_technicians {where_sql}", params)
+        return {"message": "Unassigned successfully"}
+
+@app.get("/api/job-workflow-logs", tags=["Jobs"], summary="Get job workflow logs")
+async def list_job_workflow_logs(job_id: Optional[str] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        if job_id is not None:
+            parsed = parse_id_list(job_id)
+            if len(parsed) == 1:
+                rows = await fetch_with_coerced_params(conn, "SELECT * FROM job_workflow_logs WHERE job_id = $1 ORDER BY created_at ASC", [parsed[0]])
+            elif len(parsed) > 1:
+                rows = await fetch_with_coerced_params(conn, "SELECT * FROM job_workflow_logs WHERE job_id = ANY($1::int[]) ORDER BY created_at ASC", [parsed])
+            else:
+                rows = []
+        else:
+            rows = await fetch_with_coerced_params(conn, "SELECT * FROM job_workflow_logs ORDER BY created_at DESC LIMIT 100", [])
+        return [dict(r) for r in rows]
+
+@app.post("/api/job-workflow-logs", tags=["Jobs"], status_code=201, summary="Log job workflow step")
+async def create_job_workflow_log(log: JobWorkflowLogCreateReq):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    query = """
+        INSERT INTO job_workflow_logs (job_id, performed_by, from_state, to_state, action_id, remarks, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *
+    """
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, query, [log.job_id, log.performed_by, log.from_state, log.to_state, log.action_id, log.remarks])
+        return dict(rows[0])
+
+@app.get("/api/material-samples", tags=["Material Inward"], summary="Get material samples")
+async def list_material_samples(inward_id: Optional[str] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        if inward_id:
+            ids = [int(i.strip()) for i in inward_id.split(",") if i.strip().isdigit()]
+            if ids:
+                rows = await fetch_with_coerced_params(conn, "SELECT * FROM material_samples WHERE inward_id = ANY($1::int[]) ORDER BY id ASC", [ids])
+            else:
+                rows = []
+        else:
+            rows = await fetch_with_coerced_params(conn, "SELECT * FROM material_samples ORDER BY id ASC LIMIT 500", [])
+        return [dict(r) for r in rows]
+
+@app.post("/api/material-samples", tags=["Material Inward"], status_code=201, summary="Create material sample")
+async def create_material_sample(s: MaterialSampleCreateReq):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    query = """
+        INSERT INTO material_samples (inward_id, sample_code, sample_name, quantity, status, received_by, collection_center_id, remarks, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *
+    """
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, query, [s.inward_id, s.sample_code, s.sample_name, s.quantity, s.status, s.received_by, s.collection_center_id, s.remarks])
+        return dict(rows[0])
+
+@app.put("/api/material-samples/{sample_id}", tags=["Material Inward"], summary="Update material sample")
+async def update_material_sample(sample_id: int, payload: MaterialSampleUpdateReq):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    fields, params = [], []
+    for k, v in payload.model_dump(exclude_unset=True).items():
+        if v is not None:
+            params.append(v)
+            fields.append(f"{k} = ${len(params)}")
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    params.append(sample_id)
+    query = f"UPDATE material_samples SET {', '.join(fields)} WHERE id = ${len(params)} RETURNING *"
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, query, params)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Material sample not found")
+        return dict(rows[0])
+
+@app.delete("/api/material-samples/{sample_id}", tags=["Material Inward"], summary="Delete material sample")
+async def delete_material_sample(sample_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, "DELETE FROM material_samples WHERE id = $1 RETURNING id", [sample_id])
+        if not rows:
+            raise HTTPException(status_code=404, detail="Material sample not found")
+        return {"message": "Sample deleted", "id": sample_id}
+
 # ============================================================================
 # Dedicated Expenses REST API Endpoints
 # ============================================================================
@@ -894,6 +1140,8 @@ async def list_expenses(
     page: int = 1,
     limit: int = 10,
     q: Optional[str] = None,
+    id: Optional[str] = None,
+    created_by: Optional[str] = None,
     paid_by: Optional[str] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
@@ -909,6 +1157,23 @@ async def list_expenses(
     sort_order = "ASC" if order.lower() == "asc" else "DESC"
 
     where_parts, params = [], []
+    if id is not None:
+        parsed = parse_id_list(id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"id = ANY(${len(params)}::int[])")
+
+    if created_by is not None:
+        parsed = parse_id_list(created_by)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"created_by = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"created_by = ANY(${len(params)}::int[])")
     if paid_by:
         params.append(paid_by)
         where_parts.append(f"paid_by = ${len(params)}")
@@ -1013,7 +1278,7 @@ async def list_approvals(
     limit: int = 10,
     request_type: Optional[str] = None,
     status: Optional[str] = None,
-    requester_id: Optional[int] = None
+    requester_id: Optional[str] = None
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
@@ -1028,8 +1293,13 @@ async def list_approvals(
         params.append(status)
         where_parts.append(f"r.status = ${len(params)}")
     if requester_id is not None:
-        params.append(requester_id)
-        where_parts.append(f"r.requester_id = ${len(params)}")
+        parsed = parse_id_list(requester_id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"r.requester_id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"r.requester_id = ANY(${len(params)}::int[])")
 
     where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
 
@@ -1074,34 +1344,28 @@ async def get_approval(approval_id: int):
 async def create_approval(appr: ApprovalCreate):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    req_data_str = format_content(appr.request_data) if appr.request_data is not None else None
     query = """
-        INSERT INTO request_approvals (request_type, requester_id, request_data, status, admin_remarks, created_at, updated_at)
-        VALUES ($1, $2, $3::jsonb, $4, $5, NOW(), NOW()) RETURNING *
+        INSERT INTO request_approvals (request_type, requester_id, request_data, status, created_at, updated_at)
+        VALUES ($1, $2, $3::jsonb, $4, NOW(), NOW()) RETURNING *
     """
-    params = [appr.request_type, appr.requester_id, req_data_str, appr.status or "PENDING", appr.admin_remarks]
+    params = [appr.request_type, appr.requester_id, format_content(appr.request_data), appr.status or "PENDING"]
     async with db_pool.acquire() as conn:
         rows = await fetch_with_coerced_params(conn, query, params)
         return dict(rows[0])
 
-@app.put("/api/approvals/{approval_id}", tags=["Approvals & Leaves"], summary="Update approval status / review")
+@app.put("/api/approvals/{approval_id}", tags=["Approvals & Leaves"], summary="Update approval request")
 async def update_approval(approval_id: int, payload: ApprovalUpdate):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
     fields, params = [], []
-    if payload.status is not None:
-        params.append(payload.status)
-        fields.append(f"status = ${len(params)}")
-    if payload.admin_remarks is not None:
-        params.append(payload.admin_remarks)
-        fields.append(f"admin_remarks = ${len(params)}")
-    if payload.reviewed_by is not None:
-        params.append(payload.reviewed_by)
-        fields.append(f"reviewed_by = ${len(params)}")
-        fields.append("reviewed_at = NOW()")
-    if payload.request_data is not None:
-        params.append(format_content(payload.request_data))
-        fields.append(f"request_data = ${len(params)}::jsonb")
+    for k, v in payload.model_dump(exclude_unset=True).items():
+        if v is not None:
+            if k == "request_data":
+                params.append(format_content(v))
+                fields.append(f"request_data = ${len(params)}::jsonb")
+            else:
+                params.append(v)
+                fields.append(f"{k} = ${len(params)}")
     if not fields:
         raise HTTPException(status_code=400, detail="No fields to update")
     fields.append("updated_at = NOW()")
@@ -1121,11 +1385,11 @@ async def delete_approval(approval_id: int):
         rows = await fetch_with_coerced_params(conn, "DELETE FROM request_approvals WHERE id = $1 RETURNING id", [approval_id])
         if not rows:
             raise HTTPException(status_code=404, detail="Approval request not found")
-        return {"message": "Approval request deleted", "id": approval_id}
+        return {"message": "Approval deleted", "id": approval_id}
 
 # Alias endpoint for /api/leaves
 @app.get("/api/leaves", tags=["Approvals & Leaves"], summary="List leave requests with pagination")
-async def list_leaves(page: int = 1, limit: int = 10, status: Optional[str] = None, requester_id: Optional[int] = None):
+async def list_leaves(page: int = 1, limit: int = 10, status: Optional[str] = None, requester_id: Optional[str] = None):
     return await list_approvals(page=page, limit=limit, request_type="LEAVE", status=status, requester_id=requester_id)
 
 # ============================================================================
@@ -1146,7 +1410,7 @@ async def list_audit_logs(
     limit: int = 10,
     q: Optional[str] = None,
     entity_type: Optional[str] = None,
-    performed_by: Optional[int] = None
+    performed_by: Optional[str] = None
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
@@ -1158,8 +1422,13 @@ async def list_audit_logs(
         params.append(entity_type)
         where_parts.append(f"entity_type = ${len(params)}")
     if performed_by is not None:
-        params.append(performed_by)
-        where_parts.append(f"performed_by = ${len(params)}")
+        parsed = parse_id_list(performed_by)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"performed_by = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"performed_by = ANY(${len(params)}::int[])")
     if q:
         params.append(f"%{q}%")
         idx = len(params)
@@ -1300,13 +1569,21 @@ class ClientUpdate(BaseModel):
     contacts: Optional[Any] = None
 
 @app.get("/api/clients", tags=["Clients"], summary="List clients with pagination")
-async def list_clients(page: int = 1, limit: int = 10, q: Optional[str] = None):
+async def list_clients(page: int = 1, limit: int = 10, q: Optional[str] = None, id: Optional[str] = None):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
     page = max(1, page)
-    limit = min(100, max(1, limit))
+    limit = min(10000, max(1, limit))
     offset = (page - 1) * limit
     where_parts, params = [], []
+    if id is not None:
+        parsed = parse_id_list(id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"id = ANY(${len(params)}::int[])")
     if q:
         params.append(f"%{q}%")
         idx = len(params)
@@ -1392,13 +1669,20 @@ class ClientFieldPricePayload(BaseModel):
     price: float
 
 @app.get("/api/client-pricing/lab", tags=["Client Pricing"], summary="List client lab test prices")
-async def list_client_lab_prices(client_id: Optional[int] = None):
+async def list_client_lab_prices(client_id: Optional[str] = None):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    sql = "SELECT * FROM client_lab_test_prices" + (" WHERE client_id = $1" if client_id else "")
-    params = [client_id] if client_id else []
     async with db_pool.acquire() as conn:
-        rows = await fetch_with_coerced_params(conn, sql, params)
+        if client_id is not None:
+            parsed = parse_id_list(client_id)
+            if len(parsed) == 1:
+                rows = await fetch_with_coerced_params(conn, "SELECT * FROM client_lab_test_prices WHERE client_id = $1", [parsed[0]])
+            elif len(parsed) > 1:
+                rows = await fetch_with_coerced_params(conn, "SELECT * FROM client_lab_test_prices WHERE client_id = ANY($1::int[])", [parsed])
+            else:
+                rows = []
+        else:
+            rows = await fetch_with_coerced_params(conn, "SELECT * FROM client_lab_test_prices", [])
         return [dict(r) for r in rows]
 
 @app.post("/api/client-pricing/lab", tags=["Client Pricing"], status_code=201, summary="Upsert client lab test price")
@@ -1424,13 +1708,20 @@ async def delete_client_lab_price(price_id: int):
         return {"message": "Client lab price override deleted", "id": price_id}
 
 @app.get("/api/client-pricing/field", tags=["Client Pricing"], summary="List client field test prices")
-async def list_client_field_prices(client_id: Optional[int] = None):
+async def list_client_field_prices(client_id: Optional[str] = None):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    sql = "SELECT * FROM client_field_test_prices" + (" WHERE client_id = $1" if client_id else "")
-    params = [client_id] if client_id else []
     async with db_pool.acquire() as conn:
-        rows = await fetch_with_coerced_params(conn, sql, params)
+        if client_id is not None:
+            parsed = parse_id_list(client_id)
+            if len(parsed) == 1:
+                rows = await fetch_with_coerced_params(conn, "SELECT * FROM client_field_test_prices WHERE client_id = $1", [parsed[0]])
+            elif len(parsed) > 1:
+                rows = await fetch_with_coerced_params(conn, "SELECT * FROM client_field_test_prices WHERE client_id = ANY($1::int[])", [parsed])
+            else:
+                rows = []
+        else:
+            rows = await fetch_with_coerced_params(conn, "SELECT * FROM client_field_test_prices", [])
         return [dict(r) for r in rows]
 
 @app.post("/api/client-pricing/field", tags=["Client Pricing"], status_code=201, summary="Upsert client field test price")
@@ -1994,6 +2285,7 @@ async def list_users(
     page: int = 1,
     limit: int = 10,
     q: Optional[str] = None,
+    id: Optional[str] = None,
     username: Optional[str] = None,
     password: Optional[str] = None,
     role: Optional[str] = None,
@@ -2006,6 +2298,14 @@ async def list_users(
     limit = min(10000, max(1, limit))
     offset = (page - 1) * limit
     where_parts, params = [], []
+    if id is not None:
+        parsed = parse_id_list(id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"id = ANY(${len(params)}::int[])")
     if username:
         params.append(username)
         where_parts.append(f"username = ${len(params)}")
@@ -2214,6 +2514,23 @@ class TicketCommentCreate(BaseModel):
     comment: str
     attachments: Optional[Any] = None
 
+class TicketCommentCreateFull(BaseModel):
+    ticket_id: int
+    author_id: int
+    comment: str
+    attachments: Optional[Any] = None
+
+class TicketCommentUpdate(BaseModel):
+    comment: Optional[str] = None
+    attachments: Optional[Any] = None
+
+class TicketHistoryCreate(BaseModel):
+    ticket_id: int
+    user_id: int
+    field_name: str
+    old_value: Optional[str] = None
+    new_value: Optional[str] = None
+
 @app.get("/api/tickets", tags=["Support Tickets"], summary="List tickets with pagination")
 async def list_tickets(
     page: int = 1,
@@ -2250,6 +2567,128 @@ async def list_tickets(
         query_params = list(params) + [limit, offset]
         rows = await fetch_with_coerced_params(conn, f"SELECT * FROM tickets {where_sql} ORDER BY created_at DESC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
         return {"data": [dict(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+
+@app.get("/api/ticket-comments", tags=["Support Tickets"], summary="List ticket comments")
+async def list_ticket_comments(
+    ticket_id: Optional[str] = None,
+    sort_by: str = "created_at",
+    order: str = "asc"
+):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    order_sql = "ASC" if order.lower() == "asc" else "DESC"
+    valid_sorts = {"id": "id", "created_at": "created_at", "ticket_id": "ticket_id"}
+    sort_col = valid_sorts.get(sort_by, "created_at")
+
+    async with db_pool.acquire() as conn:
+        if ticket_id is not None:
+            parsed = parse_id_list(ticket_id)
+            if len(parsed) == 1:
+                rows = await fetch_with_coerced_params(
+                    conn,
+                    f"SELECT * FROM ticket_comments WHERE ticket_id = $1 ORDER BY {sort_col} {order_sql}",
+                    [parsed[0]]
+                )
+            elif len(parsed) > 1:
+                rows = await fetch_with_coerced_params(
+                    conn,
+                    f"SELECT * FROM ticket_comments WHERE ticket_id = ANY($1::int[]) ORDER BY {sort_col} {order_sql}",
+                    [parsed]
+                )
+            else:
+                rows = []
+        else:
+            rows = await fetch_with_coerced_params(
+                conn,
+                f"SELECT * FROM ticket_comments ORDER BY {sort_col} {order_sql}"
+            )
+        return [dict(r) for r in rows]
+
+@app.post("/api/ticket-comments", tags=["Support Tickets"], status_code=201, summary="Create ticket comment")
+async def create_ticket_comment_standalone(c: TicketCommentCreateFull):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    att_str = format_content(c.attachments) if c.attachments is not None else None
+    query = "INSERT INTO ticket_comments (ticket_id, author_id, comment, attachments, created_at) VALUES ($1, $2, $3, $4::jsonb, NOW()) RETURNING *"
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, query, [c.ticket_id, c.author_id, c.comment, att_str])
+        return dict(rows[0])
+
+@app.put("/api/ticket-comments/{comment_id}", tags=["Support Tickets"], summary="Update ticket comment")
+async def update_ticket_comment(comment_id: int, payload: TicketCommentUpdate):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    fields, params = [], []
+    if payload.comment is not None:
+        params.append(payload.comment)
+        fields.append(f"comment = ${len(params)}")
+    if payload.attachments is not None:
+        params.append(format_content(payload.attachments))
+        fields.append(f"attachments = ${len(params)}::jsonb")
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    params.append(comment_id)
+    query = f"UPDATE ticket_comments SET {', '.join(fields)} WHERE id = ${len(params)} RETURNING *"
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, query, params)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Comment not found")
+        return dict(rows[0])
+
+@app.delete("/api/ticket-comments/{comment_id}", tags=["Support Tickets"], summary="Delete ticket comment")
+async def delete_ticket_comment(comment_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, "DELETE FROM ticket_comments WHERE id = $1 RETURNING id", [comment_id])
+        if not rows:
+            raise HTTPException(status_code=404, detail="Comment not found")
+        return {"message": "Comment deleted", "id": comment_id}
+
+@app.get("/api/ticket-history", tags=["Support Tickets"], summary="List ticket history")
+async def list_ticket_history(
+    ticket_id: Optional[str] = None,
+    sort_by: str = "created_at",
+    order: str = "desc"
+):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    order_sql = "ASC" if order.lower() == "asc" else "DESC"
+    valid_sorts = {"id": "id", "created_at": "created_at", "ticket_id": "ticket_id"}
+    sort_col = valid_sorts.get(sort_by, "created_at")
+
+    async with db_pool.acquire() as conn:
+        if ticket_id is not None:
+            parsed = parse_id_list(ticket_id)
+            if len(parsed) == 1:
+                rows = await fetch_with_coerced_params(
+                    conn,
+                    f"SELECT * FROM ticket_history WHERE ticket_id = $1 ORDER BY {sort_col} {order_sql}",
+                    [parsed[0]]
+                )
+            elif len(parsed) > 1:
+                rows = await fetch_with_coerced_params(
+                    conn,
+                    f"SELECT * FROM ticket_history WHERE ticket_id = ANY($1::int[]) ORDER BY {sort_col} {order_sql}",
+                    [parsed]
+                )
+            else:
+                rows = []
+        else:
+            rows = await fetch_with_coerced_params(
+                conn,
+                f"SELECT * FROM ticket_history ORDER BY {sort_col} {order_sql}"
+            )
+        return [dict(r) for r in rows]
+
+@app.post("/api/ticket-history", tags=["Support Tickets"], status_code=201, summary="Create ticket history entry")
+async def create_ticket_history_entry(h: TicketHistoryCreate):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    query = "INSERT INTO ticket_history (ticket_id, user_id, field_name, old_value, new_value, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *"
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, query, [h.ticket_id, h.user_id, h.field_name, h.old_value, h.new_value])
+        return dict(rows[0])
 
 @app.get("/api/tickets/{ticket_id}", tags=["Support Tickets"], summary="Get ticket with comments")
 async def get_ticket(ticket_id: int):
@@ -2371,22 +2810,32 @@ async def delete_material(material_id: int):
         return {"message": "Material deleted", "id": material_id}
 
 @app.get("/api/material-inward", tags=["Materials & Material Inward"], summary="List material inward register")
-async def list_material_inward(page: int = 1, limit: int = 10, status: Optional[str] = None, client_id: Optional[int] = None, job_id: Optional[int] = None):
+async def list_material_inward(page: int = 1, limit: int = 10, status: Optional[str] = None, client_id: Optional[str] = None, job_id: Optional[str] = None):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
     page = max(1, page)
-    limit = min(100, max(1, limit))
+    limit = min(10000, max(1, limit))
     offset = (page - 1) * limit
     where_parts, params = [], []
     if status:
         params.append(status)
         where_parts.append(f"status = ${len(params)}")
     if client_id is not None:
-        params.append(client_id)
-        where_parts.append(f"client_id = ${len(params)}")
+        parsed = parse_id_list(client_id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"client_id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"client_id = ANY(${len(params)}::int[])")
     if job_id is not None:
-        params.append(job_id)
-        where_parts.append(f"job_id = ${len(params)}")
+        parsed = parse_id_list(job_id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"job_id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"job_id = ANY(${len(params)}::int[])")
     where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
     async with db_pool.acquire() as conn:
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM material_inward_register {where_sql}", params)
@@ -2710,16 +3159,21 @@ class ReportUpdate(BaseModel):
     client_id: Optional[int] = None
 
 @app.get("/api/reports", tags=["Test Reports"], summary="List test reports with pagination")
-async def list_reports(page: int = 1, limit: int = 10, q: Optional[str] = None, client_id: Optional[int] = None):
+async def list_reports(page: int = 1, limit: int = 10, q: Optional[str] = None, client_id: Optional[str] = None):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
     page = max(1, page)
-    limit = min(100, max(1, limit))
+    limit = min(10000, max(1, limit))
     offset = (page - 1) * limit
     where_parts, params = [], []
     if client_id is not None:
-        params.append(client_id)
-        where_parts.append(f"client_id = ${len(params)}")
+        parsed = parse_id_list(client_id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"client_id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"client_id = ANY(${len(params)}::int[])")
     if q:
         params.append(f"%{q}%")
         where_parts.append(f"report_number ILIKE ${len(params)}")

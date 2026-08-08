@@ -195,7 +195,7 @@ const AuditLogsManager = () => {
       if (!filterActivityType || filterActivityType !== 'job_workflow') {
         let qAudit = supabase
           .from('audit_logs')
-          .select('*, users:performed_by(id, full_name, username, role, departments)')
+          .select('*')
           .order('created_at', { ascending: false })
           .limit(500);
 
@@ -224,9 +224,7 @@ const AuditLogsManager = () => {
       if (!filterActivityType || filterActivityType === 'job_workflow') {
         let qWorkflow = supabase
           .from('job_workflow_logs')
-          .select(
-            '*, jobs(job_code, project_name), users!job_workflow_logs_performed_by_fkey(id, full_name, username, role, departments)'
-          )
+          .select('*')
           .order('created_at', { ascending: false })
           .limit(500);
 
@@ -249,6 +247,40 @@ const AuditLogsManager = () => {
           workflowRows = data || [];
         }
       }
+
+      // Hydrate users and jobs client-side
+      const userIds = [
+        ...new Set([
+          ...auditRows.map((r) => r.performed_by),
+          ...workflowRows.map((r) => r.performed_by),
+        ].filter(Boolean)),
+      ];
+      const jobIds = [...new Set(workflowRows.map((r) => r.job_id).filter(Boolean))];
+
+      let userMap = new Map();
+      if (userIds.length > 0) {
+        const { data: uData } = await supabase
+          .from('users')
+          .select('id, full_name, username, role, departments')
+          .in('id', userIds);
+        if (uData) userMap = new Map(uData.map((u) => [u.id, u]));
+      }
+
+      let jobMap = new Map();
+      if (jobIds.length > 0) {
+        const { data: jData } = await supabase
+          .from('jobs')
+          .select('id, job_code, project_name')
+          .in('id', jobIds);
+        if (jData) jobMap = new Map(jData.map((j) => [j.id, j]));
+      }
+
+      auditRows = auditRows.map((r) => ({ ...r, users: userMap.get(r.performed_by) || null }));
+      workflowRows = workflowRows.map((r) => ({
+        ...r,
+        users: userMap.get(r.performed_by) || null,
+        jobs: jobMap.get(r.job_id) || null,
+      }));
 
       // 3. Merge Rows
       const merged = [];
@@ -433,7 +465,7 @@ const AuditLogsManager = () => {
       if (!filterActivityType || filterActivityType !== 'job_workflow') {
         let qAudit = supabase
           .from('audit_logs')
-          .select('*, users:performed_by(id, full_name, username, role, departments)')
+          .select('*')
           .order('created_at', { ascending: false });
 
         if (filterUser) qAudit = qAudit.eq('performed_by', filterUser);
@@ -457,9 +489,7 @@ const AuditLogsManager = () => {
       if (!filterActivityType || filterActivityType === 'job_workflow') {
         let qWorkflow = supabase
           .from('job_workflow_logs')
-          .select(
-            '*, jobs(job_code, project_name), users!job_workflow_logs_performed_by_fkey(id, full_name, username, role, departments)'
-          )
+          .select('*')
           .order('created_at', { ascending: false });
 
         if (filterUser) qWorkflow = qWorkflow.eq('performed_by', filterUser);
@@ -477,6 +507,39 @@ const AuditLogsManager = () => {
         const { data } = await qWorkflow;
         workflowRows = data || [];
       }
+
+      const userIds = [
+        ...new Set([
+          ...auditRows.map((r) => r.performed_by),
+          ...workflowRows.map((r) => r.performed_by),
+        ].filter(Boolean)),
+      ];
+      const jobIds = [...new Set(workflowRows.map((r) => r.job_id).filter(Boolean))];
+
+      let userMap = new Map();
+      if (userIds.length > 0) {
+        const { data: uData } = await supabase
+          .from('users')
+          .select('id, full_name, username, role, departments')
+          .in('id', userIds);
+        if (uData) userMap = new Map(uData.map((u) => [u.id, u]));
+      }
+
+      let jobMap = new Map();
+      if (jobIds.length > 0) {
+        const { data: jData } = await supabase
+          .from('jobs')
+          .select('id, job_code, project_name')
+          .in('id', jobIds);
+        if (jData) jobMap = new Map(jData.map((j) => [j.id, j]));
+      }
+
+      auditRows = auditRows.map((r) => ({ ...r, users: userMap.get(r.performed_by) || null }));
+      workflowRows = workflowRows.map((r) => ({
+        ...r,
+        users: userMap.get(r.performed_by) || null,
+        jobs: jobMap.get(r.job_id) || null,
+      }));
 
       const merged = [];
       auditRows.forEach((item) => {

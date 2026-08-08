@@ -90,11 +90,28 @@ const AdminCompanyCalendar = () => {
 
   const fetchLeaves = useCallback(async () => {
     try {
-      const { data: allRequests, error } = await supabase
+      const { data: rawRequests, error } = await supabase
         .from('request_approvals')
-        .select('*, requester:users!request_approvals_requester_id_fkey(full_name, username)');
+        .select('*');
 
       if (error) throw error;
+
+      let allRequests = rawRequests || [];
+      const requesterIds = [...new Set(allRequests.map((r) => r.requester_id).filter(Boolean))];
+      if (requesterIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, full_name, username')
+          .in('id', requesterIds);
+
+        if (usersData) {
+          const userMap = new Map(usersData.map((u) => [u.id, u]));
+          allRequests = allRequests.map((r) => ({
+            ...r,
+            requester: userMap.get(r.requester_id) || null,
+          }));
+        }
+      }
 
       const approvedLeaves = (allRequests || []).filter(
         (r) => r.request_type === 'LEAVE' && r.status === 'APPROVED'

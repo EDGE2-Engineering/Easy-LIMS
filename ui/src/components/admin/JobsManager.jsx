@@ -234,12 +234,18 @@ const JobsManager = ({ id }) => {
       }
       if (!userId || isNaN(userId)) return;
 
-      const { data, error } = await supabase
+      const { data: rawData, error } = await supabase
         .from('jobs')
-        .select('*, clients(client_name, client_address, gstin)')
+        .select('*')
         .eq('id', jobId)
         .maybeSingle();
       if (error) throw error;
+
+      let data = rawData;
+      if (data && data.client_id) {
+        const { data: cData } = await supabase.from('clients').select('id, client_name, client_address, gstin').eq('id', data.client_id).maybeSingle();
+        if (cData) data = { ...data, clients: cData };
+      }
 
       if (data) {
         const actualJobId = data.id;
@@ -352,9 +358,11 @@ const JobsManager = ({ id }) => {
   };
 
   useEffect(() => {
-    fetchRecords();
-    fetchClients();
-  }, []);
+    if (!authLoading) {
+      fetchRecords();
+      fetchClients();
+    }
+  }, [authLoading, user]);
 
   const fetchClients = async () => {
     const { data } = await supabase.from('clients').select('id, client_name').order('client_name');
@@ -375,18 +383,23 @@ const JobsManager = ({ id }) => {
 
   const fetchJobAssignments = async (jobId) => {
     try {
-      const { data, error } = await supabase
+      const { data: rawAssignments, error } = await supabase
         .from('job_to_technicians')
-        .select(
-          'technician_id, users!job_to_technicians_technician_id_fkey(id, full_name, username)'
-        )
+        .select('*')
         .eq('job_id', jobId);
 
       if (error) throw error;
 
-      // Map the foreign key relation back to a simple user object
-      const techs = (data || []).map((r) => r.users).filter(Boolean);
-      setTechAssignments(techs);
+      const techIds = [...new Set((rawAssignments || []).map((r) => r.technician_id).filter(Boolean))];
+      if (techIds.length > 0) {
+        const { data: techUsers } = await supabase
+          .from('users')
+          .select('id, full_name, username')
+          .in('id', techIds);
+        setTechAssignments(techUsers || []);
+      } else {
+        setTechAssignments([]);
+      }
     } catch (err) {
       console.error('Error fetching assignments:', err);
     }
@@ -402,15 +415,36 @@ const JobsManager = ({ id }) => {
 
       if (inwardRecords && inwardRecords.length > 0) {
         const inwardIds = inwardRecords.map((r) => r.id);
-        const { data: samples, error } = await supabase
+        const { data: rawSamples, error } = await supabase
           .from('material_samples')
-          .select(
-            '*, users!material_samples_received_by_fkey(full_name), collection_centers!material_samples_collection_center_id_fkey(name)'
-          )
+          .select('*')
           .in('inward_id', inwardIds);
 
         if (error) throw error;
-        setJobSamples(samples || []);
+        let samples = rawSamples || [];
+
+        const userIds = [...new Set(samples.map((s) => s.received_by).filter(Boolean))];
+        const centerIds = [...new Set(samples.map((s) => s.collection_center_id).filter(Boolean))];
+
+        let uMap = new Map();
+        if (userIds.length > 0) {
+          const { data: uData } = await supabase.from('users').select('id, full_name').in('id', userIds);
+          if (uData) uData.forEach((u) => { uMap.set(String(u.id), u); uMap.set(Number(u.id), u); });
+        }
+
+        let cMap = new Map();
+        if (centerIds.length > 0) {
+          const { data: cData } = await supabase.from('collection_centers').select('id, name').in('id', centerIds);
+          if (cData) cData.forEach((c) => { cMap.set(String(c.id), c); cMap.set(Number(c.id), c); });
+        }
+
+        samples = samples.map((s) => ({
+          ...s,
+          users: s.received_by ? uMap.get(String(s.received_by)) || null : null,
+          collection_centers: s.collection_center_id ? cMap.get(String(s.collection_center_id)) || null : null,
+        }));
+
+        setJobSamples(samples);
       } else {
         setJobSamples([]);
       }
@@ -434,7 +468,7 @@ const JobsManager = ({ id }) => {
     try {
       let query = supabase
         .from('jobs')
-        .select('*, clients(client_name, client_address, gstin), users:created_by(id, full_name, username, role, departments)')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (!isAdmin() && user?.role !== ROLES.MRO.slug) {
@@ -458,8 +492,30 @@ const JobsManager = ({ id }) => {
         }
       }
 
-      const { data: jobs, error } = await query;
+      const { data: rawJobs, error } = await query;
       if (error) throw error;
+
+      let jobs = rawJobs || [];
+      const clientIds = [...new Set(jobs.map((j) => j.client_id).filter(Boolean))];
+      const userIds = [...new Set(jobs.map((j) => j.created_by).filter(Boolean))];
+
+      let cMap = new Map();
+      if (clientIds.length > 0) {
+        const { data: cData } = await supabase.from('clients').select('id, client_name, client_address, gstin').in('id', clientIds);
+        if (cData) cData.forEach((c) => { cMap.set(String(c.id), c); cMap.set(Number(c.id), c); });
+      }
+
+      let uMap = new Map();
+      if (userIds.length > 0) {
+        const { data: uData } = await supabase.from('users').select('id, full_name, username, role, departments').in('id', userIds);
+        if (uData) uData.forEach((u) => { uMap.set(String(u.id), u); uMap.set(Number(u.id), u); });
+      }
+
+      jobs = jobs.map((j) => ({
+        ...j,
+        clients: j.client_id ? cMap.get(String(j.client_id)) || null : null,
+        users: j.created_by ? uMap.get(String(j.created_by)) || null : null,
+      }));
 
       // Fetch quotation documents for all jobs in one query
       const jobIds = (jobs || []).map((j) => j.id);
@@ -492,12 +548,18 @@ const JobsManager = ({ id }) => {
     if (!editingRecord?.id) return;
     const jobId = editingRecord.id;
     try {
-      const { data, error } = await supabase
+      const { data: rawData, error } = await supabase
         .from('jobs')
-        .select('*, clients(client_name, client_address, gstin)')
+        .select('*')
         .eq('id', jobId)
         .maybeSingle();
       if (error) throw error;
+
+      let data = rawData;
+      if (data && data.client_id) {
+        const { data: cData } = await supabase.from('clients').select('id, client_name, client_address, gstin').eq('id', data.client_id).maybeSingle();
+        if (cData) data = { ...data, clients: cData };
+      }
       if (data) {
         setEditingRecord({ ...data });
       }

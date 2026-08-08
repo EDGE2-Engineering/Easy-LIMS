@@ -55,14 +55,23 @@ const AnalystDashboard = () => {
       let jobs = [];
       if (assignments && assignments.length > 0) {
         const jobIds = assignments.map((a) => a.job_id);
-        const { data: jobData, error: jobsError } = await supabase
+        const { data: rawJobs, error: jobsError } = await supabase
           .from('jobs')
-          .select('*, clients(client_name)')
+          .select('*')
           .in('id', jobIds)
           .order('created_at', { ascending: false });
 
         if (jobsError) throw jobsError;
-        jobs = jobData || [];
+        let jobList = rawJobs || [];
+        const clientIds = [...new Set(jobList.map((j) => j.client_id).filter(Boolean))];
+        if (clientIds.length > 0) {
+          const { data: cData } = await supabase.from('clients').select('id, client_name').in('id', clientIds);
+          if (cData) {
+            const cMap = new Map(cData.map((c) => [c.id, c]));
+            jobList = jobList.map((j) => ({ ...j, clients: cMap.get(j.client_id) || null }));
+          }
+        }
+        jobs = jobList;
       }
 
       setAssignedJobs(jobs);

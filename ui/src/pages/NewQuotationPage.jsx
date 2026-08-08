@@ -548,13 +548,25 @@ const NewQuotationPage = () => {
   useEffect(() => {
     const loadFromSupabase = async (id) => {
       try {
-        const { data, error } = await supabase
+        const { data: rawData, error } = await supabase
           .from('documents')
-          .select('*, clients(*), jobs(*)')
+          .select('*')
           .eq('id', id)
           .single();
 
         if (error) throw error;
+
+        let data = rawData;
+        if (data) {
+          if (data.client_id) {
+            const { data: cData } = await supabase.from('clients').select('*').eq('id', data.client_id).maybeSingle();
+            if (cData) data = { ...data, clients: cData };
+          }
+          if (data.job_id) {
+            const { data: jData } = await supabase.from('jobs').select('*').eq('id', data.job_id).maybeSingle();
+            if (jData) data = { ...data, jobs: jData };
+          }
+        }
 
         if (data && data.content) {
           const content = data.content;

@@ -22,14 +22,24 @@ const TestingDashboard = () => {
     setLoading(true);
     try {
       // Fetch jobs that are in testing related states
-      const { data, error } = await supabase
+      const { data: rawJobs, error } = await supabase
         .from('jobs')
-        .select('*, clients(client_name)')
+        .select('*')
         .in('status', ['UNDER_TESTING', 'SENT_TO_TESTING_DEPARTMENT', 'TEST_COMPLETED'])
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-      setJobs(data || []);
+
+      let jobList = rawJobs || [];
+      const clientIds = [...new Set(jobList.map((j) => j.client_id).filter(Boolean))];
+      if (clientIds.length > 0) {
+        const { data: cData } = await supabase.from('clients').select('id, client_name').in('id', clientIds);
+        if (cData) {
+          const cMap = new Map(cData.map((c) => [c.id, c]));
+          jobList = jobList.map((j) => ({ ...j, clients: cMap.get(j.client_id) || null }));
+        }
+      }
+      setJobs(jobList);
     } catch (err) {
       console.error(err);
     } finally {

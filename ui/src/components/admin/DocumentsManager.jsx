@@ -100,12 +100,28 @@ const DocumentsManager = () => {
     }
   };
 
+  const getClientName = (record) => {
+    if (!record) return '';
+    if (record.clients?.client_name) return record.clients.client_name;
+    if (record.client_name) return record.client_name;
+    if (record.content) {
+      const c = record.content;
+      if (c.quoteDetails?.clientName) return c.quoteDetails.clientName;
+      if (c.quoteDetails?.client_name) return c.quoteDetails.client_name;
+      if (c.clientDetails?.clientName) return c.clientDetails.clientName;
+      if (c.clientDetails?.client_name) return c.clientDetails.client_name;
+      if (c.clientName) return c.clientName;
+      if (c.client_name) return c.client_name;
+    }
+    return '';
+  };
+
   const fetchDocuments = async () => {
     setLoading(true);
     try {
       let query = supabase
         .from('documents')
-        .select('*, users(id, full_name, username, role, departments), clients(client_name, gstin), jobs(project_name)');
+        .select('*');
 
       if (isStandard()) {
         query = query.eq('created_by', user.id);
@@ -114,15 +130,63 @@ const DocumentsManager = () => {
       // Hide 'Report' type documents as they are now managed in their own tab
       query = query.neq('document_type', 'Report');
 
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data: rawData, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-      setDocuments(data || []);
+
+      let docList = rawData || [];
+      const userIds = [...new Set(docList.map((d) => d.created_by).filter(Boolean))];
+      const jobIds = [...new Set(docList.map((d) => d.job_id).filter(Boolean))];
+
+      // Fetch all clients to allow matching by id (both int/string) AND by name fallback
+      const { data: allClients } = await supabase.from('clients').select('id, client_name, gstin');
+      
+      let cMapById = new Map();
+      let cMapByName = new Map();
+      if (allClients) {
+        allClients.forEach((c) => {
+          cMapById.set(String(c.id), c);
+          cMapById.set(Number(c.id), c);
+          if (c.client_name) {
+            cMapByName.set(c.client_name.trim().toLowerCase(), c);
+          }
+        });
+      }
+
+      let uMap = new Map();
+      if (userIds.length > 0) {
+        const { data: uData } = await supabase.from('users').select('id, full_name, username, role, departments').in('id', userIds);
+        if (uData) uData.forEach((u) => { uMap.set(String(u.id), u); uMap.set(Number(u.id), u); });
+      }
+
+      let jMap = new Map();
+      if (jobIds.length > 0) {
+        const { data: jData } = await supabase.from('jobs').select('id, project_name').in('id', jobIds);
+        if (jData) jData.forEach((j) => { jMap.set(String(j.id), j); jMap.set(Number(j.id), j); });
+      }
+
+      docList = docList.map((d) => {
+        let clientObj = d.client_id ? cMapById.get(String(d.client_id)) : null;
+        if (!clientObj) {
+          const fallbackName = getClientName(d);
+          if (fallbackName) {
+            clientObj = cMapByName.get(fallbackName.trim().toLowerCase()) || null;
+          }
+        }
+        return {
+          ...d,
+          users: d.created_by ? uMap.get(String(d.created_by)) || null : null,
+          clients: clientObj,
+          jobs: d.job_id ? jMap.get(String(d.job_id)) || null : null,
+        };
+      });
+
+      setDocuments(docList);
     } catch (error) {
       console.error('Error fetching documents:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load documents. ' + error.message,
+        description: 'Failed to load documents.',
         variant: 'destructive',
       });
     } finally {
@@ -232,7 +296,7 @@ const DocumentsManager = () => {
   ).sort();
 
   const uniqueClients = Array.from(
-    new Set(documents.map((r) => r.clients?.client_name).filter(Boolean))
+    new Set(documents.map((r) => getClientName(r)).filter(Boolean))
   ).sort();
 
   const groupedDocuments = useMemo(() => {
@@ -263,9 +327,10 @@ const DocumentsManager = () => {
   }, [documents]);
 
   const filteredDocuments = groupedDocuments.filter((r) => {
+    const clientName = getClientName(r);
     const matchesSearch =
       (r.quote_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (r.clients?.client_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (clientName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (r.document_type?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
     if (!matchesSearch) return false;
@@ -277,7 +342,7 @@ const DocumentsManager = () => {
     if (filterUser !== 'all' && r.users?.full_name !== filterUser) return false;
 
     // Client Filter
-    if (filterClient !== 'all' && r.clients?.client_name !== filterClient) return false;
+    if (filterClient !== 'all' && clientName !== filterClient) return false;
 
     if (fromDate || toDate) {
       const recordDate = new Date(r.created_at);
@@ -307,8 +372,8 @@ const DocumentsManager = () => {
         valB = calculateRecordTotal(b);
         break;
       case 'client':
-        valA = (a.clients?.client_name || '').toLowerCase();
-        valB = (b.clients?.client_name || '').toLowerCase();
+        valA = (getClientName(a) || '').toLowerCase();
+        valB = (getClientName(b) || '').toLowerCase();
         break;
       case 'user':
         valA = (a.users?.full_name || '').toLowerCase();
@@ -730,7 +795,7 @@ const DocumentsManager = () => {
 
                     <td className="py-4 px-3 align-top">
                       <div className="font-semibold text-gray-900 break-words">
-                        {record.clients?.client_name || '-'}
+                        {getClientName(record) || '-'}
                       </div>
 
                       {record.jobs?.project_name && (
@@ -742,9 +807,9 @@ const DocumentsManager = () => {
                         </div>
                       )}
 
-                      {record.clients?.gstin && (
+                      {(record.clients?.gstin || record.content?.clientDetails?.gstin || record.content?.quoteDetails?.gstin) && (
                         <div className="mt-2 text-[10px] text-gray-400 break-all">
-                          GSTIN: {record.clients.gstin}
+                          GSTIN: {record.clients?.gstin || record.content?.clientDetails?.gstin || record.content?.quoteDetails?.gstin}
                         </div>
                       )}
                     </td>

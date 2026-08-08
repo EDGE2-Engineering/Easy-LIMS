@@ -356,18 +356,35 @@ export default function AdminTicketsManager({ id: propId }) {
     try {
       const { data, error } = await supabase
         .from('tickets')
-        .select('*, creator:users!created_by(full_name, role, username)')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
         if (error.code === '42P01') {
           setSchemaError(true);
-        } else {
-          throw error;
+          return;
         }
-      } else {
-        setTickets(data || []);
+        throw error;
       }
+
+      let list = data || [];
+      const creatorIds = [...new Set(list.map((t) => t.created_by).filter(Boolean))];
+      if (creatorIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, full_name, role, username')
+          .in('id', creatorIds);
+
+        if (usersData) {
+          const userMap = new Map(usersData.map((u) => [u.id, u]));
+          list = list.map((t) => ({
+            ...t,
+            creator: userMap.get(t.created_by) || null,
+          }));
+        }
+      }
+
+      setTickets(list);
     } catch (err) {
       console.error('Error fetching tickets:', err);
       toast({ title: 'Error Fetching Tickets', description: err.message, variant: 'destructive' });
@@ -381,20 +398,34 @@ export default function AdminTicketsManager({ id: propId }) {
     try {
       const { data, error } = await supabase
         .from('tickets')
-        .select('*, creator:users!created_by(full_name, role, username)')
+        .select('*')
         .eq('id', tId)
         .single();
 
       if (error) throw error;
-      setTicketDetails(data);
+
+      let ticket = data;
+      if (ticket && ticket.created_by) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id, full_name, role, username')
+          .eq('id', ticket.created_by)
+          .maybeSingle();
+
+        if (userData) {
+          ticket = { ...ticket, creator: userData };
+        }
+      }
+
+      setTicketDetails(ticket);
       setEditTicketForm({
-        title: data.title,
-        description: data.description || '',
-        department: data.department,
-        priority: data.priority,
-        status: data.status,
+        title: ticket.title,
+        description: ticket.description || '',
+        department: ticket.department,
+        priority: ticket.priority,
+        status: ticket.status,
       });
-      setEditTicketAttachments(parseAttachments(data.attachments));
+      setEditTicketAttachments(parseAttachments(ticket.attachments));
       fetchComments(tId);
       fetchTicketHistory(tId);
     } catch (err) {
@@ -409,14 +440,32 @@ export default function AdminTicketsManager({ id: propId }) {
   const fetchComments = async (tId) => {
     setLoadingComments(true);
     try {
-      const { data, error } = await supabase
+      const { data: rawComments, error } = await supabase
         .from('ticket_comments')
-        .select('*, author:users!author_id(full_name, role, username)')
+        .select('*')
         .eq('ticket_id', tId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setComments(data || []);
+
+      let commentsData = rawComments || [];
+      const authorIds = [...new Set(commentsData.map((c) => c.author_id).filter(Boolean))];
+      if (authorIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, full_name, role, username')
+          .in('id', authorIds);
+
+        if (usersData) {
+          const userMap = new Map(usersData.map((u) => [u.id, u]));
+          commentsData = commentsData.map((c) => ({
+            ...c,
+            author: userMap.get(c.author_id) || null,
+          }));
+        }
+      }
+
+      setComments(commentsData);
     } catch (err) {
       console.error('Error fetching comments:', err);
       toast({ title: 'Error Fetching Comments', description: err.message, variant: 'destructive' });
@@ -428,18 +477,36 @@ export default function AdminTicketsManager({ id: propId }) {
   const fetchTicketHistory = async (tId) => {
     setLoadingHistory(true);
     try {
-      const { data, error } = await supabase
+      const { data: rawHistory, error } = await supabase
         .from('ticket_history')
-        .select('*, user:users!user_id(full_name, role, username)')
+        .select('*')
         .eq('ticket_id', tId)
         .order('created_at', { ascending: false });
 
       if (error) {
         console.warn('Could not load history table:', error.message);
         setTicketHistory([]);
-      } else {
-        setTicketHistory(data || []);
+        return;
       }
+
+      let historyData = rawHistory || [];
+      const userIds = [...new Set(historyData.map((h) => h.user_id).filter(Boolean))];
+      if (userIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, full_name, role, username')
+          .in('id', userIds);
+
+        if (usersData) {
+          const userMap = new Map(usersData.map((u) => [u.id, u]));
+          historyData = historyData.map((h) => ({
+            ...h,
+            user: userMap.get(h.user_id) || null,
+          }));
+        }
+      }
+
+      setTicketHistory(historyData);
     } catch (err) {
       console.error('Error fetching history:', err);
       setTicketHistory([]);

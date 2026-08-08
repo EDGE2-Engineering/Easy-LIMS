@@ -47,14 +47,27 @@ const AccountsDashboard = () => {
     setLoading(true);
     try {
       // 1. Fetch user's documents
-      const { data: docs, error: docsError } = await supabase
+      const { data: rawDocs, error: docsError } = await supabase
         .from('documents')
-        .select('*, clients(client_name)')
+        .select('*')
         .eq('created_by', user.id)
         .order('created_at', { ascending: false });
 
       if (docsError) throw docsError;
-      setMyDocuments(docs || []);
+
+      let docs = rawDocs || [];
+      const docClientIds = [...new Set(docs.map((d) => d.client_id).filter(Boolean))];
+      if (docClientIds.length > 0) {
+        const { data: cData } = await supabase
+          .from('clients')
+          .select('id, client_name')
+          .in('id', docClientIds);
+        if (cData) {
+          const cMap = new Map(cData.map((c) => [c.id, c]));
+          docs = docs.map((d) => ({ ...d, clients: cMap.get(d.client_id) || null }));
+        }
+      }
+      setMyDocuments(docs);
 
       // Calculate stats from docs
       const quotes = docs.filter((d) => d.document_type === 'Quotation');
@@ -68,13 +81,26 @@ const AccountsDashboard = () => {
       }, 0);
 
       // 2. Fetch jobs ready for invoicing
-      const { data: readyJobs, error: jobsError } = await supabase
+      const { data: rawReadyJobs, error: jobsError } = await supabase
         .from('jobs')
-        .select('*, clients(client_name)')
+        .select('*')
         .eq('status', WORKFLOW_STATES.REPORT_SIGNED)
         .order('updated_at', { ascending: false });
 
       if (jobsError) throw jobsError;
+
+      let readyJobs = rawReadyJobs || [];
+      const jobClientIds = [...new Set(readyJobs.map((j) => j.client_id).filter(Boolean))];
+      if (jobClientIds.length > 0) {
+        const { data: cData } = await supabase
+          .from('clients')
+          .select('id, client_name')
+          .in('id', jobClientIds);
+        if (cData) {
+          const cMap = new Map(cData.map((c) => [c.id, c]));
+          readyJobs = readyJobs.map((j) => ({ ...j, clients: cMap.get(j.client_id) || null }));
+        }
+      }
 
       // Filter out jobs that already have an invoice
       const jobIds = readyJobs.map((j) => j.id);
@@ -313,7 +339,7 @@ const AccountsDashboard = () => {
                                 : doc.quote_number}
                             </p>
                             <p className="text-[10px] text-gray-400 font-black uppercase tracking-tight">
-                              {doc.document_type} • {doc.clients?.client_name}
+                              {doc.document_type} • {doc.clients?.client_name || doc.content?.quoteDetails?.clientName || doc.content?.clientDetails?.clientName || doc.content?.clientName || '-'}
                             </p>
                           </div>
                         </div>

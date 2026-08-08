@@ -137,20 +137,35 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
     if (!silent) setLoading(true);
     try {
       // Fetch Job
-      const { data: job, error: jobError } = await supabase
+      const { data: rawJob, error: jobError } = await supabase
         .from('jobs')
-        .select('*, clients(client_name)')
+        .select('*')
         .eq('id', initialJobId)
         .single();
       if (jobError) throw jobError;
+
+      let job = rawJob;
+      if (job && job.client_id) {
+        const { data: cData } = await supabase.from('clients').select('id, client_name').eq('id', job.client_id).maybeSingle();
+        if (cData) job = { ...job, clients: cData };
+      }
       setJobDetails(job);
 
       // Fetch Samples
       const { data: inwards, error: inError } = await supabase
         .from('material_inward_register')
-        .select('*, material_samples(*)')
+        .select('*')
         .eq('job_id', initialJobId);
-      const flatSamples = inwards ? inwards.flatMap((i) => i.material_samples || []) : [];
+
+      let flatSamples = [];
+      if (inwards && inwards.length > 0) {
+        const inwardIds = inwards.map((i) => i.id);
+        const { data: sData } = await supabase
+          .from('material_samples')
+          .select('*')
+          .in('inward_id', inwardIds);
+        flatSamples = sData || [];
+      }
       setSamples(flatSamples);
       if (inError) console.error('Inward fetch error:', inError);
 

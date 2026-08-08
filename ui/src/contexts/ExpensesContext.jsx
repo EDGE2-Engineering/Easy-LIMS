@@ -47,9 +47,9 @@ const ExpensesProvider = ({ children }) => {
 
   const fetchExpenses = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data: rawData, error } = await supabase
         .from('expenses')
-        .select('*, users(full_name)')
+        .select('*')
         .order('date', { ascending: false });
 
       if (error) {
@@ -67,8 +67,26 @@ const ExpensesProvider = ({ children }) => {
         return;
       }
 
-      if (data) {
-        setExpenses(data.map(mapFromDb));
+      if (rawData) {
+        let expList = rawData;
+        const userIds = [...new Set(expList.map((e) => e.created_by).filter(Boolean))];
+        if (userIds.length > 0) {
+          const { data: uData } = await supabase
+            .from('users')
+            .select('id, full_name')
+            .in('id', userIds);
+
+          if (uData) {
+            const userMap = new Map(uData.map((u) => [u.id, u]));
+            expList = expList.map((e) => ({
+              ...e,
+              users: userMap.get(e.created_by) || null,
+            }));
+          }
+        }
+        const mapped = expList.map(mapFromDb);
+        setExpenses(mapped);
+        localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(mapped));
       }
     } catch (error) {
       console.error('Error loading expenses:', error);

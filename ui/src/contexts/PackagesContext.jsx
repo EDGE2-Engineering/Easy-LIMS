@@ -14,9 +14,9 @@ const PackagesProvider = ({ children }) => {
 
   const fetchPackages = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data: rawData, error } = await supabase
         .from('packages')
-        .select('*, users(full_name)')
+        .select('*')
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -35,10 +35,26 @@ const PackagesProvider = ({ children }) => {
         return;
       }
 
-      if (data) {
-        setPackages(data);
+      if (rawData) {
+        let pkgList = rawData;
+        const userIds = [...new Set(pkgList.map((p) => p.user_id || p.created_by).filter(Boolean))];
+        if (userIds.length > 0) {
+          const { data: uData } = await supabase
+            .from('users')
+            .select('id, full_name')
+            .in('id', userIds);
+
+          if (uData) {
+            const userMap = new Map(uData.map((u) => [u.id, u]));
+            pkgList = pkgList.map((p) => ({
+              ...p,
+              users: userMap.get(p.user_id || p.created_by) || null,
+            }));
+          }
+        }
+        setPackages(pkgList);
         // Cache to localStorage
-        localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify(data));
+        localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify(pkgList));
       }
     } catch (err) {
       console.error('Error loading packages data:', err);

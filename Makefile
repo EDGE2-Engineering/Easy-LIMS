@@ -30,8 +30,7 @@ build: install
 	@echo "Building UI frontend in ui/..."
 	cd ui && npm run build
 	@echo "Copying UI dist to server/dist..."
-	mkdir -p server/dist
-	cp -r ui/dist/* server/dist/
+	node -e "const fs=require('fs'); fs.mkdirSync('server/dist', {recursive: true}); fs.cpSync('ui/dist', 'server/dist', {recursive: true});"
 
 # Build for production (alias)
 build-production: build

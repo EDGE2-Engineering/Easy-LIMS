@@ -52,12 +52,34 @@ const ApprovalsManager = () => {
       // 2. Fetch Jobs Pending Review (if filter is PENDING)
       let jobRequests = [];
       if (filter === 'PENDING') {
-        const { data: jobs, error: jobsError } = await supabase
+        const { data: rawJobs, error: jobsError } = await supabase
           .from('jobs')
-          .select('*, clients(client_name), users:created_by(full_name)')
+          .select('*')
           .eq('status', WORKFLOW_STATES.TEST_DATA_UNDER_REVIEW);
 
         if (jobsError) throw jobsError;
+
+        let jobsList = rawJobs || [];
+        const clientIds = [...new Set(jobsList.map((j) => j.client_id).filter(Boolean))];
+        const userIds = [...new Set(jobsList.map((j) => j.created_by).filter(Boolean))];
+
+        let cMap = new Map();
+        if (clientIds.length > 0) {
+          const { data: cData } = await supabase.from('clients').select('id, client_name').in('id', clientIds);
+          if (cData) cMap = new Map(cData.map((c) => [c.id, c]));
+        }
+
+        let uMap = new Map();
+        if (userIds.length > 0) {
+          const { data: uData } = await supabase.from('users').select('id, full_name').in('id', userIds);
+          if (uData) uMap = new Map(uData.map((u) => [u.id, u]));
+        }
+
+        const jobs = jobsList.map((j) => ({
+          ...j,
+          clients: cMap.get(j.client_id) || null,
+          users: uMap.get(j.created_by) || null,
+        }));
 
         jobRequests = (jobs || []).map((job) => ({
           id: `job-${job.id}`,

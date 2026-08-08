@@ -70,15 +70,33 @@ const MyLeaves = () => {
   const fetchUserLeaves = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: rawLeaves, error } = await supabase
         .from('request_approvals')
-        .select('*, reviewer:users!request_approvals_reviewed_by_fkey(full_name, username)')
+        .select('*')
         .eq('requester_id', user.id)
         .eq('request_type', 'LEAVE')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setLeaves(data || []);
+
+      let leavesList = rawLeaves || [];
+      const reviewerIds = [...new Set(leavesList.map((l) => l.reviewed_by).filter(Boolean))];
+      if (reviewerIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, full_name, username')
+          .in('id', reviewerIds);
+
+        if (usersData) {
+          const userMap = new Map(usersData.map((u) => [u.id, u]));
+          leavesList = leavesList.map((l) => ({
+            ...l,
+            reviewer: userMap.get(l.reviewed_by) || null,
+          }));
+        }
+      }
+
+      setLeaves(leavesList);
     } catch (error) {
       console.error('Error fetching user leaves:', error);
       toast({

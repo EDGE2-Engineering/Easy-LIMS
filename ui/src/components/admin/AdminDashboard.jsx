@@ -188,12 +188,34 @@ const AdminDashboard = () => {
         .neq('role', ROLES.SUPER_ADMIN.slug);
       if (staffError) throw staffError;
       // 4. Fetch Recent Activity (from workflow logs)
-      const { data: activity, error: activityError } = await supabase
+      const { data: rawActivity, error: activityError } = await supabase
         .from('job_workflow_logs')
-        .select('*, jobs(job_code, project_name), users(full_name, username)')
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(5);
       if (activityError) throw activityError;
+
+      let activity = rawActivity || [];
+      const actJobIds = [...new Set(activity.map((a) => a.job_id).filter(Boolean))];
+      const actUserIds = [...new Set(activity.map((a) => a.performed_by).filter(Boolean))];
+
+      let actJobMap = new Map();
+      if (actJobIds.length > 0) {
+        const { data: jData } = await supabase.from('jobs').select('id, job_code, project_name').in('id', actJobIds);
+        if (jData) actJobMap = new Map(jData.map((j) => [j.id, j]));
+      }
+
+      let actUserMap = new Map();
+      if (actUserIds.length > 0) {
+        const { data: uData } = await supabase.from('users').select('id, full_name, username').in('id', actUserIds);
+        if (uData) actUserMap = new Map(uData.map((u) => [u.id, u]));
+      }
+
+      activity = activity.map((a) => ({
+        ...a,
+        jobs: actJobMap.get(a.job_id) || null,
+        users: actUserMap.get(a.performed_by) || null,
+      }));
 
       // 5. Fetch Clients & Inquiries Stats
       const { count: clientsCount, error: clientErr } = await supabase
@@ -324,23 +346,19 @@ const AdminDashboard = () => {
 
       const fetchTodayDocs = supabase
         .from('documents')
-        .select(
-          'id, quote_number, version, document_type, created_at, clients(client_name), users:created_by(full_name, username)'
-        )
+        .select('id, quote_number, version, document_type, created_at, client_id, created_by')
         .gte('created_at', startOfTodayISO)
         .then((res) => res.data || [])
         .catch(() => []);
       const fetchTodayJobs = supabase
         .from('jobs')
-        .select(
-          'id, job_code, project_name, created_at, clients(client_name), users:created_by(full_name, username)'
-        )
+        .select('id, job_code, project_name, created_at, client_id, created_by')
         .gte('created_at', startOfTodayISO)
         .then((res) => res.data || [])
         .catch(() => []);
       const fetchTodayExpenses = supabase
         .from('expenses')
-        .select('id, description, amount, created_at, users:created_by(full_name, username)')
+        .select('id, description, amount, created_at, created_by')
         .gte('created_at', startOfTodayISO)
         .then((res) => res.data || [])
         .catch(() => []);
@@ -352,7 +370,7 @@ const AdminDashboard = () => {
         .catch(() => []);
       const fetchTodayPackages = supabase
         .from('packages')
-        .select('id, name, created_at, users:created_by(full_name, username)')
+        .select('id, name, created_at, created_by')
         .gte('created_at', startOfTodayISO)
         .then((res) => res.data || [])
         .catch(() => []);
@@ -374,7 +392,7 @@ const AdminDashboard = () => {
           detail: doc.document_type === 'Quotation' && doc.version && doc.version > 1
             ? `${doc.quote_number}/R${doc.version - 1}`
             : doc.quote_number,
-          subtitle: doc.clients?.client_name || 'No Client Name',
+          subtitle: doc.clients?.client_name || doc.content?.quoteDetails?.clientName || doc.content?.clientDetails?.clientName || doc.content?.clientName || 'No Client Name',
           timestamp: doc.created_at,
           originalId: doc.id,
         };

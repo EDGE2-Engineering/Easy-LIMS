@@ -182,12 +182,18 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
           }
 
           // 2. If not, create a new one based on job details
-          const { data: job, error } = await supabase
+          const { data: rawJob, error } = await supabase
             .from('jobs')
-            .select('*, clients(*)')
+            .select('*')
             .eq('id', jobId)
             .single();
           if (error) throw error;
+
+          let job = rawJob;
+          if (job && job.client_id) {
+            const { data: cData } = await supabase.from('clients').select('*').eq('id', job.client_id).maybeSingle();
+            if (cData) job = { ...job, clients: cData };
+          }
 
           setEditingRecord({
             job_order_no: '',

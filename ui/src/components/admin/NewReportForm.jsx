@@ -98,10 +98,24 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
     const fetchJobOrders = async () => {
       try {
         if (!user) return;
-        const { data } = await supabase
+        const { data: rawOrders } = await supabase
           .from('material_inward_register')
-          .select('job_order_no, client_id, clients(client_name, client_address)');
-        if (data) setJobOrders(data);
+          .select('job_order_no, client_id');
+        if (rawOrders) {
+          let orders = rawOrders;
+          const clientIds = [...new Set(orders.map((o) => o.client_id).filter(Boolean))];
+          if (clientIds.length > 0) {
+            const { data: cData } = await supabase
+              .from('clients')
+              .select('id, client_name, client_address')
+              .in('id', clientIds);
+            if (cData) {
+              const cMap = new Map(cData.map((c) => [c.id, c]));
+              orders = orders.map((o) => ({ ...o, clients: cMap.get(o.client_id) || null }));
+            }
+          }
+          setJobOrders(orders);
+        }
       } catch (error) {
         console.error('Error fetching job orders:', error);
       }

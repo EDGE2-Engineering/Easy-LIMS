@@ -58,13 +58,36 @@ const AdminReportsManager = () => {
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: rawData, error } = await supabase
         .from('reports')
-        .select('*, users(full_name), clients(client_name)')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReports(data || []);
+
+      let rList = rawData || [];
+      const userIds = [...new Set(rList.map((r) => r.created_by).filter(Boolean))];
+      const clientIds = [...new Set(rList.map((r) => r.client_id).filter(Boolean))];
+
+      let userMap = new Map();
+      if (userIds.length > 0) {
+        const { data: uData } = await supabase.from('users').select('id, full_name').in('id', userIds);
+        if (uData) userMap = new Map(uData.map((u) => [u.id, u]));
+      }
+
+      let clientMap = new Map();
+      if (clientIds.length > 0) {
+        const { data: cData } = await supabase.from('clients').select('id, client_name').in('id', clientIds);
+        if (cData) clientMap = new Map(cData.map((c) => [c.id, c]));
+      }
+
+      rList = rList.map((r) => ({
+        ...r,
+        users: userMap.get(r.created_by) || null,
+        clients: clientMap.get(r.client_id) || null,
+      }));
+
+      setReports(rList);
     } catch (error) {
       console.error('Error fetching reports:', error);
       toast({ title: 'Error', description: 'Failed to load reports.', variant: 'destructive' });

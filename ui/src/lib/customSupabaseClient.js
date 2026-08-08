@@ -17,6 +17,8 @@ const ENDPOINT_MAP = {
   hsn_sac_codes: '/api/hsn-sac-codes',
   inquiries: '/api/inquiries',
   tickets: '/api/tickets',
+  ticket_comments: '/api/ticket-comments',
+  ticket_history: '/api/ticket-history',
   materials: '/api/materials',
   material_inward_register: '/api/material-inward',
   payment_terms: '/api/payment-terms',
@@ -29,6 +31,9 @@ const ENDPOINT_MAP = {
   reports: '/api/reports',
   client_lab_test_prices: '/api/client-pricing/lab',
   client_field_test_prices: '/api/client-pricing/field',
+  job_to_technicians: '/api/job-technicians',
+  job_workflow_logs: '/api/job-workflow-logs',
+  material_samples: '/api/material-samples',
 };
 
 class QueryBuilder {
