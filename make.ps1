@@ -14,7 +14,6 @@ function Show-Help {
     Write-Host "  ./make.ps1 clean-build      - Remove only build artifacts"
     Write-Host "  ./make.ps1 docker-build     - Build Docker image (easy-lims:latest)"
     Write-Host "  ./make.ps1 docker-run       - Build & run Docker container"
-    Write-Host "  ./make.ps1 docker-up        - Start Docker Compose stack"
     Write-Host "  ./make.ps1 android          - Run Android build/run process"
     Write-Host "  ./make.ps1 test             - Run E2E tests with Playwright (headed)"
     Write-Host "  ./make.ps1 test-e2e         - Run E2E tests"
@@ -176,12 +175,8 @@ function Invoke-DockerBuild {
 function Invoke-DockerRun {
     Invoke-DockerBuild
     Write-Host "Running Docker container easy-lims:latest on port 8000..." -ForegroundColor Green
-    docker run -p 8000:8000 --env-file server/.env easy-lims:latest
-}
-
-function Invoke-DockerUp {
-    Write-Host "Starting Docker Compose stack..." -ForegroundColor Green
-    docker compose up -d --build
+    if (-not (Test-Path server/.env)) { New-Item -ItemType File -Path server/.env -Force }
+    docker run -p 8000:8000 -e SUPABASE_PROJECT_ID="$env:SUPABASE_PROJECT_ID" -e SUPABASE_DB_PASS="$env:SUPABASE_DB_PASS" --env-file server/.env easy-lims:latest
 }
 
 switch ($Target) {
@@ -196,7 +191,6 @@ switch ($Target) {
     "stop"             { Invoke-Stop }
     "docker-build"     { Invoke-DockerBuild }
     "docker-run"       { Invoke-DockerRun }
-    "docker-up"        { Invoke-DockerUp }
     "android-install"  { Invoke-AndroidInstall }
     "android"          { Invoke-Android }
     "init-test"        { Invoke-InitTest }

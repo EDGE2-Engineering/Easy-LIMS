@@ -36,16 +36,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DB_USER = os.getenv("DB_USER", os.getenv("POSTGRES_USER", "postgres"))
-DB_PASSWORD = os.getenv("DB_PASSWORD", os.getenv("POSTGRES_PASSWORD", ""))
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "5432")
-DB_NAME = os.getenv("DB_NAME", os.getenv("POSTGRES_DB", "postgres"))
+SUPABASE_PROJECT_ID = os.getenv("SUPABASE_PROJECT_ID")
+SUPABASE_DB_PASS = os.getenv("SUPABASE_DB_PASS")
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    f"postgresql://{quote_plus(DB_USER)}:{quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-)
+if SUPABASE_PROJECT_ID and SUPABASE_DB_PASS:
+    db_user = f"postgres.{SUPABASE_PROJECT_ID}"
+    db_pass = SUPABASE_DB_PASS
+    db_host = os.getenv("DB_HOST", "aws-1-ap-south-1.pooler.supabase.com")
+    db_port = os.getenv("DB_PORT", "6543")
+    db_name = os.getenv("DB_NAME", "postgres")
+    DATABASE_URL = os.getenv(
+        "DATABASE_URL",
+        f"postgresql://{quote_plus(db_user)}:{quote_plus(db_pass)}@{db_host}:{db_port}/{db_name}"
+    )
+else:
+    DB_USER = os.getenv("DB_USER", os.getenv("POSTGRES_USER", "postgres"))
+    DB_PASSWORD = os.getenv("DB_PASSWORD", os.getenv("POSTGRES_PASSWORD", ""))
+    DB_HOST = os.getenv("DB_HOST", "localhost")
+    DB_PORT = os.getenv("DB_PORT", "5432")
+    DB_NAME = os.getenv("DB_NAME", os.getenv("POSTGRES_DB", "postgres"))
+
+    DATABASE_URL = os.getenv(
+        "DATABASE_URL",
+        f"postgresql://{quote_plus(DB_USER)}:{quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    )
 
 print(DATABASE_URL)
 db_pool = None

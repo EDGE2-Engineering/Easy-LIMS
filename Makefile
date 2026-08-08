@@ -1,6 +1,6 @@
 # Makefile for running the project
 
-.PHONY: help install dev preview stop build build-production clean clean-build android android-install format format-check setup-hooks docker-build docker-run docker-up
+.PHONY: help install dev preview stop build build-production clean clean-build android android-install format format-check setup-hooks docker-build docker-run
 
 # Default target
 help:
@@ -15,7 +15,6 @@ help:
 	@echo "  make clean-build      - Remove only build artifacts"
 	@echo "  make docker-build     - Build Docker image (easy-lims:latest)"
 	@echo "  make docker-run       - Build & run Docker container"
-	@echo "  make docker-up        - Start Docker Compose stack"
 	@echo "  make format           - Format source files with Prettier (writes in-place)"
 	@echo "  make format-check     - Check formatting without writing (CI-friendly)"
 	@echo "  make setup-hooks      - Install Git hooks (run once after cloning)"
@@ -71,11 +70,8 @@ docker-build:
 
 docker-run: docker-build
 	@echo "Running Docker container easy-lims:latest on port 8000..."
-	docker run -p 8000:8000 --env-file server/.env easy-lims:latest
-
-docker-up:
-	@echo "Starting Docker Compose stack..."
-	docker compose up -d --build
+	node -e "const fs=require('fs'); if (!fs.existsSync('server/.env')) fs.writeFileSync('server/.env', '');"
+	docker run -p 8000:8000 -e SUPABASE_PROJECT_ID="$${SUPABASE_PROJECT_ID}" -e SUPABASE_DB_PASS="$${SUPABASE_DB_PASS}" --env-file server/.env easy-lims:latest
 
 # Mobile targets
 android-install:

@@ -19,7 +19,7 @@ provider "aws" {
 }
 
 # ----------------------------------------------------------------------------
-# AWS Lightsail Instance (Cheapest $3.50/mo Tier with Node.js 22 LTS)
+# AWS Lightsail Instance (Docker Deployment from Docker Hub)
 # ----------------------------------------------------------------------------
 
 resource "aws_lightsail_instance" "easy_lims" {
@@ -30,80 +30,9 @@ resource "aws_lightsail_instance" "easy_lims" {
 
   user_data = <<-EOF
               #!/bin/bash
-              # Build Trigger: Fix attachments.map error & set cheapest tier (Commit 7b6051f)
               export DEBIAN_FRONTEND=noninteractive
-              export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
-              # 1. Create /home/ubuntu/deploy.sh with flock process protection
-              cat <<'DEPLOY_SCRIPT' > /home/ubuntu/deploy.sh
-              #!/bin/bash
-              set -e
-              export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
-
-              # File lock to prevent concurrent executions
-              exec 200>/tmp/deploy.lock
-              flock -n 200 || { echo "Deployment script is already running. Exiting concurrent run."; exit 0; }
-
-              # Wait for system package installation (cloud-init) if npm/node is still installing
-              while ! command -v npm &> /dev/null; do
-                echo "Waiting for Node.js & npm package installation to finish..."
-                sleep 5
-              done
-
-              BRANCH="$${1:-lightsail}"
-              REPO_URL="${var.git_repo_url}"
-              APP_DIR="/home/ubuntu/Easy-LIMS"
-
-              echo "=== Deploying Easy-LIMS (Branch: $BRANCH) ==="
-
-              if [ ! -d "$APP_DIR/.git" ]; then
-                echo "Cloning repository from $REPO_URL..."
-                git clone $REPO_URL $APP_DIR
-              fi
-
-              cd $APP_DIR
-
-              echo "Fetching latest changes for branch: $BRANCH..."
-              git fetch origin
-              git checkout $BRANCH
-              git pull origin $BRANCH
-
-              # Ensure server directory exists and update .env
-              mkdir -p server
-              echo "DATABASE_URL='${var.database_url}'" > server/.env
-
-              # Clean npm cache safely
-              rm -rf ~/.npm/_cacache /tmp/npm-* 2>/dev/null || true
-
-              # Build UI frontend directly inside ui/
-              if [ -d "ui" ]; then
-                echo "Installing UI dependencies and building React frontend in ui/..."
-                cd ui
-                npm install --no-audit --no-fund
-                npm run build
-                cd ..
-                mkdir -p server/dist
-                cp -r ui/dist/* server/dist/ || true
-              fi
-
-              # Install Python dependencies and start FastAPI server
-              if [ -d "server" ]; then
-                echo "Installing Python dependencies in server/..."
-                pip3 install -r server/requirements.txt uvicorn --break-system-packages 2>/dev/null || pip3 install -r server/requirements.txt uvicorn || true
-
-                echo "Stopping existing server on port 8000..."
-                lsof -ti:8000 | xargs kill -9 2>/dev/null || true
-
-                echo "Launching FastAPI server on http://0.0.0.0:8000..."
-                cd server
-                python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
-              fi
-              DEPLOY_SCRIPT
-
-              chmod +x /home/ubuntu/deploy.sh
-              chown ubuntu:ubuntu /home/ubuntu/deploy.sh
-
-              # 2. Enable 1GB Swap Memory to prevent OOM on cheapest instance
+              # 1. Enable 1GB Swap Memory to prevent OOM
               if [ ! -f /swapfile ]; then
                 fallocate -l 1G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=1024
                 chmod 600 /swapfile
@@ -112,30 +41,71 @@ resource "aws_lightsail_instance" "easy_lims" {
                 echo '/swapfile none swap sw 0 0' >> /etc/fstab
               fi
 
-              # 3. Install Node.js 22 LTS (NodeSource) and system tools
+              # 2. Install Docker & prerequisites
               apt-get update -y
-              apt-get install -y curl ca-certificates gnupg
+              apt-get install -y ca-certificates curl gnupg lsb-release
               mkdir -p /etc/apt/keyrings
-              curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-              echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+              echo \
+                "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+                $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
               apt-get update -y
-              apt-get install -y nodejs python3-pip python3-venv git unzip make lsof
+              apt-get install -y docker-ce docker-ce-cli containerd.io
 
-              # 4. Run initial deployment as ubuntu user for lightsail branch
-              su - ubuntu -c "/home/ubuntu/deploy.sh lightsail" || true
+              systemctl enable docker
+              systemctl start docker
+              usermod -aG docker ubuntu
 
-              # 5. Setup systemd service for automatic startup on boot
+              # 3. Create deploy script to pull Docker Hub image & start container
+              cat <<'DEPLOY_SCRIPT' > /home/ubuntu/deploy.sh
+              #!/bin/bash
+              set -e
+
+              IMAGE="${var.docker_image}"
+              PROJECT_ID="${var.supabase_project_id}"
+              DB_PASS="${var.supabase_db_pass}"
+              DB_URL="${var.database_url}"
+
+              echo "=== Deploying Easy-LIMS Docker Image from Docker Hub: $IMAGE ==="
+
+              docker pull $IMAGE
+
+              echo "Stopping existing container if running..."
+              docker rm -f easy-lims 2>/dev/null || true
+
+              echo "Starting Easy-LIMS container..."
+              docker run -d \
+                --name easy-lims \
+                --restart always \
+                -p 8000:8000 \
+                -e SUPABASE_PROJECT_ID="$PROJECT_ID" \
+                -e SUPABASE_DB_PASS="$DB_PASS" \
+                -e DATABASE_URL="$DB_URL" \
+                $IMAGE
+
+              echo "Deployment from Docker Hub complete!"
+              DEPLOY_SCRIPT
+
+              chmod +x /home/ubuntu/deploy.sh
+              chown ubuntu:ubuntu /home/ubuntu/deploy.sh
+
+              # 4. Pull image and start container initial run
+              /home/ubuntu/deploy.sh || true
+
+              # 5. Configure systemd service for Docker container management
               cat <<'SERVICE' > /etc/systemd/system/easy-lims.service
               [Unit]
-              Description=Easy-LIMS Application Service
-              After=network.target
+              Description=Easy-LIMS Docker Container Service
+              After=docker.service
+              Requires=docker.service
 
               [Service]
-              User=ubuntu
-              WorkingDirectory=/home/ubuntu
-              ExecStart=/bin/bash /home/ubuntu/deploy.sh lightsail
+              TimeoutStartSec=0
               Restart=always
-              Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+              ExecStartPre=-/usr/bin/docker rm -f easy-lims
+              ExecStart=/usr/bin/docker run --name easy-lims -p 8000:8000 -e SUPABASE_PROJECT_ID=${var.supabase_project_id} -e SUPABASE_DB_PASS=${var.supabase_db_pass} -e DATABASE_URL=${var.database_url} ${var.docker_image}
+              ExecStop=/usr/bin/docker stop easy-lims
 
               [Install]
               WantedBy=multi-user.target
@@ -210,17 +180,30 @@ variable "lightsail_bundle_id" {
   default     = "nano_3_0" # Absolute lowest cost AWS tier: $3.50/month (512 MB RAM, 1 vCPU, 20 GB SSD)
 }
 
-variable "git_repo_url" {
-  description = "Git Repository URL to clone application code"
+variable "docker_image" {
+  description = "Docker Hub image to pull and run"
   type        = string
-  default     = "https://github.com/EDGE2-Engineering/Easy-LIMS.git"
+  default     = "edge2engineering/easy-lims:latest"
+}
+
+variable "supabase_project_id" {
+  description = "Supabase Project ID"
+  type        = string
+  default     = ""
+}
+
+variable "supabase_db_pass" {
+  description = "Supabase Database Password"
+  type        = string
+  sensitive   = true
+  default     = ""
 }
 
 variable "database_url" {
-  description = "PostgreSQL Database Connection String"
+  description = "PostgreSQL Database Connection String (optional if SUPABASE_PROJECT_ID and SUPABASE_DB_PASS are set)"
   type        = string
   sensitive   = true
-  default     = "postgresql://postgres.igkdjtmcychevvaldkwf:LimasaEdgea@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
+  default     = ""
 }
 
 output "lightsail_static_ip" {
