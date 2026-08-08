@@ -38,30 +38,46 @@ app.add_middleware(
 
 SUPABASE_PROJECT_ID = os.getenv("SUPABASE_PROJECT_ID")
 SUPABASE_DB_PASS = os.getenv("SUPABASE_DB_PASS")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-if SUPABASE_PROJECT_ID and SUPABASE_DB_PASS:
+# Enforce environment variable check prior to server startup
+has_database_url = bool(DATABASE_URL)
+has_supabase_config = bool(SUPABASE_PROJECT_ID and SUPABASE_DB_PASS)
+has_custom_db_config = bool(
+    (os.getenv("DB_USER") or os.getenv("POSTGRES_USER")) and
+    (os.getenv("DB_HOST") or os.getenv("POSTGRES_HOST")) and
+    (os.getenv("DB_NAME") or os.getenv("POSTGRES_DB"))
+)
+
+if not (has_database_url or has_supabase_config or has_custom_db_config):
+    error_msg = (
+        "CRITICAL ERROR: Required database environment variables are not set! Server cannot start.\n"
+        "Please set one of the following environment configurations in your environment or .env file:\n"
+        "  1) DATABASE_URL\n"
+        "  2) SUPABASE_PROJECT_ID and SUPABASE_DB_PASS\n"
+        "  3) DB_USER (or POSTGRES_USER), DB_HOST (or POSTGRES_HOST), and DB_NAME (or POSTGRES_DB)"
+    )
+    logger.error(error_msg)
+    raise RuntimeError(error_msg)
+
+if has_database_url:
+    logger.info("Using DATABASE_URL from environment.")
+elif has_supabase_config:
     db_user = f"postgres.{SUPABASE_PROJECT_ID}"
     db_pass = SUPABASE_DB_PASS
     db_host = os.getenv("DB_HOST", "aws-1-ap-south-1.pooler.supabase.com")
     db_port = os.getenv("DB_PORT", "6543")
     db_name = os.getenv("DB_NAME", "postgres")
-    DATABASE_URL = os.getenv(
-        "DATABASE_URL",
-        f"postgresql://{quote_plus(db_user)}:{quote_plus(db_pass)}@{db_host}:{db_port}/{db_name}"
-    )
+    DATABASE_URL = f"postgresql://{quote_plus(db_user)}:{quote_plus(db_pass)}@{db_host}:{db_port}/{db_name}"
+    logger.info("Using Supabase database configuration from environment.")
 else:
-    DB_USER = os.getenv("DB_USER", os.getenv("POSTGRES_USER", "postgres"))
-    DB_PASSWORD = os.getenv("DB_PASSWORD", os.getenv("POSTGRES_PASSWORD", ""))
-    DB_HOST = os.getenv("DB_HOST", "localhost")
-    DB_PORT = os.getenv("DB_PORT", "5432")
-    DB_NAME = os.getenv("DB_NAME", os.getenv("POSTGRES_DB", "postgres"))
-
-    DATABASE_URL = os.getenv(
-        "DATABASE_URL",
-        f"postgresql://{quote_plus(DB_USER)}:{quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    )
-
-print(DATABASE_URL)
+    db_user = os.getenv("DB_USER") or os.getenv("POSTGRES_USER")
+    db_pass = os.getenv("DB_PASSWORD") or os.getenv("POSTGRES_PASSWORD") or ""
+    db_host = os.getenv("DB_HOST") or os.getenv("POSTGRES_HOST")
+    db_port = os.getenv("DB_PORT", "5432")
+    db_name = os.getenv("DB_NAME") or os.getenv("POSTGRES_DB")
+    DATABASE_URL = f"postgresql://{quote_plus(db_user)}:{quote_plus(db_pass)}@{db_host}:{db_port}/{db_name}"
+    logger.info("Using custom Postgres database configuration from environment.")
 db_pool = None
 
 async def init_db_pool():
