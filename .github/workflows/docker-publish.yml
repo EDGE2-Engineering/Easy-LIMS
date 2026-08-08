@@ -46,11 +46,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
-        if: github.event_name != 'pull_request' && secrets.DOCKER_HUB_TOKEN != ''
+        if: github.event_name != 'pull_request' && (secrets.DOCKER_HUB_TOKEN != '' || secrets.DOCKERHUB_TOKEN != '' || secrets.DOCKER_HUB_PASSWORD != '')
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME || secrets.DOCKERHUB_USER || github.repository_owner }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+          username: ${{ secrets.DOCKER_HUB_USER || secrets.DOCKERHUB_USER || secrets.DOCKER_HUB_USERNAME || github.repository_owner }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN || secrets.DOCKERHUB_TOKEN || secrets.DOCKER_HUB_PASSWORD }}
 
       - name: Extract Docker metadata
         id: meta
@@ -58,7 +58,7 @@ jobs:
         with:
           images: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-            ${{ secrets.DOCKER_HUB_USERNAME || secrets.DOCKERHUB_USER || github.repository_owner }}/easy-lims
+            ${{ secrets.DOCKER_HUB_USER || secrets.DOCKERHUB_USER || secrets.DOCKER_HUB_USERNAME || github.repository_owner }}/easy-lims
           tags: |
             type=raw,value=latest,enable=${{ (inputs.branch || github.ref_name) == 'main' }}
             type=raw,value=${{ inputs.branch }},enable=${{ inputs.branch != '' && inputs.branch != 'main' }}
