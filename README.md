@@ -27,7 +27,7 @@ brew install postgresql@17
 #!/bin/bash
 
 # Supabase connection variables
-DB_HOST="ymhkdcizaurcnybkyxdm.supabase.co"
+DB_HOST="db.projid.supabase.co"
 DB_PORT="5432"
 DB_NAME="postgres"
 DB_USER="postgres"

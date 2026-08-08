@@ -23,8 +23,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+import { safeFormatDate } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -511,10 +511,10 @@ const InquiriesManager = () => {
                       <td className="py-4 px-6 align-middle text-gray-600">
                         <div className="flex flex-col">
                           <span className="font-mono font-bold text-gray-700 whitespace-nowrap">
-                            {format(new Date(inquiry.created_at), 'dd MMM yyyy')}
+                            {safeFormatDate(inquiry.created_at, 'dd MMM yyyy')}
                           </span>
                           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-0.5">
-                            {format(new Date(inquiry.created_at), 'hh:mm aa')}
+                            {safeFormatDate(inquiry.created_at, 'hh:mm aa', '')}
                           </span>
                         </div>
                       </td>

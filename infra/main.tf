@@ -1,132 +1,155 @@
 terraform {
-
   required_version = ">= 1.5.0"
-
   required_providers {
-
     aws = {
-
       source  = "hashicorp/aws"
-
       version = "~> 6.0"
-
     }
-
-    random = {
-
-      source  = "hashicorp/random"
-
-      version = "~> 3.7"
-
-    }
-
   }
 
-  backend "s3" {
-    bucket = "terraform-states"
-    key    = "all-infra/terraform.tfstate"
-    region = "us-east-1"
-  }
+  # backend "s3" {
+  #   bucket = "edge2-easy-lims-tfstate"
+  #   key    = "all-infra/terraform.tfstate"
+  #   region = "us-east-1"
+  # }
 }
 
 provider "aws" {
-
   region = var.aws_region
-
 }
 
-resource "random_password" "db_password" {
+# ----------------------------------------------------------------------------
+# AWS Lightsail Instance (Docker & Caddy Setup)
+# ----------------------------------------------------------------------------
 
-  length  = 24
+resource "aws_lightsail_instance" "easy_lims" {
+  name              = "easy_lims_lightsail"
+  availability_zone = "${var.aws_region}a"
+  blueprint_id      = "ubuntu_22_04"
+  bundle_id         = var.lightsail_bundle_id
 
-  special = false
+  user_data = <<-EOF
+              #!/bin/bash
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update -y
+              apt-get install -y docker.io docker-compose-v2 git
 
-}
+              # Enable 1GB Swap Memory to prevent OOM
+              if [ ! -f /swapfile ]; then
+                fallocate -l 1G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=1024
+                chmod 600 /swapfile
+                mkswap /swapfile
+                swapon /swapfile
+                echo '/swapfile none swap sw 0 0' >> /etc/fstab
+              fi
 
-resource "aws_db_instance" "postgres" {
+              # Start & Enable Docker
+              systemctl enable docker
+              systemctl start docker
+              usermod -aG docker ubuntu || true
 
-  identifier = "postgres-main"
+              # Clone application repository
+              mkdir -p /opt/easy-lims
+              cd /opt/easy-lims
 
-  engine         = "postgres"
+              if [ ! -d "/opt/easy-lims/app/.git" ]; then
+                rm -rf /opt/easy-lims/app
+                git clone ${var.git_repo_url} /opt/easy-lims/app
+              fi
 
-  engine_version = "17.5"
+              cd /opt/easy-lims/app
+              git pull origin main || true
 
-  instance_class = "db.t4g.micro"
+              # Environment Setup
+              echo "DATABASE_URL='${var.database_url}'" > /opt/easy-lims/app/.env
 
-  allocated_storage     = 20
-
-  max_allocated_storage = 100
-
-  storage_type          = "gp3"
-
-  db_name  = "postgres"
-
-  username = var.db_username
-
-  password = random_password.db_password.result
-
-  publicly_accessible = true
-
-  multi_az = false
-
-  backup_retention_period = 7
-
-  storage_encrypted = true
-
-  skip_final_snapshot = true
-
-  deletion_protection = false
-
-  auto_minor_version_upgrade = true
-
-  performance_insights_enabled = false
-
-  apply_immediately = true
+              # Launch Docker Compose (FastAPI + Caddy)
+              docker compose up -d --build || true
+              EOF
 
   tags = {
+    Name = "EasyLimsLightsail"
+  }
+}
 
-    Name        = "postgres-main"
+# ----------------------------------------------------------------------------
+# AWS Lightsail Static IP (Permanent Fixed IP)
+# ----------------------------------------------------------------------------
 
-    Environment = "dev"
+resource "aws_lightsail_static_ip" "easy_lims_ip" {
+  name = "easy_lims_static_ip"
+}
 
+resource "aws_lightsail_static_ip_attachment" "easy_lims_ip_attach" {
+  static_ip_name = aws_lightsail_static_ip.easy_lims_ip.id
+  instance_name  = aws_lightsail_instance.easy_lims.id
+}
+
+# ----------------------------------------------------------------------------
+# AWS Lightsail Public Ports Firewall Rules
+# ----------------------------------------------------------------------------
+
+resource "aws_lightsail_instance_public_ports" "easy_lims_ports" {
+  instance_name = aws_lightsail_instance.easy_lims.name
+
+  port_info {
+    protocol  = "tcp"
+    from_port = 80
+    to_port   = 80
   }
 
+  port_info {
+    protocol  = "tcp"
+    from_port = 443
+    to_port   = 443
+  }
+
+  port_info {
+    protocol  = "tcp"
+    from_port = 8000
+    to_port   = 8000
+  }
+
+  port_info {
+    protocol  = "tcp"
+    from_port = 22
+    to_port   = 22
+  }
 }
+
+# ----------------------------------------------------------------------------
+# Variables and Outputs
+# ----------------------------------------------------------------------------
 
 variable "aws_region" {
-
-  default = "us-east-2"
-
+  default = "us-east-1"
 }
 
-variable "db_username" {
-
-  default = "postgres"
-
+variable "lightsail_bundle_id" {
+  description = "Lightsail Bundle ID (nano_3_0, micro_3_0, small_3_0, medium_3_0)"
+  type        = string
+  default     = "micro_3_0" # $5/month bundle (1 GB RAM, 1 vCPU, 40 GB SSD)
 }
 
-output "endpoint" {
-
-  value = aws_db_instance.postgres.endpoint
-
+variable "git_repo_url" {
+  description = "Git Repository URL to clone application code"
+  type        = string
+  default     = "https://github.com/EDGE2-Engineering/Easy-LIMS"
 }
 
-output "database_name" {
-
-  value = aws_db_instance.postgres.db_name
-
+variable "database_url" {
+  description = "PostgreSQL Database Connection String"
+  type        = string
+  sensitive   = true
+  default     = "postgresql://postgres.project_id:password@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
 }
 
-output "username" {
-
-  value = aws_db_instance.postgres.username
-
+output "lightsail_static_ip" {
+  description = "Permanent Static IP Address of the Lightsail Instance"
+  value       = aws_lightsail_static_ip.easy_lims_ip.ip_address
 }
 
-output "password" {
-
-  value     = random_password.db_password.result
-
-  sensitive = true
-
+output "application_url" {
+  description = "Application URL"
+  value       = "http://${aws_lightsail_static_ip.easy_lims_ip.ip_address}"
 }

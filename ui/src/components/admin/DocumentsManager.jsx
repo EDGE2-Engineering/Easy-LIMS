@@ -25,6 +25,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+import { safeFormatDate } from '@/lib/utils';
 import Rupee from '../Rupee';
 import { useSettings } from '@/contexts/SettingsContext';
 import { ROLES, DEPARTMENTS } from '@/data/config';
@@ -756,13 +757,11 @@ const DocumentsManager = () => {
                     </td>
 
                     <td className="py-4 px-3 whitespace-nowrap text-gray-600">
-                      {record.content?.quoteDetails?.date
-                        ? format(new Date(record.content.quoteDetails.date), 'dd MMM yyyy')
-                        : '-'}
+                      {safeFormatDate(record.content?.quoteDetails?.date)}
                     </td>
 
                     <td className="py-4 px-3 whitespace-nowrap text-gray-600">
-                      {format(new Date(record.created_at), 'dd MMM yyyy')}
+                      {safeFormatDate(record.created_at)}
                     </td>
 
                     <td className="py-4 px-2 whitespace-nowrap text-gray-600">

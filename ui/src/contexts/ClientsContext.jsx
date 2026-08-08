@@ -77,7 +77,9 @@ const ClientsProvider = ({ children }) => {
       ...c,
       id: c.id,
       clientName: c.client_name || c.clientName || '',
+      client_name: c.client_name || c.clientName || '',
       clientAddress: c.client_address || c.clientAddress || '',
+      client_address: c.client_address || c.clientAddress || '',
       contacts: contacts,
       // Backward compatibility for UI parts still using single email/phone
       email: primaryContact.contact_email || c.email || '',

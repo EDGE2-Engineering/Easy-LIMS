@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
+import { safeFormatDate } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -778,9 +779,7 @@ const AdminPackagesManager = () => {
                     </td>
 
                     <td className="py-4 px-4 whitespace-nowrap align-top text-gray-600">
-                      {pkg.createdAt || pkg.created_at
-                        ? format(new Date(pkg.createdAt || pkg.created_at), 'dd MMM yyyy')
-                        : '-'}
+                      {safeFormatDate(pkg.createdAt || pkg.created_at)}
                     </td>
 
                     <td className="py-4 px-4 whitespace-nowrap align-top text-gray-600">

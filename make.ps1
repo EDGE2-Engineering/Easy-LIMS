@@ -12,6 +12,9 @@ function Show-Help {
     Write-Host "  ./make.ps1 build-production - Build with optimizations (alias for build)"
     Write-Host "  ./make.ps1 clean            - Remove build artifacts and dependencies"
     Write-Host "  ./make.ps1 clean-build      - Remove only build artifacts"
+    Write-Host "  ./make.ps1 docker-build     - Build Docker image (easy-lims:latest)"
+    Write-Host "  ./make.ps1 docker-run       - Build & run Docker container"
+    Write-Host "  ./make.ps1 docker-up        - Start Docker Compose stack"
     Write-Host "  ./make.ps1 android          - Run Android build/run process"
     Write-Host "  ./make.ps1 test             - Run E2E tests with Playwright (headed)"
     Write-Host "  ./make.ps1 test-e2e         - Run E2E tests"
@@ -24,42 +27,38 @@ function Show-Help {
 
 function Invoke-Install {
     Write-Host "Installing dependencies..." -ForegroundColor Green
-    npm install
+    if (Test-Path ui) { Push-Location ui; npm install; Pop-Location } else { npm install }
 }
 
 function Invoke-Build {
     Invoke-Install
     Write-Host "Building the project..." -ForegroundColor Green
-    npm run build
+    if (Test-Path ui) { Push-Location ui; npm run build; Pop-Location } else { npm run build }
 }
 
 function Invoke-CleanBuild {
     Write-Host "Cleaning build artifacts..." -ForegroundColor Green
-    if (Test-Path dist) {
-        Remove-Item -Recurse -Force dist
-    }
+    if (Test-Path ui/dist) { Remove-Item -Recurse -Force ui/dist }
+    if (Test-Path dist) { Remove-Item -Recurse -Force dist }
 }
 
 function Invoke-Clean {
     Invoke-CleanBuild
     Write-Host "Cleaning dependencies..." -ForegroundColor Green
-    if (Test-Path node_modules) {
-        Remove-Item -Recurse -Force node_modules
-    }
-    if (Test-Path package-lock.json) {
-        Remove-Item -Force package-lock.json
-    }
+    if (Test-Path ui/node_modules) { Remove-Item -Recurse -Force ui/node_modules }
+    if (Test-Path ui/package-lock.json) { Remove-Item -Force ui/package-lock.json }
+    if (Test-Path node_modules) { Remove-Item -Recurse -Force node_modules }
 }
 
 function Invoke-Dev {
     Invoke-Install
     Write-Host "Starting development server on http://localhost:3000..." -ForegroundColor Green
-    npm run dev
+    if (Test-Path ui) { Push-Location ui; npm run dev; Pop-Location } else { npm run dev }
 }
 
 function Invoke-Preview {
     Write-Host "Starting preview server on http://localhost:3000..." -ForegroundColor Green
-    npm run preview
+    if (Test-Path ui) { Push-Location ui; npm run preview; Pop-Location } else { npm run preview }
 }
 
 function Invoke-Stop {
@@ -125,8 +124,19 @@ function Invoke-DbDump {
         Write-Error "PROJECT_ID environment variable is not set. Set it via `$env:PROJECT_ID='your-project-id'"
         return
     }
+    # $env:DB_PASSWORD='as'
+    # $env:PROJECT_ID='as'
+    # $env:PROJECT_ID_NEW='asds'
+    $env:PATH='%PATH%;C:\Program Files\PostgreSQL\18\bin'
+
     pg_dump --schema-only --no-owner --no-privileges --quote-all-identifiers "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID).supabase.co:5432/postgres" > data-model.sql
     pg_dump --format=custom --blobs --verbose "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID).supabase.co:5432/postgres" -f full-database.dump
+    # pg_dump "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID).supabase.co:5432/postgres?sslmode=require" --no-owner --no-privileges --file="supabase.sql"
+pg_dump "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID).supabase.co:5432/postgres?sslmode=require" --schema=public --no-owner --no-privileges --file="public_schema.sql"
+psql `
+  "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID_NEW).supabase.co:5432/postgres?sslmode=require" `
+  -f "public_schema.sql"
+
 }
 
 function Invoke-Format {
@@ -145,6 +155,22 @@ function Invoke-SetupHooks {
     Write-Host "Git hooks installed." -ForegroundColor Green
 }
 
+function Invoke-DockerBuild {
+    Write-Host "Building Docker image easy-lims:latest..." -ForegroundColor Green
+    docker build -t easy-lims:latest .
+}
+
+function Invoke-DockerRun {
+    Invoke-DockerBuild
+    Write-Host "Running Docker container easy-lims:latest on port 8000..." -ForegroundColor Green
+    docker run -p 8000:8000 --env-file server/.env easy-lims:latest
+}
+
+function Invoke-DockerUp {
+    Write-Host "Starting Docker Compose stack..." -ForegroundColor Green
+    docker compose up -d --build
+}
+
 switch ($Target) {
     "help"             { Show-Help }
     "install"          { Invoke-Install }
@@ -155,6 +181,9 @@ switch ($Target) {
     "dev"              { Invoke-Dev }
     "preview"          { Invoke-Preview }
     "stop"             { Invoke-Stop }
+    "docker-build"     { Invoke-DockerBuild }
+    "docker-run"       { Invoke-DockerRun }
+    "docker-up"        { Invoke-DockerUp }
     "android-install"  { Invoke-AndroidInstall }
     "android"          { Invoke-Android }
     "init-test"        { Invoke-InitTest }

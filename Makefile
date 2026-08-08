@@ -1,6 +1,6 @@
 # Makefile for running the project
 
-.PHONY: help install dev preview stop build build-production clean clean-build android android-install format format-check setup-hooks
+.PHONY: help install dev preview stop build build-production clean clean-build android android-install format format-check setup-hooks docker-build docker-run docker-up
 
 # Default target
 help:
@@ -13,6 +13,9 @@ help:
 	@echo "  make build-production - Build with optimizations (alias for build)"
 	@echo "  make clean            - Remove build artifacts and dependencies"
 	@echo "  make clean-build      - Remove only build artifacts"
+	@echo "  make docker-build     - Build Docker image (easy-lims:latest)"
+	@echo "  make docker-run       - Build & run Docker container"
+	@echo "  make docker-up        - Start Docker Compose stack"
 	@echo "  make format           - Format source files with Prettier (writes in-place)"
 	@echo "  make format-check     - Check formatting without writing (CI-friendly)"
 	@echo "  make setup-hooks      - Install Git hooks (run once after cloning)"
@@ -41,21 +44,37 @@ clean: clean-build
 	rm -rf node_modules
 	rm -f package-lock.json
 
-# Run development server with hot reload
+# Run development server with hot reload (Python FastAPI server on port 8000)
 dev: install
-	@echo "Starting development server on http://localhost:3000..."
-	npm run dev
+	@echo "Installing python dependencies..."
+	pip install -r server/requirements.txt
+	@echo "Building UI..."
+	npm run build
+	@echo "Starting FastAPI server on http://localhost:8000..."
+	cd server && python -m uvicorn main:app --reload --port 8000
 
 # Preview production build
-preview:
-	@echo "Starting preview server on http://localhost:3000..."
-	@echo "Note: You need to build the project first (use Makefile.build)"
-	npm run preview
+preview: build
+	@echo "Starting production preview on http://localhost:8000..."
+	cd server && python -m uvicorn main:app --port 8000
 
-# Stop running servers (kills processes on port 3000)
+# Stop running servers (kills processes on port 8000)
 stop:
-	@echo "Stopping servers on port 3000..."
-	@lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "No process found on port 3000"
+	@echo "Stopping servers on port 8000..."
+	@lsof -ti:8000 | xargs kill -9 2>/dev/null || echo "No process found on port 8000"
+
+# Docker targets
+docker-build:
+	@echo "Building Docker image easy-lims:latest..."
+	docker build -t easy-lims:latest .
+
+docker-run: docker-build
+	@echo "Running Docker container easy-lims:latest on port 8000..."
+	docker run -p 8000:8000 --env-file server/.env easy-lims:latest
+
+docker-up:
+	@echo "Starting Docker Compose stack..."
+	docker compose up -d --build
 
 # Mobile targets
 android-install:

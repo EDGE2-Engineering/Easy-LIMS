@@ -56,7 +56,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { cn, safeFormatDate } from '@/lib/utils';
 import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -3069,7 +3069,7 @@ const NewQuotationPage = () => {
                                   )}
                                 </p>
                                 <p className="text-gray-500 mt-1 text-xs">
-                                  Date: {format(new Date(quoteDetails.date), 'dd MMM yyyy')}
+                                  Date: {safeFormatDate(quoteDetails.date)}
                                 </p>
                               </div>
 
@@ -3971,7 +3971,7 @@ const NewQuotationPage = () => {
                                     Payment Received Date:
                                   </td>
                                   <td className="py-1">
-                                    {format(new Date(quoteDetails.paymentDate), 'dd MMM yyyy')}
+                                    {safeFormatDate(quoteDetails.paymentDate)}
                                   </td>
                                 </tr>
                                 <tr>

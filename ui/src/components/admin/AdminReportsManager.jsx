@@ -28,6 +28,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { format } from 'date-fns';
+import { safeFormatDate } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -224,7 +225,7 @@ const AdminReportsManager = () => {
                       {report.users?.full_name || '-'}
                     </td>
                     <td className="py-4 px-6 text-gray-600 align-middle">
-                      {format(new Date(report.created_at), 'dd MMM yyyy')}
+                      {safeFormatDate(report.created_at)}
                     </td>
                     <td className="py-4 px-6 text-right text-gray-600 align-middle">
                       <div className="flex justify-end gap-1">

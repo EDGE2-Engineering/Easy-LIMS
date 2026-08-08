@@ -12,6 +12,7 @@ import { OrbitControls, Html, Text } from '@react-three/drei';
 import { createPortal } from 'react-dom';
 import { useReactToPrint } from 'react-to-print';
 import { format } from 'date-fns';
+import { safeFormatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { X, Printer } from 'lucide-react';
 import { buildReportPages, formatDisplayValue, formatKey } from '@/utils/reportPreviewUtils';
@@ -52,9 +53,7 @@ const ReportFullHeader = ({ reportId, reportDate }) => (
       </p>
       <p className="text-gray-500 mt-1 text-xs">
         Date:{' '}
-        {reportDate
-          ? format(new Date(reportDate), 'dd MMM yyyy')
-          : format(new Date(), 'dd MMM yyyy')}
+        {safeFormatDate(reportDate, 'dd MMM yyyy', format(new Date(), 'dd MMM yyyy'))}
       </p>
     </div>
     <div className="w-[70%] min-w-0 shrink flex items-center gap-2 text-right">

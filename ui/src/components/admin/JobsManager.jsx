@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { cn, safeFormatDate } from '@/lib/utils';
 import {
   Search,
   Plus,
@@ -1438,14 +1438,18 @@ const JobsManager = ({ id }) => {
                     <ReactSelect
                       className="mt-1 text-xs"
                       classNamePrefix="react-select"
-                      options={clients.map((c) => ({ value: c.id, label: c.client_name }))}
+                      options={clients.map((c) => ({ value: c.id, label: c.clientName || c.client_name || '' }))}
                       value={
                         editingRecord.client_id
                           ? {
                               value: editingRecord.client_id,
-                              label: clients.find(
-                                (c) => String(c.id) === String(editingRecord.client_id)
-                              )?.client_name,
+                              label:
+                                clients.find((c) => String(c.id) === String(editingRecord.client_id))?.clientName ||
+                                clients.find((c) => String(c.id) === String(editingRecord.client_id))?.client_name ||
+                                editingRecord.clients?.client_name ||
+                                editingRecord.clients?.clientName ||
+                                editingRecord.client_name ||
+                                '',
                             }
                           : null
                       }
@@ -2207,7 +2211,7 @@ const JobsManager = ({ id }) => {
                       )}
                     </td>
                     <td className="py-4 px-3 whitespace-nowrap text-gray-600 align-top">
-                      {r.created_at ? format(new Date(r.created_at), 'dd MMM yyyy') : '-'}
+                      {safeFormatDate(r.created_at)}
                     </td>
                     <td className="py-4 px-2 whitespace-nowrap text-gray-600 align-top">
                       {r.users ? (

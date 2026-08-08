@@ -29,6 +29,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { format } from 'date-fns';
+import { safeFormatDate } from '@/lib/utils';
 import { WORKFLOW_STATES, ROLES } from '@/data/config';
 import { useMaterials } from '@/contexts/MaterialsContext';
 import {
@@ -272,7 +273,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
             ...s,
             material_type: s.material_type || '',
             sample_description: s.sample_description || '',
-            received_date: format(new Date(s.received_date), 'yyyy-MM-dd'),
+            received_date: safeFormatDate(s.received_date, 'yyyy-MM-dd', format(new Date(), 'yyyy-MM-dd')),
             received_by: s.received_by || user.id,
           })) || [],
       });
@@ -1210,12 +1211,10 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                       </span>
                     </td>
                     <td className="py-4 px-4 text-gray-600 align-middle">
-                      {format(new Date(record.created_at), 'dd MMM yyyy')}
+                      {safeFormatDate(record.created_at)}
                     </td>
                     <td className="py-4 px-4 text-gray-600 align-middle">
-                      {record.material_samples?.[0]?.received_date
-                        ? format(new Date(record.material_samples[0].received_date), 'dd MMM yyyy')
-                        : '-'}
+                      {safeFormatDate(record.material_samples?.[0]?.received_date)}
                     </td>
                     <td className="py-4 px-4 text-gray-600 align-middle">
                       {record.users?.full_name || '-'}
