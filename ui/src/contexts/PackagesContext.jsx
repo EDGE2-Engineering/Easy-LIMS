@@ -36,7 +36,14 @@ const PackagesProvider = ({ children }) => {
       }
 
       if (rawData) {
-        let pkgList = rawData;
+        // Normalize items: API may return JSONB as a JSON string, parse it if needed
+        let pkgList = rawData.map((p) => {
+          let items = p.items;
+          if (typeof items === 'string') {
+            try { items = JSON.parse(items); } catch (e) { items = []; }
+          }
+          return { ...p, items: Array.isArray(items) ? items : [] };
+        });
         const userIds = [...new Set(pkgList.map((p) => p.user_id || p.created_by).filter(Boolean))];
         if (userIds.length > 0) {
           const { data: uData } = await apiClient

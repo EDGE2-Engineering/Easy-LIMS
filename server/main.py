@@ -752,7 +752,25 @@ async def list_jobs(
                     j.*,
                     c.client_name AS client_name,
                     u1.full_name AS created_by_name,
-                    u2.full_name AS updated_by_name
+                    u2.full_name AS updated_by_name,
+                    (
+                        SELECT ROUND(
+                            (
+                                (
+                                    COALESCE((
+                                        SELECT SUM((item->>'total')::numeric)
+                                        FROM jsonb_array_elements(dq.content->'items') AS item
+                                    ), 0)
+                                ) * (1 - COALESCE((dq.content->>'discount')::numeric, 0) / 100.0)
+                            ) * 1.18,
+                            2
+                        )
+                        FROM documents dq
+                        WHERE dq.job_id = j.id
+                          AND LOWER(dq.document_type) = 'quotation'
+                        ORDER BY dq.created_at DESC
+                        LIMIT 1
+                    ) AS "quotationAmount"
                 FROM jobs j
                 LEFT JOIN clients c ON j.client_id = c.id
                 LEFT JOIN users u1 ON j.created_by = u1.id

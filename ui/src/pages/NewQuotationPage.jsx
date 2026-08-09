@@ -191,6 +191,7 @@ const NewQuotationPage = () => {
   const navigate = useNavigate();
   const [savedRecordId, setSavedRecordId] = useState(pathId || searchParams.get('id') || null);
   const [loadedDocumentType, setLoadedDocumentType] = useState(null);
+  const [isLoadingDoc, setIsLoadingDoc] = useState(!!(pathId || searchParams.get('id')));
   const [isSavingRecord, setIsSavingRecord] = useState(false);
   const [lastSavedData, setLastSavedData] = useState(null);
   const [currentVersion, setCurrentVersion] = useState(1);
@@ -547,6 +548,7 @@ const NewQuotationPage = () => {
   // Load record from API if ID is present
   useEffect(() => {
     const loadFromApi = async (id) => {
+      setIsLoadingDoc(true);
       try {
         const { data: rawData, error } = await apiClient
           .from('documents')
@@ -683,6 +685,8 @@ const NewQuotationPage = () => {
           description: 'Failed to load record from database.',
           variant: 'destructive',
         });
+      } finally {
+        setIsLoadingDoc(false);
       }
     };
 
@@ -2184,6 +2188,12 @@ const NewQuotationPage = () => {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+      {isLoadingDoc && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
+          <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
+          <p className="text-sm font-medium text-gray-500">Loading document…</p>
+        </div>
+      )}
       <div className="shrink-0">
         <Navbar isDirty={isDirty} isSaving={isSavingRecord} />
       </div>

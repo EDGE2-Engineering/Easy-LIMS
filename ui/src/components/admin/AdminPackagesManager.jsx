@@ -54,7 +54,7 @@ const AdminPackagesManager = () => {
   const { samplingData } = useSampling();
   const { user } = useAuth();
   const { toast } = useToast();
-  const canManagePackages = user?.role === 'admin';
+  const canManagePackages = user?.role === 'admin' || user?.role === 'superadmin';
 
   const [searchTerm, setSearchTerm] = useState('');
   const [editingItem, setEditingItem] = useState(null);
@@ -96,7 +96,8 @@ const AdminPackagesManager = () => {
     const nameMatch = (pkg.name || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     // Check if search matches any item inside the package
-    const itemsMatch = pkg.items?.some((item) => {
+    const pkgItems = Array.isArray(pkg.items) ? pkg.items : [];
+    const itemsMatch = pkgItems.some((item) => {
       const details = getItemDetails(item.type, item.id);
       return details.name.toLowerCase().includes(searchTerm.toLowerCase());
     });
