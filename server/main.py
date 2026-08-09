@@ -2648,7 +2648,16 @@ async def list_tickets(
         total = count_rows[0]["count"] if count_rows else 0
         query_params = list(params) + [limit, offset]
         rows = await fetch_with_coerced_params(conn, f"SELECT * FROM tickets {where_sql} ORDER BY created_at DESC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        tickets = []
+        for r in rows:
+            ticket = dict(r)
+            if isinstance(ticket.get("attachments"), str):
+                try:
+                    ticket["attachments"] = json.loads(ticket["attachments"])
+                except Exception:
+                    pass
+            tickets.append(ticket)
+        return {"data": tickets, "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
 
 @app.get("/api/ticket-comments", tags=["Support Tickets"], summary="List ticket comments")
 async def list_ticket_comments(
@@ -2781,8 +2790,22 @@ async def get_ticket(ticket_id: int):
         if not t_rows:
             raise HTTPException(status_code=404, detail="Ticket not found")
         ticket = dict(t_rows[0])
+        if isinstance(ticket.get("attachments"), str):
+            try:
+                ticket["attachments"] = json.loads(ticket["attachments"])
+            except Exception:
+                pass
         c_rows = await fetch_with_coerced_params(conn, "SELECT * FROM ticket_comments WHERE ticket_id = $1 ORDER BY created_at ASC", [ticket_id])
-        ticket["comments"] = [dict(c) for c in c_rows]
+        comments = []
+        for c in c_rows:
+            comment = dict(c)
+            if isinstance(comment.get("attachments"), str):
+                try:
+                    comment["attachments"] = json.loads(comment["attachments"])
+                except Exception:
+                    pass
+            comments.append(comment)
+        ticket["comments"] = comments
         return ticket
 
 @app.post("/api/tickets", tags=["Support Tickets"], status_code=201, summary="Create ticket")
