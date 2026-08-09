@@ -6,7 +6,7 @@ import json
 import uuid
 from decimal import Decimal
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -2571,6 +2571,119 @@ async def delete_inquiry(inquiry_id: int):
         return {"message": "Inquiry deleted", "id": inquiry_id}
 
 # ============================================================================
+# Dedicated Files REST API Endpoints
+# ============================================================================
+
+@app.post("/api/files", tags=["Files"], status_code=201, summary="Upload a file")
+async def upload_file(
+    file: UploadFile = File(...),
+    created_by: Optional[int] = Form(None)
+):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+
+    data = await file.read()
+    file_id = str(uuid.uuid4())
+    query = """
+        INSERT INTO files (id, filename, content_type, file_size, data, created_by, created_at)
+        VALUES ($1::uuid, $2, $3, $4, $5, $6, NOW())
+        RETURNING id, filename, content_type, file_size, created_at, created_by
+    """
+    params = [file_id, file.filename, file.content_type, len(data), data, created_by]
+    async with db_pool.acquire() as conn:
+        try:
+            rows = await conn.fetch(query, *params)
+            row = dict(rows[0])
+            row["id"] = str(row["id"])
+            row["created_at"] = row["created_at"].isoformat() if row["created_at"] else None
+            return row
+        except Exception as e:
+            logger.error(f"Error uploading file: {e}")
+            raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/files/{file_id}", tags=["Files"], summary="Download a file by ID")
+async def download_file(file_id: str):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+
+    query = "SELECT id, filename, content_type, file_size, data, created_at, created_by FROM files WHERE id = $1::uuid"
+    async with db_pool.acquire() as conn:
+        try:
+            rows = await conn.fetch(query, file_id)
+            if not rows:
+                raise HTTPException(status_code=404, detail="File not found")
+            row = dict(rows[0])
+            return Response(
+                content=bytes(row["data"]),
+                media_type=row["content_type"] or "application/octet-stream",
+                headers={
+                    "Content-Disposition": f'attachment; filename="{row["filename"]}"',
+                    "Content-Length": str(row["file_size"] or len(row["data"])),
+                }
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error downloading file {file_id}: {e}")
+            raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/files/{file_id}/meta", tags=["Files"], summary="Get file metadata (no binary data)")
+async def get_file_meta(file_id: str):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+
+    query = "SELECT id, filename, content_type, file_size, created_at, created_by FROM files WHERE id = $1::uuid"
+    async with db_pool.acquire() as conn:
+        try:
+            rows = await conn.fetch(query, file_id)
+            if not rows:
+                raise HTTPException(status_code=404, detail="File not found")
+            row = dict(rows[0])
+            row["id"] = str(row["id"])
+            row["created_at"] = row["created_at"].isoformat() if row["created_at"] else None
+            return row
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error fetching file meta {file_id}: {e}")
+            raise HTTPException(status_code=400, detail=str(e))
+
+@app.delete("/api/files/{file_id}", tags=["Files"], summary="Delete a file")
+async def delete_file(file_id: str):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+
+    query = "DELETE FROM files WHERE id = $1::uuid RETURNING id"
+    async with db_pool.acquire() as conn:
+        try:
+            rows = await conn.fetch(query, file_id)
+            if not rows:
+                raise HTTPException(status_code=404, detail="File not found")
+            return {"message": "File deleted", "id": file_id}
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error deleting file {file_id}: {e}")
+            raise HTTPException(status_code=400, detail=str(e))
+
+# Helper: resolve attachment metadata for a list of file UUIDs
+async def _get_attachment_metas(conn, file_ids: List[str]) -> List[dict]:
+    if not file_ids:
+        return []
+    rows = await conn.fetch(
+        "SELECT id, filename, content_type, file_size, created_at, created_by FROM files WHERE id = ANY($1::uuid[])",
+        file_ids
+    )
+    result = []
+    for r in rows:
+        meta = dict(r)
+        meta["id"] = str(meta["id"])
+        meta["created_at"] = meta["created_at"].isoformat() if meta["created_at"] else None
+        meta["url"] = f"/api/files/{meta['id']}"
+        result.append(meta)
+    return result
+
+# ============================================================================
 # Dedicated Support Tickets REST API Endpoints
 # ============================================================================
 
@@ -2581,7 +2694,8 @@ class TicketCreate(BaseModel):
     department: Optional[str] = "General"
     priority: Optional[str] = "MEDIUM"
     status: Optional[str] = "OPEN"
-    attachments: Optional[Any] = None
+    # file_ids: list of already-uploaded file UUIDs to associate as attachments
+    file_ids: Optional[List[str]] = None
 
 class TicketUpdate(BaseModel):
     title: Optional[str] = None
@@ -2589,22 +2703,23 @@ class TicketUpdate(BaseModel):
     department: Optional[str] = None
     priority: Optional[str] = None
     status: Optional[str] = None
-    attachments: Optional[Any] = None
+    # file_ids: when provided, replaces all existing attachment associations
+    file_ids: Optional[List[str]] = None
 
 class TicketCommentCreate(BaseModel):
     author_id: int
     comment: str
-    attachments: Optional[Any] = None
+    file_ids: Optional[List[str]] = None
 
 class TicketCommentCreateFull(BaseModel):
     ticket_id: int
     author_id: int
     comment: str
-    attachments: Optional[Any] = None
+    file_ids: Optional[List[str]] = None
 
 class TicketCommentUpdate(BaseModel):
     comment: Optional[str] = None
-    attachments: Optional[Any] = None
+    file_ids: Optional[List[str]] = None
 
 class TicketHistoryCreate(BaseModel):
     ticket_id: int
@@ -2612,6 +2727,66 @@ class TicketHistoryCreate(BaseModel):
     field_name: str
     old_value: Optional[str] = None
     new_value: Optional[str] = None
+
+# ---------------------------------------------------------------------------
+# Ticket/comment attachment helpers
+# ---------------------------------------------------------------------------
+
+async def _get_ticket_attachments(conn, ticket_id: int) -> List[dict]:
+    rows = await conn.fetch(
+        """
+        SELECT f.id, f.filename, f.content_type, f.file_size, f.created_at, f.created_by
+        FROM tickets_to_attachments ta
+        JOIN files f ON f.id = ta.file_id
+        WHERE ta.ticket_id = $1
+        ORDER BY ta.created_at ASC
+        """,
+        ticket_id
+    )
+    result = []
+    for r in rows:
+        meta = dict(r)
+        meta["id"] = str(meta["id"])
+        meta["created_at"] = meta["created_at"].isoformat() if meta["created_at"] else None
+        meta["url"] = f"/api/files/{meta['id']}"
+        result.append(meta)
+    return result
+
+async def _get_comment_attachments(conn, comment_id: int) -> List[dict]:
+    rows = await conn.fetch(
+        """
+        SELECT f.id, f.filename, f.content_type, f.file_size, f.created_at, f.created_by
+        FROM comments_to_attachments ca
+        JOIN files f ON f.id = ca.file_id
+        WHERE ca.comment_id = $1
+        ORDER BY ca.created_at ASC
+        """,
+        comment_id
+    )
+    result = []
+    for r in rows:
+        meta = dict(r)
+        meta["id"] = str(meta["id"])
+        meta["created_at"] = meta["created_at"].isoformat() if meta["created_at"] else None
+        meta["url"] = f"/api/files/{meta['id']}"
+        result.append(meta)
+    return result
+
+async def _set_ticket_attachments(conn, ticket_id: int, file_ids: List[str]):
+    await conn.execute("DELETE FROM tickets_to_attachments WHERE ticket_id = $1", ticket_id)
+    for fid in file_ids:
+        await conn.execute(
+            "INSERT INTO tickets_to_attachments (ticket_id, file_id) VALUES ($1, $2::uuid) ON CONFLICT DO NOTHING",
+            ticket_id, fid
+        )
+
+async def _set_comment_attachments(conn, comment_id: int, file_ids: List[str]):
+    await conn.execute("DELETE FROM comments_to_attachments WHERE comment_id = $1", comment_id)
+    for fid in file_ids:
+        await conn.execute(
+            "INSERT INTO comments_to_attachments (comment_id, file_id) VALUES ($1, $2::uuid) ON CONFLICT DO NOTHING",
+            comment_id, fid
+        )
 
 @app.get("/api/tickets", tags=["Support Tickets"], summary="List tickets with pagination")
 async def list_tickets(
@@ -2625,7 +2800,7 @@ async def list_tickets(
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
     page = max(1, page)
-    limit = min(100, max(1, limit))
+    limit = min(10000, max(1, limit))
     offset = (page - 1) * limit
     where_parts, params = [], []
     if status:
@@ -2647,15 +2822,27 @@ async def list_tickets(
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM tickets {where_sql}", params)
         total = count_rows[0]["count"] if count_rows else 0
         query_params = list(params) + [limit, offset]
-        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM tickets {where_sql} ORDER BY created_at DESC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
+        rows = await fetch_with_coerced_params(
+            conn,
+            f"SELECT * FROM tickets {where_sql} ORDER BY created_at DESC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}",
+            query_params
+        )
+        if not rows:
+            return {"data": [], "total": total, "page": page, "limit": limit, "total_pages": 0}
+
+        ticket_ids = [r["id"] for r in rows]
+        att_count_rows = await conn.fetch(
+            "SELECT ticket_id, COUNT(*)::int AS att_count FROM tickets_to_attachments WHERE ticket_id = ANY($1::int[]) GROUP BY ticket_id",
+            ticket_ids
+        )
+        att_counts = {r["ticket_id"]: r["att_count"] for r in att_count_rows}
+
         tickets = []
         for r in rows:
             ticket = dict(r)
-            if isinstance(ticket.get("attachments"), str):
-                try:
-                    ticket["attachments"] = json.loads(ticket["attachments"])
-                except Exception:
-                    pass
+            cnt = att_counts.get(ticket["id"], 0)
+            ticket["attachment_count"] = cnt
+            ticket["attachments"] = [{}] * cnt
             tickets.append(ticket)
         return {"data": tickets, "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
 
@@ -2691,40 +2878,58 @@ async def list_ticket_comments(
         else:
             rows = await fetch_with_coerced_params(
                 conn,
-                f"SELECT * FROM ticket_comments ORDER BY {sort_col} {order_sql}"
+                f"SELECT * FROM ticket_comments ORDER BY {sort_col} {order_sql}",
+                []
             )
-        return [dict(r) for r in rows]
+        comments = []
+        for r in rows:
+            comment = dict(r)
+            comment.pop("attachments", None)
+            comment["attachments"] = await _get_comment_attachments(conn, comment["id"])
+            comments.append(comment)
+        return comments
 
 @app.post("/api/ticket-comments", tags=["Support Tickets"], status_code=201, summary="Create ticket comment")
 async def create_ticket_comment_standalone(c: TicketCommentCreateFull):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    att_str = format_content(c.attachments) if c.attachments is not None else None
-    query = "INSERT INTO ticket_comments (ticket_id, author_id, comment, attachments, created_at) VALUES ($1, $2, $3, $4::jsonb, NOW()) RETURNING *"
+    query = "INSERT INTO ticket_comments (ticket_id, author_id, comment, created_at) VALUES ($1, $2, $3, NOW()) RETURNING *"
     async with db_pool.acquire() as conn:
-        rows = await fetch_with_coerced_params(conn, query, [c.ticket_id, c.author_id, c.comment, att_str])
-        return dict(rows[0])
+        rows = await fetch_with_coerced_params(conn, query, [c.ticket_id, c.author_id, c.comment])
+        comment = dict(rows[0])
+        if c.file_ids:
+            await _set_comment_attachments(conn, comment["id"], c.file_ids)
+        comment.pop("attachments", None)
+        comment["attachments"] = await _get_comment_attachments(conn, comment["id"])
+        return comment
 
 @app.put("/api/ticket-comments/{comment_id}", tags=["Support Tickets"], summary="Update ticket comment")
 async def update_ticket_comment(comment_id: int, payload: TicketCommentUpdate):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    fields, params = [], []
-    if payload.comment is not None:
-        params.append(payload.comment)
-        fields.append(f"comment = ${len(params)}")
-    if payload.attachments is not None:
-        params.append(format_content(payload.attachments))
-        fields.append(f"attachments = ${len(params)}::jsonb")
-    if not fields:
-        raise HTTPException(status_code=400, detail="No fields to update")
-    params.append(comment_id)
-    query = f"UPDATE ticket_comments SET {', '.join(fields)} WHERE id = ${len(params)} RETURNING *"
     async with db_pool.acquire() as conn:
-        rows = await fetch_with_coerced_params(conn, query, params)
-        if not rows:
-            raise HTTPException(status_code=404, detail="Comment not found")
-        return dict(rows[0])
+        if payload.comment is not None:
+            rows = await fetch_with_coerced_params(
+                conn,
+                "UPDATE ticket_comments SET comment = $1 WHERE id = $2 RETURNING *",
+                [payload.comment, comment_id]
+            )
+            if not rows:
+                raise HTTPException(status_code=404, detail="Comment not found")
+        else:
+            rows = await fetch_with_coerced_params(
+                conn, "SELECT * FROM ticket_comments WHERE id = $1", [comment_id]
+            )
+            if not rows:
+                raise HTTPException(status_code=404, detail="Comment not found")
+
+        if payload.file_ids is not None:
+            await _set_comment_attachments(conn, comment_id, payload.file_ids)
+
+        comment = dict(rows[0])
+        comment.pop("attachments", None)
+        comment["attachments"] = await _get_comment_attachments(conn, comment_id)
+        return comment
 
 @app.delete("/api/ticket-comments/{comment_id}", tags=["Support Tickets"], summary="Delete ticket comment")
 async def delete_ticket_comment(comment_id: int):
@@ -2781,7 +2986,7 @@ async def create_ticket_history_entry(h: TicketHistoryCreate):
         rows = await fetch_with_coerced_params(conn, query, [h.ticket_id, h.user_id, h.field_name, h.old_value, h.new_value])
         return dict(rows[0])
 
-@app.get("/api/tickets/{ticket_id}", tags=["Support Tickets"], summary="Get ticket with comments")
+@app.get("/api/tickets/{ticket_id}", tags=["Support Tickets"], summary="Get ticket with comments and attachments")
 async def get_ticket(ticket_id: int):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
@@ -2790,20 +2995,18 @@ async def get_ticket(ticket_id: int):
         if not t_rows:
             raise HTTPException(status_code=404, detail="Ticket not found")
         ticket = dict(t_rows[0])
-        if isinstance(ticket.get("attachments"), str):
-            try:
-                ticket["attachments"] = json.loads(ticket["attachments"])
-            except Exception:
-                pass
-        c_rows = await fetch_with_coerced_params(conn, "SELECT * FROM ticket_comments WHERE ticket_id = $1 ORDER BY created_at ASC", [ticket_id])
+        ticket.pop("attachments", None)
+        ticket["attachments"] = await _get_ticket_attachments(conn, ticket_id)
+        c_rows = await fetch_with_coerced_params(
+            conn,
+            "SELECT * FROM ticket_comments WHERE ticket_id = $1 ORDER BY created_at ASC",
+            [ticket_id]
+        )
         comments = []
         for c in c_rows:
             comment = dict(c)
-            if isinstance(comment.get("attachments"), str):
-                try:
-                    comment["attachments"] = json.loads(comment["attachments"])
-                except Exception:
-                    pass
+            comment.pop("attachments", None)
+            comment["attachments"] = await _get_comment_attachments(conn, comment["id"])
             comments.append(comment)
         ticket["comments"] = comments
         return ticket
@@ -2812,48 +3015,65 @@ async def get_ticket(ticket_id: int):
 async def create_ticket(t: TicketCreate):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    att_str = format_content(t.attachments) if t.attachments is not None else None
     query = """
-        INSERT INTO tickets (title, description, attachments, department, priority, status, created_by, created_at)
-        VALUES ($1, $2, $3::jsonb, $4, $5, $6, $7, NOW()) RETURNING *
+        INSERT INTO tickets (title, description, department, priority, status, created_by, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *
     """
-    params = [t.title, t.description, att_str, t.department or "General", t.priority or "MEDIUM", t.status or "OPEN", t.created_by]
+    params = [t.title, t.description, t.department or "General", t.priority or "MEDIUM", t.status or "OPEN", t.created_by]
     async with db_pool.acquire() as conn:
         rows = await fetch_with_coerced_params(conn, query, params)
-        return dict(rows[0])
+        ticket = dict(rows[0])
+        if t.file_ids:
+            await _set_ticket_attachments(conn, ticket["id"], t.file_ids)
+        ticket.pop("attachments", None)
+        ticket["attachments"] = await _get_ticket_attachments(conn, ticket["id"])
+        return ticket
 
-@app.put("/api/tickets/{ticket_id}", tags=["Support Tickets"], summary="Update ticket status / priority")
+@app.put("/api/tickets/{ticket_id}", tags=["Support Tickets"], summary="Update ticket")
 async def update_ticket(ticket_id: int, payload: TicketUpdate):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    fields, params = [], []
-    for k, v in payload.model_dump(exclude_unset=True).items():
-        if v is not None:
-            if k == "attachments":
-                params.append(format_content(v))
-                fields.append(f"attachments = ${len(params)}::jsonb")
-            else:
+    async with db_pool.acquire() as conn:
+        fields, params = [], []
+        data = payload.model_dump(exclude_unset=True)
+        data.pop("file_ids", None)  # handled via mapping table separately
+        for k, v in data.items():
+            if v is not None:
                 params.append(v)
                 fields.append(f"{k} = ${len(params)}")
-    if not fields:
-        raise HTTPException(status_code=400, detail="No fields to update")
-    params.append(ticket_id)
-    query = f"UPDATE tickets SET {', '.join(fields)} WHERE id = ${len(params)} RETURNING *"
-    async with db_pool.acquire() as conn:
-        rows = await fetch_with_coerced_params(conn, query, params)
-        if not rows:
-            raise HTTPException(status_code=404, detail="Ticket not found")
-        return dict(rows[0])
+
+        if fields:
+            params.append(ticket_id)
+            query = f"UPDATE tickets SET {', '.join(fields)} WHERE id = ${len(params)} RETURNING *"
+            rows = await fetch_with_coerced_params(conn, query, params)
+            if not rows:
+                raise HTTPException(status_code=404, detail="Ticket not found")
+        else:
+            rows = await fetch_with_coerced_params(conn, "SELECT * FROM tickets WHERE id = $1", [ticket_id])
+            if not rows:
+                raise HTTPException(status_code=404, detail="Ticket not found")
+
+        if payload.file_ids is not None:
+            await _set_ticket_attachments(conn, ticket_id, payload.file_ids)
+
+        ticket = dict(rows[0])
+        ticket.pop("attachments", None)
+        ticket["attachments"] = await _get_ticket_attachments(conn, ticket_id)
+        return ticket
 
 @app.post("/api/tickets/{ticket_id}/comments", tags=["Support Tickets"], status_code=201, summary="Add comment to ticket")
 async def add_ticket_comment(ticket_id: int, c: TicketCommentCreate):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    att_str = format_content(c.attachments) if c.attachments is not None else None
-    query = "INSERT INTO ticket_comments (ticket_id, author_id, comment, attachments, created_at) VALUES ($1, $2, $3, $4::jsonb, NOW()) RETURNING *"
+    query = "INSERT INTO ticket_comments (ticket_id, author_id, comment, created_at) VALUES ($1, $2, $3, NOW()) RETURNING *"
     async with db_pool.acquire() as conn:
-        rows = await fetch_with_coerced_params(conn, query, [ticket_id, c.author_id, c.comment, att_str])
-        return dict(rows[0])
+        rows = await fetch_with_coerced_params(conn, query, [ticket_id, c.author_id, c.comment])
+        comment = dict(rows[0])
+        if c.file_ids:
+            await _set_comment_attachments(conn, comment["id"], c.file_ids)
+        comment.pop("attachments", None)
+        comment["attachments"] = await _get_comment_attachments(conn, comment["id"])
+        return comment
 
 @app.delete("/api/tickets/{ticket_id}", tags=["Support Tickets"], summary="Delete ticket")
 async def delete_ticket(ticket_id: int):

@@ -247,7 +247,7 @@ class QueryBuilder {
       });
 
       if (!hasLimit && !this._single && !this._maybeSingle && !this.table.includes('options')) {
-        urlParams.append('limit', '50');
+        urlParams.append('limit', '10000');
       }
 
       const queryString = urlParams.toString();

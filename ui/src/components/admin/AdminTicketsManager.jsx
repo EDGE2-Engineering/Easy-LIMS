@@ -11,8 +11,12 @@ import { Label } from '@/components/ui/label';
 import { AppDatePicker } from '@/components/ui/AppDatePicker';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import TiptapUnderline from '@tiptap/extension-underline';
 import { useNavigate, useParams } from 'react-router-dom';
+import FilePreviewModal, {
+  isImageFile,
+  isPdfFile,
+  isPreviewableFile,
+} from '@/components/common/FilePreviewModal';
 import {
   Select,
   SelectContent,
@@ -321,6 +325,13 @@ export default function AdminTicketsManager({ id: propId }) {
   const [editCommentValue, setEditCommentValue] = useState('');
   const [savingComment, setSavingComment] = useState(false);
 
+  // File Preview Modal State
+  const [filePreview, setFilePreview] = useState({
+    isOpen: false,
+    files: [],
+    currentIndex: 0,
+  });
+
   // Search / Filter / Sort / Pagination States
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(DEFAULT_STATUS_FILTER_VALUES);
@@ -357,6 +368,7 @@ export default function AdminTicketsManager({ id: propId }) {
       const { data, error } = await apiClient
         .from('tickets')
         .select('*')
+        .limit(10000)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -561,32 +573,9 @@ export default function AdminTicketsManager({ id: propId }) {
     if (!ticketDetails) return;
     setDeletingTicket(true);
     try {
-      // Gather all storage file paths: from ticket attachments and all comment attachments
-      const allPaths = [];
-
-      // Ticket-level attachments
-      parseAttachments(ticketDetails.attachments).forEach((a) => {
-        if (a.path) allPaths.push(a.path);
-      });
-
-      // Comment attachments — fetch them first
-      const { data: commentRows } = await apiClient
-        .from('ticket_comments')
-        .select('attachments')
-        .eq('ticket_id', ticketDetails.id);
-
-      (commentRows || []).forEach((row) => {
-        parseAttachments(row.attachments).forEach((a) => {
-          if (a.path) allPaths.push(a.path);
-        });
-      });
-
-      // Delete all storage files (ignore errors — files may have already been deleted)
-      if (allPaths.length > 0) {
-        await apiClient.storage.from('ticket-attachments').remove(allPaths);
-      }
-
-      // Delete the ticket row — cascade deletes ticket_comments and ticket_history via FK
+      // Delete the ticket row — cascade deletes ticket_comments, ticket_history,
+      // tickets_to_attachments, and comments_to_attachments via FK ON DELETE CASCADE.
+      // The files table rows themselves are left intact (orphan cleanup can be a separate job).
       const { error } = await apiClient.from('tickets').delete().eq('id', ticketDetails.id);
       if (error) throw error;
 
@@ -652,7 +641,7 @@ export default function AdminTicketsManager({ id: propId }) {
     } else if (fileObj.content) {
       link.href = fileObj.content;
     } else return;
-    link.download = fileObj.name;
+    link.download = fileObj.name || fileObj.filename || 'download';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -665,26 +654,16 @@ export default function AdminTicketsManager({ id: propId }) {
     if (!newTicket.title.trim()) return;
     setSubmittingTicket(true);
     try {
-      const uploadedAttachments = [];
+      const fileIds = [];
       for (const att of ticketAttachments) {
         if (att.fileObject) {
-          const fileExt = att.name.split('.').pop();
-          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-          const filePath = `tickets/${fileName}`;
-          const { error: uploadError } = await apiClient.storage
-            .from('ticket-attachments')
-            .upload(filePath, att.fileObject);
-          if (uploadError) throw uploadError;
-          const { data: urlData } = apiClient.storage
-            .from('ticket-attachments')
-            .getPublicUrl(filePath);
-          uploadedAttachments.push({
-            name: att.name,
-            size: att.size,
-            type: att.type,
-            path: filePath,
-            url: urlData.publicUrl,
-          });
+          const formData = new FormData();
+          formData.append('file', att.fileObject, att.name);
+          if (user?.id) formData.append('created_by', user.id);
+          const res = await fetch('/api/files', { method: 'POST', body: formData });
+          if (!res.ok) throw new Error(`File upload failed: ${att.name}`);
+          const uploaded = await res.json();
+          fileIds.push(uploaded.id);
         }
       }
       const { error } = await apiClient.from('tickets').insert([
@@ -693,7 +672,7 @@ export default function AdminTicketsManager({ id: propId }) {
           description: newTicket.description,
           department: newTicket.department,
           priority: newTicket.priority,
-          attachments: uploadedAttachments,
+          file_ids: fileIds,
           created_by: user.id,
           status: TICKET_STATUSES.OPEN,
         },
@@ -723,30 +702,22 @@ export default function AdminTicketsManager({ id: propId }) {
     if (!editTicketForm.title.trim()) return;
     setSubmittingEdit(true);
     try {
-      const uploadedAttachments = [];
+      const newFileIds = [];
       for (const att of newEditAttachments) {
         if (att.fileObject) {
-          const fileExt = att.name.split('.').pop();
-          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-          const filePath = `tickets/${fileName}`;
-          const { error: uploadError } = await apiClient.storage
-            .from('ticket-attachments')
-            .upload(filePath, att.fileObject);
-          if (uploadError) throw uploadError;
-          const { data: urlData } = apiClient.storage
-            .from('ticket-attachments')
-            .getPublicUrl(filePath);
-          uploadedAttachments.push({
-            name: att.name,
-            size: att.size,
-            type: att.type,
-            path: filePath,
-            url: urlData.publicUrl,
-          });
+          const formData = new FormData();
+          formData.append('file', att.fileObject, att.name);
+          if (user?.id) formData.append('created_by', user.id);
+          const res = await fetch('/api/files', { method: 'POST', body: formData });
+          if (!res.ok) throw new Error(`File upload failed: ${att.name}`);
+          const uploaded = await res.json();
+          newFileIds.push(uploaded.id);
         }
       }
 
-      const finalAttachments = [...editTicketAttachments, ...uploadedAttachments];
+      // Combine existing attachment IDs with newly uploaded ones
+      const existingFileIds = editTicketAttachments.map((a) => a.id).filter(Boolean);
+      const finalFileIds = [...existingFileIds, ...newFileIds];
 
       const { error } = await apiClient
         .from('tickets')
@@ -756,7 +727,7 @@ export default function AdminTicketsManager({ id: propId }) {
           department: editTicketForm.department,
           priority: editTicketForm.priority,
           status: editTicketForm.status,
-          attachments: finalAttachments,
+          file_ids: finalFileIds,
         })
         .eq('id', ticketIdParam);
 
@@ -776,26 +747,16 @@ export default function AdminTicketsManager({ id: propId }) {
     if (!newComment.trim() && commentAttachments.length === 0) return;
     setSubmittingComment(true);
     try {
-      const uploadedAttachments = [];
+      const fileIds = [];
       for (const att of commentAttachments) {
         if (att.fileObject) {
-          const fileExt = att.name.split('.').pop();
-          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-          const filePath = `comments/${fileName}`;
-          const { error: uploadError } = await apiClient.storage
-            .from('ticket-attachments')
-            .upload(filePath, att.fileObject);
-          if (uploadError) throw uploadError;
-          const { data: urlData } = apiClient.storage
-            .from('ticket-attachments')
-            .getPublicUrl(filePath);
-          uploadedAttachments.push({
-            name: att.name,
-            size: att.size,
-            type: att.type,
-            path: filePath,
-            url: urlData.publicUrl,
-          });
+          const formData = new FormData();
+          formData.append('file', att.fileObject, att.name);
+          if (user?.id) formData.append('created_by', user.id);
+          const res = await fetch('/api/files', { method: 'POST', body: formData });
+          if (!res.ok) throw new Error(`File upload failed: ${att.name}`);
+          const uploaded = await res.json();
+          fileIds.push(uploaded.id);
         }
       }
       const { error } = await apiClient.from('ticket_comments').insert([
@@ -803,7 +764,7 @@ export default function AdminTicketsManager({ id: propId }) {
           ticket_id: ticketIdParam,
           author_id: user.id,
           comment: newComment,
-          attachments: uploadedAttachments,
+          file_ids: fileIds,
         },
       ]);
       if (error) throw error;
@@ -853,12 +814,6 @@ export default function AdminTicketsManager({ id: propId }) {
 
   const handleDeleteComment = async (comment) => {
     try {
-      // Delete storage files attached to this comment
-      const paths = parseAttachments(comment.attachments).filter((a) => a.path).map((a) => a.path);
-      if (paths.length > 0) {
-        await apiClient.storage.from('ticket-attachments').remove(paths);
-      }
-
       const { error } = await apiClient.from('ticket_comments').delete().eq('id', comment.id);
       if (error) throw error;
 
@@ -1084,25 +1039,34 @@ export default function AdminTicketsManager({ id: propId }) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  const isImageFile = (file) => {
-    if (!file) return false;
-    if (file.type && file.type.startsWith('image/')) return true;
-    const ext = (file.name || '').split('.').pop().toLowerCase();
-    return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext);
+  const handleOpenPreview = (attachmentsList, index = 0) => {
+    const parsed = parseAttachments(attachmentsList);
+    setFilePreview({
+      isOpen: true,
+      files: parsed,
+      currentIndex: index,
+    });
   };
 
   const parseAttachments = (attachments) => {
     if (!attachments) return [];
-    if (Array.isArray(attachments)) return attachments;
+    let arr = attachments;
     if (typeof attachments === 'string') {
       try {
-        const parsed = JSON.parse(attachments);
-        if (Array.isArray(parsed)) return parsed;
+        arr = JSON.parse(attachments);
       } catch (e) {
         return [];
       }
     }
-    return [];
+    if (!Array.isArray(arr)) return [];
+    // Normalize API shape (filename/file_size/content_type) → render shape (name/size/type)
+    return arr.map((f) => ({
+      ...f,
+      name: f.name || f.filename || '',
+      size: f.size ?? f.file_size ?? 0,
+      type: f.type || f.content_type || '',
+      url: f.url || (f.id ? `/api/files/${f.id}` : undefined),
+    }));
   };
 
   const getPriorityStyle = (priority) => {
@@ -1299,7 +1263,11 @@ export default function AdminTicketsManager({ id: propId }) {
                         key={i}
                         className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-gray-50/50"
                       >
-                        <span className="text-xs font-bold text-gray-700 truncate max-w-[180px]">
+                        <span
+                          className="text-xs font-bold text-gray-700 hover:text-primary cursor-pointer truncate max-w-[180px]"
+                          onClick={() => handleOpenPreview(ticketAttachments, i)}
+                          title="Click to preview file"
+                        >
                           {f.name}
                         </span>
                         <div className="flex items-center gap-1.5">
@@ -1400,32 +1368,24 @@ export default function AdminTicketsManager({ id: propId }) {
 
     try {
       setSubmittingEdit(true);
-      const uploadedAttachments = [];
+      const newFileIds = [];
       for (const file of validFiles) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `tickets/${fileName}`;
-        const { error: uploadError } = await apiClient.storage
-          .from('ticket-attachments')
-          .upload(filePath, file);
-        if (uploadError) throw uploadError;
-        const { data: urlData } = apiClient.storage
-          .from('ticket-attachments')
-          .getPublicUrl(filePath);
-        uploadedAttachments.push({
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          path: filePath,
-          url: urlData.publicUrl,
-        });
+        const formData = new FormData();
+        formData.append('file', file, file.name);
+        if (user?.id) formData.append('created_by', user.id);
+        const res = await fetch('/api/files', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error(`File upload failed: ${file.name}`);
+        const uploaded = await res.json();
+        newFileIds.push(uploaded.id);
       }
 
-      const currentAttach = parseAttachments(ticketDetails.attachments);
-      const finalAttachments = [...currentAttach, ...uploadedAttachments];
+      // Merge with existing attachment IDs from the mapping table
+      const existingFileIds = (ticketDetails.attachments || []).map((a) => a.id).filter(Boolean);
+      const finalFileIds = [...existingFileIds, ...newFileIds];
+
       const { error } = await apiClient
         .from('tickets')
-        .update({ attachments: finalAttachments })
+        .update({ file_ids: finalFileIds })
         .eq('id', ticketDetails.id);
 
       if (error) throw error;
@@ -1436,8 +1396,8 @@ export default function AdminTicketsManager({ id: propId }) {
           ticket_id: ticketDetails.id,
           user_id: user.id,
           field_name: 'attachments',
-          old_value: `${currentAttach.length} files`,
-          new_value: `${finalAttachments.length} files (Added ${uploadedAttachments.map((f) => f.name).join(', ')})`,
+          old_value: `${existingFileIds.length} files`,
+          new_value: `${finalFileIds.length} files (Added ${validFiles.map((f) => f.name).join(', ')})`,
         });
       } catch (histErr) {
         console.warn('Could not insert history record:', histErr.message);
@@ -1458,9 +1418,10 @@ export default function AdminTicketsManager({ id: propId }) {
       const currentAttach = parseAttachments(ticketDetails.attachments);
       const deletedFile = currentAttach[idxToDelete];
       const remaining = currentAttach.filter((_, i) => i !== idxToDelete);
+      const remainingIds = remaining.map((f) => f.id).filter(Boolean);
       const { error } = await apiClient
         .from('tickets')
-        .update({ attachments: remaining })
+        .update({ file_ids: remainingIds })
         .eq('id', ticketDetails.id);
       if (error) throw error;
 
@@ -1471,7 +1432,7 @@ export default function AdminTicketsManager({ id: propId }) {
           user_id: user.id,
           field_name: 'attachments',
           old_value: `${currentAttach.length} files`,
-          new_value: `${remaining.length} files (Removed ${deletedFile?.name || 'file'})`,
+          new_value: `${remaining.length} files (Removed ${deletedFile?.name || deletedFile?.filename || 'file'})`,
         });
       } catch (histErr) {
         console.warn('Could not insert history record:', histErr.message);
@@ -1835,23 +1796,29 @@ export default function AdminTicketsManager({ id: propId }) {
                       {/* Top Preview Area */}
                       {isImageFile(file) ? (
                         <div
-                          className="flex-1 w-full overflow-hidden bg-gray-50 flex items-center justify-center cursor-pointer"
-                          onClick={() => window.open(file.url || file.content, '_blank')}
+                          className="flex-1 w-full overflow-hidden bg-gray-50 flex items-center justify-center cursor-pointer group/img"
+                          onClick={() => handleOpenPreview(ticketDetails.attachments, idx)}
+                          title="Click to preview image"
                         >
                           <img
                             src={file.url || file.content}
                             alt={file.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
+                            className="w-full h-full object-cover group-hover/img:scale-105 transition-all duration-300"
                           />
                         </div>
                       ) : (
                         <div
-                          className="flex-1 w-full overflow-hidden bg-gray-50 flex flex-col items-center justify-center cursor-pointer gap-1.5"
-                          onClick={() => handleDownloadAttachment(file)}
+                          className="flex-1 w-full overflow-hidden bg-gray-50 flex flex-col items-center justify-center cursor-pointer gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
+                          onClick={() =>
+                            isPreviewableFile(file)
+                              ? handleOpenPreview(ticketDetails.attachments, idx)
+                              : handleDownloadAttachment(file)
+                          }
+                          title={isPreviewableFile(file) ? "Click to preview document" : "Click to download"}
                         >
-                          <FileText className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                          <FileText className={`w-8 h-8 ${isPdfFile(file) ? 'text-red-500' : 'text-blue-600 dark:text-blue-400'}`} />
                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                            {file.name.split('.').pop()} file
+                            {(file.name || '').split('.').pop()} file
                           </span>
                         </div>
                       )}
@@ -1863,8 +1830,8 @@ export default function AdminTicketsManager({ id: propId }) {
                             className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                             title={file.name}
                             onClick={() =>
-                              isImageFile(file)
-                                ? window.open(file.url || file.content, '_blank')
+                              isPreviewableFile(file)
+                                ? handleOpenPreview(ticketDetails.attachments, idx)
                                 : handleDownloadAttachment(file)
                             }
                           >
@@ -1879,6 +1846,7 @@ export default function AdminTicketsManager({ id: propId }) {
                             type="button"
                             onClick={() => handleDownloadAttachment(file)}
                             className="p-1 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            title="Download"
                           >
                             <Download className="w-3.5 h-3.5" />
                           </button>
@@ -1887,6 +1855,7 @@ export default function AdminTicketsManager({ id: propId }) {
                               type="button"
                               onClick={() => handleImmediateDeleteAttachment(idx)}
                               className="p-1 text-slate-500 hover:text-red-500 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                              title="Delete"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -2052,25 +2021,29 @@ export default function AdminTicketsManager({ id: propId }) {
                                     {/* Top Preview Area */}
                                     {isImageFile(file) ? (
                                       <div
-                                        className="flex-1 w-full overflow-hidden bg-gray-50 flex items-center justify-center cursor-pointer"
-                                        onClick={() =>
-                                          window.open(file.url || file.content, '_blank')
-                                        }
+                                        className="flex-1 w-full overflow-hidden bg-gray-50 flex items-center justify-center cursor-pointer group/img"
+                                        onClick={() => handleOpenPreview(comment.attachments, idx)}
+                                        title="Click to preview image"
                                       >
                                         <img
                                           src={file.url || file.content}
                                           alt={file.name}
-                                          className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
+                                          className="w-full h-full object-cover group-hover/img:scale-105 transition-all duration-300"
                                         />
                                       </div>
                                     ) : (
                                       <div
-                                        className="flex-1 w-full overflow-hidden bg-gray-50 flex flex-col items-center justify-center cursor-pointer gap-1"
-                                        onClick={() => handleDownloadAttachment(file)}
+                                        className="flex-1 w-full overflow-hidden bg-gray-50 flex flex-col items-center justify-center cursor-pointer gap-1 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
+                                        onClick={() =>
+                                          isPreviewableFile(file)
+                                            ? handleOpenPreview(comment.attachments, idx)
+                                            : handleDownloadAttachment(file)
+                                        }
+                                        title={isPreviewableFile(file) ? "Click to preview document" : "Click to download"}
                                       >
-                                        <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                        <FileText className={`w-6 h-6 ${isPdfFile(file) ? 'text-red-500' : 'text-blue-600 dark:text-blue-400'}`} />
                                         <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">
-                                          {file.name.split('.').pop()} file
+                                          {(file.name || '').split('.').pop()} file
                                         </span>
                                       </div>
                                     )}
@@ -2082,8 +2055,8 @@ export default function AdminTicketsManager({ id: propId }) {
                                           className="font-bold text-slate-800 dark:text-slate-200 truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                                           title={file.name}
                                           onClick={() =>
-                                            isImageFile(file)
-                                              ? window.open(file.url || file.content, '_blank')
+                                            isPreviewableFile(file)
+                                              ? handleOpenPreview(comment.attachments, idx)
                                               : handleDownloadAttachment(file)
                                           }
                                         >
@@ -2161,7 +2134,13 @@ export default function AdminTicketsManager({ id: propId }) {
                               className="flex items-center gap-1 px-2 py-0.5 text-[9px] font-bold"
                             >
                               <Paperclip className="w-2.5 h-2.5 text-slate-500" />
-                              <span className="max-w-[120px] truncate">{f.name}</span>
+                              <span
+                                className="max-w-[120px] truncate cursor-pointer hover:underline"
+                                onClick={() => handleOpenPreview(commentAttachments, i)}
+                                title="Click to preview file"
+                              >
+                                {f.name}
+                              </span>
                               <button
                                 type="button"
                                 onClick={() =>
@@ -2494,6 +2473,15 @@ export default function AdminTicketsManager({ id: propId }) {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* File Preview Modal */}
+        <FilePreviewModal
+          isOpen={filePreview.isOpen}
+          files={filePreview.files}
+          currentIndex={filePreview.currentIndex}
+          onClose={() => setFilePreview((prev) => ({ ...prev, isOpen: false }))}
+          onIndexChange={(newIdx) => setFilePreview((prev) => ({ ...prev, currentIndex: newIdx }))}
+        />
       </div>
     );
   }
@@ -2979,6 +2967,14 @@ export default function AdminTicketsManager({ id: propId }) {
           </div>
         </div>
       )}
+      {/* File Preview Modal */}
+      <FilePreviewModal
+        isOpen={filePreview.isOpen}
+        files={filePreview.files}
+        currentIndex={filePreview.currentIndex}
+        onClose={() => setFilePreview((prev) => ({ ...prev, isOpen: false }))}
+        onIndexChange={(newIdx) => setFilePreview((prev) => ({ ...prev, currentIndex: newIdx }))}
+      />
     </div>
   );
 }
