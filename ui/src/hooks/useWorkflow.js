@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { APP_CONFIG, WORKFLOW_STATES, ROLES } from '@/data/config';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkflowConfig } from '@/contexts/WorkflowContext';
@@ -39,7 +39,7 @@ export const useWorkflow = (jobId, currentState) => {
       // Robustly determine the integer user ID for bigint columns
       let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
       if (isNaN(userId) && user.username) {
-        const { data: userData } = await supabase
+        const { data: userData } = await apiClient
           .from('users')
           .select('id')
           .eq('username', user.username)
@@ -54,7 +54,7 @@ export const useWorkflow = (jobId, currentState) => {
       }
 
       // 1. Update job state in DB
-      const { error: updateError } = await supabase
+      const { error: updateError } = await apiClient
         .from('jobs')
         .update({
           status: action.targetState,
@@ -66,7 +66,7 @@ export const useWorkflow = (jobId, currentState) => {
       if (updateError) throw updateError;
 
       // 2. Log the transition
-      const { error: logError } = await supabase.from('job_workflow_logs').insert({
+      const { error: logError } = await apiClient.from('job_workflow_logs').insert({
         job_id: jobId,
         from_state: currentState,
         to_state: action.targetState,
@@ -114,7 +114,7 @@ export const useWorkflow = (jobId, currentState) => {
       // Robustly determine the integer user ID for bigint columns
       let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
       if (isNaN(userId) && user.username) {
-        const { data: userData } = await supabase
+        const { data: userData } = await apiClient
           .from('users')
           .select('id')
           .eq('username', user.username)
@@ -128,7 +128,7 @@ export const useWorkflow = (jobId, currentState) => {
         );
       }
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await apiClient
         .from('jobs')
         .update({
           status: previousState,
@@ -139,7 +139,7 @@ export const useWorkflow = (jobId, currentState) => {
 
       if (updateError) throw updateError;
 
-      const { error: logError } = await supabase.from('job_workflow_logs').insert({
+      const { error: logError } = await apiClient.from('job_workflow_logs').insert({
         job_id: jobId,
         from_state: currentState,
         to_state: previousState,

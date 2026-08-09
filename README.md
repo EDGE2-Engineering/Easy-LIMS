@@ -1,10 +1,10 @@
 ### EDGE2 Easy LIMS
 
-<!-- - Create a Supabase project
-- Run `setup.sql` on Supabase. Go to your Supabase project -> SQL Editor -> Run SQL
-- Create a user in Supabase with email and password. This would be used for admin login. Go to your Supabase project -> Authentication -> Users -> Add User
+<!-- - Create a PostgreSQL project
+- Run `setup.sql` on PostgreSQL. Go to your PostgreSQL project -> SQL Editor -> Run SQL
+- Create a user in PostgreSQL with email and password. This would be used for admin login. Go to your PostgreSQL project -> Authentication -> Users -> Add User
 - Run `npm run dev` to start the development server
-- Login as admin using the credentials created in Supabase -->
+- Login as admin using the credentials created in PostgreSQL -->
 <!-- 
 ### Install `pg_dump`
 
@@ -21,18 +21,18 @@ On Mac
 brew install postgresql@17
 ```
 
-### Export Supabase Database as SQL file
+### Export PostgreSQL Database as SQL file
 
 ```
 #!/bin/bash
 
-# Supabase connection variables
-DB_HOST="db.projid.supabase.co"
+# PostgreSQL connection variables
+DB_HOST="localhost"
 DB_PORT="5432"
 DB_NAME="postgres"
 DB_USER="postgres"
 DB_PASSWORD="your-db-password"
-OUTPUT_FILE="supabase_backup.sql"
+OUTPUT_FILE="postgres_backup.sql"
 
 # Export password so pg_dump can use it
 export PGPASSWORD=$DB_PASSWORD

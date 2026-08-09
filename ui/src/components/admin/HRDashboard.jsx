@@ -8,7 +8,7 @@ import {
   Zap,
   ShieldCheck,
 } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ const HRDashboard = () => {
     setLoading(true);
     try {
       // 1. Fetch total active employees
-      const { count: employeeCount, error: empError } = await supabase
+      const { count: employeeCount, error: empError } = await apiClient
         .from('users')
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true);
@@ -44,7 +44,7 @@ const HRDashboard = () => {
       if (empError) throw empError;
 
       // 2. Fetch active employees list
-      const { data: employeeList, error: listError } = await supabase
+      const { data: employeeList, error: listError } = await apiClient
         .from('users')
         .select('id, full_name, username, role')
         .eq('is_active', true)

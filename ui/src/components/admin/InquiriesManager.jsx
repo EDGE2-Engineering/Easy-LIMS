@@ -18,7 +18,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -75,7 +75,7 @@ const InquiriesManager = () => {
   const fetchInquiries = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('inquiries')
         .select('*')
         .order('created_at', { ascending: false });
@@ -151,7 +151,7 @@ const InquiriesManager = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const { error } = await supabase
+      const { error } = await apiClient
         .from('inquiries')
         .update({
           status: editingInquiry.status,
@@ -187,7 +187,7 @@ const InquiriesManager = () => {
   const confirmDelete = async () => {
     if (!deleteConfirmation.inquiryId) return;
     try {
-      const { error } = await supabase
+      const { error } = await apiClient
         .from('inquiries')
         .delete()
         .eq('id', deleteConfirmation.inquiryId);

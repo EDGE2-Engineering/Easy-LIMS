@@ -34,7 +34,7 @@ import {
   Moon,
   Sun,
 } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   getSiteContent,
@@ -120,7 +120,7 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
     e.preventDefault();
     setRequestLoading(true);
     try {
-      const { error } = await supabase.from('request_approvals').insert([
+      const { error } = await apiClient.from('request_approvals').insert([
         {
           requester_id: user.id,
           request_type: 'LEAVE',

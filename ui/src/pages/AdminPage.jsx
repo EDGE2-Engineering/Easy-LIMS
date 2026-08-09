@@ -37,7 +37,7 @@ import AdminLogin from '@/components/admin/AdminLogin';
 import UpdatePassword from '@/components/admin/UpdatePassword';
 import { useToast } from '@/components/ui/use-toast';
 
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';

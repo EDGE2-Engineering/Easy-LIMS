@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { logAudit } from '@/lib/auditLog';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -14,7 +14,7 @@ const HSNCodesProvider = ({ children }) => {
   const fetchHsnCodes = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('hsn_sac_codes')
         .select('*')
         .order('code', { ascending: true });
@@ -37,7 +37,7 @@ const HSNCodesProvider = ({ children }) => {
   const addHsnCode = useCallback(
     async (hsnData, userId = null) => {
       try {
-        const { data, error } = await supabase.from('hsn_sac_codes').insert([hsnData]).select();
+        const { data, error } = await apiClient.from('hsn_sac_codes').insert([hsnData]).select();
 
         if (error) throw error;
         if (data) {
@@ -61,7 +61,7 @@ const HSNCodesProvider = ({ children }) => {
   const updateHsnCode = useCallback(
     async (id, hsnData, userId = null) => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('hsn_sac_codes')
           .update(hsnData)
           .eq('id', id)
@@ -94,7 +94,7 @@ const HSNCodesProvider = ({ children }) => {
     async (id, userId = null) => {
       try {
         const toDelete = hsnCodes.find((h) => h.id === id);
-        const { error } = await supabase.from('hsn_sac_codes').delete().eq('id', id);
+        const { error } = await apiClient.from('hsn_sac_codes').delete().eq('id', id);
 
         if (error) throw error;
         setHsnCodes((prev) => prev.filter((h) => h.id !== id));
@@ -113,8 +113,12 @@ const HSNCodesProvider = ({ children }) => {
     [hsnCodes, currentUserId]
   );
 
-  useEffect(() => {
-    fetchHsnCodes();
+  const fetchedRef = React.useRef(false);
+  const ensureFetched = useCallback(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchHsnCodes();
+    }
   }, [fetchHsnCodes]);
 
   const contextValue = useMemo(
@@ -122,11 +126,12 @@ const HSNCodesProvider = ({ children }) => {
       hsnCodes,
       loading,
       refreshHsnCodes: fetchHsnCodes,
+      ensureFetched,
       addHsnCode,
       updateHsnCode,
       deleteHsnCode,
     }),
-    [hsnCodes, loading, fetchHsnCodes, addHsnCode, updateHsnCode, deleteHsnCode]
+    [hsnCodes, loading, fetchHsnCodes, ensureFetched, addHsnCode, updateHsnCode, deleteHsnCode]
   );
 
   return <HSNCodesContext.Provider value={contextValue}>{children}</HSNCodesContext.Provider>;
@@ -137,6 +142,9 @@ export const useHSNCodes = () => {
   if (!context) {
     throw new Error('useHSNCodes must be used within a HSNCodesProvider');
   }
+  useEffect(() => {
+    context.ensureFetched();
+  }, [context]);
   return context;
 };
 

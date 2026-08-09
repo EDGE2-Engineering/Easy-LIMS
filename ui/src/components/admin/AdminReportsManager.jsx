@@ -19,7 +19,7 @@ import {
   Info,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,7 +58,7 @@ const AdminReportsManager = () => {
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const { data: rawData, error } = await supabase
+      const { data: rawData, error } = await apiClient
         .from('reports')
         .select('*')
         .order('created_at', { ascending: false });
@@ -71,13 +71,13 @@ const AdminReportsManager = () => {
 
       let userMap = new Map();
       if (userIds.length > 0) {
-        const { data: uData } = await supabase.from('users').select('id, full_name').in('id', userIds);
+        const { data: uData } = await apiClient.from('users').select('id, full_name').in('id', userIds);
         if (uData) userMap = new Map(uData.map((u) => [u.id, u]));
       }
 
       let clientMap = new Map();
       if (clientIds.length > 0) {
-        const { data: cData } = await supabase.from('clients').select('id, client_name').in('id', clientIds);
+        const { data: cData } = await apiClient.from('clients').select('id, client_name').in('id', clientIds);
         if (cData) clientMap = new Map(cData.map((c) => [c.id, c]));
       }
 
@@ -120,7 +120,7 @@ const AdminReportsManager = () => {
 
   const confirmDelete = async () => {
     try {
-      const { error } = await supabase
+      const { error } = await apiClient
         .from('reports')
         .delete()
         .eq('id', deleteConfirmation.reportId);

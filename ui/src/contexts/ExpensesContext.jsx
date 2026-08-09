@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { STORAGE_KEYS } from '@/data/storageKeys';
 import { logAudit } from '@/lib/auditLog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -47,13 +47,13 @@ const ExpensesProvider = ({ children }) => {
 
   const fetchExpenses = useCallback(async () => {
     try {
-      const { data: rawData, error } = await supabase
+      const { data: rawData, error } = await apiClient
         .from('expenses')
         .select('*')
         .order('date', { ascending: false });
 
       if (error) {
-        console.warn('Supabase fetch error (expenses):', error.message);
+        console.warn('API fetch error (expenses):', error.message);
         const stored = localStorage.getItem(STORAGE_KEYS.EXPENSES);
         if (stored) {
           try {
@@ -71,7 +71,7 @@ const ExpensesProvider = ({ children }) => {
         let expList = rawData;
         const userIds = [...new Set(expList.map((e) => e.created_by).filter(Boolean))];
         if (userIds.length > 0) {
-          const { data: uData } = await supabase
+          const { data: uData } = await apiClient
             .from('users')
             .select('id, full_name')
             .in('id', userIds);
@@ -95,8 +95,12 @@ const ExpensesProvider = ({ children }) => {
     }
   }, [mapFromDb]);
 
-  useEffect(() => {
-    fetchExpenses();
+  const fetchedRef = React.useRef(false);
+  const ensureFetched = useCallback(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchExpenses();
+    }
   }, [fetchExpenses]);
 
   useEffect(() => {
@@ -120,10 +124,10 @@ const ExpensesProvider = ({ children }) => {
           delete dbPayload.id;
         }
 
-        const { error, data } = await supabase.from('expenses').insert(dbPayload).select();
+        const { error, data } = await apiClient.from('expenses').insert(dbPayload).select();
 
         if (error) {
-          console.error('Supabase Add Failed (expenses):', error);
+          console.error('API Add Failed (expenses):', error);
           // We keep it in local state anyway if offline
         } else if (data && data.length > 0) {
           const added = mapFromDb(data[0]);
@@ -151,10 +155,10 @@ const ExpensesProvider = ({ children }) => {
       try {
         const dbPayload = mapToDb(updatedExpense);
         const { id, ...updates } = dbPayload;
-        const { error } = await supabase.from('expenses').update(updates).eq('id', id);
+        const { error } = await apiClient.from('expenses').update(updates).eq('id', id);
 
         if (error) {
-          console.error('Supabase Update Failed (expenses):', error);
+          console.error('API Update Failed (expenses):', error);
         } else {
           logAudit({
             userId: userId || currentUserId,
@@ -178,10 +182,10 @@ const ExpensesProvider = ({ children }) => {
       setExpenses((prev) => prev.filter((e) => e.id !== id));
 
       try {
-        const { error } = await supabase.from('expenses').delete().eq('id', id);
+        const { error } = await apiClient.from('expenses').delete().eq('id', id);
 
         if (error) {
-          console.error('Supabase Delete Failed (expenses):', error);
+          console.error('API Delete Failed (expenses):', error);
         } else {
           logAudit({
             userId: userId || currentUserId,
@@ -206,8 +210,9 @@ const ExpensesProvider = ({ children }) => {
       updateExpense,
       deleteExpense,
       refreshExpenses: fetchExpenses,
+      ensureFetched,
     }),
-    [expenses, loading, addExpense, updateExpense, deleteExpense, fetchExpenses]
+    [expenses, loading, addExpense, updateExpense, deleteExpense, fetchExpenses, ensureFetched]
   );
 
   return <ExpensesContext.Provider value={contextValue}>{children}</ExpensesContext.Provider>;
@@ -218,6 +223,9 @@ export const useExpenses = () => {
   if (!context) {
     throw new Error('useExpenses must be used within an ExpensesProvider');
   }
+  React.useEffect(() => {
+    context.ensureFetched();
+  }, [context]);
   return context;
 };
 

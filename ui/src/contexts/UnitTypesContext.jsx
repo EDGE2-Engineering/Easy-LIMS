@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { logAudit } from '@/lib/auditLog';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -14,7 +14,7 @@ const UnitTypesProvider = ({ children }) => {
   const fetchUnitTypes = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('service_unit_types')
         .select('*')
         .order('id', { ascending: true });
@@ -37,7 +37,7 @@ const UnitTypesProvider = ({ children }) => {
   const addUnitType = useCallback(
     async (unitType, userId = null) => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('service_unit_types')
           .insert([{ unit_type: unitType }])
           .select();
@@ -64,7 +64,7 @@ const UnitTypesProvider = ({ children }) => {
   const updateUnitType = useCallback(
     async (id, unitType, userId = null) => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('service_unit_types')
           .update({ unit_type: unitType })
           .eq('id', id)
@@ -93,7 +93,7 @@ const UnitTypesProvider = ({ children }) => {
     async (id, userId = null) => {
       try {
         const toDelete = unitTypes.find((u) => u.id === id);
-        const { error } = await supabase.from('service_unit_types').delete().eq('id', id);
+        const { error } = await apiClient.from('service_unit_types').delete().eq('id', id);
 
         if (error) throw error;
         setUnitTypes((prev) => prev.filter((u) => u.id !== id));
@@ -112,8 +112,12 @@ const UnitTypesProvider = ({ children }) => {
     [unitTypes, currentUserId]
   );
 
-  useEffect(() => {
-    fetchUnitTypes();
+  const fetchedRef = React.useRef(false);
+  const ensureFetched = useCallback(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchUnitTypes();
+    }
   }, [fetchUnitTypes]);
 
   const contextValue = useMemo(
@@ -121,11 +125,12 @@ const UnitTypesProvider = ({ children }) => {
       unitTypes,
       loading,
       refreshUnitTypes: fetchUnitTypes,
+      ensureFetched,
       addUnitType,
       updateUnitType,
       deleteUnitType,
     }),
-    [unitTypes, loading, fetchUnitTypes, addUnitType, updateUnitType, deleteUnitType]
+    [unitTypes, loading, fetchUnitTypes, ensureFetched, addUnitType, updateUnitType, deleteUnitType]
   );
 
   return <UnitTypesContext.Provider value={contextValue}>{children}</UnitTypesContext.Provider>;
@@ -136,6 +141,9 @@ export const useUnitTypes = () => {
   if (!context) {
     throw new Error('useUnitTypes must be used within a UnitTypesProvider');
   }
+  useEffect(() => {
+    context.ensureFetched();
+  }, [context]);
   return context;
 };
 

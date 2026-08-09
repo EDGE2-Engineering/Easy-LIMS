@@ -17,7 +17,7 @@ import {
   Upload,
   AlertTriangle,
 } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { getSiteContent } from '@/data/config';
 import { STORAGE_KEYS } from '@/data/storageKeys';
 
@@ -85,7 +85,7 @@ const AdminSettings = () => {
       setIsFetchingUser(true);
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await apiClient.auth.getUser();
       if (user) {
         setCurrentUsername(user.email);
         setCurrentUserEmail(user.email);
@@ -112,7 +112,7 @@ const AdminSettings = () => {
 
     try {
       // Verify current password by attempting a sign-in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await apiClient.auth.signInWithPassword({
         email: currentUserEmail,
         password: formData.currentPassword,
       });
@@ -129,7 +129,7 @@ const AdminSettings = () => {
 
       // Update password if new password is provided
       if (formData.newPassword) {
-        const { error: updateError } = await supabase.auth.updateUser({
+        const { error: updateError } = await apiClient.auth.updateUser({
           password: formData.newPassword,
         });
 

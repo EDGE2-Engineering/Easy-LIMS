@@ -11,7 +11,7 @@ import {
   Users,
   Receipt,
 } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,7 +47,7 @@ const AccountsDashboard = () => {
     setLoading(true);
     try {
       // 1. Fetch user's documents
-      const { data: rawDocs, error: docsError } = await supabase
+      const { data: rawDocs, error: docsError } = await apiClient
         .from('documents')
         .select('*')
         .eq('created_by', user.id)
@@ -58,7 +58,7 @@ const AccountsDashboard = () => {
       let docs = rawDocs || [];
       const docClientIds = [...new Set(docs.map((d) => d.client_id).filter(Boolean))];
       if (docClientIds.length > 0) {
-        const { data: cData } = await supabase
+        const { data: cData } = await apiClient
           .from('clients')
           .select('id, client_name')
           .in('id', docClientIds);
@@ -81,7 +81,7 @@ const AccountsDashboard = () => {
       }, 0);
 
       // 2. Fetch jobs ready for invoicing
-      const { data: rawReadyJobs, error: jobsError } = await supabase
+      const { data: rawReadyJobs, error: jobsError } = await apiClient
         .from('jobs')
         .select('*')
         .eq('status', WORKFLOW_STATES.REPORT_SIGNED)
@@ -92,7 +92,7 @@ const AccountsDashboard = () => {
       let readyJobs = rawReadyJobs || [];
       const jobClientIds = [...new Set(readyJobs.map((j) => j.client_id).filter(Boolean))];
       if (jobClientIds.length > 0) {
-        const { data: cData } = await supabase
+        const { data: cData } = await apiClient
           .from('clients')
           .select('id, client_name')
           .in('id', jobClientIds);
@@ -104,7 +104,7 @@ const AccountsDashboard = () => {
 
       // Filter out jobs that already have an invoice
       const jobIds = readyJobs.map((j) => j.id);
-      const { data: existingInvoices, error: invError } = await supabase
+      const { data: existingInvoices, error: invError } = await apiClient
         .from('documents')
         .select('job_id')
         .in('job_id', jobIds)
@@ -126,7 +126,7 @@ const AccountsDashboard = () => {
       // 3. Clients added today
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
-      const { data: todayClients } = await supabase
+      const { data: todayClients } = await apiClient
         .from('clients')
         .select('id, client_name, created_at')
         .gte('created_at', todayStart.toISOString())
@@ -141,7 +141,7 @@ const AccountsDashboard = () => {
       const lastOfMonth = new Date(now2.getFullYear(), now2.getMonth() + 1, 0)
         .toISOString()
         .split('T')[0];
-      const { data: expThisMonth } = await supabase
+      const { data: expThisMonth } = await apiClient
         .from('expenses')
         .select('amount')
         .gte('date', firstOfMonth)

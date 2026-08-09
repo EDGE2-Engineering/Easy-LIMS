@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, UserPlus, CheckCircle2, Search } from 'lucide-react';
@@ -24,7 +24,7 @@ const TechnicianAssignment = ({ jobId, onComplete }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: users, error: userError } = await supabase
+      const { data: users, error: userError } = await apiClient
         .from('users')
         .select('id, full_name, username, role, departments')
         .in('role', [ROLES.TECHNICIAN.slug, ROLES.ANALYST.slug])
@@ -34,7 +34,7 @@ const TechnicianAssignment = ({ jobId, onComplete }) => {
       if (userError) throw userError;
       setTechnicians(users || []);
 
-      const { data: existingAssignments, error: assignError } = await supabase
+      const { data: existingAssignments, error: assignError } = await apiClient
         .from('job_to_technicians')
         .select('technician_id')
         .eq('job_id', jobId);
@@ -58,7 +58,7 @@ const TechnicianAssignment = ({ jobId, onComplete }) => {
     try {
       let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
       if (isNaN(userId) && user.username) {
-        const { data: userData } = await supabase
+        const { data: userData } = await apiClient
           .from('users')
           .select('id')
           .eq('username', user.username)
@@ -68,14 +68,14 @@ const TechnicianAssignment = ({ jobId, onComplete }) => {
       if (isNaN(userId)) throw new Error('Unable to determine a valid numeric User ID.');
 
       // Update job status to TECHNICIANS_ASSIGNED
-      const { error: jobError } = await supabase
+      const { error: jobError } = await apiClient
         .from('jobs')
         .update({ status: 'TECHNICIANS_ASSIGNED', updated_by: userId })
         .eq('id', jobId);
       if (jobError) throw jobError;
 
       // Delete existing technician assignments for this job
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await apiClient
         .from('job_to_technicians')
         .delete()
         .eq('job_id', jobId);
@@ -87,14 +87,14 @@ const TechnicianAssignment = ({ jobId, onComplete }) => {
           job_id: jobId,
           technician_id: parseInt(techId),
         }));
-        const { error: insertError } = await supabase
+        const { error: insertError } = await apiClient
           .from('job_to_technicians')
           .insert(insertData);
         if (insertError) throw insertError;
       }
 
       const assignedUsers = technicians.filter((t) => selectedTechs.includes(String(t.id)));
-      await supabase.from('job_workflow_logs').insert({
+      await apiClient.from('job_workflow_logs').insert({
         job_id: jobId,
         to_state: 'TECHNICIANS_ASSIGNED',
         action_id: 'ASSIGN_TECHNICIANS',

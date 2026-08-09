@@ -14,6 +14,7 @@ import {
   SortDesc,
   Filter,
   X,
+  Loader2,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useClients } from '@/contexts/ClientsContext';
@@ -61,7 +62,7 @@ const isValidEmail = (email) => {
 
 const AdminClientsManager = ({ id }) => {
   // 1. Context Hooks
-  const { clients, updateClient, addClient, deleteClient, setClients } = useClients();
+  const { clients, updateClient, addClient, deleteClient, setClients, loading } = useClients();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -87,6 +88,20 @@ const AdminClientsManager = ({ id }) => {
   // 3. Ref Hooks
   const fileImportRef = React.useRef(null);
 
+  const getContactsArray = (client) => {
+    if (!client || !client.contacts) return [];
+    if (Array.isArray(client.contacts)) return client.contacts;
+    if (typeof client.contacts === 'string' && client.contacts.trim()) {
+      try {
+        const parsed = JSON.parse(client.contacts);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
+
   // 4. Memo Hooks
   const filteredClients = React.useMemo(() => {
     let result = (clients || []).filter((c) => {
@@ -97,7 +112,8 @@ const AdminClientsManager = ({ id }) => {
         (c.gstin?.toLowerCase() || '').includes(searchStr) ||
         (c.id?.toString().toLowerCase() || '').includes(searchStr);
 
-      const inContacts = (c.contacts || []).some(
+      const contacts = getContactsArray(c);
+      const inContacts = contacts.some(
         (con) =>
           (con.contact_person?.toLowerCase() || '').includes(searchStr) ||
           (con.contact_email?.toLowerCase() || '').includes(searchStr) ||
@@ -157,7 +173,7 @@ const AdminClientsManager = ({ id }) => {
   }, [searchTerm]);
 
   const handleEdit = (client) => {
-    const contacts = Array.isArray(client.contacts) ? client.contacts : [];
+    const contacts = getContactsArray(client);
     setEditingClient({
       ...client,
       contacts,
@@ -566,6 +582,15 @@ const AdminClientsManager = ({ id }) => {
     );
   }
 
+  if (loading && (!clients || clients.length === 0)) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+        <p className="text-gray-500 font-medium text-sm">Loading clients...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
@@ -825,10 +850,20 @@ const AdminClientsManager = ({ id }) => {
               </tr>
             </thead>
             <tbody>
-              {paginatedClients.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="py-20 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+                      <p className="text-gray-500 font-medium text-sm">Loading clients...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedClients.length > 0 ? (
                 paginatedClients.map((client) => {
+                  const contacts = getContactsArray(client);
                   const primaryContact =
-                    (client.contacts || []).find((c) => c.is_primary) || client.contacts?.[0] || {};
+                    contacts.find((c) => c.is_primary) || contacts[0] || {};
                   return (
                     <tr
                       key={client.id}

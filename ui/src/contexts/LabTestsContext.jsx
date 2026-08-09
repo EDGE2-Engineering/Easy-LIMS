@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { initialLabTests } from '@/data/labTests';
 import { STORAGE_KEYS } from '@/data/storageKeys';
 import { logAudit } from '@/lib/auditLog';
@@ -83,7 +83,7 @@ const LabTestsProvider = ({ children }) => {
 
   const fetchLabTests = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('lab_tests')
         .select(
           `
@@ -96,7 +96,7 @@ const LabTestsProvider = ({ children }) => {
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.warn('Supabase fetch error (lab_tests):', error.message);
+        console.warn('API fetch error (lab_tests):', error.message);
         const stored = localStorage.getItem(STORAGE_KEYS.LAB_TESTS);
         if (stored) {
           try {
@@ -137,10 +137,10 @@ const LabTestsProvider = ({ children }) => {
 
   const fetchClientLabTestPrices = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from('client_lab_test_prices').select('*');
+      const { data, error } = await apiClient.from('client_lab_test_prices').select('*');
 
       if (error) {
-        console.warn('Supabase fetch error (client_lab_test_prices):', error.message);
+        console.warn('API fetch error (client_lab_test_prices):', error.message);
         return;
       }
 
@@ -152,9 +152,16 @@ const LabTestsProvider = ({ children }) => {
     }
   }, []);
 
+  const fetchedRef = React.useRef(false);
+  const ensureFetched = useCallback(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchLabTests();
+      fetchClientLabTestPrices();
+    }
+  }, [fetchLabTests, fetchClientLabTestPrices]);
+
   useEffect(() => {
-    fetchLabTests();
-    fetchClientLabTestPrices();
     const handleStorageChange = () => {
       const stored = localStorage.getItem(STORAGE_KEYS.LAB_TESTS);
       if (stored) {
@@ -166,7 +173,7 @@ const LabTestsProvider = ({ children }) => {
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [fetchLabTests, fetchClientLabTestPrices]);
+  }, []);
 
   useEffect(() => {
     if (labTests.length > 0) {
@@ -182,51 +189,51 @@ const LabTestsProvider = ({ children }) => {
       try {
         const dbPayload = mapToDb(updatedTest);
         const { id, ...updates } = dbPayload;
-        const { error } = await supabase.from('lab_tests').update(updates).eq('id', id);
+        const { error } = await apiClient.from('lab_tests').update(updates).eq('id', id);
 
         if (error) {
-          console.error('Supabase Update Failed (lab_tests):', error.message);
+          console.error('API Update Failed (lab_tests):', error.message);
           setLabTests(previousTests);
           throw error;
         }
 
         // Sync T&C
-        await supabase.from('lab_test_to_terms_conditions').delete().eq('lab_test_id', id);
+        await apiClient.from('lab_test_to_terms_conditions').delete().eq('lab_test_id', id);
         if (updatedTest.tcList?.length > 0) {
-          const { data: terms } = await supabase
+          const { data: terms } = await apiClient
             .from('terms_and_conditions')
             .select('id')
             .in('type', updatedTest.tcList);
           if (terms?.length > 0) {
-            await supabase
+            await apiClient
               .from('lab_test_to_terms_conditions')
               .insert(terms.map((term) => ({ lab_test_id: id, tc_id: term.id })));
           }
         }
 
         // Sync Technicals
-        await supabase.from('lab_test_to_technicals').delete().eq('lab_test_id', id);
+        await apiClient.from('lab_test_to_technicals').delete().eq('lab_test_id', id);
         if (updatedTest.techList?.length > 0) {
-          const { data: techs } = await supabase
+          const { data: techs } = await apiClient
             .from('technicals')
             .select('id')
             .in('type', updatedTest.techList);
           if (techs?.length > 0) {
-            await supabase
+            await apiClient
               .from('lab_test_to_technicals')
               .insert(techs.map((tech) => ({ lab_test_id: id, technical_id: tech.id })));
           }
         }
 
         // Sync Payment Terms
-        await supabase.from('lab_test_to_payment_terms').delete().eq('lab_test_id', id);
+        await apiClient.from('lab_test_to_payment_terms').delete().eq('lab_test_id', id);
         if (updatedTest.paymentTermsList?.length > 0) {
-          const { data: payTerms } = await supabase
+          const { data: payTerms } = await apiClient
             .from('payment_terms')
             .select('id')
             .in('type', updatedTest.paymentTermsList);
           if (payTerms?.length > 0) {
-            await supabase
+            await apiClient
               .from('lab_test_to_payment_terms')
               .insert(payTerms.map((term) => ({ lab_test_id: id, payment_term_id: term.id })));
           }
@@ -252,19 +259,19 @@ const LabTestsProvider = ({ children }) => {
   const addLabTest = useCallback(
     async (newTest) => {
       try {
-        const { data, error } = await supabase.from('lab_tests').insert(mapToDb(newTest)).select();
+        const { data, error } = await apiClient.from('lab_tests').insert(mapToDb(newTest)).select();
         if (error) throw error;
         if (data && data.length > 0) {
           const id = data[0].id;
 
           // Sync T&C
           if (newTest.tcList?.length > 0) {
-            const { data: terms } = await supabase
+            const { data: terms } = await apiClient
               .from('terms_and_conditions')
               .select('id')
               .in('type', newTest.tcList);
             if (terms?.length > 0) {
-              await supabase
+              await apiClient
                 .from('lab_test_to_terms_conditions')
                 .insert(terms.map((term) => ({ lab_test_id: id, tc_id: term.id })));
             }
@@ -272,12 +279,12 @@ const LabTestsProvider = ({ children }) => {
 
           // Sync Technicals
           if (newTest.techList?.length > 0) {
-            const { data: techs } = await supabase
+            const { data: techs } = await apiClient
               .from('technicals')
               .select('id')
               .in('type', newTest.techList);
             if (techs?.length > 0) {
-              await supabase
+              await apiClient
                 .from('lab_test_to_technicals')
                 .insert(techs.map((tech) => ({ lab_test_id: id, technical_id: tech.id })));
             }
@@ -285,12 +292,12 @@ const LabTestsProvider = ({ children }) => {
 
           // Sync Payment Terms
           if (newTest.paymentTermsList?.length > 0) {
-            const { data: payTerms } = await supabase
+            const { data: payTerms } = await apiClient
               .from('payment_terms')
               .select('id')
               .in('type', newTest.paymentTermsList);
             if (payTerms?.length > 0) {
-              await supabase
+              await apiClient
                 .from('lab_test_to_payment_terms')
                 .insert(payTerms.map((term) => ({ lab_test_id: id, payment_term_id: term.id })));
             }
@@ -318,9 +325,9 @@ const LabTestsProvider = ({ children }) => {
       const toDelete = labTests.find((t) => t.id === id);
       setLabTests((prev) => prev.filter((t) => t.id !== id));
       try {
-        const { error } = await supabase.from('lab_tests').delete().eq('id', id);
+        const { error } = await apiClient.from('lab_tests').delete().eq('id', id);
         if (error) {
-          console.warn('Supabase Delete Failed (lab_tests):', error.message);
+          console.warn('API Delete Failed (lab_tests):', error.message);
         } else {
           logAudit({
             userId: userId || currentUserId,
@@ -343,7 +350,7 @@ const LabTestsProvider = ({ children }) => {
         console.log(
           `Updating client lab test price: client=${clientId}, test=${testId}, price=${price}`
         );
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('client_lab_test_prices')
           .upsert({
             client_id: clientId,
@@ -354,7 +361,7 @@ const LabTestsProvider = ({ children }) => {
           .select();
 
         if (error) {
-          console.error('Supabase Upsert Error (client_lab_test_prices):', error);
+          console.error('API Upsert Error (client_lab_test_prices):', error);
           throw error;
         }
         if (data) {
@@ -384,7 +391,7 @@ const LabTestsProvider = ({ children }) => {
   const deleteClientLabTestPrice = useCallback(
     async (clientId, testId, userId = null) => {
       try {
-        const { error } = await supabase
+        const { error } = await apiClient
           .from('client_lab_test_prices')
           .delete()
           .eq('client_id', clientId)
@@ -422,6 +429,7 @@ const LabTestsProvider = ({ children }) => {
       setLabTests,
       refreshLabTests: fetchLabTests,
       refreshClientLabTestPrices: fetchClientLabTestPrices,
+      ensureFetched,
     }),
     [
       labTests,
@@ -434,6 +442,7 @@ const LabTestsProvider = ({ children }) => {
       deleteClientLabTestPrice,
       fetchLabTests,
       fetchClientLabTestPrices,
+      ensureFetched,
     ]
   );
 
@@ -445,6 +454,9 @@ export const useLabTests = () => {
   if (!context) {
     throw new Error('useLabTests must be used within a LabTestsProvider');
   }
+  React.useEffect(() => {
+    context.ensureFetched();
+  }, [context]);
   return context;
 };
 

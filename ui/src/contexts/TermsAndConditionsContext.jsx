@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { useToast } from '@/components/ui/use-toast';
 import { logAudit } from '@/lib/auditLog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,7 +16,7 @@ const TermsAndConditionsProvider = ({ children }) => {
   const fetchTerms = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('terms_and_conditions')
         .select('*')
         .order('id', { ascending: true });
@@ -34,7 +34,7 @@ const TermsAndConditionsProvider = ({ children }) => {
   const addTerm = useCallback(
     async (text, type = 'general', userId = null) => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('terms_and_conditions')
           .insert([{ text, type }])
           .select();
@@ -60,7 +60,7 @@ const TermsAndConditionsProvider = ({ children }) => {
   const updateTerm = useCallback(
     async (id, text, type, userId = null) => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('terms_and_conditions')
           .update({ text, type, updated_at: new Date() })
           .eq('id', id)
@@ -88,7 +88,7 @@ const TermsAndConditionsProvider = ({ children }) => {
     async (id, userId = null) => {
       try {
         const toDelete = terms.find((t) => t.id === id);
-        const { error } = await supabase.from('terms_and_conditions').delete().eq('id', id);
+        const { error } = await apiClient.from('terms_and_conditions').delete().eq('id', id);
 
         if (error) throw error;
         setTerms((prev) => prev.filter((term) => term.id !== id));
@@ -107,8 +107,12 @@ const TermsAndConditionsProvider = ({ children }) => {
     [terms, currentUserId]
   );
 
-  useEffect(() => {
-    fetchTerms();
+  const fetchedRef = React.useRef(false);
+  const ensureFetched = useCallback(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchTerms();
+    }
   }, [fetchTerms]);
 
   const contextValue = useMemo(
@@ -119,8 +123,9 @@ const TermsAndConditionsProvider = ({ children }) => {
       updateTerm,
       deleteTerm,
       fetchTerms,
+      ensureFetched,
     }),
-    [terms, loading, addTerm, updateTerm, deleteTerm, fetchTerms]
+    [terms, loading, addTerm, updateTerm, deleteTerm, fetchTerms, ensureFetched]
   );
 
   return (
@@ -134,6 +139,9 @@ export const useTermsAndConditions = () => {
   if (!context) {
     throw new Error('useTermsAndConditions must be used within a TermsAndConditionsProvider');
   }
+  useEffect(() => {
+    context.ensureFetched();
+  }, [context]);
   return context;
 };
 

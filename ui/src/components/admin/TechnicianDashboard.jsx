@@ -11,7 +11,7 @@ import {
   Beaker,
   ChevronRight,
 } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,7 +40,7 @@ const TechnicianDashboard = () => {
       let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
 
       // Fetch jobs assigned to the technician
-      const { data: assignments, error: assignError } = await supabase
+      const { data: assignments, error: assignError } = await apiClient
         .from('job_to_technicians')
         .select('job_id')
         .eq('technician_id', userId);
@@ -50,7 +50,7 @@ const TechnicianDashboard = () => {
       let jobs = [];
       if (assignments && assignments.length > 0) {
         const jobIds = assignments.map((a) => a.job_id);
-        const { data: rawJobs, error: jobsError } = await supabase
+        const { data: rawJobs, error: jobsError } = await apiClient
           .from('jobs')
           .select('*')
           .in('id', jobIds)
@@ -61,7 +61,7 @@ const TechnicianDashboard = () => {
         let jobList = rawJobs || [];
         const clientIds = [...new Set(jobList.map((j) => j.client_id).filter(Boolean))];
         if (clientIds.length > 0) {
-          const { data: cData } = await supabase.from('clients').select('id, client_name').in('id', clientIds);
+          const { data: cData } = await apiClient.from('clients').select('id, client_name').in('id', clientIds);
           if (cData) {
             const cMap = new Map(cData.map((c) => [c.id, c]));
             jobList = jobList.map((j) => ({ ...j, clients: cMap.get(j.client_id) || null }));

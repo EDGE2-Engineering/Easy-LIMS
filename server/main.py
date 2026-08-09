@@ -36,40 +36,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-SUPABASE_PROJECT_ID = os.getenv("SUPABASE_PROJECT_ID")
-SUPABASE_DB_PASS = os.getenv("SUPABASE_DB_PASS")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Enforce environment variable check prior to server startup
 has_database_url = bool(DATABASE_URL)
-has_supabase_config = bool(SUPABASE_PROJECT_ID and SUPABASE_DB_PASS)
 has_custom_db_config = bool(
     (os.getenv("DB_USER") or os.getenv("POSTGRES_USER")) and
     (os.getenv("DB_HOST") or os.getenv("POSTGRES_HOST")) and
     (os.getenv("DB_NAME") or os.getenv("POSTGRES_DB"))
 )
 
-if not (has_database_url or has_supabase_config or has_custom_db_config):
+if not (has_database_url or has_custom_db_config):
     error_msg = (
         "CRITICAL ERROR: Required database environment variables are not set! Server cannot start.\n"
         "Please set one of the following environment configurations in your environment or .env file:\n"
         "  1) DATABASE_URL\n"
-        "  2) SUPABASE_PROJECT_ID and SUPABASE_DB_PASS\n"
-        "  3) DB_USER (or POSTGRES_USER), DB_HOST (or POSTGRES_HOST), and DB_NAME (or POSTGRES_DB)"
+        "  2) DB_USER (or POSTGRES_USER), DB_HOST (or POSTGRES_HOST), and DB_NAME (or POSTGRES_DB)"
     )
     logger.error(error_msg)
     raise RuntimeError(error_msg)
 
 if has_database_url:
     logger.info("Using DATABASE_URL from environment.")
-elif has_supabase_config:
-    db_user = f"postgres.{SUPABASE_PROJECT_ID}"
-    db_pass = SUPABASE_DB_PASS
-    db_host = os.getenv("DB_HOST", "aws-1-ap-south-1.pooler.supabase.com")
-    db_port = os.getenv("DB_PORT", "6543")
-    db_name = os.getenv("DB_NAME", "postgres")
-    DATABASE_URL = f"postgresql://{quote_plus(db_user)}:{quote_plus(db_pass)}@{db_host}:{db_port}/{db_name}"
-    logger.info("Using Supabase database configuration from environment.")
 else:
     db_user = os.getenv("DB_USER") or os.getenv("POSTGRES_USER")
     db_pass = os.getenv("DB_PASSWORD") or os.getenv("POSTGRES_PASSWORD") or ""
@@ -77,23 +65,30 @@ else:
     db_port = os.getenv("DB_PORT", "5432")
     db_name = os.getenv("DB_NAME") or os.getenv("POSTGRES_DB")
     DATABASE_URL = f"postgresql://{quote_plus(db_user)}:{quote_plus(db_pass)}@{db_host}:{db_port}/{db_name}"
-    logger.info("Using custom Postgres database configuration from environment.")
+    logger.info("Using Postgres database configuration from environment.")
 db_pool = None
 
 async def init_db_pool():
     global db_pool
     if db_pool is None or getattr(db_pool, "_closed", False):
         logger.info("Connecting to database...")
-        ssl_val = "require" if "supabase.co" in DATABASE_URL or "sslmode=require" in DATABASE_URL or "pooler.supabase.com" in DATABASE_URL else None
+        ssl_val = "require" if "sslmode=require" in DATABASE_URL else None
+        
+        min_size = int(os.getenv("DB_POOL_MIN_SIZE", "5"))
+        max_size = int(os.getenv("DB_POOL_MAX_SIZE", "20"))
+        
         db_pool = await asyncpg.create_pool(
             DATABASE_URL,
-            min_size=1,
-            max_size=3,
+            min_size=min_size,
+            max_size=max_size,
+            max_queries=50000,
+            max_inactive_connection_lifetime=300.0,
+            command_timeout=30.0,
             statement_cache_size=0,
             ssl=ssl_val,
             timeout=15.0
         )
-        logger.info("Database connection pool established.")
+        logger.info(f"Database connection pool established (min_size={min_size}, max_size={max_size}).")
     return db_pool
 
 @app.middleware("http")
@@ -103,11 +98,11 @@ async def ensure_db_connection(request: Request, call_next):
         try:
             await init_db_pool()
         except Exception as e:
-            logger.error(f"Failed to connect to database on demand: {e}")
+            logger.error(f"Failed to connect to database on demand: {e or repr(e)}")
             if request.url.path.startswith("/api/"):
                 return JSONResponse(
                     status_code=500,
-                    content={"detail": f"Database connection error: {str(e)}"}
+                    content={"detail": f"Database connection error: {str(e) or repr(e)}"}
                 )
     return await call_next(request)
 
@@ -116,7 +111,7 @@ async def startup():
     try:
         await init_db_pool()
     except Exception as e:
-        logger.error(f"Failed to connect to database on startup: {e}")
+        logger.error(f"Failed to connect to database on startup: {e or repr(e)}")
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -375,14 +370,14 @@ async def list_documents(
     if q:
         params.append(f"%{q}%")
         p_idx = len(params)
-        where_parts.append(f"(d.quote_number ILIKE ${p_idx} OR d.document_type ILIKE ${p_idx} OR d.content::text ILIKE ${p_idx})")
+        where_parts.append(f"(d.quote_number ILIKE ${p_idx} OR d.document_type ILIKE ${p_idx} OR d.content::text ILIKE ${p_idx} OR c.client_name ILIKE ${p_idx})")
 
     where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
 
     async with db_pool.acquire() as conn:
         try:
             # 1. Total count
-            count_query = f"SELECT COUNT(*) FROM documents d {where_sql}"
+            count_query = f"SELECT COUNT(*) FROM documents d LEFT JOIN clients c ON d.client_id = c.id {where_sql}"
             count_rows = await fetch_with_coerced_params(conn, count_query, params)
             total = count_rows[0]["count"] if count_rows else 0
 
@@ -728,14 +723,20 @@ async def list_jobs(
     if q:
         params.append(f"%{q}%")
         p_idx = len(params)
-        where_parts.append(f"(j.job_code ILIKE ${p_idx} OR j.project_name ILIKE ${p_idx} OR j.project_address ILIKE ${p_idx} OR j.work_order_id ILIKE ${p_idx})")
+        where_parts.append(f"(j.job_code ILIKE ${p_idx} OR j.project_name ILIKE ${p_idx} OR j.project_address ILIKE ${p_idx} OR j.work_order_id ILIKE ${p_idx} OR c.client_name ILIKE ${p_idx} OR u1.full_name ILIKE ${p_idx})")
 
     where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
 
     async with db_pool.acquire() as conn:
         try:
             # 1. Total count
-            count_query = f"SELECT COUNT(*) FROM jobs j {where_sql}"
+            count_query = f"""
+                SELECT COUNT(*) 
+                FROM jobs j 
+                LEFT JOIN clients c ON j.client_id = c.id
+                LEFT JOIN users u1 ON j.created_by = u1.id
+                {where_sql}
+            """
             count_rows = await fetch_with_coerced_params(conn, count_query, params)
             total = count_rows[0]["count"] if count_rows else 0
 
@@ -749,11 +750,13 @@ async def list_jobs(
             data_query = f"""
                 SELECT 
                     j.*,
-                    CASE WHEN u.id IS NOT NULL THEN jsonb_build_object('id', u.id, 'full_name', u.full_name, 'username', u.username, 'role', u.role, 'departments', u.departments) ELSE NULL END AS users,
-                    CASE WHEN c.id IS NOT NULL THEN jsonb_build_object('client_name', c.client_name, 'gstin', c.gstin) ELSE NULL END AS clients
+                    c.client_name AS client_name,
+                    u1.full_name AS created_by_name,
+                    u2.full_name AS updated_by_name
                 FROM jobs j
-                LEFT JOIN users u ON j.created_by = u.id
                 LEFT JOIN clients c ON j.client_id = c.id
+                LEFT JOIN users u1 ON j.created_by = u1.id
+                LEFT JOIN users u2 ON j.updated_by = u2.id
                 {where_sql}
                 ORDER BY j.{safe_sort} {sort_order}
                 LIMIT ${limit_idx} OFFSET ${offset_idx}
@@ -762,9 +765,8 @@ async def list_jobs(
             jobs = []
             for r in rows:
                 job = dict(r)
-                for k in ["users", "clients"]:
-                    if isinstance(job.get(k), str):
-                        job[k] = json.loads(job[k])
+                for k in ["client_id", "created_by", "updated_by"]:
+                    job.pop(k, None)
                 jobs.append(job)
 
             total_pages = (total + limit - 1) // limit if total > 0 else 0
@@ -827,11 +829,13 @@ async def get_job(job_id: int):
     query = """
         SELECT 
             j.*,
-            CASE WHEN u.id IS NOT NULL THEN jsonb_build_object('id', u.id, 'full_name', u.full_name, 'username', u.username, 'role', u.role, 'departments', u.departments) ELSE NULL END AS users,
-            CASE WHEN c.id IS NOT NULL THEN jsonb_build_object('client_name', c.client_name, 'gstin', c.gstin) ELSE NULL END AS clients
+            c.client_name AS client_name,
+            u1.full_name AS created_by_name,
+            u2.full_name AS updated_by_name
         FROM jobs j
-        LEFT JOIN users u ON j.created_by = u.id
         LEFT JOIN clients c ON j.client_id = c.id
+        LEFT JOIN users u1 ON j.created_by = u1.id
+        LEFT JOIN users u2 ON j.updated_by = u2.id
         WHERE j.id = $1
     """
     async with db_pool.acquire() as conn:
@@ -839,11 +843,7 @@ async def get_job(job_id: int):
             rows = await fetch_with_coerced_params(conn, query, [job_id])
             if not rows:
                 raise HTTPException(status_code=404, detail=f"Job with ID {job_id} not found")
-            job = dict(rows[0])
-            for k in ["users", "clients"]:
-                if isinstance(job.get(k), str):
-                    job[k] = json.loads(job[k])
-            return job
+            return dict(rows[0])
         except HTTPException:
             raise
         except Exception as e:
@@ -1598,6 +1598,41 @@ class ClientUpdate(BaseModel):
     gstin: Optional[str] = None
     contacts: Optional[Any] = None
 
+@app.get("/api/filter-options/clients", tags=["Clients"], summary="List client names and IDs for filter dropdowns")
+async def list_client_filter_options():
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(
+            conn,
+            "SELECT id, client_name FROM clients ORDER BY client_name ASC",
+            []
+        )
+        return {"data": [dict(r) for r in rows], "total": len(rows)}
+
+@app.get("/api/filter-options/users", tags=["Users"], summary="List user names and IDs for filter dropdowns")
+async def list_user_filter_options():
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(
+            conn,
+            "SELECT id, full_name, username, role FROM users WHERE is_active = true ORDER BY full_name ASC",
+            []
+        )
+        return {"data": [dict(r) for r in rows], "total": len(rows)}
+
+def format_client_record(c: dict) -> dict:
+    if not c:
+        return c
+    res = dict(c)
+    if isinstance(res.get("contacts"), str):
+        try:
+            res["contacts"] = json.loads(res["contacts"])
+        except Exception:
+            pass
+    return res
+
 @app.get("/api/clients", tags=["Clients"], summary="List clients with pagination")
 async def list_clients(page: int = 1, limit: int = 10, q: Optional[str] = None, id: Optional[str] = None):
     if not db_pool:
@@ -1624,7 +1659,7 @@ async def list_clients(page: int = 1, limit: int = 10, q: Optional[str] = None, 
         total = count_rows[0]["count"] if count_rows else 0
         query_params = list(params) + [limit, offset]
         rows = await fetch_with_coerced_params(conn, f"SELECT * FROM clients {where_sql} ORDER BY client_name ASC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        return {"data": [format_client_record(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
 
 @app.get("/api/clients/{client_id}", tags=["Clients"], summary="Get client by ID")
 async def get_client(client_id: int):
@@ -1634,7 +1669,7 @@ async def get_client(client_id: int):
         rows = await fetch_with_coerced_params(conn, "SELECT * FROM clients WHERE id = $1", [client_id])
         if not rows:
             raise HTTPException(status_code=404, detail="Client not found")
-        return dict(rows[0])
+        return format_client_record(rows[0])
 
 @app.post("/api/clients", tags=["Clients"], status_code=201, summary="Create client")
 async def create_client(client: ClientCreate):
@@ -1644,7 +1679,7 @@ async def create_client(client: ClientCreate):
     query = "INSERT INTO clients (client_name, client_address, gstin, contacts, created_at, updated_at) VALUES ($1, $2, $3, $4::jsonb, NOW(), NOW()) RETURNING *"
     async with db_pool.acquire() as conn:
         rows = await fetch_with_coerced_params(conn, query, [client.client_name, client.client_address, client.gstin, contacts_str])
-        return dict(rows[0])
+        return format_client_record(rows[0])
 
 @app.put("/api/clients/{client_id}", tags=["Clients"], summary="Update client")
 async def update_client(client_id: int, payload: ClientUpdate):
@@ -1672,7 +1707,7 @@ async def update_client(client_id: int, payload: ClientUpdate):
         rows = await fetch_with_coerced_params(conn, query, params)
         if not rows:
             raise HTTPException(status_code=404, detail="Client not found")
-        return dict(rows[0])
+        return format_client_record(rows[0])
 
 @app.delete("/api/clients/{client_id}", tags=["Clients"], summary="Delete client")
 async def delete_client(client_id: int):
@@ -2308,7 +2343,10 @@ async def login_user(payload: LoginPayload):
         )
         if not rows:
             raise HTTPException(status_code=401, detail="Invalid username or password")
-        return dict(rows[0])
+        user = dict(rows[0])
+        user.pop("password", None)
+        user.pop("base_salary", None)
+        return user
 
 @app.get("/api/users", tags=["Users"], summary="List users with pagination and filtering")
 async def list_users(
@@ -2317,7 +2355,6 @@ async def list_users(
     q: Optional[str] = None,
     id: Optional[str] = None,
     username: Optional[str] = None,
-    password: Optional[str] = None,
     role: Optional[str] = None,
     exclude_role: Optional[str] = None,
     is_active: Optional[bool] = None
@@ -2339,9 +2376,6 @@ async def list_users(
     if username:
         params.append(username)
         where_parts.append(f"username = ${len(params)}")
-    if password:
-        params.append(password)
-        where_parts.append(f"password = ${len(params)}")
     if role:
         params.append(role)
         where_parts.append(f"role = ${len(params)}")
@@ -2838,6 +2872,53 @@ async def delete_material(material_id: int):
         if not rows:
             raise HTTPException(status_code=404, detail="Material not found")
         return {"message": "Material deleted", "id": material_id}
+
+class MaterialFormAssocCreate(BaseModel):
+    material_id: int
+    form_type: str
+
+class MaterialFormAssocBulkCreate(BaseModel):
+    items: List[MaterialFormAssocCreate]
+
+@app.get("/api/material-form-associations", tags=["Materials & Material Inward"], summary="List material form associations")
+async def list_material_form_associations(material_id: Optional[int] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        if material_id is not None:
+            rows = await fetch_with_coerced_params(conn, "SELECT * FROM material_form_associations WHERE material_id = $1", [material_id])
+        else:
+            rows = await fetch_with_coerced_params(conn, "SELECT * FROM material_form_associations ORDER BY id ASC", [])
+        return [dict(r) for r in rows]
+
+@app.post("/api/material-form-associations", tags=["Materials & Material Inward"], status_code=201, summary="Create material form associations (single or bulk)")
+async def create_material_form_association(payload: MaterialFormAssocCreate):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, "INSERT INTO material_form_associations (material_id, form_type) VALUES ($1, $2) RETURNING *", [payload.material_id, payload.form_type])
+        return dict(rows[0]) if rows else {}
+
+@app.post("/api/material-form-associations/bulk", tags=["Materials & Material Inward"], status_code=201, summary="Bulk create material form associations")
+async def bulk_create_material_form_associations(payload: MaterialFormAssocBulkCreate):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    results = []
+    async with db_pool.acquire() as conn:
+        for item in payload.items:
+            rows = await fetch_with_coerced_params(conn, "INSERT INTO material_form_associations (material_id, form_type) VALUES ($1, $2) RETURNING *", [item.material_id, item.form_type])
+            if rows:
+                results.append(dict(rows[0]))
+    return results
+
+@app.delete("/api/material-form-associations", tags=["Materials & Material Inward"], summary="Delete material form associations by material_id")
+async def delete_material_form_associations(material_id: Optional[int] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        if material_id is not None:
+            await conn.execute("DELETE FROM material_form_associations WHERE material_id = $1", material_id)
+        return {"message": "Associations deleted"}
 
 @app.get("/api/material-inward", tags=["Materials & Material Inward"], summary="List material inward register")
 async def list_material_inward(page: int = 1, limit: int = 10, status: Optional[str] = None, client_id: Optional[str] = None, job_id: Optional[str] = None):

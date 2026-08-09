@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { useToast } from '@/components/ui/use-toast';
 import { logAudit } from '@/lib/auditLog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,7 +16,7 @@ const PaymentTermsProvider = ({ children }) => {
   const fetchPaymentTerms = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('payment_terms')
         .select('*')
         .order('id', { ascending: true });
@@ -33,7 +33,7 @@ const PaymentTermsProvider = ({ children }) => {
   const addPaymentTerm = useCallback(
     async (text, type = 'general', userId = null) => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('payment_terms')
           .insert([{ text, type }])
           .select();
@@ -59,7 +59,7 @@ const PaymentTermsProvider = ({ children }) => {
   const updatePaymentTerm = useCallback(
     async (id, text, type, userId = null) => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('payment_terms')
           .update({ text, type, updated_at: new Date() })
           .eq('id', id)
@@ -87,7 +87,7 @@ const PaymentTermsProvider = ({ children }) => {
     async (id, userId = null) => {
       try {
         const toDelete = paymentTerms.find((t) => t.id === id);
-        const { error } = await supabase.from('payment_terms').delete().eq('id', id);
+        const { error } = await apiClient.from('payment_terms').delete().eq('id', id);
 
         if (error) throw error;
         setPaymentTerms((prev) => prev.filter((item) => item.id !== id));
@@ -106,8 +106,12 @@ const PaymentTermsProvider = ({ children }) => {
     [paymentTerms, currentUserId]
   );
 
-  useEffect(() => {
-    fetchPaymentTerms();
+  const fetchedRef = React.useRef(false);
+  const ensureFetched = useCallback(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchPaymentTerms();
+    }
   }, [fetchPaymentTerms]);
 
   const contextValue = useMemo(
@@ -118,8 +122,17 @@ const PaymentTermsProvider = ({ children }) => {
       updatePaymentTerm,
       deletePaymentTerm,
       fetchPaymentTerms,
+      ensureFetched,
     }),
-    [paymentTerms, loading, addPaymentTerm, updatePaymentTerm, deletePaymentTerm, fetchPaymentTerms]
+    [
+      paymentTerms,
+      loading,
+      addPaymentTerm,
+      updatePaymentTerm,
+      deletePaymentTerm,
+      fetchPaymentTerms,
+      ensureFetched,
+    ]
   );
 
   return (
@@ -132,6 +145,9 @@ export const usePaymentTerms = () => {
   if (!context) {
     throw new Error('usePaymentTerms must be used within a PaymentTermsProvider');
   }
+  useEffect(() => {
+    context.ensureFetched();
+  }, [context]);
   return context;
 };
 

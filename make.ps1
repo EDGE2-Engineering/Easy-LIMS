@@ -21,7 +21,7 @@ function Show-Help {
     Write-Host "  ./make.ps1 format           - Format source files with Prettier"
     Write-Host "  ./make.ps1 format-check     - Check formatting without writing"
     Write-Host "  ./make.ps1 setup-hooks      - Install Git hooks"
-    Write-Host "  ./make.ps1 db-dump          - Export Supabase database schema/dump"
+    Write-Host "  ./make.ps1 db-dump          - Export PostgreSQL database schema/dump"
 }
 
 function Invoke-Install {
@@ -141,12 +141,12 @@ function Invoke-DbDump {
     # $env:PROJECT_ID_NEW='asds'
     $env:PATH='%PATH%;C:\Program Files\PostgreSQL\18\bin'
 
-    pg_dump --schema-only --no-owner --no-privileges --quote-all-identifiers "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID).supabase.co:5432/postgres" > data-model.sql
-    pg_dump --format=custom --blobs --verbose "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID).supabase.co:5432/postgres" -f full-database.dump
-    # pg_dump "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID).supabase.co:5432/postgres?sslmode=require" --no-owner --no-privileges --file="supabase.sql"
-pg_dump "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID).supabase.co:5432/postgres?sslmode=require" --schema=public --no-owner --no-privileges --file="public_schema.sql"
+    pg_dump --schema-only --no-owner --no-privileges --quote-all-identifiers "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID).apiClient.co:5432/postgres" > data-model.sql
+    pg_dump --format=custom --blobs --verbose "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID).apiClient.co:5432/postgres" -f full-database.dump
+    # pg_dump "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID).apiClient.co:5432/postgres?sslmode=require" --no-owner --no-privileges --file="apiClient.sql"
+pg_dump "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID).apiClient.co:5432/postgres?sslmode=require" --schema=public --no-owner --no-privileges --file="public_schema.sql"
 psql `
-  "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID_NEW).supabase.co:5432/postgres?sslmode=require" `
+  "postgresql://postgres:$($env:DB_PASSWORD)@db.$($env:PROJECT_ID_NEW).apiClient.co:5432/postgres?sslmode=require" `
   -f "public_schema.sql"
 
 }
@@ -176,7 +176,7 @@ function Invoke-DockerRun {
     Invoke-DockerBuild
     Write-Host "Running Docker container easy-lims:latest on port 8000..." -ForegroundColor Green
     if (-not (Test-Path server/.env)) { New-Item -ItemType File -Path server/.env -Force }
-    docker run -p 8000:8000 -e SUPABASE_PROJECT_ID="$env:SUPABASE_PROJECT_ID" -e SUPABASE_DB_PASS="$env:SUPABASE_DB_PASS" --env-file server/.env easy-lims:latest
+    docker run -p 8000:8000 -e DATABASE_URL="$env:DATABASE_URL" --env-file server/.env easy-lims:latest
 }
 
 switch ($Target) {

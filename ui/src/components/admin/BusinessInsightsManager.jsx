@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -168,12 +168,12 @@ const BusinessInsightsManager = () => {
     setLoading(true);
     try {
       const [docsRes, expensesRes, clientsRes] = await Promise.all([
-        supabase
+        apiClient
           .from('documents')
           .select('document_type, created_at, content, client_id')
           .in('document_type', ['Tax Invoice', 'Quotation']),
-        supabase.from('expenses').select('date, amount'),
-        supabase.from('clients').select('id, client_name').order('client_name'),
+        apiClient.from('expenses').select('date, amount'),
+        apiClient.from('clients').select('id, client_name').order('client_name').limit(10000),
       ]);
 
       if (docsRes.error) throw docsRes.error;

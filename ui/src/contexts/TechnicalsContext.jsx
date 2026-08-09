@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { useToast } from '@/components/ui/use-toast';
 import { logAudit } from '@/lib/auditLog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,7 +16,7 @@ const TechnicalsProvider = ({ children }) => {
   const fetchTechnicals = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('technicals')
         .select('*')
         .order('id', { ascending: true });
@@ -33,7 +33,7 @@ const TechnicalsProvider = ({ children }) => {
   const addTechnical = useCallback(
     async (text, type, userId = null) => {
       try {
-        const { data, error } = await supabase.from('technicals').insert([{ text, type }]).select();
+        const { data, error } = await apiClient.from('technicals').insert([{ text, type }]).select();
 
         if (error) throw error;
         setTechnicals((prev) => [...prev, ...data]);
@@ -56,7 +56,7 @@ const TechnicalsProvider = ({ children }) => {
   const updateTechnical = useCallback(
     async (id, text, type, userId = null) => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('technicals')
           .update({ text, type, updated_at: new Date() })
           .eq('id', id)
@@ -84,7 +84,7 @@ const TechnicalsProvider = ({ children }) => {
     async (id, userId = null) => {
       try {
         const toDelete = technicals.find((t) => t.id === id);
-        const { error } = await supabase.from('technicals').delete().eq('id', id);
+        const { error } = await apiClient.from('technicals').delete().eq('id', id);
 
         if (error) throw error;
         setTechnicals((prev) => prev.filter((tech) => tech.id !== id));
@@ -103,8 +103,12 @@ const TechnicalsProvider = ({ children }) => {
     [technicals, currentUserId]
   );
 
-  useEffect(() => {
-    fetchTechnicals();
+  const fetchedRef = React.useRef(false);
+  const ensureFetched = useCallback(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchTechnicals();
+    }
   }, [fetchTechnicals]);
 
   const contextValue = useMemo(
@@ -115,8 +119,17 @@ const TechnicalsProvider = ({ children }) => {
       updateTechnical,
       deleteTechnical,
       fetchTechnicals,
+      ensureFetched,
     }),
-    [technicals, loading, addTechnical, updateTechnical, deleteTechnical, fetchTechnicals]
+    [
+      technicals,
+      loading,
+      addTechnical,
+      updateTechnical,
+      deleteTechnical,
+      fetchTechnicals,
+      ensureFetched,
+    ]
   );
 
   return <TechnicalsContext.Provider value={contextValue}>{children}</TechnicalsContext.Provider>;
@@ -126,6 +139,9 @@ export const useTechnicals = () => {
   if (!context) {
     throw new Error('useTechnicals must be used within a TechnicalsProvider');
   }
+  useEffect(() => {
+    context.ensureFetched();
+  }, [context]);
   return context;
 };
 

@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { STORAGE_KEYS } from '@/data/storageKeys';
 import { logAudit } from '@/lib/auditLog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,13 +14,13 @@ const PackagesProvider = ({ children }) => {
 
   const fetchPackages = useCallback(async () => {
     try {
-      const { data: rawData, error } = await supabase
+      const { data: rawData, error } = await apiClient
         .from('packages')
         .select('*')
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.warn('Supabase fetch error (packages):', error.message);
+        console.warn('API fetch error (packages):', error.message);
         // Fallback to localStorage
         const stored = localStorage.getItem(STORAGE_KEYS.PACKAGES);
         if (stored) {
@@ -39,7 +39,7 @@ const PackagesProvider = ({ children }) => {
         let pkgList = rawData;
         const userIds = [...new Set(pkgList.map((p) => p.user_id || p.created_by).filter(Boolean))];
         if (userIds.length > 0) {
-          const { data: uData } = await supabase
+          const { data: uData } = await apiClient
             .from('users')
             .select('id, full_name')
             .in('id', userIds);
@@ -63,8 +63,15 @@ const PackagesProvider = ({ children }) => {
     }
   }, []);
 
+  const fetchedRef = React.useRef(false);
+  const ensureFetched = useCallback(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchPackages();
+    }
+  }, [fetchPackages]);
+
   useEffect(() => {
-    fetchPackages();
     const handleStorageChange = () => {
       const stored = localStorage.getItem(STORAGE_KEYS.PACKAGES);
       if (stored) {
@@ -76,7 +83,7 @@ const PackagesProvider = ({ children }) => {
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [fetchPackages]);
+  }, []);
 
   const addPackage = useCallback(
     async (newPackage) => {
@@ -95,10 +102,10 @@ const PackagesProvider = ({ children }) => {
       setPackages((prev) => [...prev, payload]);
 
       try {
-        const { error } = await supabase.from('packages').insert(payload);
+        const { error } = await apiClient.from('packages').insert(payload);
 
         if (error) {
-          console.warn('Supabase insert error (packages), falling back to local:', error.message);
+          console.warn('API insert error (packages), falling back to local:', error.message);
           // Save to localStorage as fallback
           const localPayloads = [...previousPackages, payload];
           localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify(localPayloads));
@@ -137,10 +144,10 @@ const PackagesProvider = ({ children }) => {
       setPackages((prev) => prev.map((p) => (p.id === updatedItem.id ? { ...p, ...payload } : p)));
 
       try {
-        const { error } = await supabase.from('packages').update(payload).eq('id', updatedItem.id);
+        const { error } = await apiClient.from('packages').update(payload).eq('id', updatedItem.id);
 
         if (error) {
-          console.warn('Supabase update error (packages), falling back to local:', error.message);
+          console.warn('API update error (packages), falling back to local:', error.message);
           // Save to localStorage as fallback
           const localPayloads = previousPackages.map((p) =>
             p.id === updatedItem.id ? { ...p, ...payload } : p
@@ -175,10 +182,10 @@ const PackagesProvider = ({ children }) => {
       setPackages((prev) => prev.filter((p) => p.id !== id));
 
       try {
-        const { error } = await supabase.from('packages').delete().eq('id', id);
+        const { error } = await apiClient.from('packages').delete().eq('id', id);
 
         if (error) {
-          console.warn('Supabase delete error (packages), falling back to local:', error.message);
+          console.warn('API delete error (packages), falling back to local:', error.message);
           // Save to localStorage as fallback
           const localPayloads = previousPackages.filter((p) => p.id !== id);
           localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify(localPayloads));
@@ -209,8 +216,9 @@ const PackagesProvider = ({ children }) => {
       updatePackage,
       deletePackage,
       refreshPackages: fetchPackages,
+      ensureFetched,
     }),
-    [packages, loading, addPackage, updatePackage, deletePackage, fetchPackages]
+    [packages, loading, addPackage, updatePackage, deletePackage, fetchPackages, ensureFetched]
   );
 
   return <PackagesContext.Provider value={contextValue}>{children}</PackagesContext.Provider>;
@@ -221,6 +229,9 @@ export const usePackages = () => {
   if (!context) {
     throw new Error('usePackages must be used within a PackagesProvider');
   }
+  React.useEffect(() => {
+    context.ensureFetched();
+  }, [context]);
   return context;
 };
 

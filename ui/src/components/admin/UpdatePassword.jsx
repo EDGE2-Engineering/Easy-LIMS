@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lock, AlertCircle, Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { useToast } from '@/components/ui/use-toast';
 
 const UpdatePassword = () => {
@@ -32,7 +32,7 @@ const UpdatePassword = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { error } = await apiClient.auth.updateUser({
         password: password,
       });
 

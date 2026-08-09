@@ -71,7 +71,7 @@ docker-build:
 docker-run: docker-build
 	@echo "Running Docker container easy-lims:latest on port 8000..."
 	node -e "const fs=require('fs'); if (!fs.existsSync('server/.env')) fs.writeFileSync('server/.env', '');"
-	docker run -p 8000:8000 -e SUPABASE_PROJECT_ID="$${SUPABASE_PROJECT_ID}" -e SUPABASE_DB_PASS="$${SUPABASE_DB_PASS}" --env-file server/.env easy-lims:latest
+	docker run -p 8000:8000 -e DATABASE_URL="$${DATABASE_URL}" --env-file server/.env easy-lims:latest
 
 # Mobile targets
 android-install:
@@ -112,20 +112,20 @@ db-dump:
 # 		--blobs \
 # 		--no-owner \
 # 		--no-privileges \
-# 		"postgresql://postgres:$$DB_PASSWORD@db.$$PROJECT_ID.supabase.co:5432/postgres" \
+# 		"postgresql://postgres:$$DB_PASSWORD@db.$$PROJECT_ID.apiClient.co:5432/postgres" \
 # 		> data-model.sql
 	@pg_dump \
 		--schema-only \
 		--no-owner \
 		--no-privileges \
 		--quote-all-identifiers \
-		"postgresql://postgres:$$DB_PASSWORD@db.$$PROJECT_ID.supabase.co:5432/postgres" \
+		"postgresql://postgres:$$DB_PASSWORD@db.$$PROJECT_ID.apiClient.co:5432/postgres" \
 		> data-model.sql
 	@pg_dump \
 		--format=custom \
 		--blobs \
 		--verbose \
-		"postgresql://postgres:$$DB_PASSWORD@db.$$PROJECT_ID.supabase.co:5432/postgres" \
+		"postgresql://postgres:$$DB_PASSWORD@db.$$PROJECT_ID.apiClient.co:5432/postgres" \
 		-f full-database.dump
 
 # Format source files with Prettier

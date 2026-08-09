@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { STORAGE_KEYS } from '@/data/storageKeys';
 import { logAudit } from '@/lib/auditLog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -57,7 +57,17 @@ const ClientsProvider = ({ children }) => {
 
   const mapFromDb = useCallback((c) => {
     if (!c) return null;
-    let contacts = Array.isArray(c.contacts) ? c.contacts : [];
+    let contacts = [];
+    if (Array.isArray(c.contacts)) {
+      contacts = c.contacts;
+    } else if (typeof c.contacts === 'string' && c.contacts.trim()) {
+      try {
+        const parsed = JSON.parse(c.contacts);
+        contacts = Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        contacts = [];
+      }
+    }
 
     // Migration: If no contacts array exists, create one from legacy email/phone
     if (contacts.length === 0 && (c.email || c.phone || c.client_name || c.clientName)) {
@@ -105,13 +115,14 @@ const ClientsProvider = ({ children }) => {
 
   const fetchClients = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('clients')
         .select('*')
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .limit(10000);
 
       if (error) {
-        console.warn('Supabase fetch error (clients):', error.message);
+        console.warn('API fetch error (clients):', error.message);
         const stored = localStorage.getItem(STORAGE_KEYS.CLIENTS);
         if (stored) {
           try {
@@ -150,8 +161,15 @@ const ClientsProvider = ({ children }) => {
     }
   }, [mapFromDb]);
 
+  const fetchedRef = React.useRef(false);
+  const ensureFetched = useCallback(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchClients();
+    }
+  }, [fetchClients]);
+
   useEffect(() => {
-    fetchClients();
     const handleStorageChange = () => {
       const stored = localStorage.getItem(STORAGE_KEYS.CLIENTS);
       if (stored) {
@@ -163,7 +181,7 @@ const ClientsProvider = ({ children }) => {
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [fetchClients, mapFromDb]);
+  }, [mapFromDb]);
 
   useEffect(() => {
     if (clients.length > 0) {
@@ -193,14 +211,14 @@ const ClientsProvider = ({ children }) => {
         const { id, ...updates } = dbPayload;
         updates.updated_at = new Date().toISOString();
 
-        const { error, data } = await supabase
+        const { error, data } = await apiClient
           .from('clients')
           .update(updates)
           .eq('id', id)
           .select();
 
         if (error) {
-          console.error('Supabase Update Failed (clients):', error);
+          console.error('API Update Failed (clients):', error);
           setClients(previousClients);
           throw new Error(`Failed to update client: ${error.message}`);
         }
@@ -246,10 +264,10 @@ const ClientsProvider = ({ children }) => {
         dbPayload.created_at = new Date().toISOString();
         dbPayload.updated_at = new Date().toISOString();
 
-        const { error, data } = await supabase.from('clients').insert(dbPayload).select();
+        const { error, data } = await apiClient.from('clients').insert(dbPayload).select();
 
         if (error) {
-          console.error('Supabase Add Failed (clients):', error);
+          console.error('API Add Failed (clients):', error);
           setClients(previousClients);
           throw new Error(`Failed to add client: ${error.message}`);
         }
@@ -281,10 +299,10 @@ const ClientsProvider = ({ children }) => {
       setClients((prev) => prev.filter((c) => c.id !== id));
 
       try {
-        const { error } = await supabase.from('clients').delete().eq('id', id);
+        const { error } = await apiClient.from('clients').delete().eq('id', id);
 
         if (error) {
-          console.error('Supabase Delete Failed (clients):', error);
+          console.error('API Delete Failed (clients):', error);
           setClients(previousClients);
           throw new Error(`Failed to delete client: ${error.message}`);
         }
@@ -305,7 +323,7 @@ const ClientsProvider = ({ children }) => {
     [clients, currentUserId]
   );
 
-  const contextValue = useMemo(
+  const contextValue = React.useMemo(
     () => ({
       clients,
       loading,
@@ -314,8 +332,9 @@ const ClientsProvider = ({ children }) => {
       deleteClient,
       setClients,
       refreshClients: fetchClients,
+      ensureFetched,
     }),
-    [clients, loading, updateClient, addClient, deleteClient, fetchClients]
+    [clients, loading, updateClient, addClient, deleteClient, fetchClients, ensureFetched]
   );
 
   return <ClientsContext.Provider value={contextValue}>{children}</ClientsContext.Provider>;
@@ -326,6 +345,9 @@ export const useClients = () => {
   if (!context) {
     throw new Error('useClients must be used within a ClientsProvider');
   }
+  React.useEffect(() => {
+    context.ensureFetched();
+  }, [context]);
   return context;
 };
 

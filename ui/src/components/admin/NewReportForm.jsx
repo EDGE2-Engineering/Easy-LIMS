@@ -50,7 +50,7 @@ import { useToast } from '@/components/ui/use-toast';
 import ReportPreview from '@/components/ReportPreview';
 import reportTemplateHtml from '@/templates/report-template.html?raw';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { getSiteContent } from '@/data/config';
 import { STORAGE_KEYS } from '@/data/storageKeys';
@@ -83,7 +83,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
     const fetchClients = async () => {
       try {
         if (!user) return;
-        const { data } = await supabase.from('clients').select('*');
+        const { data } = await apiClient.from('clients').select('*').limit(10000);
         if (data) setClients(data);
       } catch (error) {
         console.error('Error fetching clients:', error);
@@ -98,14 +98,14 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
     const fetchJobOrders = async () => {
       try {
         if (!user) return;
-        const { data: rawOrders } = await supabase
+        const { data: rawOrders } = await apiClient
           .from('material_inward_register')
           .select('job_order_no, client_id');
         if (rawOrders) {
           let orders = rawOrders;
           const clientIds = [...new Set(orders.map((o) => o.client_id).filter(Boolean))];
           if (clientIds.length > 0) {
-            const { data: cData } = await supabase
+            const { data: cData } = await apiClient
               .from('clients')
               .select('id, client_name, client_address')
               .in('id', clientIds);
@@ -1793,7 +1793,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
     try {
       if (!user) throw new Error('Authentication required');
 
-      const { data: existing } = await supabase
+      const { data: existing } = await apiClient
         .from('reports')
         .select('*')
         .eq('report_number', formData.reportId)
@@ -1833,7 +1833,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
     try {
       if (!user) throw new Error('Authentication required');
 
-      const { data: existing } = await supabase
+      const { data: existing } = await apiClient
         .from('reports')
         .select('*')
         .eq('report_number', formData.reportId)
@@ -1866,7 +1866,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
 
       // If the ID is a UUID string (not numeric), try to resolve it from the users table
       if (isNaN(userId) && user.username) {
-        const { data: userData } = await supabase
+        const { data: userData } = await apiClient
           .from('users')
           .select('id')
           .eq('username', user.username)
@@ -1890,9 +1890,9 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
 
       if (existingRecord || formData.id) {
         const updateId = existingRecord ? existingRecord.id : formData.id;
-        await supabase.from('reports').update(payload).eq('id', updateId);
+        await apiClient.from('reports').update(payload).eq('id', updateId);
       } else {
-        await supabase.from('reports').insert([payload]);
+        await apiClient.from('reports').insert([payload]);
       }
 
       toast({

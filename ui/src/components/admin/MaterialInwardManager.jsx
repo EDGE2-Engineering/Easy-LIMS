@@ -18,7 +18,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { logAudit } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -83,10 +83,11 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
 
   const fetchClients = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('clients')
         .select('id, client_name')
-        .order('client_name');
+        .order('client_name')
+        .limit(10000);
       if (error) throw error;
       setClients(data || []);
     } catch (error) {
@@ -96,7 +97,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('users')
         .select('id, full_name')
         .eq('is_active', true)
@@ -111,7 +112,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
 
   const fetchCollectionCenters = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('collection_centers')
         .select('id, name')
         .order('name');
@@ -125,7 +126,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
   const fetchRecords = async () => {
     setLoading(true);
     try {
-      let query = supabase.from('material_inward_register').select(`
+      let query = apiClient.from('material_inward_register').select(`
           *,
           clients(client_name),
           users!material_inward_register_created_by_fkey(full_name),
@@ -165,7 +166,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
         setLoading(true);
         try {
           // 1. Check if inward record already exists for this job_id
-          const { data: existingRecords, error: fetchError } = await supabase
+          const { data: existingRecords, error: fetchError } = await apiClient
             .from('material_inward_register')
             .select('*')
             .eq('job_id', jobId)
@@ -182,7 +183,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
           }
 
           // 2. If not, create a new one based on job details
-          const { data: rawJob, error } = await supabase
+          const { data: rawJob, error } = await apiClient
             .from('jobs')
             .select('*')
             .eq('id', jobId)
@@ -191,7 +192,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
 
           let job = rawJob;
           if (job && job.client_id) {
-            const { data: cData } = await supabase.from('clients').select('*').eq('id', job.client_id).maybeSingle();
+            const { data: cData } = await apiClient.from('clients').select('*').eq('id', job.client_id).maybeSingle();
             if (cData) job = { ...job, clients: cData };
           }
 
@@ -265,7 +266,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
   const handleEdit = async (record) => {
     setLoading(true);
     try {
-      const { data: samples, error } = await supabase
+      const { data: samples, error } = await apiClient
         .from('material_samples')
         .select('*')
         .eq('inward_id', record.id);
@@ -350,7 +351,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
 
       // If the ID is a UUID string (not numeric), try to resolve it from the users table
       if (isNaN(userId) && user.username) {
-        const { data: userData } = await supabase
+        const { data: userData } = await apiClient
           .from('users')
           .select('id')
           .eq('username', user.username)
@@ -366,7 +367,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
 
       if (isAddingNew) {
         // Create Register Entry
-        const { data: inwardData, error: inwardError } = await supabase
+        const { data: inwardData, error: inwardError } = await apiClient
           .from('material_inward_register')
           .insert({
             job_order_no: editingRecord.job_order_no || `JO-${Date.now()}`,
@@ -394,7 +395,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
         });
       } else {
         // Update Register Entry
-        const { error: inwardError } = await supabase
+        const { error: inwardError } = await apiClient
           .from('material_inward_register')
           .update({
             job_order_no: editingRecord.job_order_no,
@@ -420,7 +421,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
         });
 
         // Delete existing samples to rebuild them (simplest approach for batch sync)
-        const { error: deleteError } = await supabase
+        const { error: deleteError } = await apiClient
           .from('material_samples')
           .delete()
           .eq('inward_id', inwardId);
@@ -473,7 +474,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
       });
 
       if (samplesToInsert.length > 0) {
-        const { error: samplesError } = await supabase
+        const { error: samplesError } = await apiClient
           .from('material_samples')
           .insert(samplesToInsert);
 
@@ -496,7 +497,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
         // Robustly determine the integer user ID for bigint columns
         let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
         if (isNaN(userId) && user.username) {
-          const { data: userData } = await supabase
+          const { data: userData } = await apiClient
             .from('users')
             .select('id')
             .eq('username', user.username)
@@ -511,7 +512,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
         }
 
         // Check if we need to advance the workflow
-        const { data: jobData } = await supabase
+        const { data: jobData } = await apiClient
           .from('jobs')
           .select('status')
           .eq('id', editingRecord.job_id)
@@ -520,7 +521,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
         // If this is a new entry OR the job is currently stuck at WORK_ORDER_RECEIVED (e.g. after a revert)
         if (isAddingNew || (jobData && jobData.status === WORKFLOW_STATES.WORK_ORDER_RECEIVED)) {
           // Update job status
-          await supabase
+          await apiClient
             .from('jobs')
             .update({
               status: WORKFLOW_STATES.MATERIAL_RECEIVED,
@@ -529,7 +530,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
             .eq('id', editingRecord.job_id);
 
           // Add transition log
-          await supabase.from('job_workflow_logs').insert({
+          await apiClient.from('job_workflow_logs').insert({
             job_id: editingRecord.job_id,
             to_state: WORKFLOW_STATES.MATERIAL_RECEIVED,
             action_id: 'RECEIVE_MATERIAL',
@@ -574,7 +575,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
     if (!deleteConfirmation.recordId) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await apiClient
         .from('material_inward_register')
         .delete()
         .eq('id', deleteConfirmation.recordId);

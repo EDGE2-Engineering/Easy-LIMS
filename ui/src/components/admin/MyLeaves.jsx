@@ -14,7 +14,7 @@ import {
   AlertCircle,
   ChevronRight,
 } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -70,7 +70,7 @@ const MyLeaves = () => {
   const fetchUserLeaves = async () => {
     setLoading(true);
     try {
-      const { data: rawLeaves, error } = await supabase
+      const { data: rawLeaves, error } = await apiClient
         .from('request_approvals')
         .select('*')
         .eq('requester_id', user.id)
@@ -82,7 +82,7 @@ const MyLeaves = () => {
       let leavesList = rawLeaves || [];
       const reviewerIds = [...new Set(leavesList.map((l) => l.reviewed_by).filter(Boolean))];
       if (reviewerIds.length > 0) {
-        const { data: usersData } = await supabase
+        const { data: usersData } = await apiClient
           .from('users')
           .select('id, full_name, username')
           .in('id', reviewerIds);
@@ -131,7 +131,7 @@ const MyLeaves = () => {
     e.preventDefault();
     setApplyLoading(true);
     try {
-      const { error } = await supabase.from('request_approvals').insert([
+      const { error } = await apiClient.from('request_approvals').insert([
         {
           requester_id: user.id,
           request_type: 'LEAVE',
@@ -165,7 +165,7 @@ const MyLeaves = () => {
     if (!cancelTarget) return;
     setCancelLoading(true);
     try {
-      const { error } = await supabase.from('request_approvals').delete().eq('id', cancelTarget.id);
+      const { error } = await apiClient.from('request_approvals').delete().eq('id', cancelTarget.id);
 
       if (error) throw error;
 

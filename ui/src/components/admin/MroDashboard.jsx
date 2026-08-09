@@ -16,7 +16,7 @@ import {
   ListFilter,
   UserCheck,
 } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,21 +49,21 @@ const MroDashboard = () => {
     setLoading(true);
     try {
       // 1. Fetch total material inward count
-      const { count: inwardCount, error: inwardError } = await supabase
+      const { count: inwardCount, error: inwardError } = await apiClient
         .from('material_inward_register')
         .select('*', { count: 'exact', head: true });
 
       if (inwardError) throw inwardError;
 
       // 2. Fetch total samples count
-      const { count: samplesCount, error: samplesError } = await supabase
+      const { count: samplesCount, error: samplesError } = await apiClient
         .from('material_samples')
         .select('*', { count: 'exact', head: true });
 
       if (samplesError) throw samplesError;
 
       // 3. Fetch recent inwards (for the list)
-      const { data: rawInwards, error: recInwardError } = await supabase
+      const { data: rawInwards, error: recInwardError } = await apiClient
         .from('material_inward_register')
         .select('*')
         .order('created_at', { ascending: false })
@@ -74,7 +74,7 @@ const MroDashboard = () => {
       let inwardsList = rawInwards || [];
       const inwardClientIds = [...new Set(inwardsList.map((i) => i.client_id).filter(Boolean))];
       if (inwardClientIds.length > 0) {
-        const { data: cData } = await supabase.from('clients').select('id, client_name').in('id', inwardClientIds);
+        const { data: cData } = await apiClient.from('clients').select('id, client_name').in('id', inwardClientIds);
         if (cData) {
           const cMap = new Map(cData.map((c) => [c.id, c]));
           inwardsList = inwardsList.map((i) => ({ ...i, clients: cMap.get(i.client_id) || null }));
@@ -83,7 +83,7 @@ const MroDashboard = () => {
       setRecentInwards(inwardsList);
 
       // 4. Fetch jobs awaiting material (WORK_ORDER_RECEIVED status)
-      const { data: rawJobs, error: jobsError } = await supabase
+      const { data: rawJobs, error: jobsError } = await apiClient
         .from('jobs')
         .select('*')
         .eq('status', WORKFLOW_STATES.WORK_ORDER_RECEIVED)
@@ -94,7 +94,7 @@ const MroDashboard = () => {
       let jobList = rawJobs || [];
       const jobClientIds = [...new Set(jobList.map((j) => j.client_id).filter(Boolean))];
       if (jobClientIds.length > 0) {
-        const { data: cData } = await supabase.from('clients').select('id, client_name').in('id', jobClientIds);
+        const { data: cData } = await apiClient.from('clients').select('id, client_name').in('id', jobClientIds);
         if (cData) {
           const cMap = new Map(cData.map((c) => [c.id, c]));
           jobList = jobList.map((j) => ({ ...j, clients: cMap.get(j.client_id) || null }));
@@ -103,7 +103,7 @@ const MroDashboard = () => {
       setPendingJobs(jobList);
 
       // 5. Fetch active jobs count (anything not complete)
-      const { count: activeJobs, error: activeErr } = await supabase
+      const { count: activeJobs, error: activeErr } = await apiClient
         .from('jobs')
         .select('*', { count: 'exact', head: true })
         .neq('status', WORKFLOW_STATES.JOB_COMPLETE);

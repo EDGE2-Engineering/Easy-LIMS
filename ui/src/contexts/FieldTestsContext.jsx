@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { initialFieldTests } from '@/data/fieldTests';
 import { STORAGE_KEYS } from '@/data/storageKeys';
 import { logAudit } from '@/lib/auditLog';
@@ -72,7 +72,7 @@ const FieldTestsProvider = ({ children }) => {
 
   const fetchFieldTests = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('field_tests')
         .select(
           `
@@ -85,7 +85,7 @@ const FieldTestsProvider = ({ children }) => {
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.warn('Supabase fetch error (field_tests):', error.message);
+        console.warn('API fetch error (field_tests):', error.message);
         const stored = localStorage.getItem(STORAGE_KEYS.FIELD_TESTS);
         if (stored) {
           try {
@@ -126,10 +126,10 @@ const FieldTestsProvider = ({ children }) => {
 
   const fetchClientFieldTestPrices = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from('client_field_test_prices').select('*');
+      const { data, error } = await apiClient.from('client_field_test_prices').select('*');
 
       if (error) {
-        console.warn('Supabase fetch error (client_field_test_prices):', error.message);
+        console.warn('API fetch error (client_field_test_prices):', error.message);
         return;
       }
 
@@ -141,9 +141,16 @@ const FieldTestsProvider = ({ children }) => {
     }
   }, []);
 
+  const fetchedRef = React.useRef(false);
+  const ensureFetched = useCallback(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchFieldTests();
+      fetchClientFieldTestPrices();
+    }
+  }, [fetchFieldTests, fetchClientFieldTestPrices]);
+
   useEffect(() => {
-    fetchFieldTests();
-    fetchClientFieldTestPrices();
     const handleStorageChange = () => {
       const stored = localStorage.getItem(STORAGE_KEYS.FIELD_TESTS);
       if (stored) {
@@ -155,7 +162,7 @@ const FieldTestsProvider = ({ children }) => {
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [fetchFieldTests, fetchClientFieldTestPrices]);
+  }, []);
 
   useEffect(() => {
     if (fieldTests.length > 0) {
@@ -175,51 +182,51 @@ const FieldTestsProvider = ({ children }) => {
         const { id, ...updates } = dbPayload;
         updates.updated_at = new Date().toISOString();
 
-        const { error } = await supabase.from('field_tests').update(updates).eq('id', id);
+        const { error } = await apiClient.from('field_tests').update(updates).eq('id', id);
 
         if (error) {
-          console.error('Supabase Update Failed (field_tests):', error);
+          console.error('API Update Failed (field_tests):', error);
           setFieldTests(previousFieldTests);
           throw new Error(`Failed to update field test: ${error.message}`);
         }
 
         // Sync T&C
-        await supabase.from('field_test_to_terms_conditions').delete().eq('field_test_id', id);
+        await apiClient.from('field_test_to_terms_conditions').delete().eq('field_test_id', id);
         if (updatedFieldTest.tcList?.length > 0) {
-          const { data: terms } = await supabase
+          const { data: terms } = await apiClient
             .from('terms_and_conditions')
             .select('id')
             .in('type', updatedFieldTest.tcList);
           if (terms?.length > 0) {
-            await supabase
+            await apiClient
               .from('field_test_to_terms_conditions')
               .insert(terms.map((t) => ({ field_test_id: id, tc_id: t.id })));
           }
         }
 
         // Sync Technicals
-        await supabase.from('field_test_to_technicals').delete().eq('field_test_id', id);
+        await apiClient.from('field_test_to_technicals').delete().eq('field_test_id', id);
         if (updatedFieldTest.techList?.length > 0) {
-          const { data: techs } = await supabase
+          const { data: techs } = await apiClient
             .from('technicals')
             .select('id')
             .in('type', updatedFieldTest.techList);
           if (techs?.length > 0) {
-            await supabase
+            await apiClient
               .from('field_test_to_technicals')
               .insert(techs.map((t) => ({ field_test_id: id, technical_id: t.id })));
           }
         }
 
         // Sync Payment Terms
-        await supabase.from('field_test_to_payment_terms').delete().eq('field_test_id', id);
+        await apiClient.from('field_test_to_payment_terms').delete().eq('field_test_id', id);
         if (updatedFieldTest.paymentTermsList?.length > 0) {
-          const { data: payTerms } = await supabase
+          const { data: payTerms } = await apiClient
             .from('payment_terms')
             .select('id')
             .in('type', updatedFieldTest.paymentTermsList);
           if (payTerms?.length > 0) {
-            await supabase
+            await apiClient
               .from('field_test_to_payment_terms')
               .insert(payTerms.map((t) => ({ field_test_id: id, payment_term_id: t.id })));
           }
@@ -251,10 +258,10 @@ const FieldTestsProvider = ({ children }) => {
         dbPayload.created_at = new Date().toISOString();
         dbPayload.updated_at = new Date().toISOString();
 
-        const { error, data } = await supabase.from('field_tests').insert(dbPayload).select();
+        const { error, data } = await apiClient.from('field_tests').insert(dbPayload).select();
 
         if (error) {
-          console.error('Supabase Add Failed (field_tests):', error);
+          console.error('API Add Failed (field_tests):', error);
           setFieldTests(previousFieldTests);
           throw new Error(`Failed to add field test: ${error.message}`);
         }
@@ -264,12 +271,12 @@ const FieldTestsProvider = ({ children }) => {
 
           // Sync T&C
           if (newFieldTest.tcList?.length > 0) {
-            const { data: terms } = await supabase
+            const { data: terms } = await apiClient
               .from('terms_and_conditions')
               .select('id')
               .in('type', newFieldTest.tcList);
             if (terms?.length > 0) {
-              await supabase
+              await apiClient
                 .from('field_test_to_terms_conditions')
                 .insert(terms.map((t) => ({ field_test_id: id, tc_id: t.id })));
             }
@@ -277,12 +284,12 @@ const FieldTestsProvider = ({ children }) => {
 
           // Sync Technicals
           if (newFieldTest.techList?.length > 0) {
-            const { data: techs } = await supabase
+            const { data: techs } = await apiClient
               .from('technicals')
               .select('id')
               .in('type', newFieldTest.techList);
             if (techs?.length > 0) {
-              await supabase
+              await apiClient
                 .from('field_test_to_technicals')
                 .insert(techs.map((t) => ({ field_test_id: id, technical_id: t.id })));
             }
@@ -290,12 +297,12 @@ const FieldTestsProvider = ({ children }) => {
 
           // Sync Payment Terms
           if (newFieldTest.paymentTermsList?.length > 0) {
-            const { data: payTerms } = await supabase
+            const { data: payTerms } = await apiClient
               .from('payment_terms')
               .select('id')
               .in('type', newFieldTest.paymentTermsList);
             if (payTerms?.length > 0) {
-              await supabase
+              await apiClient
                 .from('field_test_to_payment_terms')
                 .insert(payTerms.map((t) => ({ field_test_id: id, payment_term_id: t.id })));
             }
@@ -326,10 +333,10 @@ const FieldTestsProvider = ({ children }) => {
       setFieldTests((prev) => prev.filter((s) => s.id !== id));
 
       try {
-        const { error } = await supabase.from('field_tests').delete().eq('id', id);
+        const { error } = await apiClient.from('field_tests').delete().eq('id', id);
 
         if (error) {
-          console.error('Supabase Delete Failed (field_tests):', error);
+          console.error('API Delete Failed (field_tests):', error);
           setFieldTests(previousFieldTests);
           throw new Error(`Failed to delete field test: ${error.message}`);
         }
@@ -356,7 +363,7 @@ const FieldTestsProvider = ({ children }) => {
         console.log(
           `Updating client field test price: client=${clientId}, fieldTest=${fieldTestId}, price=${price}`
         );
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('client_field_test_prices')
           .upsert({
             client_id: clientId,
@@ -367,7 +374,7 @@ const FieldTestsProvider = ({ children }) => {
           .select();
 
         if (error) {
-          console.error('Supabase Upsert Error (client_field_test_prices):', error);
+          console.error('API Upsert Error (client_field_test_prices):', error);
           throw error;
         }
         if (data) {
@@ -397,7 +404,7 @@ const FieldTestsProvider = ({ children }) => {
   const deleteClientFieldTestPrice = useCallback(
     async (clientId, fieldTestId, userId = null) => {
       try {
-        const { error } = await supabase
+        const { error } = await apiClient
           .from('client_field_test_prices')
           .delete()
           .eq('client_id', clientId)
@@ -435,6 +442,7 @@ const FieldTestsProvider = ({ children }) => {
       setFieldTests,
       refreshFieldTests: fetchFieldTests,
       refreshClientFieldTestPrices: fetchClientFieldTestPrices,
+      ensureFetched,
     }),
     [
       fieldTests,
@@ -447,6 +455,7 @@ const FieldTestsProvider = ({ children }) => {
       deleteClientFieldTestPrice,
       fetchFieldTests,
       fetchClientFieldTestPrices,
+      ensureFetched,
     ]
   );
 
@@ -458,6 +467,9 @@ export const useFieldTests = () => {
   if (!context) {
     throw new Error('useFieldTests must be used within a FieldTestsProvider');
   }
+  React.useEffect(() => {
+    context.ensureFetched();
+  }, [context]);
   return context;
 };
 

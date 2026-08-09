@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { STORAGE_KEYS } from '@/data/storageKeys';
 import { logAudit } from '@/lib/auditLog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -95,7 +95,7 @@ const SamplingProvider = ({ children }) => {
   }, []);
 
   // NOTE: tc_list and tech_list are text[] columns on the sampling table.
-  // Run migration_sampling_tc_tech.sql in Supabase if they don't exist yet.
+  // Run migration_sampling_tc_tech.sql in API if they don't exist yet.
   const mapToDb = useCallback(
     (s) => ({
       name: s.name,
@@ -112,7 +112,7 @@ const SamplingProvider = ({ children }) => {
 
   const fetchSamplingData = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('sampling')
         .select(
           `
@@ -125,7 +125,7 @@ const SamplingProvider = ({ children }) => {
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.warn('Supabase fetch error (sampling):', error.message);
+        console.warn('API fetch error (sampling):', error.message);
         const stored = localStorage.getItem(STORAGE_KEYS.SAMPLING_DATA);
         if (stored) {
           try {
@@ -150,8 +150,15 @@ const SamplingProvider = ({ children }) => {
     }
   }, [mapFromDb]);
 
+  const fetchedRef = React.useRef(false);
+  const ensureFetched = useCallback(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchSamplingData();
+    }
+  }, [fetchSamplingData]);
+
   useEffect(() => {
-    fetchSamplingData();
     const handleStorageChange = () => {
       const stored = localStorage.getItem(STORAGE_KEYS.SAMPLING_DATA);
       if (stored) {
@@ -163,7 +170,7 @@ const SamplingProvider = ({ children }) => {
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [fetchSamplingData]);
+  }, []);
 
   useEffect(() => {
     if (samplingData.length > 0) {
@@ -181,65 +188,65 @@ const SamplingProvider = ({ children }) => {
         const id = updatedItem.id;
         dbPayload.updated_at = new Date().toISOString();
 
-        const { error } = await supabase.from('sampling').update(dbPayload).eq('id', id);
+        const { error } = await apiClient.from('sampling').update(dbPayload).eq('id', id);
 
         if (error) {
-          console.error('Supabase Update Failed (sampling):', error);
+          console.error('API Update Failed (sampling):', error);
           setSamplingData(previousData);
           throw new Error(`Failed to update sampling: ${error.message}`);
         }
 
         // Sync Materials
-        await supabase.from('sampling_to_materials').delete().eq('sampling_id', id);
+        await apiClient.from('sampling_to_materials').delete().eq('sampling_id', id);
         if (updatedItem.materials?.length > 0) {
-          const { data: mats } = await supabase
+          const { data: mats } = await apiClient
             .from('materials')
             .select('id')
             .in('name', updatedItem.materials);
           if (mats?.length > 0) {
-            await supabase
+            await apiClient
               .from('sampling_to_materials')
               .insert(mats.map((m) => ({ sampling_id: id, material_id: m.id })));
           }
         }
 
         // Sync T&C
-        await supabase.from('sampling_to_terms_conditions').delete().eq('sampling_id', id);
+        await apiClient.from('sampling_to_terms_conditions').delete().eq('sampling_id', id);
         if (updatedItem.tcList?.length > 0) {
-          const { data: terms } = await supabase
+          const { data: terms } = await apiClient
             .from('terms_and_conditions')
             .select('id')
             .in('type', updatedItem.tcList);
           if (terms?.length > 0) {
-            await supabase
+            await apiClient
               .from('sampling_to_terms_conditions')
               .insert(terms.map((t) => ({ sampling_id: id, tc_id: t.id })));
           }
         }
 
         // Sync Technicals
-        await supabase.from('sampling_to_technicals').delete().eq('sampling_id', id);
+        await apiClient.from('sampling_to_technicals').delete().eq('sampling_id', id);
         if (updatedItem.techList?.length > 0) {
-          const { data: techs } = await supabase
+          const { data: techs } = await apiClient
             .from('technicals')
             .select('id')
             .in('type', updatedItem.techList);
           if (techs?.length > 0) {
-            await supabase
+            await apiClient
               .from('sampling_to_technicals')
               .insert(techs.map((t) => ({ sampling_id: id, technical_id: t.id })));
           }
         }
 
         // Sync Payment Terms
-        await supabase.from('sampling_to_payment_terms').delete().eq('sampling_id', id);
+        await apiClient.from('sampling_to_payment_terms').delete().eq('sampling_id', id);
         if (updatedItem.paymentTermsList?.length > 0) {
-          const { data: payTerms } = await supabase
+          const { data: payTerms } = await apiClient
             .from('payment_terms')
             .select('id')
             .in('type', updatedItem.paymentTermsList);
           if (payTerms?.length > 0) {
-            await supabase
+            await apiClient
               .from('sampling_to_payment_terms')
               .insert(payTerms.map((t) => ({ sampling_id: id, payment_term_id: t.id })));
           }
@@ -271,10 +278,10 @@ const SamplingProvider = ({ children }) => {
         dbPayload.created_at = new Date().toISOString();
         dbPayload.updated_at = new Date().toISOString();
 
-        const { error, data } = await supabase.from('sampling').insert(dbPayload).select();
+        const { error, data } = await apiClient.from('sampling').insert(dbPayload).select();
 
         if (error) {
-          console.error('Supabase Add Failed (sampling):', error);
+          console.error('API Add Failed (sampling):', error);
           setSamplingData(previousData);
           throw new Error(`Failed to add sampling: ${error.message}`);
         }
@@ -284,12 +291,12 @@ const SamplingProvider = ({ children }) => {
 
           // Sync Materials
           if (newItem.materials?.length > 0) {
-            const { data: mats } = await supabase
+            const { data: mats } = await apiClient
               .from('materials')
               .select('id')
               .in('name', newItem.materials);
             if (mats?.length > 0) {
-              await supabase
+              await apiClient
                 .from('sampling_to_materials')
                 .insert(mats.map((m) => ({ sampling_id: id, material_id: m.id })));
             }
@@ -297,12 +304,12 @@ const SamplingProvider = ({ children }) => {
 
           // Sync T&C
           if (newItem.tcList?.length > 0) {
-            const { data: terms } = await supabase
+            const { data: terms } = await apiClient
               .from('terms_and_conditions')
               .select('id')
               .in('type', newItem.tcList);
             if (terms?.length > 0) {
-              await supabase
+              await apiClient
                 .from('sampling_to_terms_conditions')
                 .insert(terms.map((t) => ({ sampling_id: id, tc_id: t.id })));
             }
@@ -310,12 +317,12 @@ const SamplingProvider = ({ children }) => {
 
           // Sync Technicals
           if (newItem.techList?.length > 0) {
-            const { data: techs } = await supabase
+            const { data: techs } = await apiClient
               .from('technicals')
               .select('id')
               .in('type', newItem.techList);
             if (techs?.length > 0) {
-              await supabase
+              await apiClient
                 .from('sampling_to_technicals')
                 .insert(techs.map((t) => ({ sampling_id: id, technical_id: t.id })));
             }
@@ -323,12 +330,12 @@ const SamplingProvider = ({ children }) => {
 
           // Sync Payment Terms
           if (newItem.paymentTermsList?.length > 0) {
-            const { data: payTerms } = await supabase
+            const { data: payTerms } = await apiClient
               .from('payment_terms')
               .select('id')
               .in('type', newItem.paymentTermsList);
             if (payTerms?.length > 0) {
-              await supabase
+              await apiClient
                 .from('sampling_to_payment_terms')
                 .insert(payTerms.map((t) => ({ sampling_id: id, payment_term_id: t.id })));
             }
@@ -359,10 +366,10 @@ const SamplingProvider = ({ children }) => {
       setSamplingData((prev) => prev.filter((s) => s.id !== id));
 
       try {
-        const { error } = await supabase.from('sampling').delete().eq('id', id);
+        const { error } = await apiClient.from('sampling').delete().eq('id', id);
 
         if (error) {
-          console.error('Supabase Delete Failed (sampling):', error);
+          console.error('API Delete Failed (sampling):', error);
           setSamplingData(previousData);
           throw new Error(`Failed to delete sampling: ${error.message}`);
         }
@@ -391,8 +398,9 @@ const SamplingProvider = ({ children }) => {
       addSampling,
       deleteSampling,
       refreshSampling: fetchSamplingData,
+      ensureFetched,
     }),
-    [samplingData, loading, updateSampling, addSampling, deleteSampling, fetchSamplingData]
+    [samplingData, loading, updateSampling, addSampling, deleteSampling, fetchSamplingData, ensureFetched]
   );
 
   return <SamplingContext.Provider value={contextValue}>{children}</SamplingContext.Provider>;
@@ -403,6 +411,9 @@ export const useSampling = () => {
   if (!context) {
     throw new Error('useSampling must be used within a SamplingProvider');
   }
+  React.useEffect(() => {
+    context.ensureFetched();
+  }, [context]);
   return context;
 };
 

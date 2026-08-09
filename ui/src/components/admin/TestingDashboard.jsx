@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Beaker, ArrowRight, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,7 @@ const TestingDashboard = () => {
     setLoading(true);
     try {
       // Fetch jobs that are in testing related states
-      const { data: rawJobs, error } = await supabase
+      const { data: rawJobs, error } = await apiClient
         .from('jobs')
         .select('*')
         .in('status', ['UNDER_TESTING', 'SENT_TO_TESTING_DEPARTMENT', 'TEST_COMPLETED'])
@@ -33,7 +33,7 @@ const TestingDashboard = () => {
       let jobList = rawJobs || [];
       const clientIds = [...new Set(jobList.map((j) => j.client_id).filter(Boolean))];
       if (clientIds.length > 0) {
-        const { data: cData } = await supabase.from('clients').select('id, client_name').in('id', clientIds);
+        const { data: cData } = await apiClient.from('clients').select('id, client_name').in('id', clientIds);
         if (cData) {
           const cMap = new Map(cData.map((c) => [c.id, c]));
           jobList = jobList.map((j) => ({ ...j, clients: cMap.get(j.client_id) || null }));

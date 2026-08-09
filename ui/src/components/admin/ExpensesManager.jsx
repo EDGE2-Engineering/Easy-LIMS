@@ -15,6 +15,7 @@ import {
   X,
   Download,
   FileSpreadsheet,
+  Loader2,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useExpenses } from '@/contexts/ExpensesContext';
@@ -432,6 +433,15 @@ const ExpensesManager = ({ id }) => {
     );
   }
 
+  if (loading && (!expenses || expenses.length === 0)) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+        <p className="text-gray-500 font-medium text-sm">Loading expenses...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 w-full pb-12">
       {/* Standardized Header */}
@@ -733,7 +743,16 @@ const ExpensesManager = ({ id }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {paginatedExpenses.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="py-20 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+                      <p className="text-gray-500 font-medium text-sm">Loading expenses...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedExpenses.length > 0 ? (
                 paginatedExpenses.map((expense) => (
                   <tr
                     key={expense.id}

@@ -10,6 +10,7 @@ import {
   AlertCircle,
   SortAsc,
   SortDesc,
+  Loader2,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Rupee from '../Rupee';
@@ -48,7 +49,7 @@ import { DOCUMENT_ITEM_TYPES } from '@/data/config';
 import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 
 const AdminFieldTestsManager = () => {
-  const { fieldTests, updateFieldTest, addFieldTest, deleteFieldTest, setFieldTests } =
+  const { fieldTests, updateFieldTest, addFieldTest, deleteFieldTest, setFieldTests, loading } =
     useFieldTests();
   const { unitTypes } = useUnitTypes();
   const { hsnCodes } = useHSNCodes();
@@ -514,6 +515,15 @@ const AdminFieldTestsManager = () => {
             />
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (loading && (!fieldTests || fieldTests.length === 0)) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+        <p className="text-gray-500 font-medium text-sm">Loading field tests...</p>
       </div>
     );
   }

@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   ExternalLink,
 } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -39,7 +39,7 @@ const ApprovalsManager = () => {
     setLoading(true);
     try {
       // 1. Fetch Request Approvals (Leaves, etc)
-      const { data: requestData, error: requestError } = await supabase
+      const { data: requestData, error: requestError } = await apiClient
         .from('request_approvals')
         .select(
           '*, requester:users!request_approvals_requester_id_fkey(full_name, username, role), reviewer:users!request_approvals_reviewed_by_fkey(full_name, username)'
@@ -52,7 +52,7 @@ const ApprovalsManager = () => {
       // 2. Fetch Jobs Pending Review (if filter is PENDING)
       let jobRequests = [];
       if (filter === 'PENDING') {
-        const { data: rawJobs, error: jobsError } = await supabase
+        const { data: rawJobs, error: jobsError } = await apiClient
           .from('jobs')
           .select('*')
           .eq('status', WORKFLOW_STATES.TEST_DATA_UNDER_REVIEW);
@@ -65,13 +65,13 @@ const ApprovalsManager = () => {
 
         let cMap = new Map();
         if (clientIds.length > 0) {
-          const { data: cData } = await supabase.from('clients').select('id, client_name').in('id', clientIds);
+          const { data: cData } = await apiClient.from('clients').select('id, client_name').in('id', clientIds);
           if (cData) cMap = new Map(cData.map((c) => [c.id, c]));
         }
 
         let uMap = new Map();
         if (userIds.length > 0) {
-          const { data: uData } = await supabase.from('users').select('id, full_name').in('id', userIds);
+          const { data: uData } = await apiClient.from('users').select('id, full_name').in('id', userIds);
           if (uData) uMap = new Map(uData.map((u) => [u.id, u]));
         }
 
@@ -117,7 +117,7 @@ const ApprovalsManager = () => {
           action === 'approve' ? WORKFLOW_STATES.DATA_VERIFIED : WORKFLOW_STATES.UNDER_TESTING;
 
         // Update Job Status
-        const { error: updateError } = await supabase
+        const { error: updateError } = await apiClient
           .from('jobs')
           .update({
             status: targetState,
@@ -129,7 +129,7 @@ const ApprovalsManager = () => {
         if (updateError) throw updateError;
 
         // Log Workflow Transition
-        await supabase.from('job_workflow_logs').insert({
+        await apiClient.from('job_workflow_logs').insert({
           job_id: request.real_id,
           from_state: WORKFLOW_STATES.TEST_DATA_UNDER_REVIEW,
           to_state: targetState,
@@ -148,7 +148,7 @@ const ApprovalsManager = () => {
         });
       } else {
         const status = action === 'approve' ? 'APPROVED' : 'REJECTED';
-        const { error } = await supabase
+        const { error } = await apiClient
           .from('request_approvals')
           .update({
             status: status,

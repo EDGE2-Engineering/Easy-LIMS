@@ -18,7 +18,7 @@ import {
   LandPlot,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { logAudit } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -137,7 +137,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
     if (!silent) setLoading(true);
     try {
       // Fetch Job
-      const { data: rawJob, error: jobError } = await supabase
+      const { data: rawJob, error: jobError } = await apiClient
         .from('jobs')
         .select('*')
         .eq('id', initialJobId)
@@ -146,13 +146,13 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
 
       let job = rawJob;
       if (job && job.client_id) {
-        const { data: cData } = await supabase.from('clients').select('id, client_name').eq('id', job.client_id).maybeSingle();
+        const { data: cData } = await apiClient.from('clients').select('id, client_name').eq('id', job.client_id).maybeSingle();
         if (cData) job = { ...job, clients: cData };
       }
       setJobDetails(job);
 
       // Fetch Samples
-      const { data: inwards, error: inError } = await supabase
+      const { data: inwards, error: inError } = await apiClient
         .from('material_inward_register')
         .select('*')
         .eq('job_id', initialJobId);
@@ -160,7 +160,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
       let flatSamples = [];
       if (inwards && inwards.length > 0) {
         const inwardIds = inwards.map((i) => i.id);
-        const { data: sData } = await supabase
+        const { data: sData } = await apiClient
           .from('material_samples')
           .select('*')
           .in('inward_id', inwardIds);
@@ -170,7 +170,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
       if (inError) console.error('Inward fetch error:', inError);
 
       // Fetch Existing Test Data
-      const { data: testData, error: tError } = await supabase
+      const { data: testData, error: tError } = await apiClient
         .from('job_tests')
         .select('*')
         .eq('job_id', initialJobId);
@@ -183,7 +183,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
       }
 
       // Fetch Tech Capabilities
-      const { data: caps, error: capError } = await supabase
+      const { data: caps, error: capError } = await apiClient
         .from('technician_capabilities')
         .select('category')
         .eq('user_id', user.id);
@@ -201,7 +201,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
     try {
       let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
       if (isNaN(userId) && user.username) {
-        const { data: userData } = await supabase
+        const { data: userData } = await apiClient
           .from('users')
           .select('id')
           .eq('username', user.username)
@@ -215,7 +215,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
       );
 
       // Check if record exists
-      const { data: existing } = await supabase
+      const { data: existing } = await apiClient
         .from('job_tests')
         .select('id')
         .eq('job_id', initialJobId)
@@ -243,7 +243,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
 
       let error;
       if (existing && existing.id) {
-        const { error: updateError } = await supabase
+        const { error: updateError } = await apiClient
           .from('job_tests')
           .update(recordData)
           .eq('id', existing.id);
@@ -258,7 +258,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
           });
         }
       } else {
-        const { data, error: insertError } = await supabase
+        const { data, error: insertError } = await apiClient
           .from('job_tests')
           .insert([recordData])
           .select();

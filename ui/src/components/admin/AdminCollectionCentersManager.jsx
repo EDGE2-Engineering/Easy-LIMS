@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Save, Search, AlertCircle, Loader2, MapPin } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,7 +42,7 @@ const AdminCollectionCentersManager = () => {
   const fetchCenters = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.from('collection_centers').select('*').order('name');
+      const { data, error } = await apiClient.from('collection_centers').select('*').order('name');
       if (error) throw error;
       setCenters(data || []);
     } catch (error) {
@@ -94,7 +94,7 @@ const AdminCollectionCentersManager = () => {
     setIsSaving(true);
     try {
       if (isAddingNew) {
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('collection_centers')
           .insert([
             {
@@ -116,7 +116,7 @@ const AdminCollectionCentersManager = () => {
           description: 'New collection center has been successfully added.',
         });
       } else {
-        const { error } = await supabase
+        const { error } = await apiClient
           .from('collection_centers')
           .update({
             name: editingCenter.name,
@@ -163,7 +163,7 @@ const AdminCollectionCentersManager = () => {
   const confirmDelete = async () => {
     if (deleteConfirmation.id) {
       try {
-        const { error } = await supabase
+        const { error } = await apiClient
           .from('collection_centers')
           .delete()
           .eq('id', deleteConfirmation.id);

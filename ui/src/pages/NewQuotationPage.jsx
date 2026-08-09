@@ -80,7 +80,7 @@ import {
   ROLES,
   WORKFLOW_STATES,
 } from '@/data/config';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { useToast } from '@/components/ui/use-toast';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { A4_PRINT_PAGE_STYLE } from '@/utils/a4PrintStyles';
@@ -544,11 +544,11 @@ const NewQuotationPage = () => {
     }
   }, [clients, quoteDetails.clientName, clientNameSelection, contactSelectionIdx]);
 
-  // Load record from Supabase if ID is present
+  // Load record from API if ID is present
   useEffect(() => {
-    const loadFromSupabase = async (id) => {
+    const loadFromApi = async (id) => {
       try {
-        const { data: rawData, error } = await supabase
+        const { data: rawData, error } = await apiClient
           .from('documents')
           .select('*')
           .eq('id', id)
@@ -559,11 +559,11 @@ const NewQuotationPage = () => {
         let data = rawData;
         if (data) {
           if (data.client_id) {
-            const { data: cData } = await supabase.from('clients').select('*').eq('id', data.client_id).maybeSingle();
+            const { data: cData } = await apiClient.from('clients').select('*').eq('id', data.client_id).maybeSingle();
             if (cData) data = { ...data, clients: cData };
           }
           if (data.job_id) {
-            const { data: jData } = await supabase.from('jobs').select('*').eq('id', data.job_id).maybeSingle();
+            const { data: jData } = await apiClient.from('jobs').select('*').eq('id', data.job_id).maybeSingle();
             if (jData) data = { ...data, jobs: jData };
           }
         }
@@ -688,7 +688,7 @@ const NewQuotationPage = () => {
 
     const id = searchParams.get('id') || pathId;
     if (id && !isSavingRecord) {
-      loadFromSupabase(id);
+      loadFromApi(id);
     }
   }, [searchParams, pathId, isSavingRecord]); // Removed clients from dependencies to break loop
 
@@ -698,7 +698,7 @@ const NewQuotationPage = () => {
       return;
     }
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('documents')
         .select('id, version')
         .eq('quote_number', quoteNumber)
@@ -726,7 +726,7 @@ const NewQuotationPage = () => {
       const loadJobDetails = async () => {
         try {
           // Check if a document of this type already exists for this job
-          const { data: existingDoc } = await supabase
+          const { data: existingDoc } = await apiClient
             .from('documents')
             .select('id')
             .eq('job_id', jobId)
@@ -738,7 +738,7 @@ const NewQuotationPage = () => {
             return;
           }
 
-          const { data, error } = await supabase
+          const { data, error } = await apiClient
             .from('jobs')
             .select(
               `
@@ -869,7 +869,7 @@ const NewQuotationPage = () => {
 
       // If the ID is a UUID string (not numeric), try to resolve it from the users table
       if (isNaN(userId) && user.username) {
-        const { data: userData } = await supabase
+        const { data: userData } = await apiClient
           .from('users')
           .select('id')
           .eq('username', user.username)
@@ -903,7 +903,7 @@ const NewQuotationPage = () => {
           updated_by: userId,
           updated_at: new Date().toISOString(),
         };
-        const { data: newJob, error: jobError } = await supabase
+        const { data: newJob, error: jobError } = await apiClient
           .from('jobs')
           .insert(jobPayload)
           .select('id')
@@ -913,7 +913,7 @@ const NewQuotationPage = () => {
         setLinkedJobId(newJob.id);
       } else {
         // Update existing job project details to keep in sync
-        const { error: jobUpdateError } = await supabase
+        const { error: jobUpdateError } = await apiClient
           .from('jobs')
           .update({
             project_name: quoteDetails.projectName || '',
@@ -954,7 +954,7 @@ const NewQuotationPage = () => {
 
       if (savedRecordId && !isTypeChanged) {
         // Update existing – keep the same doc number
-        const { error: updateError } = await supabase
+        const { error: updateError } = await apiClient
           .from('documents')
           .update(recordData)
           .eq('id', savedRecordId);
@@ -976,7 +976,7 @@ const NewQuotationPage = () => {
         }
       } else {
         // Create new (Clone if isTypeChanged)
-        const { data, error: insertError } = await supabase
+        const { data, error: insertError } = await apiClient
           .from('documents')
           .insert([recordData])
           .select()
@@ -1034,7 +1034,7 @@ const NewQuotationPage = () => {
 
         if (targetStatus) {
           try {
-            await supabase.from('jobs').update({ status: targetStatus }).eq('id', jobId);
+            await apiClient.from('jobs').update({ status: targetStatus }).eq('id', jobId);
           } catch (err) {
             console.error('Error updating job status:', err);
           }
@@ -1060,7 +1060,7 @@ const NewQuotationPage = () => {
 
       let finalErrorMessage = err.message || 'Failed to save record.';
 
-      // Comprehensive check for Supabase/Postgres unique constraint violation (23505)
+      // Comprehensive check for API/Backend unique constraint violation (23505)
       const isUniqueError =
         err.code === '23505' ||
         String(err.code) === '23505' ||
@@ -1101,7 +1101,7 @@ const NewQuotationPage = () => {
     setIsSavingRecord(true);
 
     try {
-      const { data: existingVersions, error: versionErr } = await supabase
+      const { data: existingVersions, error: versionErr } = await apiClient
         .from('documents')
         .select('version')
         .eq('quote_number', quoteDetails.quoteNumber);
@@ -1116,7 +1116,7 @@ const NewQuotationPage = () => {
 
       let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
       if (isNaN(userId) && user.username) {
-        const { data: userData } = await supabase
+        const { data: userData } = await apiClient
           .from('users')
           .select('id')
           .eq('username', user.username)
@@ -1161,7 +1161,7 @@ const NewQuotationPage = () => {
         version: nextVer,
       };
 
-      const { data, error: insertErr } = await supabase
+      const { data, error: insertErr } = await apiClient
         .from('documents')
         .insert([recordData])
         .select()

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ROLES, DEPARTMENTS } from '@/data/config';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { useToast } from '@/components/ui/use-toast';
 import { logAudit } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import {
   X,
   Eye,
   EyeOff,
+  Loader2,
 } from 'lucide-react';
 import {
   Dialog,
@@ -76,7 +77,7 @@ const AdminUsersManager = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('users').select('*').order('username');
+      const { data, error } = await apiClient.from('users').select('*').order('username');
       if (error) throw error;
       setUsers(data || []);
     } catch (error) {
@@ -159,7 +160,7 @@ const AdminUsersManager = () => {
 
       let userId;
       if (editingUser) {
-        const { error } = await supabase.from('users').update(userData).eq('id', editingUser.id);
+        const { error } = await apiClient.from('users').update(userData).eq('id', editingUser.id);
         if (error) throw error;
         userId = editingUser.id;
         logAudit({
@@ -170,7 +171,7 @@ const AdminUsersManager = () => {
           action: 'UPDATE',
         });
       } else {
-        const { data, error } = await supabase.from('users').insert([userData]).select().single();
+        const { data, error } = await apiClient.from('users').insert([userData]).select().single();
         if (error) throw error;
         userId = data.id;
         logAudit({
@@ -184,7 +185,7 @@ const AdminUsersManager = () => {
 
       // Store department IDs directly on the user row
       const deptIds = formData.role === ROLES.TECHNICIAN.slug ? formData.departments : [];
-      await supabase.from('users').update({ departments: deptIds }).eq('id', userId);
+      await apiClient.from('users').update({ departments: deptIds }).eq('id', userId);
 
       toast({ title: 'Success', description: 'User saved successfully.' });
       setIsDialogOpen(false);
@@ -207,7 +208,7 @@ const AdminUsersManager = () => {
     if (!userToToggle) return;
     try {
       const newStatus = !userToToggle.is_active;
-      await supabase.from('users').update({ is_active: newStatus }).eq('id', userToToggle.id);
+      await apiClient.from('users').update({ is_active: newStatus }).eq('id', userToToggle.id);
       logAudit({
         userId: currentUser?.id,
         entityType: 'user',
@@ -224,6 +225,15 @@ const AdminUsersManager = () => {
       setIsStatusDialogOpen(false);
     }
   };
+
+  if (loading && users.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+        <p className="text-gray-500 font-medium text-sm">Loading users...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 w-full pb-12">
@@ -382,7 +392,23 @@ const AdminUsersManager = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((u) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="py-20 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+                      <p className="text-gray-500 font-medium text-sm">Loading users...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-10 text-center text-gray-500">
+                    No users found.
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((u) => (
                 <tr
                   key={u.id}
                   className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
@@ -480,7 +506,7 @@ const AdminUsersManager = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

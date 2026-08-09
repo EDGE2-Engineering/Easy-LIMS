@@ -11,7 +11,7 @@
  * This NEVER throws — a failure logs a console warning and silently continues.
  */
 
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 
 /**
  * @param {object} params
@@ -38,7 +38,7 @@ export const logAudit = async ({
           : Number(userId) || null
         : null;
 
-    await supabase.from('audit_logs').insert({
+    await apiClient.from('audit_logs').insert({
       performed_by: numericUserId,
       entity_type: entityType,
       entity_id: entityId !== null ? String(entityId) : null,

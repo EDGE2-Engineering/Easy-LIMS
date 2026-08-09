@@ -41,7 +41,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -140,7 +140,7 @@ const LeavesManager = () => {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('users')
         .select('*')
         .neq('role', ROLES.SUPER_ADMIN.slug)
@@ -158,7 +158,7 @@ const LeavesManager = () => {
     async (userId, year) => {
       setLoadingLeaves(true);
       try {
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('request_approvals')
           .select('*')
           .eq('requester_id', userId)
@@ -252,7 +252,7 @@ const LeavesManager = () => {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase.from('request_approvals').insert({
+      const { error } = await apiClient.from('request_approvals').insert({
         requester_id: selectedEmployee.id,
         request_type: 'LEAVE',
         request_data: {
@@ -284,7 +284,7 @@ const LeavesManager = () => {
     if (!deleteTarget) return;
     try {
       // Note: This deletes the entire request range associated with this day
-      const { error } = await supabase
+      const { error } = await apiClient
         .from('request_approvals')
         .delete()
         .eq('id', deleteTarget.request_id);
@@ -303,7 +303,7 @@ const LeavesManager = () => {
     setIsSaving(true);
     try {
       // Fetch current request to update its JSONB data
-      const { data: currentReq, error: fetchError } = await supabase
+      const { data: currentReq, error: fetchError } = await apiClient
         .from('request_approvals')
         .select('request_data')
         .eq('id', editingLeave.request_id)
@@ -316,7 +316,7 @@ const LeavesManager = () => {
         reason: leaveComment.trim() || currentReq.request_data.reason,
       };
 
-      const { error } = await supabase
+      const { error } = await apiClient
         .from('request_approvals')
         .update({
           request_data: updatedData,

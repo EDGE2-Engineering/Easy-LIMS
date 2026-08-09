@@ -1,5 +1,5 @@
--- Tickets Database Schema DDL for Supabase PostgreSQL
--- Run this script in the SQL Editor of your Supabase Console if tables or foreign keys are missing.
+-- Tickets Database Schema DDL for PostgreSQL PostgreSQL
+-- Run this script in the SQL Editor of your PostgreSQL Console if tables or foreign keys are missing.
 
 -- 1. Tickets Table
 CREATE TABLE IF NOT EXISTS public.tickets (

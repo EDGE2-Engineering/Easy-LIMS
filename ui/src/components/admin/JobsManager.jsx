@@ -23,7 +23,7 @@ import {
   Download,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { logAudit } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -225,7 +225,7 @@ const JobsManager = ({ id }) => {
       let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
       if (isNaN(userId)) {
         // Last resort: look up by username if ID is somehow invalid
-        const { data: u } = await supabase
+        const { data: u } = await apiClient
           .from('users')
           .select('id')
           .eq('username', user.username)
@@ -234,7 +234,7 @@ const JobsManager = ({ id }) => {
       }
       if (!userId || isNaN(userId)) return;
 
-      const { data: rawData, error } = await supabase
+      const { data: rawData, error } = await apiClient
         .from('jobs')
         .select('*')
         .eq('id', jobId)
@@ -243,7 +243,7 @@ const JobsManager = ({ id }) => {
 
       let data = rawData;
       if (data && data.client_id) {
-        const { data: cData } = await supabase.from('clients').select('id, client_name, client_address, gstin').eq('id', data.client_id).maybeSingle();
+        const { data: cData } = await apiClient.from('clients').select('id, client_name, client_address, gstin').eq('id', data.client_id).maybeSingle();
         if (cData) data = { ...data, clients: cData };
       }
 
@@ -254,7 +254,7 @@ const JobsManager = ({ id }) => {
           !isAdmin() &&
           (user?.role === ROLES.ANALYST.slug || user?.role === ROLES.TECHNICIAN.slug)
         ) {
-          const { data: assignments, error: assignError } = await supabase
+          const { data: assignments, error: assignError } = await apiClient
             .from('job_to_technicians')
             .select('id')
             .eq('job_id', actualJobId)
@@ -291,7 +291,7 @@ const JobsManager = ({ id }) => {
       // Robustly determine the integer user ID for bigint columns
       let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
       if (isNaN(userId) && user.username) {
-        const { data: userData } = await supabase
+        const { data: userData } = await apiClient
           .from('users')
           .select('id')
           .eq('username', user.username)
@@ -306,7 +306,7 @@ const JobsManager = ({ id }) => {
       }
 
       // 1. Update job Record
-      const { error: updateError } = await supabase
+      const { error: updateError } = await apiClient
         .from('jobs')
         .update({
           work_order_id: woId,
@@ -319,7 +319,7 @@ const JobsManager = ({ id }) => {
       if (updateError) throw updateError;
 
       // 2. Log workflow transition
-      const { error: logError } = await supabase.from('job_workflow_logs').insert({
+      const { error: logError } = await apiClient.from('job_workflow_logs').insert({
         job_id: editingRecord.id,
         from_state: editingRecord.status,
         to_state: WORKFLOW_STATES.WORK_ORDER_RECEIVED,
@@ -343,7 +343,7 @@ const JobsManager = ({ id }) => {
 
   const fetchJobDocs = async (jobId) => {
     try {
-      const { data, error } = await supabase.from('documents').select('*').eq('job_id', jobId);
+      const { data, error } = await apiClient.from('documents').select('*').eq('job_id', jobId);
       if (error) throw error;
       const sorted = (data || []).sort((a, b) => {
         if (a.document_type === 'Quotation' && b.document_type === 'Quotation') {
@@ -360,12 +360,27 @@ const JobsManager = ({ id }) => {
   useEffect(() => {
     if (!authLoading) {
       fetchRecords();
-      fetchClients();
     }
-  }, [authLoading, user]);
+  }, [
+    authLoading,
+    user,
+    currentPage,
+    itemsPerPage,
+    sortField,
+    sortOrder,
+    searchTerm,
+    filterStatus,
+    filterByClient,
+    filterDateStart,
+    filterDateEnd,
+  ]);
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
   const fetchClients = async () => {
-    const { data } = await supabase.from('clients').select('id, client_name').order('client_name');
+    const { data } = await apiClient.from('client_options').select('*');
     setClients(data || []);
   };
 
@@ -383,7 +398,7 @@ const JobsManager = ({ id }) => {
 
   const fetchJobAssignments = async (jobId) => {
     try {
-      const { data: rawAssignments, error } = await supabase
+      const { data: rawAssignments, error } = await apiClient
         .from('job_to_technicians')
         .select('*')
         .eq('job_id', jobId);
@@ -392,7 +407,7 @@ const JobsManager = ({ id }) => {
 
       const techIds = [...new Set((rawAssignments || []).map((r) => r.technician_id).filter(Boolean))];
       if (techIds.length > 0) {
-        const { data: techUsers } = await supabase
+        const { data: techUsers } = await apiClient
           .from('users')
           .select('id, full_name, username')
           .in('id', techIds);
@@ -407,7 +422,7 @@ const JobsManager = ({ id }) => {
 
   const fetchJobSamples = async (jobId) => {
     try {
-      const { data: inwardRecords } = await supabase
+      const { data: inwardRecords } = await apiClient
         .from('material_inward_register')
         .select('id')
         .eq('job_id', jobId)
@@ -415,7 +430,7 @@ const JobsManager = ({ id }) => {
 
       if (inwardRecords && inwardRecords.length > 0) {
         const inwardIds = inwardRecords.map((r) => r.id);
-        const { data: rawSamples, error } = await supabase
+        const { data: rawSamples, error } = await apiClient
           .from('material_samples')
           .select('*')
           .in('inward_id', inwardIds);
@@ -428,13 +443,13 @@ const JobsManager = ({ id }) => {
 
         let uMap = new Map();
         if (userIds.length > 0) {
-          const { data: uData } = await supabase.from('users').select('id, full_name').in('id', userIds);
+          const { data: uData } = await apiClient.from('users').select('id, full_name').in('id', userIds);
           if (uData) uData.forEach((u) => { uMap.set(String(u.id), u); uMap.set(Number(u.id), u); });
         }
 
         let cMap = new Map();
         if (centerIds.length > 0) {
-          const { data: cData } = await supabase.from('collection_centers').select('id, name').in('id', centerIds);
+          const { data: cData } = await apiClient.from('collection_centers').select('id, name').in('id', centerIds);
           if (cData) cData.forEach((c) => { cMap.set(String(c.id), c); cMap.set(Number(c.id), c); });
         }
 
@@ -463,20 +478,42 @@ const JobsManager = ({ id }) => {
     return afterDiscount + tax;
   };
 
+  const [totalRecords, setTotalRecords] = useState(0);
+
   const fetchRecords = async () => {
     setLoading(true);
     try {
-      let query = supabase
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+
+      let query = apiClient
         .from('jobs')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order(sortField, { ascending: sortOrder === 'asc' })
+        .range(from, to);
+
+      if (searchTerm) {
+        query = query.ilike('job_code', searchTerm);
+      }
+      if (filterStatus && filterStatus !== 'all') {
+        query = query.eq('status', filterStatus);
+      }
+      if (filterByClient && filterByClient !== 'all') {
+        query = query.eq('client_id', filterByClient);
+      }
+      if (filterDateStart) {
+        query = query.gte('created_at', filterDateStart);
+      }
+      if (filterDateEnd) {
+        query = query.lte('created_at', filterDateEnd);
+      }
 
       if (!isAdmin() && user?.role !== ROLES.MRO.slug) {
         let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
         if (isNaN(userId)) userId = -1;
 
         if (user?.role === ROLES.ANALYST.slug || user?.role === ROLES.TECHNICIAN.slug) {
-          const { data: assignments } = await supabase
+          const { data: assignments } = await apiClient
             .from('job_to_technicians')
             .select('job_id')
             .eq('technician_id', userId);
@@ -485,60 +522,20 @@ const JobsManager = ({ id }) => {
           if (assignedJobIds.length > 0) {
             query = query.in('id', assignedJobIds);
           } else {
-            query = query.eq('id', 0); // No jobs assigned
+            query = query.eq('id', 0);
           }
         } else {
           query = query.eq('created_by', userId);
         }
       }
 
-      const { data: rawJobs, error } = await query;
+      const { data: rawJobs, count, error } = await query;
       if (error) throw error;
 
-      let jobs = rawJobs || [];
-      const clientIds = [...new Set(jobs.map((j) => j.client_id).filter(Boolean))];
-      const userIds = [...new Set(jobs.map((j) => j.created_by).filter(Boolean))];
-
-      let cMap = new Map();
-      if (clientIds.length > 0) {
-        const { data: cData } = await supabase.from('clients').select('id, client_name, client_address, gstin').in('id', clientIds);
-        if (cData) cData.forEach((c) => { cMap.set(String(c.id), c); cMap.set(Number(c.id), c); });
-      }
-
-      let uMap = new Map();
-      if (userIds.length > 0) {
-        const { data: uData } = await supabase.from('users').select('id, full_name, username, role, departments').in('id', userIds);
-        if (uData) uData.forEach((u) => { uMap.set(String(u.id), u); uMap.set(Number(u.id), u); });
-      }
-
-      jobs = jobs.map((j) => ({
-        ...j,
-        clients: j.client_id ? cMap.get(String(j.client_id)) || null : null,
-        users: j.created_by ? uMap.get(String(j.created_by)) || null : null,
-      }));
-
-      // Fetch quotation documents for all jobs in one query
-      const jobIds = (jobs || []).map((j) => j.id);
-      let quotationMap = {};
-      if (jobIds.length > 0) {
-        const { data: docs } = await supabase
-          .from('documents')
-          .select('job_id, content, document_type')
-          .in('job_id', jobIds)
-          .eq('document_type', 'Quotation');
-        (docs || []).forEach((doc) => {
-          // Keep first quotation per job
-          if (!quotationMap[doc.job_id]) quotationMap[doc.job_id] = doc;
-        });
-      }
-
-      const enriched = (jobs || []).map((j) => ({
-        ...j,
-        quotationAmount: computeGrandTotal(quotationMap[j.id]),
-      }));
-      setRecords(enriched);
+      setRecords(rawJobs || []);
+      setTotalRecords(count != null ? count : (rawJobs ? rawJobs.length : 0));
     } catch (error) {
-      console.error(error);
+      console.error('Fetch Jobs Error:', error);
     } finally {
       setLoading(false);
     }
@@ -548,7 +545,7 @@ const JobsManager = ({ id }) => {
     if (!editingRecord?.id) return;
     const jobId = editingRecord.id;
     try {
-      const { data: rawData, error } = await supabase
+      const { data: rawData, error } = await apiClient
         .from('jobs')
         .select('*')
         .eq('id', jobId)
@@ -557,7 +554,7 @@ const JobsManager = ({ id }) => {
 
       let data = rawData;
       if (data && data.client_id) {
-        const { data: cData } = await supabase.from('clients').select('id, client_name, client_address, gstin').eq('id', data.client_id).maybeSingle();
+        const { data: cData } = await apiClient.from('clients').select('id, client_name, client_address, gstin').eq('id', data.client_id).maybeSingle();
         if (cData) data = { ...data, clients: cData };
       }
       if (data) {
@@ -578,7 +575,7 @@ const JobsManager = ({ id }) => {
   const handleGenerateReport = async () => {
     try {
       // Fetch geotechnical test data from job_tests table (always fresh)
-      const { data: testData } = await supabase
+      const { data: testData } = await apiClient
         .from('job_tests')
         .select('*')
         .eq('job_id', editingRecord.id);
@@ -774,7 +771,7 @@ const JobsManager = ({ id }) => {
     try {
       let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
       if (isNaN(userId) && user.username) {
-        const { data: userData } = await supabase
+        const { data: userData } = await apiClient
           .from('users')
           .select('id')
           .eq('username', user.username)
@@ -798,7 +795,7 @@ const JobsManager = ({ id }) => {
       };
 
       if (existingReport) {
-        const { error } = await supabase
+        const { error } = await apiClient
           .from('documents')
           .update(docPayload)
           .eq('id', existingReport.id);
@@ -811,7 +808,7 @@ const JobsManager = ({ id }) => {
           action: 'UPDATE',
         });
       } else {
-        const { data, error } = await supabase.from('documents').insert([docPayload]).select();
+        const { data, error } = await apiClient.from('documents').insert([docPayload]).select();
         if (error) throw error;
         logAudit({
           userId,
@@ -847,7 +844,7 @@ const JobsManager = ({ id }) => {
   const fetchAuditLogs = async (jobId) => {
     setLoadingLogs(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('job_workflow_logs')
         .select(
           `
@@ -908,7 +905,7 @@ const JobsManager = ({ id }) => {
 
         // If the ID is a UUID string (not numeric), try to resolve it from the users table
         if (isNaN(userId) && user.username) {
-          const { data: userData } = await supabase
+          const { data: userData } = await apiClient
             .from('users')
             .select('id')
             .eq('username', user.username)
@@ -929,7 +926,7 @@ const JobsManager = ({ id }) => {
           updated_by: userId,
         };
 
-        const { data, error } = await supabase.from('jobs').insert(insertData).select();
+        const { data, error } = await apiClient.from('jobs').insert(insertData).select();
         if (error) throw error;
         logAudit({
           userId,
@@ -941,7 +938,7 @@ const JobsManager = ({ id }) => {
       } else {
         let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
         if (isNaN(userId) && user.username) {
-          const { data: userData } = await supabase
+          const { data: userData } = await apiClient
             .from('users')
             .select('id')
             .eq('username', user.username)
@@ -949,7 +946,7 @@ const JobsManager = ({ id }) => {
           if (userData) userId = userData.id;
         }
 
-        const { error } = await supabase
+        const { error } = await apiClient
           .from('jobs')
           .update({
             ...payload,
@@ -995,7 +992,7 @@ const JobsManager = ({ id }) => {
       const jobId = deleteConfirmation.jobId;
 
       // 1. Get inward register ID to delete samples
-      const { data: inwardRecords } = await supabase
+      const { data: inwardRecords } = await apiClient
         .from('material_inward_register')
         .select('id')
         .eq('job_id', jobId);
@@ -1003,22 +1000,22 @@ const JobsManager = ({ id }) => {
       if (inwardRecords && inwardRecords.length > 0) {
         const inwardIds = inwardRecords.map((r) => r.id);
         // 2. Delete material samples
-        await supabase.from('material_samples').delete().in('inward_id', inwardIds);
+        await apiClient.from('material_samples').delete().in('inward_id', inwardIds);
         // 3. Delete material inward register
-        await supabase.from('material_inward_register').delete().in('id', inwardIds);
+        await apiClient.from('material_inward_register').delete().in('id', inwardIds);
       }
 
       // 4. Delete job tests
-      await supabase.from('job_tests').delete().eq('job_id', jobId);
+      await apiClient.from('job_tests').delete().eq('job_id', jobId);
 
       // 5. Delete job workflow logs
-      await supabase.from('job_workflow_logs').delete().eq('job_id', jobId);
+      await apiClient.from('job_workflow_logs').delete().eq('job_id', jobId);
 
       // 6. Delete linked documents
-      await supabase.from('documents').delete().eq('job_id', jobId);
+      await apiClient.from('documents').delete().eq('job_id', jobId);
 
       // 7. Finally delete the job itself
-      const { error } = await supabase.from('jobs').delete().eq('id', jobId);
+      const { error } = await apiClient.from('jobs').delete().eq('id', jobId);
 
       if (error) throw error;
 
@@ -1090,7 +1087,7 @@ const JobsManager = ({ id }) => {
       const searchStr = searchTerm.toLowerCase();
       const matchesSearch =
         (r.job_code || r.job_id)?.toLowerCase().includes(searchStr) ||
-        r.clients?.client_name?.toLowerCase().includes(searchStr) ||
+        (r.client_name || r.clients?.client_name || '')?.toLowerCase().includes(searchStr) ||
         r.project_name?.toLowerCase().includes(searchStr);
       if (!matchesSearch) return false;
 
@@ -1098,7 +1095,7 @@ const JobsManager = ({ id }) => {
       if (filterStatus !== 'all' && r.status !== filterStatus) return false;
 
       // Creator filter
-      if (filterByCreator !== 'all' && r.users?.full_name !== filterByCreator) return false;
+      if (filterByCreator !== 'all' && (r.created_by_name || r.users?.full_name) !== filterByCreator) return false;
 
       // Client filter
       if (filterByClient !== 'all' && String(r.client_id) !== String(filterByClient)) return false;
@@ -1117,8 +1114,8 @@ const JobsManager = ({ id }) => {
       let valA, valB;
 
       if (sortField === 'client_name') {
-        valA = a.clients?.client_name || '';
-        valB = b.clients?.client_name || '';
+        valA = a.client_name || a.clients?.client_name || '';
+        valB = b.client_name || b.clients?.client_name || '';
       } else if (sortField === 'quotationAmount') {
         valA = a.quotationAmount != null ? a.quotationAmount : -1;
         valB = b.quotationAmount != null ? b.quotationAmount : -1;
@@ -1148,16 +1145,16 @@ const JobsManager = ({ id }) => {
     filterDateEnd,
   ]);
 
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
+  // Server-side Pagination calculations
+  const totalPages = Math.ceil(totalRecords / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedRecords = filteredRecords.slice(startIndex, endIndex);
+  const paginatedRecords = records;
 
-  // Reset to page 1 when any filter changes
+  // Reset to page 1 when search or filter values change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterStatus, filterByCreator, filterDateStart, filterDateEnd]);
+  }, [searchTerm, filterStatus, filterByCreator, filterByClient, filterDateStart, filterDateEnd]);
 
   const resetAll = () => {
     setSearchTerm('');
@@ -1500,27 +1497,38 @@ const JobsManager = ({ id }) => {
                     <ReactSelect
                       className="mt-1 text-xs"
                       classNamePrefix="react-select"
-                      options={clients.map((c) => ({ value: c.id, label: c.clientName || c.client_name || '' }))}
-                      value={
-                        editingRecord.client_id
-                          ? {
-                              value: editingRecord.client_id,
-                              label:
-                                clients.find((c) => String(c.id) === String(editingRecord.client_id))?.clientName ||
-                                clients.find((c) => String(c.id) === String(editingRecord.client_id))?.client_name ||
-                                editingRecord.clients?.client_name ||
-                                editingRecord.clients?.clientName ||
-                                editingRecord.client_name ||
-                                '',
-                            }
-                          : null
-                      }
-                      onChange={(option) =>
+                      options={clients.map((c) => ({ value: c.id, label: c.client_name || c.clientName || '' }))}
+                      value={(() => {
+                        const selectedClientId = editingRecord.client_id;
+                        const selectedClientName = editingRecord.client_name || editingRecord.clients?.client_name;
+
+                        if (selectedClientId) {
+                          const foundClient = clients.find((c) => String(c.id) === String(selectedClientId));
+                          if (foundClient) {
+                            return { value: foundClient.id, label: foundClient.client_name || foundClient.clientName || '' };
+                          }
+                        }
+
+                        if (selectedClientName) {
+                          const foundClient = clients.find(
+                            (c) => (c.client_name || c.clientName || '').trim().toLowerCase() === selectedClientName.trim().toLowerCase()
+                          );
+                          if (foundClient) {
+                            return { value: foundClient.id, label: foundClient.client_name || foundClient.clientName || '' };
+                          }
+                          return { value: '', label: selectedClientName };
+                        }
+
+                        return null;
+                      })()}
+                      onChange={(option) => {
+                        const selectedClient = clients.find((c) => String(c.id) === String(option?.value));
                         setEditingRecord({
                           ...editingRecord,
-                          client_id: option ? option.value : '',
-                        })
-                      }
+                          client_id: option ? option.value : null,
+                          client_name: selectedClient ? (selectedClient.client_name || selectedClient.clientName) : (option ? option.label : ''),
+                        });
+                      }}
                       placeholder="Search Clients..."
                       isSearchable
                       isClearable
@@ -1867,6 +1875,15 @@ const JobsManager = ({ id }) => {
     );
   }
 
+  if (loading && records.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+        <p className="text-gray-500">Loading jobs...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col gap-4">
@@ -1991,10 +2008,10 @@ const JobsManager = ({ id }) => {
           <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">
             Showing{' '}
             <span className="text-primary">
-              {filteredRecords.length === 0 ? 0 : startIndex + 1}–
-              {Math.min(endIndex, filteredRecords.length)}
+              {totalRecords === 0 ? 0 : startIndex + 1}–
+              {Math.min(endIndex, totalRecords)}
             </span>{' '}
-            of <span className="text-primary">{filteredRecords.length}</span> Jobs
+            of <span className="text-primary">{totalRecords}</span> Jobs
           </div>
         </div>
 
@@ -2166,8 +2183,8 @@ const JobsManager = ({ id }) => {
             </SelectContent>
           </Select>
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none border-l pl-3 ml-1">
-            Showing {filteredRecords.length === 0 ? 0 : startIndex + 1}-
-            {Math.min(endIndex, filteredRecords.length)} of {filteredRecords.length}
+            Showing {totalRecords === 0 ? 0 : startIndex + 1}-
+            {Math.min(endIndex, totalRecords)} of {totalRecords}
           </span>
         </div>
 
@@ -2227,7 +2244,16 @@ const JobsManager = ({ id }) => {
               </tr>
             </thead>
             <tbody>
-              {paginatedRecords.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="py-20 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+                      <p className="text-gray-500">Loading jobs...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedRecords.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-10 text-center text-gray-500">
                     No jobs found.
@@ -2246,7 +2272,7 @@ const JobsManager = ({ id }) => {
                     </td>
                     <td className="py-4 px-3 align-top">
                       <div className="font-semibold text-gray-900 break-words">
-                        {r.clients?.client_name || '-'}
+                        {r.client_name || r.clients?.client_name || '-'}
                       </div>
                       {r.project_name && (
                         <div
@@ -2256,9 +2282,9 @@ const JobsManager = ({ id }) => {
                           {r.project_name}
                         </div>
                       )}
-                      {r.clients?.gstin && (
+                      {(r.gstin || r.clients?.gstin) && (
                         <div className="mt-2 text-[10px] text-gray-400 break-all">
-                          GSTIN: {r.clients.gstin}
+                          GSTIN: {r.gstin || r.clients?.gstin}
                         </div>
                       )}
                     </td>
@@ -2276,41 +2302,9 @@ const JobsManager = ({ id }) => {
                       {safeFormatDate(r.created_at)}
                     </td>
                     <td className="py-4 px-2 whitespace-nowrap text-gray-600 align-top">
-                      {r.users ? (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="cursor-help select-none font-semibold hover:text-primary transition-colors">
-                                {r.users.full_name || r.users.username || '-'}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-900 text-white border-gray-800 p-3 rounded-lg shadow-md space-y-1 text-xs">
-                              <div>
-                                <span className="text-gray-400 font-medium">Role:</span>{' '}
-                                <span className="font-bold text-white capitalize">
-                                  {Object.values(ROLES).find((ro) => ro.slug === r.users.role)?.label || r.users.role || 'User'}
-                                </span>
-                              </div>
-                              {(r.users.departments || []).length > 0 && (
-                                <div>
-                                  <span className="text-gray-400 font-medium">Department:</span>{' '}
-                                  <span className="font-bold text-white">
-                                    {(r.users.departments || [])
-                                      .map((dVal) => {
-                                        const found = DEPARTMENTS.find((d) => String(d.id) === String(dVal) || d.name === dVal);
-                                        return found ? found.name : dVal;
-                                      })
-                                      .filter(Boolean)
-                                      .join(', ')}
-                                  </span>
-                                </div>
-                              )}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : (
-                        r.created_by || '-'
-                      )}
+                      <span className="font-semibold text-gray-700">
+                        {r.created_by_name || '-'}
+                      </span>
                     </td>
                     <td className="py-4 px-2 text-center whitespace-nowrap align-top">
                       <span

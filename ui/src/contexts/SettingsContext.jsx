@@ -1,17 +1,9 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { logAudit } from '@/lib/auditLog';
 import { useAuth } from '@/contexts/AuthContext';
 
 const SettingsContext = createContext();
-
-const useSettings = () => {
-  const context = useContext(SettingsContext);
-  if (!context) {
-    throw new Error('useSettings must be used within a SettingsProvider');
-  }
-  return context;
-};
 
 const SettingsProvider = ({ children }) => {
   const { user } = useAuth();
@@ -27,10 +19,10 @@ const SettingsProvider = ({ children }) => {
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('app_settings').select('*');
+      const { data, error } = await apiClient.from('app_settings').select('*');
 
       if (error) {
-        console.warn('Supabase Fetch Failed (settings), using defaults:', error);
+        console.warn('API Fetch Failed (settings), using defaults:', error);
         return;
       }
 
@@ -70,7 +62,7 @@ const SettingsProvider = ({ children }) => {
           payload.id = settingsMetadata[key].id;
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('app_settings')
           .upsert(payload, { onConflict: 'setting_key' }) // Try onConflict as backup
           .select();
@@ -105,8 +97,12 @@ const SettingsProvider = ({ children }) => {
     [fetchSettings, settingsMetadata, currentUserId]
   );
 
-  useEffect(() => {
-    fetchSettings();
+  const fetchedRef = React.useRef(false);
+  const ensureFetched = useCallback(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchSettings();
+    }
   }, [fetchSettings]);
 
   const contextValue = useMemo(
@@ -115,10 +111,23 @@ const SettingsProvider = ({ children }) => {
       updateSetting,
       loading,
       fetchSettings,
+      ensureFetched,
     }),
-    [settings, loading, updateSetting, fetchSettings]
+    [settings, loading, updateSetting, fetchSettings, ensureFetched]
   );
 
   return <SettingsContext.Provider value={contextValue}>{children}</SettingsContext.Provider>;
 };
+
+const useSettings = () => {
+  const context = useContext(SettingsContext);
+  if (!context) {
+    throw new Error('useSettings must be used within a SettingsProvider');
+  }
+  useEffect(() => {
+    context.ensureFetched();
+  }, [context]);
+  return context;
+};
+
 export { SettingsContext, SettingsProvider, useSettings };

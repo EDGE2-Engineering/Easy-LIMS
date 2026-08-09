@@ -30,10 +30,12 @@ const ENDPOINT_MAP = {
   collection_centers: '/api/collection-centers',
   reports: '/api/reports',
   client_lab_test_prices: '/api/client-pricing/lab',
-  client_field_test_prices: '/api/client-pricing/field',
   job_to_technicians: '/api/job-technicians',
   job_workflow_logs: '/api/job-workflow-logs',
   material_samples: '/api/material-samples',
+  material_form_associations: '/api/material-form-associations',
+  client_options: '/api/filter-options/clients',
+  user_options: '/api/filter-options/users',
 };
 
 class QueryBuilder {
@@ -112,6 +114,19 @@ class QueryBuilder {
     return this;
   }
 
+  range(from, to) {
+    const limit = Math.max(1, to - from + 1);
+    const page = Math.floor(from / limit) + 1;
+    this._filters.push({ type: 'page', value: page });
+    this._filters.push({ type: 'limit', value: limit });
+    return this;
+  }
+
+  page(p) {
+    this._filters.push({ type: 'page', value: p });
+    return this;
+  }
+
   single() {
     this._single = true;
     return this;
@@ -139,11 +154,7 @@ class QueryBuilder {
 
   async then(onfulfilled, onrejected) {
     try {
-      const basePath = ENDPOINT_MAP[this.table];
-      if (!basePath) {
-        throw new Error(`Unsupported table endpoint: ${this.table}`);
-      }
-
+      const basePath = ENDPOINT_MAP[this.table] || `/api/${this.table.replace(/_/g, '-')}`;
       const apiPath = `${BASE_URL}${basePath}`;
       let res, resData;
 
@@ -224,6 +235,8 @@ class QueryBuilder {
           if (['created_at', 'date', 'event_date'].includes(f.column)) {
             urlParams.append('date_to', f.value);
           }
+        } else if (f.type === 'page') {
+          urlParams.append('page', f.value);
         } else if (f.type === 'limit') {
           hasLimit = true;
           urlParams.append('limit', f.value);
@@ -233,8 +246,8 @@ class QueryBuilder {
         }
       });
 
-      if (!hasLimit && !this._single && !this._maybeSingle) {
-        urlParams.append('limit', '10000');
+      if (!hasLimit && !this._single && !this._maybeSingle && !this.table.includes('options')) {
+        urlParams.append('limit', '50');
       }
 
       const queryString = urlParams.toString();
@@ -257,7 +270,7 @@ class QueryBuilder {
           if (finalData.length === 0) throw new Error('JSON object requested, multiple (or no) rows returned');
           finalData = finalData[0];
         } else if (this._maybeSingle) {
-          finalData = finalData.length > 0 ? finalData[0] : null;       
+          finalData = finalData.length > 0 ? finalData[0] : null;
         }
       }
 
@@ -270,7 +283,7 @@ class QueryBuilder {
   }
 }
 
-const customSupabaseClient = {
+const apiClient = {
   from(table) {
     return new QueryBuilder(table);
   },
@@ -305,5 +318,5 @@ const customSupabaseClient = {
   },
 };
 
-export default customSupabaseClient;
-export { customSupabaseClient, customSupabaseClient as supabase };
+export default apiClient;
+export { apiClient };

@@ -30,7 +30,7 @@ import {
   Users,
   MessageSquare,
 } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { logAudit } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
@@ -69,7 +69,7 @@ const AdminCompanyCalendar = () => {
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('company_calendar')
         .select('*')
         .order('event_date', { ascending: true });
@@ -90,7 +90,7 @@ const AdminCompanyCalendar = () => {
 
   const fetchLeaves = useCallback(async () => {
     try {
-      const { data: rawRequests, error } = await supabase
+      const { data: rawRequests, error } = await apiClient
         .from('request_approvals')
         .select('*');
 
@@ -99,7 +99,7 @@ const AdminCompanyCalendar = () => {
       let allRequests = rawRequests || [];
       const requesterIds = [...new Set(allRequests.map((r) => r.requester_id).filter(Boolean))];
       if (requesterIds.length > 0) {
-        const { data: usersData } = await supabase
+        const { data: usersData } = await apiClient
           .from('users')
           .select('id, full_name, username')
           .in('id', requesterIds);
@@ -193,7 +193,7 @@ const AdminCompanyCalendar = () => {
       };
 
       if (editingEvent) {
-        const { error } = await supabase
+        const { error } = await apiClient
           .from('company_calendar')
           .update(eventData)
           .eq('id', editingEvent.id);
@@ -207,7 +207,7 @@ const AdminCompanyCalendar = () => {
         });
         toast({ title: 'Event Updated', description: 'Calendar event updated successfully.' });
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('company_calendar')
           .insert([eventData])
           .select();
@@ -243,7 +243,7 @@ const AdminCompanyCalendar = () => {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase.from('company_calendar').delete().eq('id', editingEvent.id);
+      const { error } = await apiClient.from('company_calendar').delete().eq('id', editingEvent.id);
 
       if (error) throw error;
 

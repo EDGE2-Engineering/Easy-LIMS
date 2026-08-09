@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { APP_CONFIG } from '@/data/config';
 
 const WorkflowContext = createContext();
@@ -22,7 +22,7 @@ export const WorkflowProvider = ({ children }) => {
 
   const updateWorkflow = async (newConfig) => {
     try {
-      const { error } = await supabase.from('workflow_config').insert([{ config: newConfig }]);
+      const { error } = await apiClient.from('workflow_config').insert([{ config: newConfig }]);
 
       if (error) throw error;
       setWorkflow(newConfig);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -137,10 +137,10 @@ const AuditLogsManager = () => {
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
     try {
-      const { count: totalAudit } = await supabase
+      const { count: totalAudit } = await apiClient
         .from('audit_logs')
         .select('*', { count: 'exact', head: true });
-      const { count: totalWorkflow } = await supabase
+      const { count: totalWorkflow } = await apiClient
         .from('job_workflow_logs')
         .select('*', { count: 'exact', head: true });
       const total = (totalAudit || 0) + (totalWorkflow || 0);
@@ -148,19 +148,19 @@ const AuditLogsManager = () => {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
-      const { count: todayAuditCount } = await supabase
+      const { count: todayAuditCount } = await apiClient
         .from('audit_logs')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', todayStart.toISOString());
-      const { count: todayWorkflowCount } = await supabase
+      const { count: todayWorkflowCount } = await apiClient
         .from('job_workflow_logs')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', todayStart.toISOString());
       const todayCount = (todayAuditCount || 0) + (todayWorkflowCount || 0);
 
       // unique performers
-      const { data: performersAudit } = await supabase.from('audit_logs').select('performed_by');
-      const { data: performersWorkflow } = await supabase
+      const { data: performersAudit } = await apiClient.from('audit_logs').select('performed_by');
+      const { data: performersWorkflow } = await apiClient
         .from('job_workflow_logs')
         .select('performed_by');
       const allPerformers = [
@@ -179,7 +179,7 @@ const AuditLogsManager = () => {
 
   // ── fetch user list for dropdown ───────────────────────────────────────────
   const fetchUsers = useCallback(async () => {
-    const { data } = await supabase
+    const { data } = await apiClient
       .from('users')
       .select('id, full_name, username')
       .order('full_name');
@@ -193,7 +193,7 @@ const AuditLogsManager = () => {
       // 1. Fetch Audit Logs
       let auditRows = [];
       if (!filterActivityType || filterActivityType !== 'job_workflow') {
-        let qAudit = supabase
+        let qAudit = apiClient
           .from('audit_logs')
           .select('*')
           .order('created_at', { ascending: false })
@@ -222,7 +222,7 @@ const AuditLogsManager = () => {
       // 2. Fetch Workflow Logs
       let workflowRows = [];
       if (!filterActivityType || filterActivityType === 'job_workflow') {
-        let qWorkflow = supabase
+        let qWorkflow = apiClient
           .from('job_workflow_logs')
           .select('*')
           .order('created_at', { ascending: false })
@@ -259,7 +259,7 @@ const AuditLogsManager = () => {
 
       let userMap = new Map();
       if (userIds.length > 0) {
-        const { data: uData } = await supabase
+        const { data: uData } = await apiClient
           .from('users')
           .select('id, full_name, username, role, departments')
           .in('id', userIds);
@@ -268,7 +268,7 @@ const AuditLogsManager = () => {
 
       let jobMap = new Map();
       if (jobIds.length > 0) {
-        const { data: jData } = await supabase
+        const { data: jData } = await apiClient
           .from('jobs')
           .select('id, job_code, project_name')
           .in('id', jobIds);
@@ -463,7 +463,7 @@ const AuditLogsManager = () => {
       // 1. Fetch Audit Logs
       let auditRows = [];
       if (!filterActivityType || filterActivityType !== 'job_workflow') {
-        let qAudit = supabase
+        let qAudit = apiClient
           .from('audit_logs')
           .select('*')
           .order('created_at', { ascending: false });
@@ -487,7 +487,7 @@ const AuditLogsManager = () => {
       // 2. Fetch Workflow Logs
       let workflowRows = [];
       if (!filterActivityType || filterActivityType === 'job_workflow') {
-        let qWorkflow = supabase
+        let qWorkflow = apiClient
           .from('job_workflow_logs')
           .select('*')
           .order('created_at', { ascending: false });
@@ -518,7 +518,7 @@ const AuditLogsManager = () => {
 
       let userMap = new Map();
       if (userIds.length > 0) {
-        const { data: uData } = await supabase
+        const { data: uData } = await apiClient
           .from('users')
           .select('id, full_name, username, role, departments')
           .in('id', userIds);
@@ -527,7 +527,7 @@ const AuditLogsManager = () => {
 
       let jobMap = new Map();
       if (jobIds.length > 0) {
-        const { data: jData } = await supabase
+        const { data: jData } = await apiClient
           .from('jobs')
           .select('id, job_code, project_name')
           .in('id', jobIds);

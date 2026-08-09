@@ -12,7 +12,7 @@ import {
   Download,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -231,7 +231,7 @@ const AdminBankStatementsManager = () => {
         }
       }
 
-      let q = supabase
+      let q = apiClient
         .from(TABLE)
         .select('*', { count: 'exact' })
         .order(sortCol, { ascending: sortAscending, nullsFirst: false })
@@ -239,7 +239,7 @@ const AdminBankStatementsManager = () => {
         .range(from, to);
       q = applyFilters(q);
 
-      let tq = supabase.from(TABLE).select('debit_amt, credit_amt');
+      let tq = apiClient.from(TABLE).select('debit_amt, credit_amt');
       tq = applyFilters(tq);
 
       const [{ data, error, count }, { data: tData }] = await Promise.all([q, tq]);
@@ -271,7 +271,7 @@ const AdminBankStatementsManager = () => {
   // ── Fetch sources for filter dropdown ────────────────────────────────────
   const fetchSummaries = useCallback(async () => {
     try {
-      const sourcesRes = await supabase.from('bank_statement_sources').select('source');
+      const sourcesRes = await apiClient.from('bank_statement_sources').select('source');
       const uniq = [
         ...new Set((sourcesRes.data || []).map((r) => r.source).filter(Boolean)),
       ].sort();
@@ -324,11 +324,11 @@ const AdminBankStatementsManager = () => {
       };
 
       if (isAddingNew) {
-        const { error } = await supabase.from(TABLE).insert(payload);
+        const { error } = await apiClient.from(TABLE).insert(payload);
         if (error) throw error;
         toast({ title: 'Transaction Added' });
       } else {
-        const { error } = await supabase.from(TABLE).update(payload).eq('id', editingRow.id);
+        const { error } = await apiClient.from(TABLE).update(payload).eq('id', editingRow.id);
         if (error) throw error;
         toast({ title: 'Transaction Updated' });
       }
@@ -346,7 +346,7 @@ const AdminBankStatementsManager = () => {
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {
-      const { error } = await supabase.from(TABLE).delete().eq('id', deleteTarget.id);
+      const { error } = await apiClient.from(TABLE).delete().eq('id', deleteTarget.id);
       if (error) throw error;
       toast({ title: 'Transaction Deleted', variant: 'destructive' });
       refresh();
@@ -375,7 +375,7 @@ const AdminBankStatementsManager = () => {
       let page = 0;
       const size = 1000;
       while (true) {
-        let q = supabase
+        let q = apiClient
           .from(TABLE)
           .select('*')
           .order(sortCol, { ascending: sortAscending, nullsFirst: false })

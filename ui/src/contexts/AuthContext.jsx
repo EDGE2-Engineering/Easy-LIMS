@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { ROLES, DEPARTMENTS } from '@/data/config';
 import { STORAGE_KEYS } from '@/data/storageKeys';
@@ -29,17 +29,20 @@ const AuthProvider = ({ children }) => {
   const login = useCallback(
     async (username, password) => {
       try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('username', username)
-          .eq('password', password)
-          .eq('is_active', true)
-          .maybeSingle();
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, password }),
+        });
 
-        if (error || !data) {
-          throw new Error('Invalid username or password');
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.detail || 'Invalid username or password');
         }
+
+        const data = await response.json();
 
         // departments is stored as a JSONB array of dept IDs on the users row
         const deptIds = Array.isArray(data.departments) ? data.departments : [];
@@ -79,7 +82,7 @@ const AuthProvider = ({ children }) => {
         try {
           const parsedUser = JSON.parse(storedUser);
           // Verify if user is still active in DB
-          const { data, error } = await supabase
+          const { data, error } = await apiClient
             .from('users')
             .select('is_active')
             .eq('id', parsedUser.id)
@@ -113,10 +116,10 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (!user?.id) return;
 
-    const channel = supabase
+    const channel = apiClient
       .channel(`user-status-${user.id}`)
       .on(
-        'postgres_changes',
+        'api_changes',
         {
           event: 'UPDATE',
           schema: 'public',
@@ -137,7 +140,7 @@ const AuthProvider = ({ children }) => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      apiClient.removeChannel(channel);
     };
   }, [user?.id, logout, toast]);
 

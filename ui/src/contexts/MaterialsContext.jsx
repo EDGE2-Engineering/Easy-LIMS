@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 
 const MaterialsContext = createContext();
 
@@ -12,7 +12,7 @@ const MaterialsProvider = ({ children }) => {
     setLoading(true);
     try {
       // Fetch materials
-      const { data: matsData, error: matsError } = await supabase
+      const { data: matsData, error: matsError } = await apiClient
         .from('materials')
         .select('*')
         .order('name', { ascending: true });
@@ -20,7 +20,7 @@ const MaterialsProvider = ({ children }) => {
       if (matsError) throw matsError;
 
       // Fetch associations
-      const { data: assocData, error: assocError } = await supabase
+      const { data: assocData, error: assocError } = await apiClient
         .from('material_form_associations')
         .select('*');
 
@@ -38,7 +38,7 @@ const MaterialsProvider = ({ children }) => {
   const addMaterial = useCallback(
     async (materialData) => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await apiClient
           .from('materials')
           .insert([{ name: materialData.name }])
           .select();
@@ -60,7 +60,7 @@ const MaterialsProvider = ({ children }) => {
   const updateMaterial = useCallback(
     async (id, materialData) => {
       try {
-        const { error } = await supabase
+        const { error } = await apiClient
           .from('materials')
           .update({ name: materialData.name, updated_at: new Date().toISOString() })
           .eq('id', id);
@@ -78,7 +78,7 @@ const MaterialsProvider = ({ children }) => {
   const deleteMaterial = useCallback(
     async (id) => {
       try {
-        const { error } = await supabase.from('materials').delete().eq('id', id);
+        const { error } = await apiClient.from('materials').delete().eq('id', id);
 
         if (error) throw error;
         await fetchMaterials();
@@ -94,7 +94,7 @@ const MaterialsProvider = ({ children }) => {
     async (materialId, formTypes) => {
       try {
         // Delete existing associations
-        const { error: deleteError } = await supabase
+        const { error: deleteError } = await apiClient
           .from('material_form_associations')
           .delete()
           .eq('material_id', materialId);
@@ -102,16 +102,18 @@ const MaterialsProvider = ({ children }) => {
         if (deleteError) throw deleteError;
 
         if (formTypes.length > 0) {
-          const payload = formTypes.map((ft) => ({
-            material_id: materialId,
-            form_type: ft,
-          }));
-
-          const { error: insertError } = await supabase
-            .from('material_form_associations')
-            .insert(payload);
-
-          if (insertError) throw insertError;
+          // Use the /bulk endpoint since apiClient.insert only posts the first item of an array
+          const res = await fetch('/api/material-form-associations/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              items: formTypes.map((ft) => ({ material_id: materialId, form_type: ft })),
+            }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `HTTP error ${res.status}`);
+          }
         }
 
         await fetchMaterials();
@@ -123,8 +125,12 @@ const MaterialsProvider = ({ children }) => {
     [fetchMaterials]
   );
 
-  useEffect(() => {
-    fetchMaterials();
+  const fetchedRef = React.useRef(false);
+  const ensureFetched = useCallback(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchMaterials();
+    }
   }, [fetchMaterials]);
 
   const contextValue = useMemo(
@@ -133,6 +139,7 @@ const MaterialsProvider = ({ children }) => {
       materialFormAssociations,
       loading,
       refreshMaterials: fetchMaterials,
+      ensureFetched,
       addMaterial,
       updateMaterial,
       deleteMaterial,
@@ -143,6 +150,7 @@ const MaterialsProvider = ({ children }) => {
       materialFormAssociations,
       loading,
       fetchMaterials,
+      ensureFetched,
       addMaterial,
       updateMaterial,
       deleteMaterial,
@@ -158,6 +166,9 @@ export const useMaterials = () => {
   if (!context) {
     throw new Error('useMaterials must be used within a MaterialsProvider');
   }
+  useEffect(() => {
+    context.ensureFetched();
+  }, [context]);
   return context;
 };
 

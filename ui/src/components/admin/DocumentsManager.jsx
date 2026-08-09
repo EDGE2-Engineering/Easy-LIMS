@@ -16,7 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { logAudit } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,6 +52,9 @@ import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 
 const DocumentsManager = () => {
   const [documents, setDocuments] = useState([]);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [clients, setClients] = useState([]);
+  const [usersList, setUsersList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [fromDate, setFromDate] = useState('');
@@ -59,6 +62,16 @@ const DocumentsManager = () => {
   const [filterDocType, setFilterDocType] = useState('all');
   const [filterUser, setFilterUser] = useState('all');
   const [filterClient, setFilterClient] = useState('all');
+
+  useEffect(() => {
+    const loadFilterOptions = async () => {
+      const { data: cData } = await apiClient.from('client_options').select('*');
+      setClients(cData || []);
+      const { data: uData } = await apiClient.from('user_options').select('*');
+      setUsersList(uData || []);
+    };
+    loadFilterOptions();
+  }, []);
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     isOpen: false,
     recordId: null,
@@ -119,9 +132,14 @@ const DocumentsManager = () => {
   const fetchDocuments = async () => {
     setLoading(true);
     try {
-      let query = supabase
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+
+      let query = apiClient
         .from('documents')
-        .select('*');
+        .select('*')
+        .order(sortField === 'date' ? 'created_at' : sortField, { ascending: sortOrder === 'asc' })
+        .range(from, to);
 
       if (isStandard()) {
         query = query.eq('created_by', user.id);
@@ -130,58 +148,30 @@ const DocumentsManager = () => {
       // Hide 'Report' type documents as they are now managed in their own tab
       query = query.neq('document_type', 'Report');
 
-      const { data: rawData, error } = await query.order('created_at', { ascending: false });
+      if (searchTerm) {
+        query = query.ilike('quote_number', searchTerm);
+      }
+      if (filterDocType && filterDocType !== 'all') {
+        query = query.eq('document_type', filterDocType);
+      }
+      if (filterUser && filterUser !== 'all') {
+        query = query.eq('created_by', filterUser);
+      }
+      if (filterClient && filterClient !== 'all') {
+        query = query.eq('client_id', filterClient);
+      }
+      if (fromDate) {
+        query = query.gte('created_at', fromDate);
+      }
+      if (toDate) {
+        query = query.lte('created_at', toDate);
+      }
 
+      const { data: rawData, count, error } = await query;
       if (error) throw error;
 
-      let docList = rawData || [];
-      const userIds = [...new Set(docList.map((d) => d.created_by).filter(Boolean))];
-      const jobIds = [...new Set(docList.map((d) => d.job_id).filter(Boolean))];
-
-      // Fetch all clients to allow matching by id (both int/string) AND by name fallback
-      const { data: allClients } = await supabase.from('clients').select('id, client_name, gstin');
-      
-      let cMapById = new Map();
-      let cMapByName = new Map();
-      if (allClients) {
-        allClients.forEach((c) => {
-          cMapById.set(String(c.id), c);
-          cMapById.set(Number(c.id), c);
-          if (c.client_name) {
-            cMapByName.set(c.client_name.trim().toLowerCase(), c);
-          }
-        });
-      }
-
-      let uMap = new Map();
-      if (userIds.length > 0) {
-        const { data: uData } = await supabase.from('users').select('id, full_name, username, role, departments').in('id', userIds);
-        if (uData) uData.forEach((u) => { uMap.set(String(u.id), u); uMap.set(Number(u.id), u); });
-      }
-
-      let jMap = new Map();
-      if (jobIds.length > 0) {
-        const { data: jData } = await supabase.from('jobs').select('id, project_name').in('id', jobIds);
-        if (jData) jData.forEach((j) => { jMap.set(String(j.id), j); jMap.set(Number(j.id), j); });
-      }
-
-      docList = docList.map((d) => {
-        let clientObj = d.client_id ? cMapById.get(String(d.client_id)) : null;
-        if (!clientObj) {
-          const fallbackName = getClientName(d);
-          if (fallbackName) {
-            clientObj = cMapByName.get(fallbackName.trim().toLowerCase()) || null;
-          }
-        }
-        return {
-          ...d,
-          users: d.created_by ? uMap.get(String(d.created_by)) || null : null,
-          clients: clientObj,
-          jobs: d.job_id ? jMap.get(String(d.job_id)) || null : null,
-        };
-      });
-
-      setDocuments(docList);
+      setDocuments(rawData || []);
+      setTotalRecords(count != null ? count : (rawData ? rawData.length : 0));
     } catch (error) {
       console.error('Error fetching documents:', error);
       toast({
@@ -196,7 +186,18 @@ const DocumentsManager = () => {
 
   useEffect(() => {
     fetchDocuments();
-  }, []);
+  }, [
+    currentPage,
+    itemsPerPage,
+    sortField,
+    sortOrder,
+    searchTerm,
+    fromDate,
+    toDate,
+    filterDocType,
+    filterUser,
+    filterClient,
+  ]);
 
   const handleDeleteClick = (record) => {
     setDeleteConfirmation({
@@ -218,7 +219,7 @@ const DocumentsManager = () => {
     }
 
     try {
-      const { error } = await supabase
+      const { error } = await apiClient
         .from('documents')
         .delete()
         .eq('id', deleteConfirmation.recordId);
@@ -392,11 +393,11 @@ const DocumentsManager = () => {
     return 0;
   });
 
-  // Pagination calculations
-  const totalPages = Math.ceil(sortedDocuments.length / itemsPerPage);
+  // Server-side Pagination calculations
+  const totalPages = Math.ceil(totalRecords / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedDocuments = sortedDocuments.slice(startIndex, endIndex);
+  const paginatedDocuments = documents;
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -525,10 +526,10 @@ const DocumentsManager = () => {
           <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">
             Showing{' '}
             <span className="text-primary">
-              {sortedDocuments.length === 0 ? 0 : startIndex + 1}–
-              {Math.min(endIndex, sortedDocuments.length)}
+              {totalRecords === 0 ? 0 : startIndex + 1}–
+              {Math.min(endIndex, totalRecords)}
             </span>{' '}
-            of <span className="text-primary">{sortedDocuments.length}</span> Documents
+            of <span className="text-primary">{totalRecords}</span> Documents
           </div>
         </div>
 
@@ -627,9 +628,9 @@ const DocumentsManager = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Users</SelectItem>
-                      {uniqueUsers.map((u) => (
-                        <SelectItem key={u} value={u}>
-                          {u}
+                      {usersList.map((u) => (
+                        <SelectItem key={u.id} value={String(u.id)}>
+                          {u.full_name || u.username}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -646,11 +647,11 @@ const DocumentsManager = () => {
                   classNamePrefix="react-select"
                   options={[
                     { value: 'all', label: 'All Clients' },
-                    ...uniqueClients.map((c) => ({ value: c, label: c })),
+                    ...clients.map((c) => ({ value: String(c.id), label: c.client_name })),
                   ]}
                   value={{
                     value: filterClient,
-                    label: filterClient === 'all' ? 'All Clients' : filterClient,
+                    label: filterClient === 'all' ? 'All Clients' : (clients.find(c => String(c.id) === String(filterClient))?.client_name || filterClient),
                   }}
                   onChange={(option) => setFilterClient(option ? option.value : 'all')}
                   placeholder="Search Clients..."
@@ -697,8 +698,8 @@ const DocumentsManager = () => {
             </SelectContent>
           </Select>
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none border-l pl-3 ml-1">
-            Showing {sortedDocuments.length === 0 ? 0 : startIndex + 1}-
-            {Math.min(endIndex, sortedDocuments.length)} of {sortedDocuments.length}
+            Showing {totalRecords === 0 ? 0 : startIndex + 1}-
+            {Math.min(endIndex, totalRecords)} of {totalRecords}
           </span>
         </div>
 
@@ -773,7 +774,16 @@ const DocumentsManager = () => {
             </thead>
 
             <tbody>
-              {paginatedDocuments.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={9} className="py-20 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+                      <p className="text-gray-500">Loading documents...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedDocuments.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-10 text-center text-gray-500">
                     No documents found.

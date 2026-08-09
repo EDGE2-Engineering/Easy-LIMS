@@ -10,6 +10,7 @@ import {
   AlertCircle,
   SortAsc,
   SortDesc,
+  Loader2,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Rupee from '../Rupee';
@@ -49,7 +50,7 @@ import { DOCUMENT_ITEM_TYPES, DEPARTMENTS } from '@/data/config';
 import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 
 const AdminLabTestsManager = () => {
-  const { labTests, updateLabTest, addLabTest, deleteLabTest, setLabTests } = useLabTests();
+  const { labTests, updateLabTest, addLabTest, deleteLabTest, setLabTests, loading } = useLabTests();
   const { hsnCodes } = useHSNCodes();
   const { terms } = useTermsAndConditions();
   const { technicals } = useTechnicals();
@@ -526,6 +527,15 @@ const AdminLabTestsManager = () => {
     );
   }
 
+  if (loading && (!labTests || labTests.length === 0)) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+        <p className="text-gray-500 font-medium text-sm">Loading lab tests...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
@@ -679,7 +689,23 @@ const AdminLabTestsManager = () => {
               </tr>
             </thead>
             <tbody>
-              {paginatedLabTests.map((labTest) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={2} className="py-20 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+                      <p className="text-gray-500 font-medium text-sm">Loading lab tests...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedLabTests.length === 0 ? (
+                <tr>
+                  <td colSpan={2} className="py-10 text-center text-gray-500">
+                    No lab tests found.
+                  </td>
+                </tr>
+              ) : (
+                paginatedLabTests.map((labTest) => (
                 <tr
                   key={labTest.id}
                   className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
@@ -781,7 +807,7 @@ const AdminLabTestsManager = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

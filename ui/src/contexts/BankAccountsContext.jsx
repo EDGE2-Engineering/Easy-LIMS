@@ -1,24 +1,17 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { apiClient } from '@/lib/apiClient';
 
 const BankAccountsContext = createContext();
 
-export const useBankAccounts = () => {
-  const context = useContext(BankAccountsContext);
-  if (!context) {
-    throw new Error('useBankAccounts must be used within a BankAccountsProvider');
-  }
-  return context;
-};
-
 export const BankAccountsProvider = ({ children }) => {
   const [bankAccounts, setBankAccounts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const fetchedRef = useRef(false);
 
   const fetchBankAccounts = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('bank_accounts')
         .select('*')
         .order('created_at', { ascending: true });
@@ -36,20 +29,24 @@ export const BankAccountsProvider = ({ children }) => {
     }
   }, []);
 
+  const ensureFetched = useCallback(() => {
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchBankAccounts();
+    }
+  }, [fetchBankAccounts]);
+
   const addBankAccount = async (bankData) => {
     try {
-      // If this is set as default, unset others
       if (bankData.is_default) {
-        await supabase
+        await apiClient
           .from('bank_accounts')
           .update({ is_default: false })
-          .neq('id', '00000000-0000-0000-0000-000000000000'); // Dummy filter to allow update all
+          .neq('id', '00000000-0000-0000-0000-000000000000');
       }
 
-      const { data, error } = await supabase.from('bank_accounts').insert([bankData]).select();
-
+      const { data, error } = await apiClient.from('bank_accounts').insert([bankData]).select();
       if (error) throw error;
-
       await fetchBankAccounts();
       return data[0];
     } catch (err) {
@@ -61,13 +58,10 @@ export const BankAccountsProvider = ({ children }) => {
   const updateBankAccount = async (id, bankData) => {
     try {
       if (bankData.is_default) {
-        await supabase.from('bank_accounts').update({ is_default: false }).neq('id', id);
+        await apiClient.from('bank_accounts').update({ is_default: false }).neq('id', id);
       }
-
-      const { error } = await supabase.from('bank_accounts').update(bankData).eq('id', id);
-
+      const { error } = await apiClient.from('bank_accounts').update(bankData).eq('id', id);
       if (error) throw error;
-
       await fetchBankAccounts();
     } catch (err) {
       console.error('Update Bank Account Exception:', err);
@@ -77,10 +71,8 @@ export const BankAccountsProvider = ({ children }) => {
 
   const deleteBankAccount = async (id) => {
     try {
-      const { error } = await supabase.from('bank_accounts').delete().eq('id', id);
-
+      const { error } = await apiClient.from('bank_accounts').delete().eq('id', id);
       if (error) throw error;
-
       await fetchBankAccounts();
     } catch (err) {
       console.error('Delete Bank Account Exception:', err);
@@ -90,17 +82,13 @@ export const BankAccountsProvider = ({ children }) => {
 
   const setDefaultBank = async (id) => {
     try {
-      // Unset all
-      await supabase.from('bank_accounts').update({ is_default: false }).neq('id', id);
-
-      // Set this one
-      const { error } = await supabase
+      await apiClient.from('bank_accounts').update({ is_default: false }).neq('id', id);
+      const { error } = await apiClient
         .from('bank_accounts')
         .update({ is_default: true })
         .eq('id', id);
 
       if (error) throw error;
-
       await fetchBankAccounts();
     } catch (err) {
       console.error('Set Default Bank Exception:', err);
@@ -108,14 +96,11 @@ export const BankAccountsProvider = ({ children }) => {
     }
   };
 
-  useEffect(() => {
-    fetchBankAccounts();
-  }, [fetchBankAccounts]);
-
   const value = {
     bankAccounts,
     loading,
     fetchBankAccounts,
+    ensureFetched,
     addBankAccount,
     updateBankAccount,
     deleteBankAccount,
@@ -123,4 +108,15 @@ export const BankAccountsProvider = ({ children }) => {
   };
 
   return <BankAccountsContext.Provider value={value}>{children}</BankAccountsContext.Provider>;
+};
+
+export const useBankAccounts = () => {
+  const context = useContext(BankAccountsContext);
+  if (!context) {
+    throw new Error('useBankAccounts must be used within a BankAccountsProvider');
+  }
+  useEffect(() => {
+    context.ensureFetched();
+  }, [context]);
+  return context;
 };

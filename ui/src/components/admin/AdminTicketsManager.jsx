@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiClient } from '@/lib/apiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { DEPARTMENTS, ROLES, TICKET_STATUSES } from '@/data/config';
@@ -354,7 +354,7 @@ export default function AdminTicketsManager({ id: propId }) {
     setLoadingTickets(true);
     setSchemaError(false);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('tickets')
         .select('*')
         .order('created_at', { ascending: false });
@@ -370,7 +370,7 @@ export default function AdminTicketsManager({ id: propId }) {
       let list = data || [];
       const creatorIds = [...new Set(list.map((t) => t.created_by).filter(Boolean))];
       if (creatorIds.length > 0) {
-        const { data: usersData } = await supabase
+        const { data: usersData } = await apiClient
           .from('users')
           .select('id, full_name, role, username')
           .in('id', creatorIds);
@@ -396,7 +396,7 @@ export default function AdminTicketsManager({ id: propId }) {
   const fetchTicketDetails = async (tId) => {
     setLoadingTicketDetails(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await apiClient
         .from('tickets')
         .select('*')
         .eq('id', tId)
@@ -406,7 +406,7 @@ export default function AdminTicketsManager({ id: propId }) {
 
       let ticket = data;
       if (ticket && ticket.created_by) {
-        const { data: userData } = await supabase
+        const { data: userData } = await apiClient
           .from('users')
           .select('id, full_name, role, username')
           .eq('id', ticket.created_by)
@@ -440,7 +440,7 @@ export default function AdminTicketsManager({ id: propId }) {
   const fetchComments = async (tId) => {
     setLoadingComments(true);
     try {
-      const { data: rawComments, error } = await supabase
+      const { data: rawComments, error } = await apiClient
         .from('ticket_comments')
         .select('*')
         .eq('ticket_id', tId)
@@ -451,7 +451,7 @@ export default function AdminTicketsManager({ id: propId }) {
       let commentsData = rawComments || [];
       const authorIds = [...new Set(commentsData.map((c) => c.author_id).filter(Boolean))];
       if (authorIds.length > 0) {
-        const { data: usersData } = await supabase
+        const { data: usersData } = await apiClient
           .from('users')
           .select('id, full_name, role, username')
           .in('id', authorIds);
@@ -477,7 +477,7 @@ export default function AdminTicketsManager({ id: propId }) {
   const fetchTicketHistory = async (tId) => {
     setLoadingHistory(true);
     try {
-      const { data: rawHistory, error } = await supabase
+      const { data: rawHistory, error } = await apiClient
         .from('ticket_history')
         .select('*')
         .eq('ticket_id', tId)
@@ -492,7 +492,7 @@ export default function AdminTicketsManager({ id: propId }) {
       let historyData = rawHistory || [];
       const userIds = [...new Set(historyData.map((h) => h.user_id).filter(Boolean))];
       if (userIds.length > 0) {
-        const { data: usersData } = await supabase
+        const { data: usersData } = await apiClient
           .from('users')
           .select('id, full_name, role, username')
           .in('id', userIds);
@@ -570,7 +570,7 @@ export default function AdminTicketsManager({ id: propId }) {
       });
 
       // Comment attachments — fetch them first
-      const { data: commentRows } = await supabase
+      const { data: commentRows } = await apiClient
         .from('ticket_comments')
         .select('attachments')
         .eq('ticket_id', ticketDetails.id);
@@ -583,11 +583,11 @@ export default function AdminTicketsManager({ id: propId }) {
 
       // Delete all storage files (ignore errors — files may have already been deleted)
       if (allPaths.length > 0) {
-        await supabase.storage.from('ticket-attachments').remove(allPaths);
+        await apiClient.storage.from('ticket-attachments').remove(allPaths);
       }
 
       // Delete the ticket row — cascade deletes ticket_comments and ticket_history via FK
-      const { error } = await supabase.from('tickets').delete().eq('id', ticketDetails.id);
+      const { error } = await apiClient.from('tickets').delete().eq('id', ticketDetails.id);
       if (error) throw error;
 
       toast({
@@ -671,11 +671,11 @@ export default function AdminTicketsManager({ id: propId }) {
           const fileExt = att.name.split('.').pop();
           const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
           const filePath = `tickets/${fileName}`;
-          const { error: uploadError } = await supabase.storage
+          const { error: uploadError } = await apiClient.storage
             .from('ticket-attachments')
             .upload(filePath, att.fileObject);
           if (uploadError) throw uploadError;
-          const { data: urlData } = supabase.storage
+          const { data: urlData } = apiClient.storage
             .from('ticket-attachments')
             .getPublicUrl(filePath);
           uploadedAttachments.push({
@@ -687,7 +687,7 @@ export default function AdminTicketsManager({ id: propId }) {
           });
         }
       }
-      const { error } = await supabase.from('tickets').insert([
+      const { error } = await apiClient.from('tickets').insert([
         {
           title: newTicket.title,
           description: newTicket.description,
@@ -729,11 +729,11 @@ export default function AdminTicketsManager({ id: propId }) {
           const fileExt = att.name.split('.').pop();
           const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
           const filePath = `tickets/${fileName}`;
-          const { error: uploadError } = await supabase.storage
+          const { error: uploadError } = await apiClient.storage
             .from('ticket-attachments')
             .upload(filePath, att.fileObject);
           if (uploadError) throw uploadError;
-          const { data: urlData } = supabase.storage
+          const { data: urlData } = apiClient.storage
             .from('ticket-attachments')
             .getPublicUrl(filePath);
           uploadedAttachments.push({
@@ -748,7 +748,7 @@ export default function AdminTicketsManager({ id: propId }) {
 
       const finalAttachments = [...editTicketAttachments, ...uploadedAttachments];
 
-      const { error } = await supabase
+      const { error } = await apiClient
         .from('tickets')
         .update({
           title: editTicketForm.title,
@@ -782,11 +782,11 @@ export default function AdminTicketsManager({ id: propId }) {
           const fileExt = att.name.split('.').pop();
           const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
           const filePath = `comments/${fileName}`;
-          const { error: uploadError } = await supabase.storage
+          const { error: uploadError } = await apiClient.storage
             .from('ticket-attachments')
             .upload(filePath, att.fileObject);
           if (uploadError) throw uploadError;
-          const { data: urlData } = supabase.storage
+          const { data: urlData } = apiClient.storage
             .from('ticket-attachments')
             .getPublicUrl(filePath);
           uploadedAttachments.push({
@@ -798,7 +798,7 @@ export default function AdminTicketsManager({ id: propId }) {
           });
         }
       }
-      const { error } = await supabase.from('ticket_comments').insert([
+      const { error } = await apiClient.from('ticket_comments').insert([
         {
           ticket_id: ticketIdParam,
           author_id: user.id,
@@ -821,7 +821,7 @@ export default function AdminTicketsManager({ id: propId }) {
     if (!editCommentValue.trim()) return;
     setSavingComment(true);
     try {
-      const { error } = await supabase
+      const { error } = await apiClient
         .from('ticket_comments')
         .update({ comment: editCommentValue })
         .eq('id', comment.id);
@@ -829,7 +829,7 @@ export default function AdminTicketsManager({ id: propId }) {
 
       // Log to history
       try {
-        await supabase.from('ticket_history').insert({
+        await apiClient.from('ticket_history').insert({
           ticket_id: ticketDetails.id,
           user_id: user.id,
           field_name: 'comment',
@@ -856,15 +856,15 @@ export default function AdminTicketsManager({ id: propId }) {
       // Delete storage files attached to this comment
       const paths = parseAttachments(comment.attachments).filter((a) => a.path).map((a) => a.path);
       if (paths.length > 0) {
-        await supabase.storage.from('ticket-attachments').remove(paths);
+        await apiClient.storage.from('ticket-attachments').remove(paths);
       }
 
-      const { error } = await supabase.from('ticket_comments').delete().eq('id', comment.id);
+      const { error } = await apiClient.from('ticket_comments').delete().eq('id', comment.id);
       if (error) throw error;
 
       // Log to history
       try {
-        await supabase.from('ticket_history').insert({
+        await apiClient.from('ticket_history').insert({
           ticket_id: ticketDetails.id,
           user_id: user.id,
           field_name: 'comment_deleted',
@@ -887,7 +887,7 @@ export default function AdminTicketsManager({ id: propId }) {
     if (!ticketDetails) return;
     try {
       const oldValue = ticketDetails.status;
-      const { error } = await supabase
+      const { error } = await apiClient
         .from('tickets')
         .update({ status: newStatus })
         .eq('id', ticketDetails.id);
@@ -895,7 +895,7 @@ export default function AdminTicketsManager({ id: propId }) {
 
       if (oldValue !== newStatus) {
         try {
-          await supabase.from('ticket_history').insert({
+          await apiClient.from('ticket_history').insert({
             ticket_id: ticketDetails.id,
             user_id: user.id,
             field_name: 'status',
@@ -1165,7 +1165,7 @@ export default function AdminTicketsManager({ id: propId }) {
           <p className="text-gray-500 font-medium max-w-lg mx-auto mb-8 text-sm leading-relaxed">
             The database tables <code>tickets</code>, <code>ticket_comments</code>, and{' '}
             <code>ticket_history</code> do not exist yet. Please run the SQL setup script located in{' '}
-            <code>tickets-schema.sql</code> in the <strong>SQL Editor</strong> of your Supabase
+            <code>tickets-schema.sql</code> in the <strong>SQL Editor</strong> of your API
             Console.
           </p>
           <Button
@@ -1354,7 +1354,7 @@ export default function AdminTicketsManager({ id: propId }) {
   const saveField = async (fieldName, value) => {
     try {
       const oldValue = ticketDetails?.[fieldName];
-      const { error } = await supabase
+      const { error } = await apiClient
         .from('tickets')
         .update({ [fieldName]: value })
         .eq('id', ticketDetails.id);
@@ -1362,7 +1362,7 @@ export default function AdminTicketsManager({ id: propId }) {
 
       if (oldValue !== value) {
         try {
-          await supabase.from('ticket_history').insert({
+          await apiClient.from('ticket_history').insert({
             ticket_id: ticketDetails.id,
             user_id: user.id,
             field_name: fieldName,
@@ -1405,11 +1405,11 @@ export default function AdminTicketsManager({ id: propId }) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
         const filePath = `tickets/${fileName}`;
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await apiClient.storage
           .from('ticket-attachments')
           .upload(filePath, file);
         if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = apiClient.storage
           .from('ticket-attachments')
           .getPublicUrl(filePath);
         uploadedAttachments.push({
@@ -1423,7 +1423,7 @@ export default function AdminTicketsManager({ id: propId }) {
 
       const currentAttach = parseAttachments(ticketDetails.attachments);
       const finalAttachments = [...currentAttach, ...uploadedAttachments];
-      const { error } = await supabase
+      const { error } = await apiClient
         .from('tickets')
         .update({ attachments: finalAttachments })
         .eq('id', ticketDetails.id);
@@ -1432,7 +1432,7 @@ export default function AdminTicketsManager({ id: propId }) {
 
       // History log
       try {
-        await supabase.from('ticket_history').insert({
+        await apiClient.from('ticket_history').insert({
           ticket_id: ticketDetails.id,
           user_id: user.id,
           field_name: 'attachments',
@@ -1458,7 +1458,7 @@ export default function AdminTicketsManager({ id: propId }) {
       const currentAttach = parseAttachments(ticketDetails.attachments);
       const deletedFile = currentAttach[idxToDelete];
       const remaining = currentAttach.filter((_, i) => i !== idxToDelete);
-      const { error } = await supabase
+      const { error } = await apiClient
         .from('tickets')
         .update({ attachments: remaining })
         .eq('id', ticketDetails.id);
@@ -1466,7 +1466,7 @@ export default function AdminTicketsManager({ id: propId }) {
 
       // History log
       try {
-        await supabase.from('ticket_history').insert({
+        await apiClient.from('ticket_history').insert({
           ticket_id: ticketDetails.id,
           user_id: user.id,
           field_name: 'attachments',
