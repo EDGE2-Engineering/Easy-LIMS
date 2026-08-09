@@ -759,9 +759,6 @@ const DocumentsManager = () => {
                   Created By
                 </th>
 
-                <th className="text-center py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
-                  Type
-                </th>
 
                 <th className="text-center py-3 px-2 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Revisions
@@ -801,6 +798,21 @@ const DocumentsManager = () => {
                           ? `${record.quote_number}/R${record.version - 1}`
                           : record.quote_number}
                       </div>
+                       <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${
+                          record.document_type === 'Tax Invoice'
+                            ? 'bg-blue-50 text-blue-700'
+                            : record.document_type === 'Proforma Invoice'
+                              ? 'bg-purple-50 text-purple-700'
+                              : record.document_type === 'Purchase Order'
+                                ? 'bg-orange-50 text-orange-700'
+                                : record.document_type === 'Delivery Challan'
+                                  ? 'bg-teal-50 text-teal-700'
+                                  : 'bg-green-50 text-green-700'
+                        }`}
+                      >
+                        {record.document_type}
+                      </span>
                     </td>
 
                     <td className="py-4 px-3 align-top">
@@ -875,24 +887,6 @@ const DocumentsManager = () => {
                       ) : (
                         '-'
                       )}
-                    </td>
-
-                    <td className="py-4 px-2 text-center whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${
-                          record.document_type === 'Tax Invoice'
-                            ? 'bg-blue-50 text-blue-700'
-                            : record.document_type === 'Proforma Invoice'
-                              ? 'bg-purple-50 text-purple-700'
-                              : record.document_type === 'Purchase Order'
-                                ? 'bg-orange-50 text-orange-700'
-                                : record.document_type === 'Delivery Challan'
-                                  ? 'bg-teal-50 text-teal-700'
-                                  : 'bg-green-50 text-green-700'
-                        }`}
-                      >
-                        {record.document_type}
-                      </span>
                     </td>
 
                     <td className="py-4 px-2 text-center whitespace-nowrap text-gray-600 font-semibold">
