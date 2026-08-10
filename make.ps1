@@ -109,7 +109,7 @@ function Invoke-InitTest {
         if (Test-Path test.env.example) {
             Copy-Item test.env.example test.env
         } else {
-            "ADMIN_USERNAME=superadmin`nADMIN_PASSWORD=gw123`nusername=superadmin`npassword=gw123`nAPI_URL=http://localhost:8000" | Out-File -FilePath test.env -Encoding ascii
+            "ADMIN_USERNAME=`nADMIN_PASSWORD=`nAPI_URL=http://localhost:8000" | Out-File -FilePath test.env -Encoding ascii
         }
     }
 }

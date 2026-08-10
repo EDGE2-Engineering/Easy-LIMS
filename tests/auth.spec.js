@@ -24,8 +24,12 @@ test.describe('Authentication', () => {
 
   test('should login successfully with valid credentials', async ({ page }) => {
     // Uses credentials from test.env
-    const username = process.env.ADMIN_USERNAME || process.env.username || 'superadmin';
-    const password = process.env.ADMIN_PASSWORD || process.env.password || 'gw123';
+    const username = process.env.ADMIN_USERNAME || process.env.username;
+    const password = process.env.ADMIN_PASSWORD || process.env.password;
+
+    if (!username || !password) {
+      test.skip('No credentials provided in test.env');
+    }
 
     await page.goto('/');
 

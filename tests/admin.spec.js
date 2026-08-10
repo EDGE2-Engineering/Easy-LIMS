@@ -11,8 +11,13 @@ test.describe('Admin User Workflow', () => {
     await page.goto('/');
 
     // Login as admin
-    const username = process.env.ADMIN_USERNAME || process.env.username || 'superadmin';
-    const password = process.env.ADMIN_PASSWORD || process.env.password || 'gw123';
+    const username = process.env.ADMIN_USERNAME || process.env.username;
+    const password = process.env.ADMIN_PASSWORD || process.env.password;
+
+    if (!username || !password) {
+      test.skip('No admin credentials configured in test.env');
+    }
+
     await page.fill('#username', username);
     await page.fill('#password', password);
     await page.click('button:has-text("Login")');
