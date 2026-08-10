@@ -25,8 +25,9 @@ function Show-Help {
 }
 
 function Invoke-Install {
-    Write-Host "Installing dependencies..." -ForegroundColor Green
-    if (Test-Path ui) { Push-Location ui; npm install; Pop-Location } else { npm install }
+    Write-Host "Installing root dependencies..." -ForegroundColor Green
+    npm install
+    if (Test-Path ui) { Write-Host "Installing UI dependencies..." -ForegroundColor Green; Push-Location ui; npm install; Pop-Location }
 }
 
 function Invoke-Build {
@@ -105,7 +106,11 @@ function Invoke-Android {
 
 function Invoke-InitTest {
     if (-not (Test-Path test.env)) {
-        "username=test`npassword=test`nAPI_URL=http://localhost:8000" | Out-File -FilePath test.env -Encoding ascii
+        if (Test-Path test.env.example) {
+            Copy-Item test.env.example test.env
+        } else {
+            "ADMIN_USERNAME=superadmin`nADMIN_PASSWORD=gw123`nusername=superadmin`npassword=gw123`nAPI_URL=http://localhost:8000" | Out-File -FilePath test.env -Encoding ascii
+        }
     }
 }
 

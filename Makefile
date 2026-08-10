@@ -21,6 +21,8 @@ help:
 
 # Install dependencies
 install:
+	@echo "Installing root dependencies..."
+	npm install
 	@echo "Installing UI dependencies in ui/..."
 	cd ui && npm install
 

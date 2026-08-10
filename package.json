@@ -4,6 +4,14 @@
   "scripts": {
     "dev": "npm --prefix ui run dev",
     "build": "npm --prefix ui run build",
-    "preview": "npm --prefix ui run preview"
+    "preview": "npm --prefix ui run preview",
+    "test": "playwright test --headed",
+    "test:e2e": "playwright test",
+    "test:ui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "dotenv": "^16.4.7"
   }
 }
+

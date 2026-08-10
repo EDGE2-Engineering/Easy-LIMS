@@ -11,8 +11,10 @@ test.describe('Admin User Workflow', () => {
     await page.goto('/');
 
     // Login as admin
-    await page.fill('#username', process.env.ADMIN_USERNAME);
-    await page.fill('#password', process.env.ADMIN_PASSWORD);
+    const username = process.env.ADMIN_USERNAME || process.env.username || 'superadmin';
+    const password = process.env.ADMIN_PASSWORD || process.env.password || 'gw123';
+    await page.fill('#username', username);
+    await page.fill('#password', password);
     await page.click('button:has-text("Login")');
 
     // Wait for navigation to dashboard
