@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, useContext, useMemo } from 'react';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient, authFetch } from '@/lib/apiClient';
 
 const MaterialsContext = createContext();
 
@@ -103,7 +103,7 @@ const MaterialsProvider = ({ children }) => {
 
         if (formTypes.length > 0) {
           // Use the /bulk endpoint since apiClient.insert only posts the first item of an array
-          const res = await fetch('/api/material-form-associations/bulk', {
+          const res = await authFetch('/api/material-form-associations/bulk', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

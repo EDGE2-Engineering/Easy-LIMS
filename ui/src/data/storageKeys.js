@@ -12,6 +12,7 @@ export const STORAGE_KEYS = {
   EXPENSES: `${PREFIX}expenses`,
   PACKAGES: `${PREFIX}packages`,
   LAST_ACTIVITY: `${PREFIX}last_activity`,
+  AUTH_TOKEN: `${PREFIX}auth_token`,
 };
 
 /**
@@ -40,14 +41,35 @@ const LEGACY_MAPPING = {
  * This should be called once during app initialization.
  */
 export const migrateStorageKeys = () => {
+  // Purge entity and session data from localStorage as data is now always fetched directly from APIs
+  const keysToPurge = [
+    STORAGE_KEYS.SESSION,
+    STORAGE_KEYS.CLIENTS,
+    STORAGE_KEYS.LAB_TESTS,
+    STORAGE_KEYS.FIELD_TESTS,
+    STORAGE_KEYS.SAMPLING_DATA,
+    STORAGE_KEYS.EXPENSES,
+    STORAGE_KEYS.PACKAGES,
+    'app_session',
+    'clients',
+    'tests',
+    'services',
+    'easy_lims_tests',
+    'easy_lims_services',
+    'sampling_data',
+  ];
+
+  keysToPurge.forEach((key) => {
+    localStorage.removeItem(key);
+  });
+
   Object.entries(LEGACY_MAPPING).forEach(([oldKey, newKey]) => {
+    if (keysToPurge.includes(oldKey) || keysToPurge.includes(newKey)) return;
     const value = localStorage.getItem(oldKey);
     if (value !== null) {
-      // Only migrate if the new key doesn't already have data
       if (localStorage.getItem(newKey) === null) {
         localStorage.setItem(newKey, value);
       }
-      // Remove old key after migration
       localStorage.removeItem(oldKey);
     }
   });

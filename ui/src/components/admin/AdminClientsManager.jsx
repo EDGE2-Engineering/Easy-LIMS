@@ -386,8 +386,6 @@ const AdminClientsManager = ({ id }) => {
         const importedData = JSON.parse(event.target.result);
         if (Array.isArray(importedData)) {
           setClients(importedData);
-          // Also update localStorage immediately
-          localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(importedData));
           toast({
             title: 'Import Successful',
             description: `Imported ${importedData.length} clients.`,

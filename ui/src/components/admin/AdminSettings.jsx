@@ -154,13 +154,8 @@ const AdminSettings = () => {
 
   // --- Full Site Backup Logic ---
   const handleFullBackup = () => {
-    // Collect all local storage keys related to data
+    // Collect local storage keys related to assets/content
     const data = {
-      clients: JSON.parse(localStorage.getItem(STORAGE_KEYS.CLIENTS) || '[]'),
-      tests: JSON.parse(localStorage.getItem(STORAGE_KEYS.TESTS) || '[]'),
-      services: JSON.parse(localStorage.getItem(STORAGE_KEYS.SERVICES) || '[]'),
-      samplingData: JSON.parse(localStorage.getItem(STORAGE_KEYS.SAMPLING_DATA) || '[]'),
-      packages: JSON.parse(localStorage.getItem(STORAGE_KEYS.PACKAGES) || '[]'),
       siteContent: JSON.parse(localStorage.getItem(STORAGE_KEYS.CONTENT) || '{}'),
       pageImages: JSON.parse(localStorage.getItem(STORAGE_KEYS.IMAGES) || '{}'),
       timestamp: new Date().toISOString(),
@@ -172,15 +167,15 @@ const AdminSettings = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `full_site_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `site_assets_backup_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
 
     toast({
-      title: 'Full Backup Downloaded',
-      description: 'Contains clients, tests, services, sampling data, and site assets.',
+      title: 'Site Assets Backup Downloaded',
+      description: 'Contains site content and page images.',
     });
   };
 
@@ -190,7 +185,7 @@ const AdminSettings = () => {
 
     if (
       !window.confirm(
-        'CRITICAL WARNING: This will completely WIPE current site data and replace it with the backup. Are you sure?'
+        'CRITICAL WARNING: This will overwrite site content and page images. Are you sure?'
       )
     ) {
       e.target.value = '';
@@ -202,15 +197,6 @@ const AdminSettings = () => {
       try {
         const backup = JSON.parse(event.target.result);
 
-        if (backup.clients)
-          localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(backup.clients));
-        if (backup.tests) localStorage.setItem(STORAGE_KEYS.TESTS, JSON.stringify(backup.tests));
-        if (backup.services)
-          localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(backup.services));
-        if (backup.samplingData)
-          localStorage.setItem(STORAGE_KEYS.SAMPLING_DATA, JSON.stringify(backup.samplingData));
-        if (backup.packages)
-          localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify(backup.packages));
         if (backup.siteContent)
           localStorage.setItem(STORAGE_KEYS.CONTENT, JSON.stringify(backup.siteContent));
         if (backup.pageImages)

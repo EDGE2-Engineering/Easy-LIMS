@@ -54,16 +54,6 @@ const ExpensesProvider = ({ children }) => {
 
       if (error) {
         console.warn('API fetch error (expenses):', error.message);
-        const stored = localStorage.getItem(STORAGE_KEYS.EXPENSES);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed)) {
-              setExpenses(parsed.map(mapFromDb));
-              return;
-            }
-          } catch (e) {}
-        }
         return;
       }
 
@@ -86,7 +76,6 @@ const ExpensesProvider = ({ children }) => {
         }
         const mapped = expList.map(mapFromDb);
         setExpenses(mapped);
-        localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(mapped));
       }
     } catch (error) {
       console.error('Error loading expenses:', error);
@@ -102,12 +91,6 @@ const ExpensesProvider = ({ children }) => {
       fetchExpenses();
     }
   }, [fetchExpenses]);
-
-  useEffect(() => {
-    if (!loading) {
-      localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
-    }
-  }, [expenses, loading]);
 
   const addExpense = useCallback(
     async (newExpense, userId = null) => {

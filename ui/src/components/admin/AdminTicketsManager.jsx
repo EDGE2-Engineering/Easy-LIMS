@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient, authFetch } from '@/lib/apiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { DEPARTMENTS, ROLES, TICKET_STATUSES } from '@/data/config';
@@ -660,7 +660,7 @@ export default function AdminTicketsManager({ id: propId }) {
           const formData = new FormData();
           formData.append('file', att.fileObject, att.name);
           if (user?.id) formData.append('created_by', user.id);
-          const res = await fetch('/api/files', { method: 'POST', body: formData });
+          const res = await authFetch('/api/files', { method: 'POST', body: formData });
           if (!res.ok) throw new Error(`File upload failed: ${att.name}`);
           const uploaded = await res.json();
           fileIds.push(uploaded.id);
@@ -708,7 +708,7 @@ export default function AdminTicketsManager({ id: propId }) {
           const formData = new FormData();
           formData.append('file', att.fileObject, att.name);
           if (user?.id) formData.append('created_by', user.id);
-          const res = await fetch('/api/files', { method: 'POST', body: formData });
+          const res = await authFetch('/api/files', { method: 'POST', body: formData });
           if (!res.ok) throw new Error(`File upload failed: ${att.name}`);
           const uploaded = await res.json();
           newFileIds.push(uploaded.id);
@@ -753,7 +753,7 @@ export default function AdminTicketsManager({ id: propId }) {
           const formData = new FormData();
           formData.append('file', att.fileObject, att.name);
           if (user?.id) formData.append('created_by', user.id);
-          const res = await fetch('/api/files', { method: 'POST', body: formData });
+          const res = await authFetch('/api/files', { method: 'POST', body: formData });
           if (!res.ok) throw new Error(`File upload failed: ${att.name}`);
           const uploaded = await res.json();
           fileIds.push(uploaded.id);
@@ -1373,7 +1373,7 @@ export default function AdminTicketsManager({ id: propId }) {
         const formData = new FormData();
         formData.append('file', file, file.name);
         if (user?.id) formData.append('created_by', user.id);
-        const res = await fetch('/api/files', { method: 'POST', body: formData });
+        const res = await authFetch('/api/files', { method: 'POST', body: formData });
         if (!res.ok) throw new Error(`File upload failed: ${file.name}`);
         const uploaded = await res.json();
         newFileIds.push(uploaded.id);

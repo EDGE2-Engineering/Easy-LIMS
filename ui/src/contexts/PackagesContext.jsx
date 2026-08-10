@@ -21,17 +21,6 @@ const PackagesProvider = ({ children }) => {
 
       if (error) {
         console.warn('API fetch error (packages):', error.message);
-        // Fallback to localStorage
-        const stored = localStorage.getItem(STORAGE_KEYS.PACKAGES);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed)) {
-              setPackages(parsed);
-              return;
-            }
-          } catch (e) {}
-        }
         return;
       }
 
@@ -60,8 +49,6 @@ const PackagesProvider = ({ children }) => {
           }
         }
         setPackages(pkgList);
-        // Cache to localStorage
-        localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify(pkgList));
       }
     } catch (err) {
       console.error('Error loading packages data:', err);
@@ -77,20 +64,6 @@ const PackagesProvider = ({ children }) => {
       fetchPackages();
     }
   }, [fetchPackages]);
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const stored = localStorage.getItem(STORAGE_KEYS.PACKAGES);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) setPackages(parsed);
-        } catch (e) {}
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
 
   const addPackage = useCallback(
     async (newPackage) => {
@@ -112,11 +85,8 @@ const PackagesProvider = ({ children }) => {
         const { error } = await apiClient.from('packages').insert(payload);
 
         if (error) {
-          console.warn('API insert error (packages), falling back to local:', error.message);
-          // Save to localStorage as fallback
-          const localPayloads = [...previousPackages, payload];
-          localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify(localPayloads));
-          setPackages(localPayloads);
+          console.warn('API insert error (packages):', error.message);
+          setPackages(previousPackages);
         } else {
           // Refresh from DB to ensure sync
           await fetchPackages();
@@ -154,13 +124,8 @@ const PackagesProvider = ({ children }) => {
         const { error } = await apiClient.from('packages').update(payload).eq('id', updatedItem.id);
 
         if (error) {
-          console.warn('API update error (packages), falling back to local:', error.message);
-          // Save to localStorage as fallback
-          const localPayloads = previousPackages.map((p) =>
-            p.id === updatedItem.id ? { ...p, ...payload } : p
-          );
-          localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify(localPayloads));
-          setPackages(localPayloads);
+          console.warn('API update error (packages):', error.message);
+          setPackages(previousPackages);
         } else {
           // Refresh from DB to ensure sync
           await fetchPackages();
@@ -192,11 +157,8 @@ const PackagesProvider = ({ children }) => {
         const { error } = await apiClient.from('packages').delete().eq('id', id);
 
         if (error) {
-          console.warn('API delete error (packages), falling back to local:', error.message);
-          // Save to localStorage as fallback
-          const localPayloads = previousPackages.filter((p) => p.id !== id);
-          localStorage.setItem(STORAGE_KEYS.PACKAGES, JSON.stringify(localPayloads));
-          setPackages(localPayloads);
+          console.warn('API delete error (packages):', error.message);
+          setPackages(previousPackages);
         }
 
         logAudit({

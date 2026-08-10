@@ -1,5 +1,4 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
-import { apiClient } from '@/lib/apiClient';
 import { sendTelegramNotification } from '@/lib/notifier';
 import { ROLES, DEPARTMENTS } from '@/data/config';
 import { STORAGE_KEYS } from '@/data/storageKeys';
@@ -20,9 +19,19 @@ const AuthProvider = ({ children }) => {
     await sendTelegramNotification(message);
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Destroy the token server-side before clearing local state
+    try {
+      const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      if (token) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+      }
+    } catch (_) { /* best-effort */ }
     setUser(null);
-    localStorage.removeItem(STORAGE_KEYS.SESSION);
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.LAST_ACTIVITY);
   }, []);
 
@@ -44,23 +53,29 @@ const AuthProvider = ({ children }) => {
 
         const data = await response.json();
 
+        // Store the API token
+        if (data.token) {
+          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
+        }
+
+        const userData = data.user || data;
+
         // departments is stored as a JSONB array of dept IDs on the users row
-        const deptIds = Array.isArray(data.departments) ? data.departments : [];
+        const deptIds = Array.isArray(userData.departments) ? userData.departments : [];
         const deptNames = deptIds
           .map((id) => DEPARTMENTS.find((d) => d.id === id)?.name)
           .filter(Boolean);
 
         const sessionUser = {
-          id: data.id,
-          username: data.username,
-          fullName: data.full_name,
-          emp_id: data.employee_id,
+          id: userData.id,
+          username: userData.username,
+          fullName: userData.full_name,
+          emp_id: userData.employee_id,
           departments: deptNames,
-          role: data.role || '',
+          role: userData.role || '',
         };
 
         setUser(sessionUser);
-        localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(sessionUser));
         localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, Date.now().toString());
 
         // Send login notification
@@ -77,84 +92,71 @@ const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const verifySession = async () => {
-      const storedUser = localStorage.getItem(STORAGE_KEYS.SESSION);
-      if (storedUser) {
+      const storedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      if (storedToken) {
         try {
-          const parsedUser = JSON.parse(storedUser);
-          // Verify if user is still active in DB
-          const { data, error } = await apiClient
-            .from('users')
-            .select('is_active')
-            .eq('id', parsedUser.id)
-            .maybeSingle();
+          // Verify token and fetch fresh user profile from API
+          const response = await fetch('/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${storedToken}` },
+          });
 
-          if (error || !data || !data.is_active) {
-            localStorage.removeItem(STORAGE_KEYS.SESSION);
+          if (!response.ok) {
+            localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
             setUser(null);
-            if (data && !data.is_active) {
+            if (response.status === 401) {
+              toast({
+                title: 'Session Expired',
+                description: 'Your session has expired. Please log in again.',
+                variant: 'destructive',
+              });
+            }
+          } else {
+            const userData = await response.json();
+            if (userData && userData.is_active === false) {
+              localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+              setUser(null);
               toast({
                 title: 'Account Deactivated',
                 description: 'Your account is no longer active.',
                 variant: 'destructive',
               });
+            } else {
+              const deptIds = Array.isArray(userData.departments) ? userData.departments : [];
+              const deptNames = deptIds
+                .map((id) => DEPARTMENTS.find((d) => d.id === id)?.name)
+                .filter(Boolean);
+
+              const sessionUser = {
+                id: userData.id,
+                username: userData.username,
+                fullName: userData.full_name,
+                emp_id: userData.employee_id,
+                departments: deptNames,
+                role: userData.role || '',
+              };
+              setUser(sessionUser);
+              localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, Date.now().toString());
             }
-          } else {
-            setUser(parsedUser);
-            localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, Date.now().toString());
           }
         } catch (e) {
-          console.error('Failed to parse stored user', e);
-          localStorage.removeItem(STORAGE_KEYS.SESSION);
+          console.error('Failed to verify session', e);
+          localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+          setUser(null);
         }
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+        setUser(null);
       }
       setLoading(false);
     };
     verifySession();
   }, [toast]);
 
-  // Real-time status check
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const channel = apiClient
-      .channel(`user-status-${user.id}`)
-      .on(
-        'api_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'users',
-          filter: `id=eq.${user.id}`,
-        },
-        (payload) => {
-          if (payload.new && payload.new.is_active === false) {
-            logout();
-            toast({
-              title: 'Account Deactivated',
-              description: 'Your account has been deactivated. You have been logged out.',
-              variant: 'destructive',
-            });
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      apiClient.removeChannel(channel);
-    };
-  }, [user?.id, logout, toast]);
-
-  // Synchronize session changes across tabs
+  // Synchronize token changes across tabs
   useEffect(() => {
     const handleStorageChange = (e) => {
-      if (e.key === STORAGE_KEYS.SESSION) {
-        if (!e.newValue) {
-          setUser(null);
-        } else {
-          try {
-            setUser(JSON.parse(e.newValue));
-          } catch (err) {}
-        }
+      if (e.key === STORAGE_KEYS.AUTH_TOKEN && !e.newValue) {
+        setUser(null);
       }
     };
     window.addEventListener('storage', handleStorageChange);

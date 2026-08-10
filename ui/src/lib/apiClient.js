@@ -1,4 +1,47 @@
+import { STORAGE_KEYS } from '@/data/storageKeys';
+
 const BASE_URL = (typeof window !== 'undefined' && window.location) ? '' : (process.env.VITE_API_URL || 'http://localhost:8000');
+
+/**
+ * Returns headers object with Authorization bearer token if one exists in localStorage.
+ */
+function getAuthHeaders(extra = {}) {
+  const headers = { ...extra };
+  try {
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  } catch (_) { /* localStorage may be unavailable in some contexts */ }
+  return headers;
+}
+
+/**
+ * Global 401 handler — clears auth state and redirects to login.
+ */
+function handle401() {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    localStorage.removeItem('easy_lims_last_activity');
+  } catch (_) {}
+  if (typeof window !== 'undefined') {
+    window.location.hash = '#/';
+    window.location.reload();
+  }
+}
+
+/**
+ * Wraps fetch to inject auth headers and handle 401 responses.
+ */
+async function authFetch(url, options = {}) {
+  const headers = getAuthHeaders(options.headers || {});
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401 && !url.includes('/api/auth/login')) {
+    handle401();
+    throw new Error('Session expired. Please log in again.');
+  }
+  return res;
+}
 
 const ENDPOINT_MAP = {
   documents: '/api/documents',
@@ -36,6 +79,8 @@ const ENDPOINT_MAP = {
   material_form_associations: '/api/material-form-associations',
   client_options: '/api/filter-options/clients',
   user_options: '/api/filter-options/users',
+  job_tests: '/api/job-tests',
+  technician_capabilities: '/api/technician-capabilities',
 };
 
 class QueryBuilder {
@@ -165,21 +210,21 @@ class QueryBuilder {
 
         if (mtype === 'insert') {
           const payload = Array.isArray(this._mutation.data) ? this._mutation.data[0] : this._mutation.data;
-          res = await fetch(apiPath, {
+          res = await authFetch(apiPath, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
         } else if (mtype === 'update') {
           const targetUrl = entityId ? `${apiPath}/${entityId}` : apiPath;
-          res = await fetch(targetUrl, {
+          res = await authFetch(targetUrl, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(this._mutation.data),
           });
         } else if (mtype === 'delete') {
           const targetUrl = entityId ? `${apiPath}/${entityId}` : apiPath;
-          res = await fetch(targetUrl, {
+          res = await authFetch(targetUrl, {
             method: 'DELETE',
           });
         }
@@ -199,7 +244,7 @@ class QueryBuilder {
       const idFilter = this._filters.find((f) => f.type === 'eq' && f.column === 'id');
       if (idFilter && (this._single || this._maybeSingle)) {
         // Direct GET by ID endpoint
-        res = await fetch(`${apiPath}/${idFilter.value}`);
+        res = await authFetch(`${apiPath}/${idFilter.value}`);
         if (!res.ok) {
           if (res.status === 404 && this._maybeSingle) {
             const finalResult = { data: null, count: 0, error: null };
@@ -253,7 +298,7 @@ class QueryBuilder {
       const queryString = urlParams.toString();
       const fetchUrl = queryString ? `${apiPath}?${queryString}` : apiPath;
 
-      res = await fetch(fetchUrl);
+      res = await authFetch(fetchUrl);
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
         throw new Error(errBody.detail || `HTTP error ${res.status}`);
@@ -300,23 +345,23 @@ const apiClient = {
   removeChannel(channel) {},
   api: {
     documents: {
-      list: (params) => fetch(`${BASE_URL}/api/documents?` + new URLSearchParams(params)).then((r) => r.json()),
-      get: (id) => fetch(`${BASE_URL}/api/documents/${id}`).then((r) => r.json()),
-      create: (data) => fetch(`${BASE_URL}/api/documents`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then((r) => r.json()),
-      update: (id, data) => fetch(`${BASE_URL}/api/documents/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then((r) => r.json()),
-      delete: (id) => fetch(`${BASE_URL}/api/documents/${id}`, { method: 'DELETE' }).then((r) => r.json()),
-      version: (id, payload) => fetch(`${BASE_URL}/api/documents/${id}/version`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then((r) => r.json()),
+      list: (params) => authFetch(`${BASE_URL}/api/documents?` + new URLSearchParams(params)).then((r) => r.json()),
+      get: (id) => authFetch(`${BASE_URL}/api/documents/${id}`).then((r) => r.json()),
+      create: (data) => authFetch(`${BASE_URL}/api/documents`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then((r) => r.json()),
+      update: (id, data) => authFetch(`${BASE_URL}/api/documents/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then((r) => r.json()),
+      delete: (id) => authFetch(`${BASE_URL}/api/documents/${id}`, { method: 'DELETE' }).then((r) => r.json()),
+      version: (id, payload) => authFetch(`${BASE_URL}/api/documents/${id}/version`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then((r) => r.json()),
     },
     jobs: {
-      list: (params) => fetch(`${BASE_URL}/api/jobs?` + new URLSearchParams(params)).then((r) => r.json()),
-      get: (id) => fetch(`${BASE_URL}/api/jobs/${id}`).then((r) => r.json()),
-      create: (data) => fetch(`${BASE_URL}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then((r) => r.json()),
-      update: (id, data) => fetch(`${BASE_URL}/api/jobs/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then((r) => r.json()),
-      delete: (id) => fetch(`${BASE_URL}/api/jobs/${id}`, { method: 'DELETE' }).then((r) => r.json()),
+      list: (params) => authFetch(`${BASE_URL}/api/jobs?` + new URLSearchParams(params)).then((r) => r.json()),
+      get: (id) => authFetch(`${BASE_URL}/api/jobs/${id}`).then((r) => r.json()),
+      create: (data) => authFetch(`${BASE_URL}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then((r) => r.json()),
+      update: (id, data) => authFetch(`${BASE_URL}/api/jobs/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then((r) => r.json()),
+      delete: (id) => authFetch(`${BASE_URL}/api/jobs/${id}`, { method: 'DELETE' }).then((r) => r.json()),
     },
-    insights: () => fetch(`${BASE_URL}/api/insights`).then((r) => r.json()),
+    insights: () => authFetch(`${BASE_URL}/api/insights`).then((r) => r.json()),
   },
 };
 
 export default apiClient;
-export { apiClient };
+export { apiClient, authFetch, getAuthHeaders };

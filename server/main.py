@@ -4,6 +4,8 @@ import datetime
 import re
 import json
 import uuid
+import secrets
+import hashlib
 from decimal import Decimal
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, Request, Response, UploadFile, File, Form
@@ -106,12 +108,133 @@ async def ensure_db_connection(request: Request, call_next):
                 )
     return await call_next(request)
 
+# ============================================================================
+# Token-based Authentication Helpers & Middleware
+# ============================================================================
+
+TOKEN_EXPIRY_HOURS = int(os.getenv("API_TOKEN_EXPIRY_HOURS", "24"))
+
+# Paths that do NOT require a Bearer token
+AUTH_EXEMPT_PATHS = {"/api/auth/login"}
+
+# In-memory token store: { token_hash: { "user_id": int, "expires_at": datetime } }
+_token_store: Dict[str, dict] = {}
+
+def generate_api_token() -> str:
+    """Generate a cryptographically secure URL-safe token."""
+    return secrets.token_urlsafe(48)
+
+def hash_token(raw_token: str) -> str:
+    """SHA-256 hash a raw token for safe storage."""
+    return hashlib.sha256(raw_token.encode()).hexdigest()
+
+def _cleanup_expired_tokens():
+    """Remove expired tokens from the in-memory store."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    expired = [k for k, v in _token_store.items() if v["expires_at"] < now]
+    for k in expired:
+        del _token_store[k]
+
+def store_token(raw_token: str, user_id: int, expires_at: datetime.datetime):
+    """Store a token hash in memory."""
+    _cleanup_expired_tokens()
+    _token_store[hash_token(raw_token)] = {"user_id": user_id, "expires_at": expires_at}
+
+def revoke_token(raw_token: str):
+    """Remove a token from the in-memory store."""
+    _token_store.pop(hash_token(raw_token), None)
+
+def lookup_token(raw_token: str) -> Optional[int]:
+    """Look up a token and return the user_id if valid, or None."""
+    token_hash = hash_token(raw_token)
+    entry = _token_store.get(token_hash)
+    if not entry:
+        return None
+    if entry["expires_at"] < datetime.datetime.now(datetime.timezone.utc):
+        del _token_store[token_hash]
+        return None
+    return entry["user_id"]
+
+@app.middleware("http")
+async def enforce_auth_token(request: Request, call_next):
+    """Reject /api/* requests (except auth-exempt paths) that lack a valid Bearer token."""
+    path = request.url.path
+
+    # Only protect /api/* endpoints
+    if not path.startswith("/api/"):
+        return await call_next(request)
+
+    # Allow auth-exempt paths through
+    if path in AUTH_EXEMPT_PATHS:
+        return await call_next(request)
+
+    # Extract the Bearer token
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return JSONResponse(status_code=401, content={"detail": "Missing or invalid Authorization header"})
+
+    raw_token = auth_header[7:]
+    if not raw_token:
+        return JSONResponse(status_code=401, content={"detail": "Empty bearer token"})
+
+    # Validate token from in-memory store
+    user_id = lookup_token(raw_token)
+    if user_id is None:
+        return JSONResponse(status_code=401, content={"detail": "Invalid or expired token"})
+
+    # Fetch user from DB to ensure they are still active
+    if db_pool is None or getattr(db_pool, "_closed", False):
+        return JSONResponse(status_code=503, content={"detail": "Database not available"})
+
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM users WHERE id = $1 AND is_active = true", user_id)
+
+    if not rows:
+        # User no longer active — revoke the token
+        revoke_token(raw_token)
+        return JSONResponse(status_code=401, content={"detail": "User account is deactivated"})
+
+    current_user = {k: sanitize_db_val(v) for k, v in dict(rows[0]).items()}
+    current_user.pop("password", None)
+
+    # Attach authenticated user to request state for downstream handlers
+    request.state.current_user = current_user
+    return await call_next(request)
+
 @app.on_event("startup")
 async def startup():
     try:
         await init_db_pool()
     except Exception as e:
         logger.error(f"Failed to connect to database on startup: {e or repr(e)}")
+
+    if db_pool and not getattr(db_pool, "_closed", False):
+        try:
+            async with db_pool.acquire() as conn:
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS job_tests (
+                        id SERIAL PRIMARY KEY,
+                        job_id INTEGER NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+                        category TEXT NOT NULL,
+                        results JSONB,
+                        status TEXT NOT NULL DEFAULT 'IN_PROGRESS',
+                        assigned_technician_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_job_tests_job_id ON job_tests(job_id);
+
+                    CREATE TABLE IF NOT EXISTS technician_capabilities (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        category TEXT NOT NULL,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_technician_capabilities_user_id ON technician_capabilities(user_id);
+                """)
+                logger.info("Verified/created job_tests and technician_capabilities tables.")
+        except Exception as e:
+            logger.error(f"Failed to initialize auxiliary tables on startup: {e}")
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -1102,6 +1225,184 @@ async def create_job_workflow_log(log: JobWorkflowLogCreateReq):
     """
     async with db_pool.acquire() as conn:
         rows = await fetch_with_coerced_params(conn, query, [log.job_id, log.performed_by, log.from_state, log.to_state, log.action_id, log.remarks])
+        return dict(rows[0])
+
+# ============================================================================
+# Dedicated Job Tests REST API Endpoints
+# ============================================================================
+
+class JobTestCreate(BaseModel):
+    job_id: int
+    category: str
+    results: Optional[Any] = None
+    status: Optional[str] = "IN_PROGRESS"
+    assigned_technician_id: Optional[int] = None
+
+class JobTestUpdate(BaseModel):
+    job_id: Optional[int] = None
+    category: Optional[str] = None
+    results: Optional[Any] = None
+    status: Optional[str] = None
+    assigned_technician_id: Optional[int] = None
+
+@app.get("/api/job-tests", tags=["Job Tests"], summary="List and filter job tests")
+async def list_job_tests(
+    job_id: Optional[str] = None,
+    category: Optional[str] = None,
+    id: Optional[str] = None,
+    limit: int = 10000
+):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    where_parts, params = [], []
+    if id is not None:
+        parsed = parse_id_list(id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"id = ANY(${len(params)}::int[])")
+    if job_id is not None:
+        parsed = parse_id_list(job_id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"job_id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"job_id = ANY(${len(params)}::int[])")
+    if category:
+        params.append(category)
+        where_parts.append(f"category = ${len(params)}")
+    where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
+    params.append(min(10000, max(1, limit)))
+    query = f"SELECT * FROM job_tests {where_sql} ORDER BY id ASC LIMIT ${len(params)}"
+    async with db_pool.acquire() as conn:
+        try:
+            rows = await fetch_with_coerced_params(conn, query, params)
+            result = []
+            for r in rows:
+                doc = dict(r)
+                if isinstance(doc.get("results"), str):
+                    try: doc["results"] = json.loads(doc["results"])
+                    except Exception: pass
+                result.append(doc)
+            return result
+        except Exception as e:
+            logger.error(f"Error listing job tests: {e}")
+            return []
+
+@app.get("/api/job-tests/{test_id}", tags=["Job Tests"], summary="Get job test by ID")
+async def get_job_test(test_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, "SELECT * FROM job_tests WHERE id = $1", [test_id])
+        if not rows:
+            raise HTTPException(status_code=404, detail="Job test not found")
+        doc = dict(rows[0])
+        if isinstance(doc.get("results"), str):
+            try: doc["results"] = json.loads(doc["results"])
+            except Exception: pass
+        return doc
+
+@app.post("/api/job-tests", tags=["Job Tests"], status_code=201, summary="Create job test entry")
+async def create_job_test(jt: JobTestCreate):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    results_str = format_content(jt.results) if jt.results is not None else "{}"
+    query = """
+        INSERT INTO job_tests (job_id, category, results, status, assigned_technician_id, created_at, updated_at)
+        VALUES ($1, $2, $3::jsonb, $4, $5, NOW(), NOW()) RETURNING *
+    """
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, query, [jt.job_id, jt.category, results_str, jt.status or "IN_PROGRESS", jt.assigned_technician_id])
+        return dict(rows[0])
+
+@app.put("/api/job-tests/{test_id}", tags=["Job Tests"], summary="Update job test entry")
+async def update_job_test(test_id: int, payload: JobTestUpdate):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    fields, params = [], []
+    for k, v in payload.model_dump(exclude_unset=True).items():
+        if v is not None:
+            if k == "results":
+                params.append(format_content(v))
+                fields.append(f"results = ${len(params)}::jsonb")
+            else:
+                params.append(v)
+                fields.append(f"{k} = ${len(params)}")
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    fields.append("updated_at = NOW()")
+    params.append(test_id)
+    query = f"UPDATE job_tests SET {', '.join(fields)} WHERE id = ${len(params)} RETURNING *"
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, query, params)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Job test not found")
+        return dict(rows[0])
+
+@app.delete("/api/job-tests/{test_id}", tags=["Job Tests"], summary="Delete job test entry")
+async def delete_job_test(test_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, "DELETE FROM job_tests WHERE id = $1 RETURNING id", [test_id])
+        if not rows:
+            raise HTTPException(status_code=404, detail="Job test not found")
+        return {"message": "Job test deleted", "id": test_id}
+
+@app.delete("/api/job-tests", tags=["Job Tests"], summary="Delete job tests by filter")
+async def delete_job_tests_by_filter(job_id: Optional[str] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    if not job_id:
+        raise HTTPException(status_code=400, detail="job_id is required")
+    parsed = parse_id_list(job_id)
+    async with db_pool.acquire() as conn:
+        if len(parsed) == 1:
+            await conn.execute("DELETE FROM job_tests WHERE job_id = $1", parsed[0])
+        elif len(parsed) > 1:
+            await conn.execute("DELETE FROM job_tests WHERE job_id = ANY($1::int[])", parsed)
+        return {"message": "Job tests deleted"}
+
+# ============================================================================
+# Dedicated Technician Capabilities REST API Endpoints
+# ============================================================================
+
+class TechnicianCapabilityCreate(BaseModel):
+    user_id: int
+    category: str
+
+@app.get("/api/technician-capabilities", tags=["Technician Capabilities"], summary="List technician capabilities")
+async def list_technician_capabilities(user_id: Optional[str] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    where_parts, params = [], []
+    if user_id is not None:
+        parsed = parse_id_list(user_id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"user_id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"user_id = ANY(${len(params)}::int[])")
+    where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
+    async with db_pool.acquire() as conn:
+        try:
+            rows = await fetch_with_coerced_params(conn, f"SELECT * FROM technician_capabilities {where_sql} ORDER BY id ASC", params)
+            return [dict(r) for r in rows]
+        except Exception as e:
+            logger.error(f"Error listing technician capabilities: {e}")
+            return []
+
+@app.post("/api/technician-capabilities", tags=["Technician Capabilities"], status_code=201, summary="Create technician capability")
+async def create_technician_capability(tc: TechnicianCapabilityCreate):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, "INSERT INTO technician_capabilities (user_id, category, created_at) VALUES ($1, $2, NOW()) RETURNING *", [tc.user_id, tc.category])
         return dict(rows[0])
 
 @app.get("/api/material-samples", tags=["Material Inward"], summary="Get material samples")
@@ -2349,7 +2650,7 @@ class LoginPayload(BaseModel):
     username: str
     password: str
 
-@app.post("/api/auth/login", tags=["Users"], summary="Authenticate user account")
+@app.post("/api/auth/login", tags=["Auth"], summary="Exchange credentials for an API token")
 async def login_user(payload: LoginPayload):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
@@ -2364,7 +2665,33 @@ async def login_user(payload: LoginPayload):
         user = dict(rows[0])
         user.pop("password", None)
         user.pop("base_salary", None)
-        return user
+
+        # Generate new token and store in memory
+        raw_token = generate_api_token()
+        expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=TOKEN_EXPIRY_HOURS)
+        store_token(raw_token, user["id"], expires_at)
+
+        return {
+            "token": raw_token,
+            "expires_at": expires_at.isoformat(),
+            "user": user
+        }
+
+@app.post("/api/auth/logout", tags=["Auth"], summary="Destroy the current API token")
+async def logout_user(request: Request):
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        raw_token = auth_header[7:]
+        revoke_token(raw_token)
+    return {"message": "Logged out successfully", "redirect": "/"}
+
+@app.get("/api/auth/me", tags=["Auth"], summary="Get current authenticated user from token")
+async def get_current_user_endpoint(request: Request):
+    """Returns the user associated with the current bearer token. Used for session verification on page reload."""
+    current_user = getattr(request.state, "current_user", None)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return current_user
 
 @app.get("/api/users", tags=["Users"], summary="List users with pagination and filtering")
 async def list_users(
@@ -3624,11 +3951,14 @@ if os.path.exists(dist_path):
 
 @app.get("/{catchall:path}")
 async def read_index(catchall: str):
+    if catchall.startswith("api/") or catchall.startswith("api"):
+        raise HTTPException(status_code=404, detail="API endpoint not found")
+
     # Static files check
     file_path = os.path.join(dist_path, catchall)
     if os.path.isfile(file_path):
         return FileResponse(file_path)
-        
+
     # SPA fallback to index.html
     index_path = os.path.join(dist_path, "index.html")
     if os.path.exists(index_path):

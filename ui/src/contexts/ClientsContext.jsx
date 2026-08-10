@@ -123,16 +123,6 @@ const ClientsProvider = ({ children }) => {
 
       if (error) {
         console.warn('API fetch error (clients):', error.message);
-        const stored = localStorage.getItem(STORAGE_KEYS.CLIENTS);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setClients(parsed.map(mapFromDb));
-              return;
-            }
-          } catch (e) {}
-        }
         if (clients.length === 0) setClients(initialClients.map(mapFromDb));
         return;
       }
@@ -141,16 +131,6 @@ const ClientsProvider = ({ children }) => {
         const mappedData = data.map(mapFromDb);
         setClients(mappedData);
       } else {
-        const stored = localStorage.getItem(STORAGE_KEYS.CLIENTS);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setClients(parsed.map(mapFromDb));
-              return;
-            }
-          } catch (e) {}
-        }
         setClients(initialClients.map(mapFromDb));
       }
     } catch (error) {
@@ -168,26 +148,6 @@ const ClientsProvider = ({ children }) => {
       fetchClients();
     }
   }, [fetchClients]);
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const stored = localStorage.getItem(STORAGE_KEYS.CLIENTS);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) setClients(parsed.map(mapFromDb));
-        } catch (e) {}
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [mapFromDb]);
-
-  useEffect(() => {
-    if (clients.length > 0) {
-      localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
-    }
-  }, [clients]);
 
   const updateClient = useCallback(
     async (updatedClient, userId = null) => {

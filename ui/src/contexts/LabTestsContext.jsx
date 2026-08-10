@@ -97,16 +97,6 @@ const LabTestsProvider = ({ children }) => {
 
       if (error) {
         console.warn('API fetch error (lab_tests):', error.message);
-        const stored = localStorage.getItem(STORAGE_KEYS.LAB_TESTS);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setLabTests(parsed);
-              return;
-            }
-          } catch (e) {}
-        }
         if (labTests.length === 0) setLabTests(initialLabTests);
         return;
       }
@@ -115,16 +105,6 @@ const LabTestsProvider = ({ children }) => {
         const mappedData = data.map(mapFromDb);
         setLabTests(mappedData);
       } else {
-        const stored = localStorage.getItem(STORAGE_KEYS.LAB_TESTS);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setLabTests(parsed);
-              return;
-            }
-          } catch (e) {}
-        }
         setLabTests(initialLabTests);
       }
     } catch (error) {
@@ -160,26 +140,6 @@ const LabTestsProvider = ({ children }) => {
       fetchClientLabTestPrices();
     }
   }, [fetchLabTests, fetchClientLabTestPrices]);
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const stored = localStorage.getItem(STORAGE_KEYS.LAB_TESTS);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) setLabTests(parsed);
-        } catch (e) {}
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  useEffect(() => {
-    if (labTests.length > 0) {
-      localStorage.setItem(STORAGE_KEYS.LAB_TESTS, JSON.stringify(labTests));
-    }
-  }, [labTests]);
 
   const updateLabTest = useCallback(
     async (updatedTest) => {

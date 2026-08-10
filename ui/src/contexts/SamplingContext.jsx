@@ -126,16 +126,6 @@ const SamplingProvider = ({ children }) => {
 
       if (error) {
         console.warn('API fetch error (sampling):', error.message);
-        const stored = localStorage.getItem(STORAGE_KEYS.SAMPLING_DATA);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed)) {
-              setSamplingData(parsed);
-              return;
-            }
-          } catch (e) {}
-        }
         return;
       }
 
@@ -157,26 +147,6 @@ const SamplingProvider = ({ children }) => {
       fetchSamplingData();
     }
   }, [fetchSamplingData]);
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const stored = localStorage.getItem(STORAGE_KEYS.SAMPLING_DATA);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) setSamplingData(parsed);
-        } catch (e) {}
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  useEffect(() => {
-    if (samplingData.length > 0) {
-      localStorage.setItem(STORAGE_KEYS.SAMPLING_DATA, JSON.stringify(samplingData));
-    }
-  }, [samplingData]);
 
   const updateSampling = useCallback(
     async (updatedItem) => {

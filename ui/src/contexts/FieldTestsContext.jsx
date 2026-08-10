@@ -86,16 +86,6 @@ const FieldTestsProvider = ({ children }) => {
 
       if (error) {
         console.warn('API fetch error (field_tests):', error.message);
-        const stored = localStorage.getItem(STORAGE_KEYS.FIELD_TESTS);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setFieldTests(parsed);
-              return;
-            }
-          } catch (e) {}
-        }
         if (fieldTests.length === 0) setFieldTests(initialFieldTests);
         return;
       }
@@ -104,16 +94,6 @@ const FieldTestsProvider = ({ children }) => {
         const mappedData = data.map(mapFromDb);
         setFieldTests(mappedData);
       } else {
-        const stored = localStorage.getItem(STORAGE_KEYS.FIELD_TESTS);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setFieldTests(parsed);
-              return;
-            }
-          } catch (e) {}
-        }
         setFieldTests(initialFieldTests);
       }
     } catch (error) {
@@ -149,26 +129,6 @@ const FieldTestsProvider = ({ children }) => {
       fetchClientFieldTestPrices();
     }
   }, [fetchFieldTests, fetchClientFieldTestPrices]);
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const stored = localStorage.getItem(STORAGE_KEYS.FIELD_TESTS);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) setFieldTests(parsed);
-        } catch (e) {}
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  useEffect(() => {
-    if (fieldTests.length > 0) {
-      localStorage.setItem(STORAGE_KEYS.FIELD_TESTS, JSON.stringify(fieldTests));
-    }
-  }, [fieldTests]);
 
   const updateFieldTest = useCallback(
     async (updatedFieldTest, userId = null) => {
