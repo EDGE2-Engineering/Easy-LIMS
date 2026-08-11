@@ -488,8 +488,19 @@ export const buildReportPages = (formData) => {
     blocks: [{ type: 'geotechnical-exploration', data }],
   });
 
+  // Total number of boreholes based on all inputs
+  const totalBoreholesCount = Math.max(
+    data.boreholeLogs?.length || 0,
+    data.subSoilProfile?.length || 0,
+    data.sbcDetails?.length || 0,
+    data.maxDepths?.length || 0,
+    1
+  );
+
   // One Sub-Soil Profile page per borehole (before Bore Log Data Sheets)
-  data.boreholeLogs.forEach((levelLogs, i) => {
+  for (let i = 0; i < totalBoreholesCount; i++) {
+    const levelLogs = data.boreholeLogs?.[i] || [];
+    const subProfileLogs = data.subSoilProfile?.[i] || [];
     pages.push({
       isFirstPage: false,
       isContinuation: false,
@@ -500,16 +511,17 @@ export const buildReportPages = (formData) => {
           boreholeIndex: i,
           boreholeNumber: i + 1,
           logs: levelLogs,
+          subProfileLogs,
           location: data.siteAddress || data.siteName || '',
           methodOfBoring: data.methodOfBoring || '',
         },
       ],
     });
-  });
+  }
 
   // One Bore Log Data Sheet page per borehole
-  data.boreholeLogs.forEach((levelLogs, i) => {
-    // Pick boreholeRL from the first SBC entry for this borehole (if entered)
+  for (let i = 0; i < totalBoreholesCount; i++) {
+    const levelLogs = data.boreholeLogs?.[i] || [];
     const boreholeRL = data.sbcDetails?.[i]?.[0]?.boreholeRL ?? '';
     pages.push({
       isFirstPage: false,
@@ -532,7 +544,7 @@ export const buildReportPages = (formData) => {
         },
       ],
     });
-  });
+  }
 
   addKvSectionPages(pages, 'Survey Report', data.surveyReport);
   if (data.surveyReportNote) {

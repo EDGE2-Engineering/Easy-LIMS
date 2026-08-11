@@ -205,6 +205,7 @@ export const SETTINGS_ITEM_IDS = {
   SYSTEM: 'system',
   BEARING_CAPACITY: 'bearing_capacity',
   STATEMENTS: 'statements',
+  VENDORS_SUPPLIERS: 'vendors_suppliers',
 };
 
 export const DOCUMENT_ITEM_TYPE_KEYS = {

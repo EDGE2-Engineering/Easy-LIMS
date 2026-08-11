@@ -30,6 +30,7 @@ import {
   ShieldCheck,
   Mountain,
   Landmark,
+  Truck,
 } from 'lucide-react';
 
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
@@ -45,6 +46,7 @@ import AdminMaterialFormsManager from './AdminMaterialFormsManager';
 import AdminUsersManager from './AdminUsersManager';
 import AdminBearingCapacityManager from './AdminBearingCapacityManager';
 import AdminBankStatementsManager from './AdminBankStatementsManager';
+import AdminVendorsSuppliersManager from './AdminVendorsSuppliersManager';
 
 import { enableInfoDiagramZoom, getSiteContent, ROLES, SETTINGS_ITEM_IDS } from '../../data/config';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -62,6 +64,7 @@ const TAB_COMPONENTS = {
   payment_settings: <AdminSettingsManager />,
   collection_centers: <AdminCollectionCentersManager />,
   bearing_capacity: <AdminBearingCapacityManager />,
+  vendors_suppliers: <AdminVendorsSuppliersManager />,
   users: <AdminUsersManager />,
   statements: <AdminBankStatementsManager />,
 };
@@ -279,6 +282,22 @@ const AdminSystemSettings = ({ id }) => {
             </TabsTrigger>
 
             <TabsTrigger
+              value="vendors_suppliers"
+              className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-4 h-4" /> Vendors & Suppliers
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                  <p className="text-xs">Manage testing agencies, outsourcing teams & suppliers</p>
+                </TooltipContent>
+              </Tooltip>
+            </TabsTrigger>
+
+            <TabsTrigger
               value="users"
               className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
             >
@@ -375,6 +394,13 @@ const AdminSystemSettings = ({ id }) => {
           className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
         >
           <AdminCollectionCentersManager />
+        </TabsContent>
+
+        <TabsContent
+          value="vendors_suppliers"
+          className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
+        >
+          <AdminVendorsSuppliersManager />
         </TabsContent>
 
         <TabsContent

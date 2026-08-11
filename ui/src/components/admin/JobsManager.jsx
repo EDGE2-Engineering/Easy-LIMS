@@ -609,6 +609,10 @@ const JobsManager = ({ id }) => {
           break;
         }
       }
+      if (!geotechData && testData?.length) {
+        const anyEntry = testData.find((t) => t.results?.GeotechData);
+        if (anyEntry) geotechData = anyEntry.results.GeotechData;
+      }
       console.log(
         '[handleGenerateReport] testData categories:',
         (testData || []).map((t) => t.category)

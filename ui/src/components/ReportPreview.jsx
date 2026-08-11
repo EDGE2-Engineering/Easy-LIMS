@@ -212,15 +212,38 @@ const ProjectDetailsBlock = ({ data }) => {
 
   const getBoreholeMaxDepth = (bh, idx) => {
     const enteredDepth = data.maxDepths?.[idx];
-    if (enteredDepth != null && enteredDepth !== '') return enteredDepth;
-    if (bh && bh.length > 0) {
-      const lastRow = bh[bh.length - 1];
-      return lastRow.toDepth || lastRow.depth || '-';
+    if (enteredDepth != null && String(enteredDepth).trim() !== '') return enteredDepth;
+
+    const bhLogs = bh || [];
+    const subLogs = data.subSoilProfile?.[idx] || [];
+    const allRows = [...bhLogs, ...subLogs];
+
+    const numericDepths = [];
+    allRows.forEach((row) => {
+      const dVal = row.toDepth || row.depth || row.to;
+      if (dVal != null) {
+        const parts = String(dVal).split('-').map((s) => parseFloat(s.trim()));
+        parts.forEach((p) => {
+          if (!isNaN(p) && p > 0) numericDepths.push(p);
+        });
+      }
+    });
+
+    if (numericDepths.length > 0) {
+      return Math.max(...numericDepths).toFixed(2);
     }
     return '-';
   };
 
-  const numBoreholes = data.boreholeLogs?.length || 1;
+  const numBoreholes = Math.max(
+    data.boreholeLogs?.length || 0,
+    data.subSoilProfile?.length || 0,
+    data.sbcDetails?.length || 0,
+    data.maxDepths?.length || 0,
+    1
+  );
+
+  const boreholeList = Array.from({ length: numBoreholes }, (_, idx) => data.boreholeLogs?.[idx] || []);
 
   return (
     <div className="relative pb-24 text-left">
@@ -324,7 +347,7 @@ const ProjectDetailsBlock = ({ data }) => {
             </tr>
           </thead>
           <tbody>
-            {(data.boreholeLogs || []).map((bh, idx) => (
+            {boreholeList.map((bh, idx) => (
               <tr key={idx} className="border-b border-gray-300">
                 <td className="border border-gray-400 px-1 py-1 text-gray-800">{idx + 1}</td>
                 <td className="border border-gray-400 px-1 py-1 font-semibold text-gray-900">
@@ -421,7 +444,13 @@ const ProjectDetailsBlock = ({ data }) => {
 };
 
 const GeotechnicalExplorationBlock = ({ data }) => {
-  const numBoreholes = data.boreholeLogs?.length || 0;
+  const numBoreholes = Math.max(
+    data.boreholeLogs?.length || 0,
+    data.subSoilProfile?.length || 0,
+    data.sbcDetails?.length || 0,
+    data.maxDepths?.length || 0,
+    1
+  );
   return (
     <div className="mb-6">
       <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
@@ -560,8 +589,15 @@ const GeotechnicalExplorationBlock = ({ data }) => {
 };
 
 const SubProfileAnalysisTableBlock = ({ block }) => {
-  const { boreholeNumber, logs = [], location, methodOfBoring } = block;
+  const { boreholeNumber, logs = [], subProfileLogs = [], location, methodOfBoring } = block;
   const bhLabel = `BH-${String(boreholeNumber).padStart(2, '0')}`;
+
+  const hasSubProfile =
+    Array.isArray(subProfileLogs) &&
+    subProfileLogs.length > 0 &&
+    subProfileLogs.some((r) => r && (r.depth || r.description || r.soilType || r.toDepth));
+
+  const displayRows = hasSubProfile ? subProfileLogs : logs;
 
   return (
     <div className="text-[9px] leading-tight">
@@ -641,7 +677,7 @@ const SubProfileAnalysisTableBlock = ({ block }) => {
           </tr>
         </thead>
         <tbody>
-          {logs.length === 0 ? (
+          {displayRows.length === 0 ? (
             <tr>
               <td
                 colSpan="8"
@@ -651,10 +687,20 @@ const SubProfileAnalysisTableBlock = ({ block }) => {
               </td>
             </tr>
           ) : (
-            logs.map((row, idx) => {
-              const fromDepth =
-                row.fromDepth ?? (idx === 0 ? '0.0' : (logs[idx - 1]?.toDepth ?? '-'));
-              const toDepth = row.toDepth || row.depth || '-';
+            displayRows.map((row, idx) => {
+              let fromDepth = row.fromDepth;
+              let toDepth = row.toDepth || row.depth;
+
+              if (row.depth && String(row.depth).includes('-')) {
+                const parts = String(row.depth).split('-');
+                if (!fromDepth) fromDepth = parts[0]?.trim();
+                toDepth = parts[1]?.trim() || toDepth;
+              }
+
+              if (fromDepth == null || fromDepth === '') {
+                fromDepth = idx === 0 ? '0.0' : displayRows[idx - 1]?.toDepth || displayRows[idx - 1]?.depth || '-';
+              }
+
               const fromNum = parseFloat(fromDepth);
               const toNum = parseFloat(toDepth);
               const thickness =
@@ -665,21 +711,20 @@ const SubProfileAnalysisTableBlock = ({ block }) => {
               const rawN =
                 !isDS && row.natureOfSampling === 'SPT' && !isNaN(spt2n) && !isNaN(spt3n)
                   ? spt2n + spt3n
-                  : null;
+                  : (row.nValue || row.fieldNValue || row.n_value || null);
               const isRotary = methodOfBoring === 'Rotary Drilling';
               const nValueLimit = isRotary ? 100 : 50;
-              const nValue = rawN === null ? '-' : rawN > nValueLimit ? `>${nValueLimit}` : rawN;
+              const nValue = rawN === null || rawN === '-' ? '-' : Number(rawN) > nValueLimit ? `>${nValueLimit}` : rawN;
+              const strata = row.description || row.strataDescription || row.soilType || '-';
               return (
                 <tr key={idx} className="border-b border-gray-300">
                   <td className="border border-gray-400 px-1 py-1">{idx + 1}</td>
                   <td className="border border-gray-400 px-1 py-1">{fromDepth}</td>
-                  <td className="border border-gray-400 px-1 py-1">{toDepth}</td>
+                  <td className="border border-gray-400 px-1 py-1">{toDepth || '-'}</td>
                   <td className="border border-gray-400 px-1 py-1">{thickness}</td>
-                  <td className="border border-gray-400 px-1 py-1 text-left">
-                    {row.soilType || '-'}
-                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">{strata}</td>
                   <td className="border border-gray-400 px-1 py-1">{nValue}</td>
-                  <td className="border border-gray-400 px-1 py-1">{row.coreRecovery || '-'}</td>
+                  <td className="border border-gray-400 px-1 py-1">{row.coreRecovery || row.cr || '-'}</td>
                   <td className="border border-gray-400 px-1 py-1">{row.rqd || '-'}</td>
                 </tr>
               );
@@ -712,33 +757,41 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
   ];
 
   // Compute derived values for each depth row in each borehole
-  const computedData = grainSizeAnalysis.map((bh, bhIdx) =>
-    bh.map((d) => {
-      const weights = SIEVES.map((s) => ({ ...s, wt: parseFloat(d[s.key]) || 0 }));
-      const sumRetained = weights.reduce((sum, s) => sum + s.wt, 0);
-      // Use the explicitly entered total weight if available, otherwise fall back to sum of retained
-      const totalWt = parseFloat(d.totalWeight) > 0 ? parseFloat(d.totalWeight) : sumRetained;
-      let cumWt = 0;
-      return {
-        depth: d.depth,
-        bhIdx,
-        sieves: weights.map((s) => {
-          const pctRetained = totalWt > 0 ? (s.wt / totalWt) * 100 : 0;
-          cumWt += s.wt;
-          const cumPctRetained = totalWt > 0 ? (cumWt / totalWt) * 100 : 0;
-          const finesPassing = 100 - cumPctRetained;
+  const computedData = useMemo(
+    () =>
+      grainSizeAnalysis.map((bh, bhIdx) =>
+        (bh || []).map((d) => {
+          const weights = SIEVES.map((s) => {
+            const rawVal = d[s.key] ?? d[s.key?.replace('sieve', 'sieve_')] ?? d[s.label];
+            const val = parseFloat(rawVal);
+            return { ...s, wt: !isNaN(val) && val >= 0 ? val : 0 };
+          });
+          const sumRetained = weights.reduce((sum, s) => sum + s.wt, 0);
+          const explicitTotal = parseFloat(d.totalWeight || d.total_weight || d.sampleWeight);
+          const totalWt = !isNaN(explicitTotal) && explicitTotal > 0 ? explicitTotal : sumRetained;
+          let cumWt = 0;
           return {
-            label: s.label,
-            size: s.size,
-            wt: s.wt,
-            pctRetained,
-            cumPctRetained,
-            finesPassing: Math.max(0, finesPassing),
+            depth: d.depth,
+            bhIdx,
+            sieves: weights.map((s) => {
+              const pctRetained = totalWt > 0 ? (s.wt / totalWt) * 100 : 0;
+              cumWt += s.wt;
+              const cumPctRetained = totalWt > 0 ? (cumWt / totalWt) * 100 : 0;
+              const finesPassing = 100 - cumPctRetained;
+              return {
+                label: s.label,
+                size: s.size,
+                wt: s.wt,
+                pctRetained,
+                cumPctRetained,
+                finesPassing: Math.max(0, finesPassing),
+              };
+            }),
+            totalWt,
           };
-        }),
-        totalWt,
-      };
-    })
+        })
+      ),
+    [grainSizeAnalysis]
   );
 
   useEffect(() => {
@@ -782,7 +835,7 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
           { x: 20, y: 100 },
         ];
         d.sieves.forEach((s) => {
-          if (s.size !== null) {
+          if (s.size !== null && s.size > 0) {
             dataPoints.push({ x: s.size, y: parseFloat(s.finesPassing.toFixed(2)) });
           }
         });
@@ -803,6 +856,7 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
       data: { datasets },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         scales: {
           x: {
             type: 'logarithmic',
@@ -833,7 +887,7 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
     return () => {
       if (chartInstance.current) chartInstance.current.destroy();
     };
-  }, []);
+  }, [computedData]);
 
   const fmt = (v) => (typeof v === 'number' ? v.toFixed(2) : '-');
 
@@ -842,8 +896,8 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
       <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-2">
         Particle Size Distribution Curve
       </h3>
-      <div className="w-[90%] mx-auto bg-white p-4 rounded-lg mb-6">
-        <canvas ref={chartRef}></canvas>
+      <div className="w-[90%] mx-auto bg-white p-4 rounded-lg mb-6" style={{ height: '320px', position: 'relative' }}>
+        <canvas ref={chartRef} style={{ width: '100%', height: '100%' }}></canvas>
       </div>
 
       {computedData.map((bh, bhIdx) =>
@@ -920,9 +974,28 @@ const BoreholeLogTableBlock = ({ block }) => {
 
   const METHOD_LABELS = {
     Drilling: 'Rotary Drilling',
+    'Rotary Drilling': 'Rotary Drilling',
+    Rotary: 'Rotary Drilling',
     Manual: 'Manual Auger',
+    'Manual Auger': 'Manual Auger',
+    'Manual Augering': 'Manual Auger',
   };
-  const methodLabel = methodOfBoring || '-';
+  const methodLabel = METHOD_LABELS[methodOfBoring] || methodOfBoring || 'Manual Auger';
+
+  const computedMaxDepth = (() => {
+    if (maxDepth != null && String(maxDepth).trim() !== '' && maxDepth !== 'NA') {
+      return maxDepth;
+    }
+    if (logs && logs.length > 0) {
+      const validDepths = logs
+        .map((r) => parseFloat(r.toDepth || r.depth || r.to))
+        .filter((d) => !isNaN(d) && d > 0);
+      if (validDepths.length > 0) {
+        return Math.max(...validDepths).toFixed(2);
+      }
+    }
+    return 'NA';
+  })();
 
   const bhLabel = `BH-${String(boreholeNumber).padStart(2, '0')}`;
 
@@ -967,7 +1040,7 @@ const BoreholeLogTableBlock = ({ block }) => {
           </tr>
           <tr>
             <td className="border border-gray-400 px-1 py-0.5 font-bold">Termination Depth (m):</td>
-            <td className="border border-gray-400 px-1 py-0.5">{maxDepth || 'NA'}</td>
+            <td className="border border-gray-400 px-1 py-0.5">{computedMaxDepth}</td>
             <td className="border border-gray-400 px-1 py-0.5 font-bold">Completion Date:</td>
             <td className="border border-gray-400 px-1 py-0.5">{safeDate(surveyDate)}</td>
           </tr>

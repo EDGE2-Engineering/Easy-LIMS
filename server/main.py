@@ -231,8 +231,25 @@ async def startup():
                         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                     );
                     CREATE INDEX IF NOT EXISTS idx_technician_capabilities_user_id ON technician_capabilities(user_id);
+
+                    CREATE TABLE IF NOT EXISTS vendors_suppliers (
+                        id SERIAL PRIMARY KEY,
+                        type TEXT NOT NULL DEFAULT 'Vendor',
+                        name TEXT NOT NULL,
+                        address TEXT,
+                        contact_person TEXT,
+                        phone TEXT,
+                        email TEXT,
+                        gstin TEXT,
+                        category TEXT,
+                        contacts JSONB,
+                        status BOOLEAN NOT NULL DEFAULT TRUE,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_vendors_suppliers_type ON vendors_suppliers(type);
                 """)
-                logger.info("Verified/created job_tests and technician_capabilities tables.")
+                logger.info("Verified/created job_tests, technician_capabilities, and vendors_suppliers tables.")
         except Exception as e:
             logger.error(f"Failed to initialize auxiliary tables on startup: {e}")
 
@@ -2151,6 +2168,155 @@ async def delete_client(client_id: int):
         if not rows:
             raise HTTPException(status_code=404, detail="Client not found")
         return {"message": "Client deleted", "id": client_id}
+
+# ============================================================================
+# Dedicated Vendors & Suppliers REST API Endpoints
+# ============================================================================
+
+class VendorSupplierCreate(BaseModel):
+    type: str = "Vendor"
+    name: str
+    address: Optional[str] = None
+    contact_person: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    gstin: Optional[str] = None
+    category: Optional[str] = None
+    contacts: Optional[Any] = None
+    status: Optional[bool] = True
+
+class VendorSupplierUpdate(BaseModel):
+    type: Optional[str] = None
+    name: Optional[str] = None
+    address: Optional[str] = None
+    contact_person: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    gstin: Optional[str] = None
+    category: Optional[str] = None
+    contacts: Optional[Any] = None
+    status: Optional[bool] = None
+
+def format_vendor_supplier_record(v: dict) -> dict:
+    if not v:
+        return v
+    res = dict(v)
+    if isinstance(res.get("contacts"), str):
+        try:
+            res["contacts"] = json.loads(res["contacts"])
+        except Exception:
+            pass
+    return res
+
+@app.get("/api/vendors-suppliers", tags=["Vendors & Suppliers"], summary="List vendors & suppliers")
+async def list_vendors_suppliers(
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
+    q: Optional[str] = None,
+    type: Optional[str] = None,
+    category: Optional[str] = None,
+    id: Optional[str] = None
+):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    where_parts, params = [], []
+    if id is not None:
+        parsed = parse_id_list(id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"id = ANY(${len(params)}::int[])")
+    if type and type.lower() != 'all':
+        params.append(type)
+        where_parts.append(f"type ILIKE ${len(params)}")
+    if category and category.lower() != 'all':
+        params.append(category)
+        where_parts.append(f"category ILIKE ${len(params)}")
+    if q:
+        params.append(f"%{q}%")
+        idx = len(params)
+        where_parts.append(f"(name ILIKE ${idx} OR contact_person ILIKE ${idx} OR phone ILIKE ${idx} OR email ILIKE ${idx} OR gstin ILIKE ${idx} OR address ILIKE ${idx} OR category ILIKE ${idx})")
+    
+    where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
+    async with db_pool.acquire() as conn:
+        count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM vendors_suppliers {where_sql}", params)
+        total = count_rows[0]["count"] if count_rows else 0
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+        else:
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
+        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM vendors_suppliers {where_sql} ORDER BY name ASC {limit_sql}", query_params)
+        return {"data": [format_vendor_supplier_record(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
+
+@app.get("/api/vendors-suppliers/{vs_id}", tags=["Vendors & Suppliers"], summary="Get vendor/supplier by ID")
+async def get_vendor_supplier(vs_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, "SELECT * FROM vendors_suppliers WHERE id = $1", [vs_id])
+        if not rows:
+            raise HTTPException(status_code=404, detail="Vendor/Supplier not found")
+        return format_vendor_supplier_record(rows[0])
+
+@app.post("/api/vendors-suppliers", tags=["Vendors & Suppliers"], status_code=201, summary="Create vendor or supplier")
+async def create_vendor_supplier(item: VendorSupplierCreate):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    contacts_str = format_content(item.contacts) if item.contacts is not None else None
+    query = """
+        INSERT INTO vendors_suppliers (type, name, address, contact_person, phone, email, gstin, category, contacts, status, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, NOW(), NOW()) RETURNING *
+    """
+    params = [item.type or "Vendor", item.name, item.address, item.contact_person, item.phone, item.email, item.gstin, item.category, contacts_str, item.status if item.status is not None else True]
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, query, params)
+        return format_vendor_supplier_record(rows[0])
+
+@app.put("/api/vendors-suppliers/{vs_id}", tags=["Vendors & Suppliers"], summary="Update vendor or supplier")
+async def update_vendor_supplier(vs_id: int, payload: VendorSupplierUpdate):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    fields, params = [], []
+    for k, v in payload.model_dump(exclude_unset=True).items():
+        if v is not None:
+            if k == "contacts":
+                params.append(format_content(v))
+                fields.append(f"contacts = ${len(params)}::jsonb")
+            else:
+                params.append(v)
+                fields.append(f"{k} = ${len(params)}")
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    fields.append("updated_at = NOW()")
+    params.append(vs_id)
+    query = f"UPDATE vendors_suppliers SET {', '.join(fields)} WHERE id = ${len(params)} RETURNING *"
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, query, params)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Vendor/Supplier not found")
+        return format_vendor_supplier_record(rows[0])
+
+@app.delete("/api/vendors-suppliers/{vs_id}", tags=["Vendors & Suppliers"], summary="Delete vendor or supplier")
+async def delete_vendor_supplier(vs_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, "DELETE FROM vendors_suppliers WHERE id = $1 RETURNING id", [vs_id])
+        if not rows:
+            raise HTTPException(status_code=404, detail="Vendor/Supplier not found")
+        return {"message": "Vendor/Supplier deleted", "id": vs_id}
 
 # ============================================================================
 # Dedicated Client Pricing REST API Endpoints
