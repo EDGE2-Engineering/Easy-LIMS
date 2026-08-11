@@ -173,7 +173,7 @@ const BusinessInsightsManager = () => {
           .select('document_type, created_at, content, client_id')
           .in('document_type', ['Tax Invoice', 'Quotation']),
         apiClient.from('expenses').select('date, amount'),
-        apiClient.from('clients').select('id, client_name').order('client_name').limit(10000),
+        apiClient.from('clients').select('id, client_name').order('client_name'),
       ]);
 
       if (docsRes.error) throw docsRes.error;

@@ -20,6 +20,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useExpenses } from '@/contexts/ExpensesContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { apiClient } from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AppDatePicker } from '@/components/ui/AppDatePicker';
@@ -73,10 +74,28 @@ const ExpensesManager = ({ id }) => {
   const [datePreset, setDatePreset] = React.useState('custom');
   const [showFilters, setShowFilters] = React.useState(false);
 
+  const [records, setRecords] = React.useState([]);
+  const [totalRecords, setTotalRecords] = React.useState(0);
+  const [loadingRecords, setLoadingRecords] = React.useState(false);
+  const [usersList, setUsersList] = React.useState([]);
+
+  React.useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data } = await apiClient.from('users').select('id, full_name');
+        if (data) setUsersList(data);
+      } catch (e) {
+        console.warn('Failed to fetch users:', e);
+      }
+    };
+    fetchUsers();
+  }, []);
+
   const creators = React.useMemo(() => {
-    const set = new Set((expenses || []).map((e) => e.createdBy));
-    return Array.from(set).sort();
-  }, [expenses]);
+    const names = usersList.map((u) => u.full_name).filter(Boolean);
+    const recordNames = (records || []).map((e) => e.createdBy).filter(Boolean);
+    return Array.from(new Set([...names, ...recordNames])).sort();
+  }, [usersList, records]);
 
   const applyDatePreset = (preset) => {
     const now = new Date();
@@ -119,45 +138,81 @@ const ExpensesManager = ({ id }) => {
     setDatePreset(preset);
   };
 
-  const filteredExpenses = React.useMemo(() => {
-    let result = (expenses || []).filter((e) => {
-      // Search filter
-      const searchStr = searchTerm.toLowerCase();
-      const matchesSearch =
-        (e.description?.toLowerCase() || '').includes(searchStr) ||
-        (e.remarks?.toLowerCase() || '').includes(searchStr) ||
-        (e.createdBy?.toLowerCase() || '').includes(searchStr);
-      if (!matchesSearch) return false;
+  const fetchRecords = React.useCallback(async () => {
+    setLoadingRecords(true);
+    try {
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
 
-      // Creator filter
-      if (filterByCreator !== 'all' && e.createdBy !== filterByCreator) return false;
+      let query = apiClient
+        .from('expenses')
+        .select('*')
+        .order(sortField, { ascending: sortOrder === 'asc' })
+        .range(from, to);
 
-      // Date range filter
-      if (filterDateStart && new Date(e.date) < new Date(filterDateStart)) return false;
-      if (filterDateEnd && new Date(e.date) > new Date(filterDateEnd)) return false;
-
-      return true;
-    });
-
-    result.sort((a, b) => {
-      let valA = a[sortField];
-      let valB = b[sortField];
-
-      if (sortField === 'date') {
-        valA = new Date(valA).getTime();
-        valB = new Date(valB).getTime();
-      } else if (typeof valA === 'string') {
-        valA = valA.toLowerCase();
-        valB = valB.toLowerCase();
+      if (searchTerm) {
+        query = query.ilike('q', searchTerm);
+      }
+      if (filterDateStart) {
+        query = query.gte('date', filterDateStart);
+      }
+      if (filterDateEnd) {
+        query = query.lte('date', filterDateEnd);
+      }
+      if (filterByCreator && filterByCreator !== 'all') {
+        query = query.eq('created_by', filterByCreator);
       }
 
-      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
-      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
+      const { data: rawExpenses, count, error } = await query;
+      if (error) throw error;
 
-    return result;
-  }, [expenses, searchTerm, sortField, sortOrder, filterByCreator, filterDateStart, filterDateEnd]);
+      if (rawExpenses) {
+        let expList = rawExpenses;
+        const userIds = [...new Set(expList.map((e) => e.created_by).filter(Boolean))];
+        if (userIds.length > 0) {
+          const { data: uData } = await apiClient
+            .from('users')
+            .select('id, full_name')
+            .in('id', userIds);
+
+          if (uData) {
+            const userMap = new Map(uData.map((u) => [u.id, u]));
+            expList = expList.map((e) => ({
+              ...e,
+              users: userMap.get(e.created_by) || null,
+            }));
+          }
+        }
+        setRecords(
+          expList.map((e) => ({
+            ...e,
+            id: e.id,
+            description: e.description || '',
+            amount: Number(e.amount) || 0,
+            date: e.date || new Date().toISOString().split('T')[0],
+            remarks: e.remarks || '',
+            projectName: e.project_name || '',
+            siteAddress: e.site_address || '',
+            createdBy: e.users?.full_name || e.created_by_name || 'Unknown',
+            createdById: e.created_by,
+            createdAt: e.created_at || new Date().toISOString(),
+            paidBy: e.paid_by || '',
+          }))
+        );
+      } else {
+        setRecords([]);
+      }
+      setTotalRecords(count != null ? count : (rawExpenses ? rawExpenses.length : 0));
+    } catch (err) {
+      console.error('Fetch Expenses Error:', err);
+    } finally {
+      setLoadingRecords(false);
+    }
+  }, [currentPage, itemsPerPage, sortField, sortOrder, searchTerm, filterDateStart, filterDateEnd, filterByCreator]);
+
+  React.useEffect(() => {
+    fetchRecords();
+  }, [fetchRecords]);
 
   const resetFilters = () => {
     setFilterByCreator('all');
@@ -167,10 +222,9 @@ const ExpensesManager = ({ id }) => {
     setSearchTerm('');
   };
 
-  const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
+  const totalPages = Math.ceil(totalRecords / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedExpenses = filteredExpenses.slice(startIndex, endIndex);
+  const endIndex = Math.min(startIndex + itemsPerPage, totalRecords);
 
   React.useEffect(() => {
     setCurrentPage(1);
@@ -226,6 +280,7 @@ const ExpensesManager = ({ id }) => {
       }
       setEditingExpense(null);
       setIsAddingNew(false);
+      fetchRecords();
     } catch (error) {
       toast({
         title: 'Error',
@@ -254,6 +309,7 @@ const ExpensesManager = ({ id }) => {
           description: 'The record has been removed.',
           variant: 'destructive',
         });
+        fetchRecords();
       } catch (error) {
         toast({
           title: 'Error',
@@ -265,53 +321,76 @@ const ExpensesManager = ({ id }) => {
     setDeleteConfirmation({ isOpen: false, expenseId: null, description: '' });
   };
 
-  const downloadCSV = () => {
-    if (filteredExpenses.length === 0) return;
+  const downloadCSV = async () => {
+    try {
+      let query = apiClient
+        .from('expenses')
+        .select('*')
+        .order(sortField, { ascending: sortOrder === 'asc' });
 
-    // Define headers
-    const headers = [
-      'Date',
-      'Description',
-      'Amount',
-      'Paid By',
-      'Created By',
-      'Added On',
-      'Project Name',
-      'Site Address',
-      'Remarks',
-    ];
+      if (searchTerm) {
+        query = query.ilike('q', searchTerm);
+      }
+      if (filterDateStart) {
+        query = query.gte('date', filterDateStart);
+      }
+      if (filterDateEnd) {
+        query = query.lte('date', filterDateEnd);
+      }
+      if (filterByCreator && filterByCreator !== 'all') {
+        query = query.eq('created_by', filterByCreator);
+      }
 
-    // Map data to rows
-    const rows = filteredExpenses.map((e) => [
-      new Date(e.date).toLocaleDateString('en-IN'),
-      `"${e.description?.replace(/"/g, '""') || ''}"`,
-      e.amount,
-      `"${e.paidBy?.replace(/"/g, '""') || ''}"`,
-      `"${e.createdBy?.replace(/"/g, '""') || ''}"`,
-      e.createdAt ? new Date(e.createdAt).toLocaleString('en-IN') : '',
-      `"${e.projectName?.replace(/"/g, '""') || ''}"`,
-      `"${e.siteAddress?.replace(/"/g, '""') || ''}"`,
-      `"${e.remarks?.replace(/"/g, '""') || ''}"`,
-    ]);
+      const { data: rawExpenses, error } = await query;
+      if (error) throw error;
+      const exportList = rawExpenses || [];
 
-    // Combine into CSV string
-    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+      const headers = [
+        'Date',
+        'Description',
+        'Amount',
+        'Paid By',
+        'Created By',
+        'Added On',
+        'Project Name',
+        'Site Address',
+        'Remarks',
+      ];
 
-    // Create download link
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Expenses_Report_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const rows = exportList.map((e) => [
+        new Date(e.date).toLocaleDateString('en-IN'),
+        `"${e.description?.replace(/"/g, '""') || ''}"`,
+        e.amount,
+        `"${e.paid_by?.replace(/"/g, '""') || ''}"`,
+        `"${e.created_by_name || ''}"`,
+        e.created_at ? new Date(e.created_at).toLocaleString('en-IN') : '',
+        `"${e.project_name?.replace(/"/g, '""') || ''}"`,
+        `"${e.site_address?.replace(/"/g, '""') || ''}"`,
+        `"${e.remarks?.replace(/"/g, '""') || ''}"`,
+      ]);
 
-    toast({
-      title: 'Report Downloaded',
-      description: `Exported ${filteredExpenses.length} records to CSV.`,
-    });
+      const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Expenses_Report_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: 'Report Downloaded',
+        description: `Exported ${exportList.length} records to CSV.`,
+      });
+    } catch (err) {
+      toast({
+        title: 'Error Exporting CSV',
+        description: err.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   if (editingExpense) {
@@ -433,7 +512,7 @@ const ExpensesManager = ({ id }) => {
     );
   }
 
-  if (loading && (!expenses || expenses.length === 0)) {
+  if (loadingRecords && (!records || records.length === 0)) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
@@ -513,7 +592,7 @@ const ExpensesManager = ({ id }) => {
                 <Button
                   variant="outline"
                   onClick={downloadCSV}
-                  disabled={filteredExpenses.length === 0}
+                  disabled={totalRecords === 0}
                   className="h-10 px-4 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all text-sm font-bold uppercase tracking-widest leading-none"
                 >
                   <Download className="w-4 h-4 mr-2" />
@@ -564,9 +643,9 @@ const ExpensesManager = ({ id }) => {
           </div>
 
           <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">
-            Total:{' '}
+            Total Page Sum:{' '}
             <span className="text-primary">
-              ₹{filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0).toLocaleString()}
+              ₹{records.reduce((sum, e) => sum + Number(e.amount), 0).toLocaleString()}
             </span>
           </div>
         </div>
@@ -682,8 +761,8 @@ const ExpensesManager = ({ id }) => {
             </SelectContent>
           </Select>
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none border-l pl-3 ml-1">
-            Showing {filteredExpenses.length === 0 ? 0 : startIndex + 1}-
-            {Math.min(endIndex, filteredExpenses.length)} of {filteredExpenses.length}
+            Showing {totalRecords === 0 ? 0 : startIndex + 1}-
+            {endIndex} of {totalRecords}
           </span>
         </div>
 
@@ -743,7 +822,7 @@ const ExpensesManager = ({ id }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {loading ? (
+              {loadingRecords ? (
                 <tr>
                   <td colSpan={7} className="py-20 text-center">
                     <div className="flex flex-col items-center justify-center">
@@ -752,8 +831,8 @@ const ExpensesManager = ({ id }) => {
                     </div>
                   </td>
                 </tr>
-              ) : paginatedExpenses.length > 0 ? (
-                paginatedExpenses.map((expense) => (
+              ) : records.length > 0 ? (
+                records.map((expense) => (
                   <tr
                     key={expense.id}
                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors group"

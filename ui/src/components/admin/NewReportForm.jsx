@@ -83,7 +83,7 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
     const fetchClients = async () => {
       try {
         if (!user) return;
-        const { data } = await apiClient.from('clients').select('*').limit(10000);
+        const { data } = await apiClient.from('clients').select('*');
         if (data) setClients(data);
       } catch (error) {
         console.error('Error fetching clients:', error);

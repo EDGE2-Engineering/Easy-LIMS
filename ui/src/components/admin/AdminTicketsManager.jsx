@@ -368,7 +368,6 @@ export default function AdminTicketsManager({ id: propId }) {
       const { data, error } = await apiClient
         .from('tickets')
         .select('*')
-        .limit(10000)
         .order('created_at', { ascending: false });
 
       if (error) {

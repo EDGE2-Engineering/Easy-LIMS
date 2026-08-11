@@ -86,8 +86,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
       const { data, error } = await apiClient
         .from('clients')
         .select('id, client_name')
-        .order('client_name')
-        .limit(10000);
+        .order('client_name');
       if (error) throw error;
       setClients(data || []);
     } catch (error) {

@@ -388,8 +388,8 @@ def parse_id_list(val: Optional[Any]) -> List[int]:
 
 @app.get("/api/documents", tags=["Documents"], summary="List, search & filter documents with pagination")
 async def list_documents(
-    page: int = 1,
-    limit: int = 10,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     q: Optional[str] = None,
     id: Optional[str] = None,
     quote_number: Optional[str] = None,
@@ -406,14 +406,6 @@ async def list_documents(
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    if page < 1:
-        page = 1
-    if limit < 1:
-        limit = 10
-    if limit > 10000:
-        limit = 10000
-        
-    offset = (page - 1) * limit
     safe_sort = safe_identifier(sort_by) if sort_by in ["id", "quote_number", "document_type", "created_at", "updated_at", "version"] else "created_at"
     sort_order = "ASC" if order.lower() == "asc" else "DESC"
 
@@ -504,12 +496,23 @@ async def list_documents(
             count_rows = await fetch_with_coerced_params(conn, count_query, params)
             total = count_rows[0]["count"] if count_rows else 0
 
-            # 2. Paginated data
+            # 2. Paginated / full data
             query_params = list(params)
-            query_params.append(limit)
-            limit_idx = len(query_params)
-            query_params.append(offset)
-            offset_idx = len(query_params)
+            if limit is not None:
+                p_val = max(1, page or 1)
+                l_val = max(1, limit)
+                o_val = (p_val - 1) * l_val
+                query_params.append(l_val)
+                limit_idx = len(query_params)
+                query_params.append(o_val)
+                offset_idx = len(query_params)
+                limit_clause = f"LIMIT ${limit_idx} OFFSET ${offset_idx}"
+                total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+            else:
+                p_val = page or 1
+                l_val = None
+                limit_clause = ""
+                total_pages = 1
 
             data_query = f"""
                 SELECT 
@@ -523,7 +526,7 @@ async def list_documents(
                 LEFT JOIN jobs j ON d.job_id = j.id
                 {where_sql}
                 ORDER BY d.{safe_sort} {sort_order}
-                LIMIT ${limit_idx} OFFSET ${offset_idx}
+                {limit_clause}
             """
             rows = await fetch_with_coerced_params(conn, data_query, query_params)
             documents = []
@@ -537,13 +540,11 @@ async def list_documents(
                             pass
                 documents.append(doc)
 
-            total_pages = (total + limit - 1) // limit if total > 0 else 0
-
             return {
                 "data": documents,
                 "total": total,
-                "page": page,
-                "limit": limit,
+                "page": p_val,
+                "limit": l_val,
                 "total_pages": total_pages
             }
         except Exception as e:
@@ -771,8 +772,8 @@ class JobUpdate(BaseModel):
 
 @app.get("/api/jobs", tags=["Jobs"], summary="List, search & filter jobs with pagination")
 async def list_jobs(
-    page: int = 1,
-    limit: int = 10,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     q: Optional[str] = None,
     id: Optional[str] = None,
     status: Optional[str] = None,
@@ -785,14 +786,6 @@ async def list_jobs(
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    if page < 1:
-        page = 1
-    if limit < 1:
-        limit = 10
-    if limit > 10000:
-        limit = 10000
-
-    offset = (page - 1) * limit
     safe_sort = safe_identifier(sort_by) if sort_by in ["id", "job_code", "project_name", "status", "created_at", "updated_at"] else "created_at"
     sort_order = "ASC" if order.lower() == "asc" else "DESC"
 
@@ -863,12 +856,23 @@ async def list_jobs(
             count_rows = await fetch_with_coerced_params(conn, count_query, params)
             total = count_rows[0]["count"] if count_rows else 0
 
-            # 2. Paginated data
+            # 2. Paginated / full data
             query_params = list(params)
-            query_params.append(limit)
-            limit_idx = len(query_params)
-            query_params.append(offset)
-            offset_idx = len(query_params)
+            if limit is not None:
+                p_val = max(1, page or 1)
+                l_val = max(1, limit)
+                o_val = (p_val - 1) * l_val
+                query_params.append(l_val)
+                limit_idx = len(query_params)
+                query_params.append(o_val)
+                offset_idx = len(query_params)
+                limit_clause = f"LIMIT ${limit_idx} OFFSET ${offset_idx}"
+                total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+            else:
+                p_val = page or 1
+                l_val = None
+                limit_clause = ""
+                total_pages = 1
 
             data_query = f"""
                 SELECT 
@@ -900,7 +904,7 @@ async def list_jobs(
                 LEFT JOIN users u2 ON j.updated_by = u2.id
                 {where_sql}
                 ORDER BY j.{safe_sort} {sort_order}
-                LIMIT ${limit_idx} OFFSET ${offset_idx}
+                {limit_clause}
             """
             rows = await fetch_with_coerced_params(conn, data_query, query_params)
             jobs = []
@@ -910,13 +914,11 @@ async def list_jobs(
                     job.pop(k, None)
                 jobs.append(job)
 
-            total_pages = (total + limit - 1) // limit if total > 0 else 0
-
             return {
                 "data": jobs,
                 "total": total,
-                "page": page,
-                "limit": limit,
+                "page": p_val,
+                "limit": l_val,
                 "total_pages": total_pages
             }
         except Exception as e:
@@ -926,7 +928,7 @@ async def list_jobs(
 @app.get("/api/workflow-logs", tags=["Jobs"], summary="List job workflow logs")
 async def list_workflow_logs(
     job_id: Optional[int] = None,
-    limit: int = 10
+    limit: Optional[int] = None
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
@@ -935,7 +937,10 @@ async def list_workflow_logs(
         params.append(job_id)
         where_parts.append(f"l.job_id = ${len(params)}")
     where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
-    params.append(limit)
+    limit_clause = ""
+    if limit is not None:
+        params.append(max(1, limit))
+        limit_clause = f"LIMIT ${len(params)}"
     query = f"""
         SELECT 
             l.*,
@@ -946,7 +951,7 @@ async def list_workflow_logs(
         LEFT JOIN users u ON l.performed_by = u.id
         {where_sql}
         ORDER BY l.created_at DESC
-        LIMIT ${len(params)}
+        {limit_clause}
     """
     async with db_pool.acquire() as conn:
         rows = await fetch_with_coerced_params(conn, query, params)
@@ -1212,7 +1217,7 @@ async def list_job_workflow_logs(job_id: Optional[str] = None):
             else:
                 rows = []
         else:
-            rows = await fetch_with_coerced_params(conn, "SELECT * FROM job_workflow_logs ORDER BY created_at DESC LIMIT 100", [])
+            rows = await fetch_with_coerced_params(conn, "SELECT * FROM job_workflow_logs ORDER BY created_at DESC", [])
         return [dict(r) for r in rows]
 
 @app.post("/api/job-workflow-logs", tags=["Jobs"], status_code=201, summary="Log job workflow step")
@@ -1250,7 +1255,7 @@ async def list_job_tests(
     job_id: Optional[str] = None,
     category: Optional[str] = None,
     id: Optional[str] = None,
-    limit: int = 10000
+    limit: Optional[int] = None
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
@@ -1275,8 +1280,11 @@ async def list_job_tests(
         params.append(category)
         where_parts.append(f"category = ${len(params)}")
     where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
-    params.append(min(10000, max(1, limit)))
-    query = f"SELECT * FROM job_tests {where_sql} ORDER BY id ASC LIMIT ${len(params)}"
+    limit_clause = ""
+    if limit is not None:
+        params.append(max(1, limit))
+        limit_clause = f"LIMIT ${len(params)}"
+    query = f"SELECT * FROM job_tests {where_sql} ORDER BY id ASC {limit_clause}"
     async with db_pool.acquire() as conn:
         try:
             rows = await fetch_with_coerced_params(conn, query, params)
@@ -1417,7 +1425,7 @@ async def list_material_samples(inward_id: Optional[str] = None):
             else:
                 rows = []
         else:
-            rows = await fetch_with_coerced_params(conn, "SELECT * FROM material_samples ORDER BY id ASC LIMIT 500", [])
+            rows = await fetch_with_coerced_params(conn, "SELECT * FROM material_samples ORDER BY id ASC", [])
         return [dict(r) for r in rows]
 
 @app.post("/api/material-samples", tags=["Material Inward"], status_code=201, summary="Create material sample")
@@ -1486,8 +1494,8 @@ class ExpenseUpdate(BaseModel):
 
 @app.get("/api/expenses", tags=["Expenses"], summary="List, search & filter expenses with pagination")
 async def list_expenses(
-    page: int = 1,
-    limit: int = 10,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     q: Optional[str] = None,
     id: Optional[str] = None,
     created_by: Optional[str] = None,
@@ -1499,9 +1507,6 @@ async def list_expenses(
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    page = max(1, page)
-    limit = min(10000, max(1, limit))
-    offset = (page - 1) * limit
     safe_sort = safe_identifier(sort_by) if sort_by in ["id", "amount", "date", "created_at", "paid_by", "project_name"] else "date"
     sort_order = "ASC" if order.lower() == "asc" else "DESC"
 
@@ -1543,10 +1548,23 @@ async def list_expenses(
         try:
             count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM expenses {where_sql}", params)
             total = count_rows[0]["count"] if count_rows else 0
-            query_params = list(params) + [limit, offset]
-            data_query = f"SELECT * FROM expenses {where_sql} ORDER BY {safe_sort} {sort_order} LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            if limit is not None:
+                p_val = max(1, page or 1)
+                l_val = max(1, limit)
+                o_val = (p_val - 1) * l_val
+                query_params = list(params) + [l_val, o_val]
+                limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+                total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+            else:
+                p_val = page or 1
+                l_val = None
+                query_params = list(params)
+                limit_sql = ""
+                total_pages = 1
+
+            data_query = f"SELECT * FROM expenses {where_sql} ORDER BY {safe_sort} {sort_order} {limit_sql}"
             rows = await fetch_with_coerced_params(conn, data_query, query_params)
-            return {"data": [dict(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+            return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
         except Exception as e:
             logger.error(f"Error listing expenses: {e}")
             raise HTTPException(status_code=400, detail=str(e))
@@ -1623,17 +1641,14 @@ class ApprovalUpdate(BaseModel):
 
 @app.get("/api/approvals", tags=["Approvals & Leaves"], summary="List approvals & leaves with pagination")
 async def list_approvals(
-    page: int = 1,
-    limit: int = 10,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     request_type: Optional[str] = None,
     status: Optional[str] = None,
     requester_id: Optional[str] = None
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    page = max(1, page)
-    limit = min(10000, max(1, limit))
-    offset = (page - 1) * limit
     where_parts, params = [], []
     if request_type:
         params.append(request_type)
@@ -1655,7 +1670,20 @@ async def list_approvals(
     async with db_pool.acquire() as conn:
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM request_approvals r {where_sql}", params)
         total = count_rows[0]["count"] if count_rows else 0
-        query_params = list(params) + [limit, offset]
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+        else:
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
         query = f"""
             SELECT 
                 r.*,
@@ -1664,7 +1692,7 @@ async def list_approvals(
             LEFT JOIN users u ON r.requester_id = u.id
             {where_sql}
             ORDER BY r.created_at DESC
-            LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}
+            {limit_sql}
         """
         rows = await fetch_with_coerced_params(conn, query, query_params)
         result = []
@@ -1677,7 +1705,7 @@ async def list_approvals(
                     except Exception:
                         pass
             result.append(doc)
-        return {"data": result, "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        return {"data": result, "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/approvals/{approval_id}", tags=["Approvals & Leaves"], summary="Get approval by ID")
 async def get_approval(approval_id: int):
@@ -1738,7 +1766,7 @@ async def delete_approval(approval_id: int):
 
 # Alias endpoint for /api/leaves
 @app.get("/api/leaves", tags=["Approvals & Leaves"], summary="List leave requests with pagination")
-async def list_leaves(page: int = 1, limit: int = 10, status: Optional[str] = None, requester_id: Optional[str] = None):
+async def list_leaves(page: Optional[int] = None, limit: Optional[int] = None, status: Optional[str] = None, requester_id: Optional[str] = None):
     return await list_approvals(page=page, limit=limit, request_type="LEAVE", status=status, requester_id=requester_id)
 
 # ============================================================================
@@ -1755,17 +1783,14 @@ class AuditLogCreate(BaseModel):
 
 @app.get("/api/audit-logs", tags=["Audit Logs"], summary="List audit logs with pagination")
 async def list_audit_logs(
-    page: int = 1,
-    limit: int = 10,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     q: Optional[str] = None,
     entity_type: Optional[str] = None,
     performed_by: Optional[str] = None
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    page = max(1, page)
-    limit = min(100, max(1, limit))
-    offset = (page - 1) * limit
     where_parts, params = [], []
     if entity_type:
         params.append(entity_type)
@@ -1787,9 +1812,22 @@ async def list_audit_logs(
     async with db_pool.acquire() as conn:
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM audit_logs {where_sql}", params)
         total = count_rows[0]["count"] if count_rows else 0
-        query_params = list(params) + [limit, offset]
-        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM audit_logs {where_sql} ORDER BY created_at DESC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+        else:
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
+        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM audit_logs {where_sql} ORDER BY created_at DESC {limit_sql}", query_params)
+        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/audit-logs/{log_id}", tags=["Audit Logs"], summary="Get audit log entry by ID")
 async def get_audit_log(log_id: int):
@@ -1953,12 +1991,9 @@ def format_client_record(c: dict) -> dict:
     return res
 
 @app.get("/api/clients", tags=["Clients"], summary="List clients with pagination")
-async def list_clients(page: int = 1, limit: int = 10, q: Optional[str] = None, id: Optional[str] = None):
+async def list_clients(page: Optional[int] = None, limit: Optional[int] = None, q: Optional[str] = None, id: Optional[str] = None):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    page = max(1, page)
-    limit = min(10000, max(1, limit))
-    offset = (page - 1) * limit
     where_parts, params = [], []
     if id is not None:
         parsed = parse_id_list(id)
@@ -1976,9 +2011,22 @@ async def list_clients(page: int = 1, limit: int = 10, q: Optional[str] = None, 
     async with db_pool.acquire() as conn:
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM clients {where_sql}", params)
         total = count_rows[0]["count"] if count_rows else 0
-        query_params = list(params) + [limit, offset]
-        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM clients {where_sql} ORDER BY client_name ASC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
-        return {"data": [format_client_record(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+        else:
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
+        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM clients {where_sql} ORDER BY client_name ASC {limit_sql}", query_params)
+        return {"data": [format_client_record(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/clients/{client_id}", tags=["Clients"], summary="Get client by ID")
 async def get_client(client_id: int):
@@ -2157,12 +2205,9 @@ class FieldTestUpdate(BaseModel):
     num_days: Optional[int] = None
 
 @app.get("/api/field-tests", tags=["Field Tests"], summary="List field tests with pagination")
-async def list_field_tests(page: int = 1, limit: int = 10, q: Optional[str] = None):
+async def list_field_tests(page: Optional[int] = None, limit: Optional[int] = None, q: Optional[str] = None):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    page = max(1, page)
-    limit = min(100, max(1, limit))
-    offset = (page - 1) * limit
     where_parts, params = [], []
     if q:
         params.append(f"%{q}%")
@@ -2172,9 +2217,22 @@ async def list_field_tests(page: int = 1, limit: int = 10, q: Optional[str] = No
     async with db_pool.acquire() as conn:
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM field_tests {where_sql}", params)
         total = count_rows[0]["count"] if count_rows else 0
-        query_params = list(params) + [limit, offset]
-        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM field_tests {where_sql} ORDER BY name ASC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+        else:
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
+        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM field_tests {where_sql} ORDER BY name ASC {limit_sql}", query_params)
+        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/field-tests/{test_id}", tags=["Field Tests"], summary="Get field test by ID")
 async def get_field_test(test_id: int):
@@ -2253,16 +2311,13 @@ class LabTestUpdate(BaseModel):
 
 @app.get("/api/lab-tests", tags=["Lab Tests"], summary="List lab tests with pagination")
 async def list_lab_tests(
-    page: int = 1,
-    limit: int = 10,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     q: Optional[str] = None,
     group: Optional[str] = None
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    page = max(1, page)
-    limit = min(100, max(1, limit))
-    offset = (page - 1) * limit
     where_parts, params = [], []
     if group:
         params.append(group)
@@ -2276,9 +2331,22 @@ async def list_lab_tests(
     async with db_pool.acquire() as conn:
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM lab_tests {where_sql}", params)
         total = count_rows[0]["count"] if count_rows else 0
-        query_params = list(params) + [limit, offset]
-        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM lab_tests {where_sql} ORDER BY name ASC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+        else:
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
+        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM lab_tests {where_sql} ORDER BY name ASC {limit_sql}", query_params)
+        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/lab-tests/{test_id}", tags=["Lab Tests"], summary="Get lab test by ID")
 async def get_lab_test(test_id: int):
@@ -2362,16 +2430,13 @@ class SamplingUpdate(BaseModel):
 
 @app.get("/api/sampling", tags=["Sampling"], summary="List sampling services with pagination")
 async def list_sampling_services(
-    page: int = 1,
-    limit: int = 10,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     q: Optional[str] = None,
     test_type: Optional[str] = None
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    page = max(1, page)
-    limit = min(100, max(1, limit))
-    offset = (page - 1) * limit
     where_parts, params = [], []
     if test_type:
         params.append(test_type)
@@ -2385,9 +2450,22 @@ async def list_sampling_services(
     async with db_pool.acquire() as conn:
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM sampling {where_sql}", params)
         total = count_rows[0]["count"] if count_rows else 0
-        query_params = list(params) + [limit, offset]
-        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM sampling {where_sql} ORDER BY name ASC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+        else:
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
+        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM sampling {where_sql} ORDER BY name ASC {limit_sql}", query_params)
+        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/sampling/{sampling_id}", tags=["Sampling"], summary="Get sampling service by ID")
 async def get_sampling_service(sampling_id: int):
@@ -2458,12 +2536,9 @@ class PackageUpdate(BaseModel):
     items: Optional[Any] = None
 
 @app.get("/api/packages", tags=["Packages"], summary="List packages with pagination")
-async def list_packages(page: int = 1, limit: int = 10, q: Optional[str] = None):
+async def list_packages(page: Optional[int] = None, limit: Optional[int] = None, q: Optional[str] = None):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    page = max(1, page)
-    limit = min(100, max(1, limit))
-    offset = (page - 1) * limit
     where_parts, params = [], []
     if q:
         params.append(f"%{q}%")
@@ -2472,9 +2547,22 @@ async def list_packages(page: int = 1, limit: int = 10, q: Optional[str] = None)
     async with db_pool.acquire() as conn:
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM packages {where_sql}", params)
         total = count_rows[0]["count"] if count_rows else 0
-        query_params = list(params) + [limit, offset]
-        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM packages {where_sql} ORDER BY name ASC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+        else:
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
+        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM packages {where_sql} ORDER BY name ASC {limit_sql}", query_params)
+        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/packages/{pkg_id}", tags=["Packages"], summary="Get package by ID")
 async def get_package(pkg_id: str):
@@ -2695,8 +2783,8 @@ async def get_current_user_endpoint(request: Request):
 
 @app.get("/api/users", tags=["Users"], summary="List users with pagination and filtering")
 async def list_users(
-    page: int = 1,
-    limit: int = 10,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     q: Optional[str] = None,
     id: Optional[str] = None,
     username: Optional[str] = None,
@@ -2706,9 +2794,6 @@ async def list_users(
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    page = max(1, page)
-    limit = min(10000, max(1, limit))
-    offset = (page - 1) * limit
     where_parts, params = [], []
     if id is not None:
         parsed = parse_id_list(id)
@@ -2739,9 +2824,22 @@ async def list_users(
     async with db_pool.acquire() as conn:
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM users {where_sql}", params)
         total = count_rows[0]["count"] if count_rows else 0
-        query_params = list(params) + [limit, offset]
-        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM users {where_sql} ORDER BY full_name ASC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+        else:
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
+        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM users {where_sql} ORDER BY full_name ASC {limit_sql}", query_params)
+        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/users/{user_id}", tags=["Users"], summary="Get user by ID")
 async def get_user(user_id: int):
@@ -2817,16 +2915,13 @@ class InquiryUpdate(BaseModel):
 
 @app.get("/api/inquiries", tags=["Inquiries"], summary="List inquiries with pagination")
 async def list_inquiries(
-    page: int = 1,
-    limit: int = 10,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     q: Optional[str] = None,
     status: Optional[str] = None
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    page = max(1, page)
-    limit = min(100, max(1, limit))
-    offset = (page - 1) * limit
     where_parts, params = [], []
     if status:
         params.append(status)
@@ -2840,9 +2935,22 @@ async def list_inquiries(
     async with db_pool.acquire() as conn:
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM inquiries {where_sql}", params)
         total = count_rows[0]["count"] if count_rows else 0
-        query_params = list(params) + [limit, offset]
-        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM inquiries {where_sql} ORDER BY created_at DESC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+        else:
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
+        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM inquiries {where_sql} ORDER BY created_at DESC {limit_sql}", query_params)
+        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/inquiries/{inquiry_id}", tags=["Inquiries"], summary="Get inquiry by ID")
 async def get_inquiry(inquiry_id: int):
@@ -3117,8 +3225,8 @@ async def _set_comment_attachments(conn, comment_id: int, file_ids: List[str]):
 
 @app.get("/api/tickets", tags=["Support Tickets"], summary="List tickets with pagination")
 async def list_tickets(
-    page: int = 1,
-    limit: int = 10,
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
     q: Optional[str] = None,
     status: Optional[str] = None,
     priority: Optional[str] = None,
@@ -3126,9 +3234,6 @@ async def list_tickets(
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    page = max(1, page)
-    limit = min(10000, max(1, limit))
-    offset = (page - 1) * limit
     where_parts, params = [], []
     if status:
         params.append(status)
@@ -3148,14 +3253,27 @@ async def list_tickets(
     async with db_pool.acquire() as conn:
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM tickets {where_sql}", params)
         total = count_rows[0]["count"] if count_rows else 0
-        query_params = list(params) + [limit, offset]
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+        else:
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
         rows = await fetch_with_coerced_params(
             conn,
-            f"SELECT * FROM tickets {where_sql} ORDER BY created_at DESC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}",
+            f"SELECT * FROM tickets {where_sql} ORDER BY created_at DESC {limit_sql}",
             query_params
         )
         if not rows:
-            return {"data": [], "total": total, "page": page, "limit": limit, "total_pages": 0}
+            return {"data": [], "total": total, "page": p_val, "limit": l_val, "total_pages": 0}
 
         ticket_ids = [r["id"] for r in rows]
         att_count_rows = await conn.fetch(
@@ -3171,7 +3289,7 @@ async def list_tickets(
             ticket["attachment_count"] = cnt
             ticket["attachments"] = [{}] * cnt
             tickets.append(ticket)
-        return {"data": tickets, "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        return {"data": tickets, "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/ticket-comments", tags=["Support Tickets"], summary="List ticket comments")
 async def list_ticket_comments(
@@ -3509,12 +3627,9 @@ async def delete_material_form_associations(material_id: Optional[int] = None):
         return {"message": "Associations deleted"}
 
 @app.get("/api/material-inward", tags=["Materials & Material Inward"], summary="List material inward register")
-async def list_material_inward(page: int = 1, limit: int = 10, status: Optional[str] = None, client_id: Optional[str] = None, job_id: Optional[str] = None):
+async def list_material_inward(page: Optional[int] = None, limit: Optional[int] = None, status: Optional[str] = None, client_id: Optional[str] = None, job_id: Optional[str] = None):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    page = max(1, page)
-    limit = min(10000, max(1, limit))
-    offset = (page - 1) * limit
     where_parts, params = [], []
     if status:
         params.append(status)
@@ -3539,9 +3654,22 @@ async def list_material_inward(page: int = 1, limit: int = 10, status: Optional[
     async with db_pool.acquire() as conn:
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM material_inward_register {where_sql}", params)
         total = count_rows[0]["count"] if count_rows else 0
-        query_params = list(params) + [limit, offset]
-        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM material_inward_register {where_sql} ORDER BY created_at DESC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+        else:
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
+        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM material_inward_register {where_sql} ORDER BY created_at DESC {limit_sql}", query_params)
+        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/material-inward/{inward_id}", tags=["Materials & Material Inward"], summary="Get material inward entry by ID")
 async def get_material_inward(inward_id: int):
@@ -3777,12 +3905,9 @@ async def delete_bank_account(account_id: str):
         return {"message": "Bank account deleted", "id": account_id}
 
 @app.get("/api/bank-statements", tags=["Banking"], summary="List bank statement transactions")
-async def list_bank_statements(page: int = 1, limit: int = 10, source: Optional[str] = None):
+async def list_bank_statements(page: Optional[int] = None, limit: Optional[int] = None, source: Optional[str] = None):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    page = max(1, page)
-    limit = min(100, max(1, limit))
-    offset = (page - 1) * limit
     where_parts, params = [], []
     if source:
         params.append(source)
@@ -3791,9 +3916,22 @@ async def list_bank_statements(page: int = 1, limit: int = 10, source: Optional[
     async with db_pool.acquire() as conn:
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM bank_statements {where_sql}", params)
         total = count_rows[0]["count"] if count_rows else 0
-        query_params = list(params) + [limit, offset]
-        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM bank_statements {where_sql} ORDER BY date DESC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+        else:
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
+        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM bank_statements {where_sql} ORDER BY date DESC {limit_sql}", query_params)
+        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.post("/api/bank-statements", tags=["Banking"], status_code=201, summary="Add bank statement transaction")
 async def create_bank_statement(bs: BankStatementCreate):
@@ -3858,12 +3996,9 @@ class ReportUpdate(BaseModel):
     client_id: Optional[int] = None
 
 @app.get("/api/reports", tags=["Test Reports"], summary="List test reports with pagination")
-async def list_reports(page: int = 1, limit: int = 10, q: Optional[str] = None, client_id: Optional[str] = None):
+async def list_reports(page: Optional[int] = None, limit: Optional[int] = None, q: Optional[str] = None, client_id: Optional[str] = None):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
-    page = max(1, page)
-    limit = min(10000, max(1, limit))
-    offset = (page - 1) * limit
     where_parts, params = [], []
     if client_id is not None:
         parsed = parse_id_list(client_id)
@@ -3880,9 +4015,22 @@ async def list_reports(page: int = 1, limit: int = 10, q: Optional[str] = None, 
     async with db_pool.acquire() as conn:
         count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM reports {where_sql}", params)
         total = count_rows[0]["count"] if count_rows else 0
-        query_params = list(params) + [limit, offset]
-        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM reports {where_sql} ORDER BY created_at DESC LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": page, "limit": limit, "total_pages": (total + limit - 1) // limit if total > 0 else 0}
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
+        else:
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
+        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM reports {where_sql} ORDER BY created_at DESC {limit_sql}", query_params)
+        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/reports/{report_id}", tags=["Test Reports"], summary="Get report by ID")
 async def get_report(report_id: int):

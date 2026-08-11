@@ -10,7 +10,7 @@ const ExpensesProvider = ({ children }) => {
   const { user } = useAuth();
   const currentUserId = user?.id;
   const [expenses, setExpenses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const mapFromDb = useCallback(
     (e) => ({
@@ -206,9 +206,6 @@ export const useExpenses = () => {
   if (!context) {
     throw new Error('useExpenses must be used within an ExpensesProvider');
   }
-  React.useEffect(() => {
-    context.ensureFetched();
-  }, [context]);
   return context;
 };
 

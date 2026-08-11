@@ -118,8 +118,7 @@ const ClientsProvider = ({ children }) => {
       const { data, error } = await apiClient
         .from('clients')
         .select('*')
-        .order('created_at', { ascending: true })
-        .limit(10000);
+        .order('created_at', { ascending: true });
 
       if (error) {
         console.warn('API fetch error (clients):', error.message);
