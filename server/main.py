@@ -1267,14 +1267,18 @@ async def unassign_job_technician(job_id: Optional[str] = None, technician_id: O
         return {"message": "Unassigned successfully"}
 
 @app.get("/api/email/history", tags=["Email"], summary="Get email dispatch history")
-async def get_email_history():
+@app.get("/api/email-logs", tags=["Email"], summary="Get email dispatch history alias")
+async def get_email_history(sort_by: Optional[str] = None, order: Optional[str] = None, limit: Optional[int] = None, offset: Optional[int] = None):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
+    order_sql = "DESC" if order and order.lower() == "desc" else "ASC"
+    limit_sql = f" LIMIT {int(limit)}" if limit else ""
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT * FROM email_logs ORDER BY created_at DESC")
+        rows = await conn.fetch(f"SELECT * FROM email_logs ORDER BY created_at {order_sql}{limit_sql}")
         return [sanitize_db_val(dict(r)) for r in rows]
 
 @app.post("/api/email/send", tags=["Email"], status_code=201, summary="Log/Send client email communication")
+@app.post("/api/email-logs", tags=["Email"], status_code=201, summary="Log/Send client email communication alias")
 async def send_email(req: EmailSendReq):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")

@@ -132,11 +132,71 @@ const AdminEmailManager = () => {
     fetchHistory();
   }, []);
 
+  const isValidEmail = (email) => {
+    if (!email || typeof email !== 'string') return false;
+    const trimmed = email.trim();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+  };
+
+  const getClientContacts = (client) => {
+    if (!client) return [];
+    const contactsList = [];
+    const seenEmails = new Set();
+
+    let rawContacts = [];
+    if (Array.isArray(client.contacts)) {
+      rawContacts = client.contacts;
+    } else if (typeof client.contacts === 'string' && client.contacts.trim()) {
+      try {
+        const parsed = JSON.parse(client.contacts);
+        if (Array.isArray(parsed)) rawContacts = parsed;
+      } catch (_) {}
+    }
+
+    // Top-level primary client contact
+    const primaryName = (client.contact_person || client.contactPerson || client.client_name || client.clientName || '').trim();
+    const primaryEmail = (client.email || '').trim();
+
+    if (primaryEmail && isValidEmail(primaryEmail)) {
+      contactsList.push({
+        name: primaryName || 'Primary Contact',
+        email: primaryEmail,
+        is_primary: true,
+      });
+      seenEmails.add(primaryEmail.toLowerCase());
+    }
+
+    // Associated contacts array
+    rawContacts.forEach((c) => {
+      const cEmail = (c.contact_email || c.email || '').trim();
+      const cName = (c.contact_person || c.name || c.contactPerson || '').trim() || primaryName || 'Contact';
+      if (cEmail && isValidEmail(cEmail) && !seenEmails.has(cEmail.toLowerCase())) {
+        contactsList.push({
+          name: cName,
+          email: cEmail,
+          is_primary: Boolean(c.is_primary),
+        });
+        seenEmails.add(cEmail.toLowerCase());
+      }
+    });
+
+    return contactsList;
+  };
+
+  const getClientContactsCsv = (client) => {
+    const contacts = getClientContacts(client);
+    const namesCsv = contacts
+      .map((c) => (c.is_primary ? `${c.name} (Primary)` : c.name))
+      .join(', ');
+    const emailsCsv = contacts.map((c) => c.email).join(', ');
+    return { contacts, namesCsv, emailsCsv, count: contacts.length };
+  };
+
   const fetchClients = async () => {
     try {
       const { data, error } = await apiClient
         .from('clients')
-        .select('id, client_name, email, contact_person, client_address')
+        .select('id, client_name, email, contact_person, contacts, client_address')
         .order('client_name');
       if (error) throw error;
       setClients(data || []);
@@ -162,19 +222,31 @@ const AdminEmailManager = () => {
   };
 
   // ── Client Selection Handlers ─────────────────────────────────────
+  const selectableClients = clients.filter((c) => getClientContactsCsv(c).count > 0);
   const isAllSelected =
-    clients.length > 0 && selectedClientIds.length === clients.length;
+    selectableClients.length > 0 &&
+    selectableClients.every((c) => selectedClientIds.includes(String(c.id)));
 
   const handleToggleSelectAll = () => {
     if (isAllSelected) {
       setSelectedClientIds([]);
     } else {
-      setSelectedClientIds(clients.map((c) => String(c.id)));
+      // Only select clients that have at least 1 valid contact email address
+      setSelectedClientIds(selectableClients.map((c) => String(c.id)));
     }
   };
 
-  const handleToggleClient = (clientId) => {
-    const idStr = String(clientId);
+  const handleToggleClient = (client) => {
+    const { count } = getClientContactsCsv(client);
+    if (count === 0) {
+      toast({
+        title: 'Selection Disabled',
+        description: `"${client.client_name}" does not have any contact email addresses configured.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    const idStr = String(client.id);
     setSelectedClientIds((prev) =>
       prev.includes(idStr)
         ? prev.filter((id) => id !== idStr)
@@ -189,11 +261,12 @@ const AdminEmailManager = () => {
 
   const filteredClients = clients.filter((c) => {
     const term = clientSearchTerm.toLowerCase();
-    return (
-      c.client_name?.toLowerCase().includes(term) ||
-      c.email?.toLowerCase().includes(term) ||
-      c.contact_person?.toLowerCase().includes(term)
-    );
+    const nameMatch = (c.client_name || '').toLowerCase().includes(term);
+    const emailMatch = (c.email || '').toLowerCase().includes(term);
+    const contactMatch = (c.contact_person || '').toLowerCase().includes(term);
+    const { namesCsv, emailsCsv } = getClientContactsCsv(c);
+    const contactsMatch = namesCsv.toLowerCase().includes(term) || emailsCsv.toLowerCase().includes(term);
+    return nameMatch || emailMatch || contactMatch || contactsMatch;
   });
 
   const selectedClientsList = clients.filter((c) =>
@@ -314,11 +387,19 @@ const AdminEmailManager = () => {
     setSending(true);
     try {
       const finalBody = editorRef.current?.innerHTML || bodyHtml;
-      const recipientsData = selectedClientsList.map((c) => ({
-        id: c.id,
-        name: c.client_name,
-        email: c.email || 'no-email@client.com',
-      }));
+      const recipientsData = [];
+      selectedClientsList.forEach((c) => {
+        const { contacts } = getClientContactsCsv(c);
+        contacts.forEach((con) => {
+          recipientsData.push({
+            client_id: c.id,
+            client_name: c.client_name,
+            contact_name: con.name,
+            email: con.email,
+            is_primary: con.is_primary,
+          });
+        });
+      });
 
       let userId = typeof user?.id === 'string' ? parseInt(user.id) : user?.id;
       const senderName = user?.full_name || user?.username || 'System Administrator';
@@ -338,7 +419,7 @@ const AdminEmailManager = () => {
 
       toast({
         title: 'Email Sent Successfully',
-        description: `Communication dispatched to ${recipientsData.length} client recipient(s).`,
+        description: `Communication dispatched to ${recipientsData.length} target contact email(s) across ${selectedClientsList.length} client(s).`,
       });
 
       // Clear compose form
@@ -420,24 +501,24 @@ const AdminEmailManager = () => {
                       variant="outline"
                       role="combobox"
                       aria-expanded={clientPopoverOpen}
-                      className="w-full justify-between bg-gray-50/50 border-gray-200 text-left font-normal h-11 rounded-xl hover:bg-gray-50"
+                      className="w-full justify-between bg-gray-50/50 border-gray-200 text-left font-normal h-12 rounded-xl hover:bg-gray-50 px-3"
                     >
-                      <span className="truncate text-xs text-gray-700">
+                      <span className="truncate text-xs text-gray-700 font-medium">
                         {selectedClientsList.length === 0
                           ? 'Select client recipients...'
-                          : `${selectedClientsList.length} client(s) selected`}
+                          : `${selectedClientsList.length} client(s) selected (${selectedClientsList.reduce((acc, c) => acc + getClientContactsCsv(c).count, 0)} total contact emails)`}
                       </span>
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[420px] p-3 space-y-3" align="start">
+                  <PopoverContent className="w-[480px] p-3 space-y-3" align="start">
                     {/* Search & Select All controls */}
                     <div className="flex items-center justify-between gap-2 border-b pb-2">
                       <div className="relative flex-1">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                         <input
                           type="text"
-                          placeholder="Search client name or email..."
+                          placeholder="Search client, contacts, or emails..."
                           value={clientSearchTerm}
                           onChange={(e) => setClientSearchTerm(e.target.value)}
                           className="w-full h-8 pl-8 pr-3 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
@@ -454,34 +535,54 @@ const AdminEmailManager = () => {
                       </Button>
                     </div>
 
-                    {/* Client Checklist */}
-                    <div className="max-h-60 overflow-y-auto space-y-1 pr-1">
+                    {/* Client Checklist with Contacts CSV */}
+                    <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
                       {filteredClients.map((client) => {
                         const idStr = String(client.id);
                         const isChecked = selectedClientIds.includes(idStr);
+                        const { contacts, namesCsv, emailsCsv, count } = getClientContactsCsv(client);
+                        const hasEmails = count > 0;
+
                         return (
                           <div
                             key={client.id}
-                            onClick={() => handleToggleClient(client.id)}
-                            className={`flex items-center justify-between p-2 rounded-lg cursor-pointer text-xs transition-all ${
-                              isChecked
-                                ? 'bg-primary/10 text-primary font-medium'
-                                : 'hover:bg-gray-50 text-gray-700'
+                            onClick={() => handleToggleClient(client)}
+                            className={`flex items-start justify-between p-3 rounded-xl text-xs transition-all border ${
+                              hasEmails
+                                ? isChecked
+                                  ? 'bg-primary/10 text-primary font-medium border-primary/30 shadow-sm cursor-pointer'
+                                  : 'bg-white border-gray-100 hover:bg-gray-50 text-gray-700 cursor-pointer'
+                                : 'bg-gray-100/70 border-gray-200 text-gray-400 opacity-60 cursor-not-allowed select-none'
                             }`}
+                            title={hasEmails ? undefined : 'Selection Disabled: Client does not have any email addresses configured'}
                           >
-                            <div className="flex flex-col truncate pr-2">
-                              <span className="font-semibold text-gray-900 truncate">
+                            <div className="flex flex-col truncate pr-2 space-y-1">
+                              <span className={`font-bold text-sm truncate flex items-center gap-1.5 ${hasEmails ? 'text-gray-900' : 'text-gray-500'}`}>
+                                {!hasEmails && <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
                                 {client.client_name}
                               </span>
-                              <span className="text-[11px] text-gray-500 truncate">
-                                {client.email || 'No email configured'}
-                              </span>
+                              {hasEmails ? (
+                                <>
+                                  <span className="text-[11px] text-gray-600 truncate">
+                                    <strong className="text-gray-700">Contacts ({count}):</strong> {namesCsv}
+                                  </span>
+                                  <span className="text-[11px] text-primary/80 font-mono truncate">
+                                    <strong className="text-gray-700 font-sans">Emails CSV:</strong> {emailsCsv}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-[11px] text-red-500 font-semibold flex items-center gap-1">
+                                  ⚠️ Disabled — No contact email configured for client
+                                </span>
+                              )}
                             </div>
                             <div
-                              className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
-                                isChecked
-                                  ? 'bg-primary border-primary text-white'
-                                  : 'border-gray-300'
+                              className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                                !hasEmails
+                                  ? 'border-gray-300 bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
+                                  : isChecked
+                                    ? 'bg-primary border-primary text-white'
+                                    : 'border-gray-300'
                               }`}
                             >
                               {isChecked && <Check className="w-3 h-3" />}
@@ -498,30 +599,48 @@ const AdminEmailManager = () => {
                   </PopoverContent>
                 </Popover>
 
-                {/* Recipient Tag Badges */}
+                {/* Recipient Tag Badges with Contacts CSV */}
                 {selectedClientsList.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1 max-h-28 overflow-y-auto">
-                    {selectedClientsList.map((client) => (
-                      <Badge
-                        key={client.id}
-                        variant="secondary"
-                        className="text-xs bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 px-2.5 py-1 rounded-lg flex items-center gap-1.5"
-                      >
-                        <span className="font-semibold">{client.client_name}</span>
-                        {client.email && (
-                          <span className="text-[10px] text-primary/70">
-                            &lt;{client.email}&gt;
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveRecipient(client.id)}
-                          className="text-primary hover:text-red-600 rounded-full p-0.5"
+                  <div className="flex flex-wrap gap-2 pt-1 max-h-36 overflow-y-auto">
+                    {selectedClientsList.map((client) => {
+                      const { namesCsv, emailsCsv, count } = getClientContactsCsv(client);
+                      const hasEmails = count > 0;
+                      return (
+                        <Badge
+                          key={client.id}
+                          variant="secondary"
+                          className={`text-xs p-2.5 rounded-xl flex items-center gap-2 border transition-all ${
+                            hasEmails
+                              ? 'bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 shadow-sm'
+                              : 'bg-red-50 text-red-700 hover:bg-red-100 border-red-300 font-bold'
+                          }`}
                         >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </Badge>
-                    ))}
+                          {!hasEmails && <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                          <div className="flex flex-col text-left max-w-[320px]">
+                            <span className="font-bold text-xs text-gray-900">{client.client_name}</span>
+                            {hasEmails ? (
+                              <>
+                                <span className="text-[10px] text-gray-600 truncate">
+                                  Contacts ({count}): {namesCsv}
+                                </span>
+                                <span className="text-[10px] text-primary/80 font-mono truncate">
+                                  Emails CSV: {emailsCsv}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-[10px] text-red-600 font-bold">(No Contact Emails Configured)</span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveRecipient(client.id)}
+                            className={`${hasEmails ? 'text-primary hover:text-red-600' : 'text-red-500 hover:text-red-900'} rounded-full p-1 ml-1 shrink-0`}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -944,14 +1063,15 @@ const AdminEmailManager = () => {
 
       {/* Pre-Dispatch Confirmation Dialog */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="sm:max-w-[540px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-primary">
               <AlertTriangle className="w-5 h-5 text-amber-500" /> Confirm Email Dispatch
             </DialogTitle>
             <DialogDescription className="pt-2 text-xs text-gray-600 space-y-2">
               Are you sure you want to send this email to{' '}
-              <strong className="text-gray-900">{selectedClientsList.length} client recipient(s)</strong>?
+              <strong className="text-gray-900">{selectedClientsList.length} client organization(s)</strong> targeting{' '}
+              <strong className="text-primary font-bold">{selectedClientsList.reduce((acc, c) => acc + getClientContactsCsv(c).count, 0)} contact email recipient(s)</strong>?
             </DialogDescription>
           </DialogHeader>
 
@@ -961,13 +1081,38 @@ const AdminEmailManager = () => {
               <span className="font-bold text-gray-900">{subject}</span>
             </div>
             <div>
-              <span className="font-semibold text-gray-500 block">Recipients ({selectedClientsList.length}):</span>
-              <div className="max-h-24 overflow-y-auto space-y-1 pt-1">
-                {selectedClientsList.map((c) => (
-                  <div key={c.id} className="text-gray-700 font-medium">
-                    • {c.client_name} {c.email ? `<${c.email}>` : ''}
-                  </div>
-                ))}
+              <span className="font-semibold text-gray-500 block">Selected Clients & Contact Email Recipients:</span>
+              <div className="max-h-40 overflow-y-auto space-y-2 pt-1.5">
+                {selectedClientsList.map((c) => {
+                  const { namesCsv, emailsCsv, count } = getClientContactsCsv(c);
+                  const hasEmails = count > 0;
+                  return (
+                    <div
+                      key={c.id}
+                      className={`p-2.5 rounded-xl text-xs space-y-1 border ${
+                        hasEmails ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-red-50 border-red-200 text-red-700 font-bold'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-gray-900 flex items-center gap-1">
+                          {!hasEmails && <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                          • {c.client_name}
+                        </span>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${hasEmails ? 'bg-primary/10 text-primary' : 'bg-red-100 text-red-700'}`}>
+                          {hasEmails ? `${count} Email(s)` : 'No Emails'}
+                        </span>
+                      </div>
+                      {hasEmails ? (
+                        <>
+                          <div className="text-[11px] text-gray-600"><strong className="text-gray-700">Contacts:</strong> {namesCsv}</div>
+                          <div className="text-[11px] text-primary/90 font-mono"><strong className="text-gray-700 font-sans">Emails CSV:</strong> {emailsCsv}</div>
+                        </>
+                      ) : (
+                        <div className="text-[11px] text-red-600">⚠️ No email addresses configured for client contacts</div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
