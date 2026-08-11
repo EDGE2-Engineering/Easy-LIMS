@@ -248,8 +248,17 @@ async def startup():
                         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                     );
                     CREATE INDEX IF NOT EXISTS idx_vendors_suppliers_type ON vendors_suppliers(type);
+
+                    CREATE TABLE IF NOT EXISTS job_to_technicians (
+                        id SERIAL PRIMARY KEY,
+                        job_id INTEGER NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+                        technician_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        assigned_tests TEXT,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    );
+                    ALTER TABLE job_to_technicians ADD COLUMN IF NOT EXISTS assigned_tests TEXT;
                 """)
-                logger.info("Verified/created job_tests, technician_capabilities, and vendors_suppliers tables.")
+                logger.info("Verified/created job_tests, technician_capabilities, vendors_suppliers, and job_to_technicians tables.")
         except Exception as e:
             logger.error(f"Failed to initialize auxiliary tables on startup: {e}")
 
@@ -1138,6 +1147,7 @@ async def delete_job(job_id: int):
 class JobTechnicianAssignReq(BaseModel):
     job_id: int
     technician_id: int
+    assigned_tests: Optional[str] = None
 
 class JobWorkflowLogCreateReq(BaseModel):
     job_id: int
@@ -1202,10 +1212,10 @@ async def assign_job_technician(req: Union[JobTechnicianAssignReq, List[JobTechn
         for item in items:
             rows = await fetch_with_coerced_params(
                 conn,
-                "INSERT INTO job_to_technicians (job_id, technician_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING *",
-                [item.job_id, item.technician_id]
+                "INSERT INTO job_to_technicians (job_id, technician_id, assigned_tests) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING *",
+                [item.job_id, item.technician_id, item.assigned_tests]
             )
-            results.append(dict(rows[0]) if rows else {"job_id": item.job_id, "technician_id": item.technician_id})
+            results.append(dict(rows[0]) if rows else {"job_id": item.job_id, "technician_id": item.technician_id, "assigned_tests": item.assigned_tests})
     return results if isinstance(req, list) else results[0]
 
 @app.delete("/api/job-technicians", tags=["Jobs"], summary="Unassign technicians from job")

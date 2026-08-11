@@ -423,9 +423,17 @@ const JobsManager = ({ id }) => {
       if (techIds.length > 0) {
         const { data: techUsers } = await apiClient
           .from('users')
-          .select('id, full_name, username')
+          .select('id, full_name, username, role, departments')
           .in('id', techIds);
-        setTechAssignments(techUsers || []);
+
+        const merged = (techUsers || []).map((u) => {
+          const match = (rawAssignments || []).find((r) => String(r.technician_id) === String(u.id));
+          return {
+            ...u,
+            assigned_tests: match?.assigned_tests || '',
+          };
+        });
+        setTechAssignments(merged);
       } else {
         setTechAssignments([]);
       }
@@ -1836,6 +1844,9 @@ const JobsManager = ({ id }) => {
                             <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
                               Assigned Technician
                             </th>
+                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                              Assigned Test Parameters / Department
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
@@ -1844,11 +1855,24 @@ const JobsManager = ({ id }) => {
                               <td className="p-3 font-bold text-gray-900">
                                 {a.full_name || a.username}
                               </td>
+                              <td className="p-3 text-gray-600">
+                                {a.assigned_tests ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {a.assigned_tests.split(',').map((t, idx) => (
+                                      <span key={idx} className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold px-2 py-0.5 rounded-md">
+                                        {t.trim()}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="italic text-gray-400">All Department / Job Tests</span>
+                                )}
+                              </td>
                             </tr>
                           ))}
                           {techAssignments.length === 0 && (
                             <tr>
-                              <td className="p-3 text-gray-500 italic">
+                              <td colSpan={2} className="p-3 text-gray-500 italic">
                                 No technician assigned yet.
                               </td>
                             </tr>
