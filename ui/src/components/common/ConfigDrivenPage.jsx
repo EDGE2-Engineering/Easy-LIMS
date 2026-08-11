@@ -48,6 +48,9 @@ const MyLeaves = lazyWithRetry(() => import('@/components/admin/MyLeaves.jsx'));
 const AdminTicketsManager = lazyWithRetry(
   () => import('@/components/admin/AdminTicketsManager.jsx')
 );
+const AdminEmailManager = lazyWithRetry(
+  () => import('@/components/admin/AdminEmailManager.jsx')
+);
 
 const COMPONENT_MAP = {
   [VIEWS.DASHBOARD]: AdminDashboard,
@@ -64,6 +67,7 @@ const COMPONENT_MAP = {
   [VIEWS.SETTINGS]: AdminSystemSettings,
   [VIEWS.CLIENT_PRICING]: AdminClientPricingManager,
   [VIEWS.ORGANIZATION]: AdminOrganizationSettings,
+  [VIEWS.EMAIL]: AdminEmailManager,
   [VIEWS.TESTING]: lazyWithRetry(() => import('@/components/admin/TestingDashboard.jsx')),
   [VIEWS.HR_DASHBOARD]: HRDashboard,
   [VIEWS.INQUIRIES]: InquiriesManager,
@@ -78,6 +82,7 @@ const ConfigDrivenPage = ({ viewName, subView, id }) => {
   if (viewName === VIEWS.SETTINGS) {
     if (subView === 'clients') Component = AdminClientsManager;
     else if (subView === 'system') Component = AdminSystemSettings;
+    else if (subView === 'email') Component = AdminEmailManager;
     else if (subView === 'field_tests') Component = AdminFieldTestsManager;
     else if (subView === 'lab_tests') Component = AdminLabTestsManager;
     else if (subView === 'sampling') Component = AdminSamplingManager;

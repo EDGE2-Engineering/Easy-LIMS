@@ -257,8 +257,20 @@ async def startup():
                         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                     );
                     ALTER TABLE job_to_technicians ADD COLUMN IF NOT EXISTS assigned_tests TEXT;
+
+                    CREATE TABLE IF NOT EXISTS email_logs (
+                        id SERIAL PRIMARY KEY,
+                        subject TEXT NOT NULL,
+                        body_html TEXT NOT NULL,
+                        recipients JSONB NOT NULL,
+                        recipient_count INTEGER NOT NULL DEFAULT 0,
+                        sent_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                        sent_by_name TEXT,
+                        status TEXT NOT NULL DEFAULT 'SENT',
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    );
                 """)
-                logger.info("Verified/created job_tests, technician_capabilities, vendors_suppliers, and job_to_technicians tables.")
+                logger.info("Verified/created job_tests, technician_capabilities, vendors_suppliers, job_to_technicians, and email_logs tables.")
         except Exception as e:
             logger.error(f"Failed to initialize auxiliary tables on startup: {e}")
 
@@ -1149,6 +1161,14 @@ class JobTechnicianAssignReq(BaseModel):
     technician_id: int
     assigned_tests: Optional[str] = None
 
+class EmailSendReq(BaseModel):
+    subject: str
+    body_html: str
+    recipients: List[dict]
+    recipient_count: Optional[int] = None
+    sent_by: Optional[int] = None
+    sent_by_name: Optional[str] = None
+
 class JobWorkflowLogCreateReq(BaseModel):
     job_id: int
     performed_by: int
@@ -1245,6 +1265,35 @@ async def unassign_job_technician(job_id: Optional[str] = None, technician_id: O
     async with db_pool.acquire() as conn:
         await fetch_with_coerced_params(conn, f"DELETE FROM job_to_technicians {where_sql}", params)
         return {"message": "Unassigned successfully"}
+
+@app.get("/api/email/history", tags=["Email"], summary="Get email dispatch history")
+async def get_email_history():
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM email_logs ORDER BY created_at DESC")
+        return [sanitize_db_val(dict(r)) for r in rows]
+
+@app.post("/api/email/send", tags=["Email"], status_code=201, summary="Log/Send client email communication")
+async def send_email(req: EmailSendReq):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    rec_count = req.recipient_count if req.recipient_count is not None else len(req.recipients)
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            INSERT INTO email_logs (subject, body_html, recipients, recipient_count, sent_by, sent_by_name, status)
+            VALUES ($1, $2, $3::jsonb, $4, $5, $6, 'SENT')
+            RETURNING *
+            """,
+            req.subject,
+            req.body_html,
+            json.dumps(req.recipients),
+            rec_count,
+            req.sent_by,
+            req.sent_by_name,
+        )
+        return sanitize_db_val(dict(rows[0]))
 
 @app.get("/api/job-workflow-logs", tags=["Jobs"], summary="Get job workflow logs with pagination")
 async def list_job_workflow_logs(

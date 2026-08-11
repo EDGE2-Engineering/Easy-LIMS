@@ -31,6 +31,7 @@ import {
   Send,
   Building2,
   MessageSquare,
+  Mail,
   Moon,
   Sun,
 } from 'lucide-react';
@@ -238,6 +239,14 @@ const Navbar = ({ isDirty = false, isSaving = false }) => {
       path: '/settings/organization',
       description: 'Manage expenses, leaves, and approvals',
       views: [VIEWS.EXPENSES, VIEWS.WORK_LOG, VIEWS.APPROVALS],
+    },
+    {
+      id: SETTINGS_ITEM_IDS.EMAIL,
+      label: 'Email',
+      icon: Mail,
+      path: '/settings/email',
+      description: 'Send Email communication to clients',
+      view: VIEWS.EMAIL,
     },
     {
       id: SETTINGS_ITEM_IDS.CLIENTS,

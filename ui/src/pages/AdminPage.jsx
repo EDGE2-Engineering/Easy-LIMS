@@ -75,6 +75,7 @@ const AdminPage = () => {
     sampling: VIEWS.SETTINGS,
     client_pricing: VIEWS.CLIENT_PRICING,
     organization: VIEWS.ORGANIZATION,
+    email: VIEWS.EMAIL,
     my_leaves: VIEWS.MY_LEAVES,
     tickets: VIEWS.TICKETS,
   };

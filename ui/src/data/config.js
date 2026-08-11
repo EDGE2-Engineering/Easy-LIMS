@@ -80,6 +80,7 @@ export const VIEWS = {
   APPROVALS: 'Approvals',
   CLIENT_PRICING: 'Client Pricing',
   ORGANIZATION: 'Organization',
+  EMAIL: 'Email',
   ANALYST_DASHBOARD: 'Analyst Dashboard',
   ACCOUNTS_DASHBOARD: 'Accounts Dashboard',
   TECHNICIAN_DASHBOARD: 'Technician Dashboard',
@@ -195,6 +196,7 @@ export const NAV_ITEM_IDS = {
 // IDs for settings dropdown sub-items (used in APP_CONFIG.navbar.settingsItems)
 export const SETTINGS_ITEM_IDS = {
   ORGANIZATION: 'organization',
+  EMAIL: 'email',
   CLIENTS: 'clients',
   CLIENT_PRICING: 'client_pricing',
   FIELD_TESTS: 'field_tests',
@@ -490,6 +492,7 @@ export const APP_CONFIG = {
     settingsItems: {
       [ROLES.SUPER_ADMIN.slug]: [
         SETTINGS_ITEM_IDS.ORGANIZATION,
+        SETTINGS_ITEM_IDS.EMAIL,
         SETTINGS_ITEM_IDS.CLIENTS,
         SETTINGS_ITEM_IDS.CLIENT_PRICING,
         SETTINGS_ITEM_IDS.FIELD_TESTS,
@@ -501,6 +504,7 @@ export const APP_CONFIG = {
       ],
       [ROLES.ADMIN.slug]: [
         SETTINGS_ITEM_IDS.ORGANIZATION,
+        SETTINGS_ITEM_IDS.EMAIL,
         SETTINGS_ITEM_IDS.CLIENTS,
         SETTINGS_ITEM_IDS.CLIENT_PRICING,
         SETTINGS_ITEM_IDS.FIELD_TESTS,
