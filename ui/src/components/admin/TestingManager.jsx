@@ -68,7 +68,11 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
   const { labTests } = useLabTests();
   const getMaterialAndForms = useCallback(
     (cat) => {
-      const material = materials.find((m) => String(m.id) === String(cat) || m.name === cat);
+      const material = materials.find(
+        (m) =>
+          String(m.id) === String(cat) ||
+          (m.name && m.name.toLowerCase().trim() === String(cat).toLowerCase().trim())
+      );
       const materialName = material?.name || cat;
 
       // Hardcoded bypass: Soil, Rock, and Soil and Rock always use their solidly built out geotech forms only.
@@ -176,8 +180,18 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
         .eq('job_id', initialJobId);
       if (!tError) {
         const results = {};
-        testData.forEach((t) => {
+        (testData || []).forEach((t) => {
+          if (!t.category || t.category === '0' || t.category === 'null' || t.category === 'undefined') return;
           results[t.category] = t.results || {};
+          const mat = materials.find(
+            (m) =>
+              String(m.id) === String(t.category) ||
+              (m.name && m.name.toLowerCase().trim() === String(t.category).toLowerCase().trim())
+          );
+          if (mat) {
+            results[mat.name] = t.results || {};
+            results[mat.id] = t.results || {};
+          }
         });
         setTestResults(results);
       }
@@ -293,8 +307,9 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
 
   if (loading)
     return (
-      <div className="flex justify-center p-20">
-        <Loader2 className="animate-spin" />
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
+        <p className="text-xs text-gray-500 font-medium">Loading testing data...</p>
       </div>
     );
   if (!jobDetails) return null;
@@ -305,17 +320,33 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
       samples
         .map((s) => {
           if (!s.material_type) return null;
-          const mat = materials.find((m) => String(m.id) === String(s.material_type));
-          return mat ? String(mat.id) : null;
+          const mat = materials.find(
+            (m) =>
+              String(m.id) === String(s.material_type) ||
+              (m.name && m.name.toLowerCase().trim() === String(s.material_type).toLowerCase().trim())
+          );
+          return mat ? mat.name : String(s.material_type);
         })
-        .filter(Boolean)
+        .filter((c) => c && c !== '0' && c !== 'null' && c !== 'undefined')
     ),
   ];
-  const dataCats = Object.keys(testResults);
-  const jobCategories = Object.keys(jobDetails?.test_types || {});
+
+  const dataCats = Object.keys(testResults).filter(
+    (c) => c && c !== '0' && c !== 'null' && c !== 'undefined'
+  );
+  const jobCategories = Object.keys(jobDetails?.test_types || {}).filter(
+    (c) => c && c !== '0' && c !== 'null' && c !== 'undefined'
+  );
 
   const hasMaterialsGap = samples.length > 0 && sampleCategories.length === 0;
-  const allCategories = [...new Set([...sampleCategories, ...jobCategories, ...dataCats])];
+
+  // Prioritize showing testing forms/input forms related ONLY to the inwarded materials of the job
+  const allCategories =
+    sampleCategories.length > 0
+      ? sampleCategories
+      : [...new Set([...jobCategories, ...dataCats])].filter(
+          (c) => c && c !== '0' && c !== 'null' && c !== 'undefined'
+        );
 
   const isAnalyst = user?.role === ROLES.ANALYST.slug;
   const isSoilTech =

@@ -84,6 +84,9 @@ const JobsManager = ({ id }) => {
   const [showingTestingForm, setShowingTestingForm] = useState(false);
   const [jobSamples, setJobSamples] = useState([]);
   const [techAssignments, setTechAssignments] = useState([]);
+  const [loadingJobSamples, setLoadingJobSamples] = useState(false);
+  const [loadingTechAssignments, setLoadingTechAssignments] = useState(false);
+  const [loadingJobDocs, setLoadingJobDocs] = useState(false);
   const [sortField, setSortField] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
   const [showingAuditLogs, setShowingAuditLogs] = useState(false);
@@ -342,6 +345,7 @@ const JobsManager = ({ id }) => {
   };
 
   const fetchJobDocs = async (jobId) => {
+    setLoadingJobDocs(true);
     try {
       const { data, error } = await apiClient.from('documents').select('*').eq('job_id', jobId);
       if (error) throw error;
@@ -354,6 +358,8 @@ const JobsManager = ({ id }) => {
       setLinkedDocs(sorted);
     } catch (error) {
       console.error('Error fetching linked documents:', error);
+    } finally {
+      setLoadingJobDocs(false);
     }
   };
 
@@ -386,6 +392,9 @@ const JobsManager = ({ id }) => {
 
   useEffect(() => {
     if (editingRecord?.id) {
+      setLoadingJobSamples(true);
+      setLoadingTechAssignments(true);
+      setLoadingJobDocs(true);
       fetchJobSamples(editingRecord.id);
       fetchJobAssignments(editingRecord.id);
       fetchJobDocs(editingRecord.id);
@@ -393,10 +402,14 @@ const JobsManager = ({ id }) => {
       setJobSamples([]);
       setTechAssignments([]);
       setLinkedDocs([]);
+      setLoadingJobSamples(false);
+      setLoadingTechAssignments(false);
+      setLoadingJobDocs(false);
     }
   }, [editingRecord?.id]);
 
   const fetchJobAssignments = async (jobId) => {
+    setLoadingTechAssignments(true);
     try {
       const { data: rawAssignments, error } = await apiClient
         .from('job_to_technicians')
@@ -417,10 +430,13 @@ const JobsManager = ({ id }) => {
       }
     } catch (err) {
       console.error('Error fetching assignments:', err);
+    } finally {
+      setLoadingTechAssignments(false);
     }
   };
 
   const fetchJobSamples = async (jobId) => {
+    setLoadingJobSamples(true);
     try {
       const { data: inwardRecords } = await apiClient
         .from('material_inward_register')
@@ -465,6 +481,8 @@ const JobsManager = ({ id }) => {
       }
     } catch (err) {
       console.error('Error fetching samples:', err);
+    } finally {
+      setLoadingJobSamples(false);
     }
   };
 
@@ -1710,9 +1728,14 @@ const JobsManager = ({ id }) => {
                       </Button>
                     )}
                   </div>
-                  {jobSamples.length === 0 ? (
+                  {loadingJobSamples ? (
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary mb-2" />
+                      <p className="text-xs text-gray-500 font-medium">Loading material inward details...</p>
+                    </div>
+                  ) : jobSamples.length === 0 ? (
                     <div className="text-center py-8 px-4 border border-dashed rounded-xl bg-gray-50/50 text-gray-500 text-sm flex flex-col items-center gap-2">
-                      <Package className="w-8 h-8 text-gray-305" />
+                      <Package className="w-8 h-8 text-gray-300" />
                       <p>No material samples needed or registered for this job.</p>
                     </div>
                   ) : (
@@ -1789,33 +1812,40 @@ const JobsManager = ({ id }) => {
                       </Button>
                     </div>
                   )}
-                  <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
-                    <table className="w-full text-left text-[11px]">
-                      <thead className="bg-gray-50 border-b">
-                        <tr>
-                          <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                            Assigned Technician
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                        {techAssignments.map((a, i) => (
-                          <tr key={i} className="hover:bg-gray-50/30 transition-colors">
-                            <td className="p-3 font-bold text-gray-900">
-                              {a.full_name || a.username}
-                            </td>
-                          </tr>
-                        ))}
-                        {techAssignments.length === 0 && (
+                  {loadingTechAssignments ? (
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary mb-2" />
+                      <p className="text-xs text-gray-500 font-medium">Loading technician assignments...</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
+                      <table className="w-full text-left text-[11px]">
+                        <thead className="bg-gray-50 border-b">
                           <tr>
-                            <td className="p-3 text-gray-500 italic">
-                              No technician assigned yet.
-                            </td>
+                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                              Assigned Technician
+                            </th>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                          {techAssignments.map((a, i) => (
+                            <tr key={i} className="hover:bg-gray-50/30 transition-colors">
+                              <td className="p-3 font-bold text-gray-900">
+                                {a.full_name || a.username}
+                              </td>
+                            </tr>
+                          ))}
+                          {techAssignments.length === 0 && (
+                            <tr>
+                              <td className="p-3 text-gray-500 italic">
+                                No technician assigned yet.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
 
