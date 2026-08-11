@@ -56,47 +56,36 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const EMAIL_TEMPLATES = [
+const DEFAULT_TEMPLATES_SEED = [
   {
-    id: 'report_notice',
+    id: 1,
     name: 'Test Report Released Notice',
     subject: 'Laboratory Test Report Available - {{client_name}}',
-    body: `
-      <h2>Laboratory Test Report Dispatch</h2>
-      <p>Dear <strong>{{contact_person}}</strong>,</p>
-      <p>We are pleased to inform you that the requested laboratory testing for your recent job sample has been completed and verified by our quality engineers.</p>
-      <p>You can access your verified report directly through your client portal or by contacting your account representative.</p>
-      <hr />
-      <p>Best regards,<br /><strong>{{site_name}} Quality Laboratory Team</strong></p>
-    `,
+    body: `<h2>Laboratory Test Report Dispatch</h2><p>Dear <strong>{{contact_person}}</strong>,</p><p>We are pleased to inform you that the requested laboratory testing for your recent job sample has been completed and verified by our quality engineers.</p><p>You can access your verified report directly through your client portal or by contacting your account representative.</p><hr /><p>Best regards,<br /><strong>{{site_name}} Quality Laboratory Team</strong></p>`,
   },
   {
-    id: 'work_order_update',
+    id: 2,
     name: 'Work Order & Sample Receipt Confirmation',
     subject: 'Work Order & Sample Receipt Confirmation - {{client_name}}',
-    body: `
-      <h2>Sample Reception & Work Order Confirmation</h2>
-      <p>Dear <strong>{{contact_person}}</strong>,</p>
-      <p>Thank you for choosing <strong>{{site_name}}</strong>. We have officially logged your work order and material samples into our LIMS testing workflow.</p>
-      <p>Our technicians have begun sample preparation and testing per the required standards.</p>
-      <hr />
-      <p>Regards,<br /><strong>Material Receiving Department</strong></p>
-    `,
+    body: `<h2>Sample Reception & Work Order Confirmation</h2><p>Dear <strong>{{contact_person}}</strong>,</p><p>Thank you for choosing <strong>{{site_name}}</strong>. We have officially logged your work order and material samples into our LIMS testing workflow.</p><p>Our technicians have begun sample preparation and testing per the required standards.</p><hr /><p>Regards,<br /><strong>Material Receiving Department</strong></p>`,
   },
   {
-    id: 'general_notice',
+    id: 3,
     name: 'General Communication Notice',
     subject: 'Important Update from {{site_name}}',
-    body: `
-      <h2>Important Customer Update</h2>
-      <p>Dear Valued Partner,</p>
-      <p>We are writing to share an important announcement regarding our laboratory operations and technical testing services.</p>
-      <p>Please review the details below and reach out to our support team if you have any questions.</p>
-      <hr />
-      <p>Sincerely,<br /><strong>Management Team - {{site_name}}</strong></p>
-    `,
+    body: `<h2>Important Customer Update</h2><p>Dear Valued Partner,</p><p>We are writing to share an important announcement regarding our laboratory operations and technical testing services.</p><p>Please review the details below and reach out to our support team if you have any questions.</p><hr /><p>Sincerely,<br /><strong>Management Team - {{site_name}}</strong></p>`,
   },
 ];
 
@@ -124,13 +113,39 @@ const AdminEmailManager = () => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [viewHistoryItem, setViewHistoryItem] = useState(null);
 
+  // Email Templates State
+  const [templates, setTemplates] = useState([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [templateForm, setTemplateForm] = useState({ name: '', subject: '', body: '' });
+  const [deleteTemplateDialog, setDeleteTemplateDialog] = useState({ isOpen: false, id: null, name: '' });
+
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchClients();
     fetchHistory();
+    fetchTemplates();
   }, []);
+
+  const fetchTemplates = async () => {
+    setLoadingTemplates(true);
+    try {
+      const { data, error } = await apiClient
+        .from('email_templates')
+        .select('*')
+        .order('id');
+      if (error && !error.message?.includes('does not exist')) throw error;
+      setTemplates(data && data.length > 0 ? data : DEFAULT_TEMPLATES_SEED);
+    } catch (err) {
+      console.error('Failed to fetch email templates:', err);
+      setTemplates(DEFAULT_TEMPLATES_SEED);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
 
   const isValidEmail = (email) => {
     if (!email || typeof email !== 'string') return false;
@@ -272,6 +287,96 @@ const AdminEmailManager = () => {
   const selectedClientsList = clients.filter((c) =>
     selectedClientIds.includes(String(c.id))
   );
+
+  // ── Template Management Handlers ─────────────────────────────────────
+  const handleOpenAddTemplate = () => {
+    setEditingTemplate(null);
+    setTemplateForm({
+      name: '',
+      subject: subject || '',
+      body: bodyHtml || editorRef.current?.innerHTML || '',
+    });
+    setTemplateModalOpen(true);
+  };
+
+  const handleOpenEditTemplate = (tmpl, e) => {
+    if (e) e.stopPropagation();
+    setEditingTemplate(tmpl);
+    setTemplateForm({
+      name: tmpl.name || '',
+      subject: tmpl.subject || '',
+      body: tmpl.body || '',
+    });
+    setTemplateModalOpen(true);
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!templateForm.name.trim()) {
+      toast({ title: 'Template Name Required', description: 'Please enter a template name.', variant: 'destructive' });
+      return;
+    }
+    if (!templateForm.subject.trim()) {
+      toast({ title: 'Subject Line Required', description: 'Please enter a default subject line.', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      if (editingTemplate && typeof editingTemplate.id === 'number') {
+        const { error } = await apiClient
+          .from('email_templates')
+          .update({
+            name: templateForm.name.trim(),
+            subject: templateForm.subject.trim(),
+            body: templateForm.body.trim(),
+          })
+          .eq('id', editingTemplate.id);
+        if (error) throw error;
+        toast({ title: 'Template Updated', description: `Template "${templateForm.name}" updated successfully.` });
+      } else {
+        const { error } = await apiClient
+          .from('email_templates')
+          .insert({
+            name: templateForm.name.trim(),
+            subject: templateForm.subject.trim(),
+            body: templateForm.body.trim(),
+          });
+        if (error) throw error;
+        toast({ title: 'Template Saved', description: `New template "${templateForm.name}" created successfully.` });
+      }
+      setTemplateModalOpen(false);
+      fetchTemplates();
+    } catch (err) {
+      console.error('Failed to save template:', err);
+      toast({
+        title: 'Failed to Save Template',
+        description: err.message || 'An error occurred while saving the template.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleConfirmDeleteTemplate = async () => {
+    if (!deleteTemplateDialog.id) return;
+    try {
+      if (typeof deleteTemplateDialog.id === 'number') {
+        const { error } = await apiClient
+          .from('email_templates')
+          .delete()
+          .eq('id', deleteTemplateDialog.id);
+        if (error) throw error;
+      }
+      toast({ title: 'Template Deleted', description: `Template "${deleteTemplateDialog.name}" removed.` });
+      setDeleteTemplateDialog({ isOpen: false, id: null, name: '' });
+      fetchTemplates();
+    } catch (err) {
+      console.error('Failed to delete template:', err);
+      toast({
+        title: 'Failed to Delete Template',
+        description: err.message || 'An error occurred while deleting the template.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   // ── Editor Command Handlers ────────────────────────────────────────
   const execCmd = (command, value = null) => {
@@ -445,7 +550,7 @@ const AdminEmailManager = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 w-full space-y-6">
       {/* Header Banner */}
       <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -479,9 +584,9 @@ const AdminEmailManager = () => {
       </div>
 
       {activeTab === 'compose' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Form (2 Cols) */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 w-full">
+          {/* Main Form (3 Cols) */}
+          <div className="xl:col-span-3 space-y-6">
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
               {/* Recipient Selection Header */}
               <div className="space-y-2">
@@ -511,7 +616,7 @@ const AdminEmailManager = () => {
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[480px] p-3 space-y-3" align="start">
+                  <PopoverContent className="w-[560px] sm:w-[620px] p-3 space-y-3" align="start">
                     {/* Search & Select All controls */}
                     <div className="flex items-center justify-between gap-2 border-b pb-2">
                       <div className="relative flex-1">
@@ -769,10 +874,10 @@ const AdminEmailManager = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => execCmd('formatBlock', '<p>')}
-                        title="Paragraph"
+                        title="P"
                         className="h-8 text-xs font-semibold text-gray-700 hover:bg-gray-200 px-1.5"
                       >
-                        Paragraph
+                        P
                       </Button>
 
                       <div className="h-4 w-px bg-gray-300 mx-1" />
@@ -857,7 +962,7 @@ const AdminEmailManager = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => setImageModalOpen(true)}
-                        className="h-8 text-xs font-medium text-gray-600 hover:bg-gray-200"
+                        className="hidden h-8 text-xs font-medium text-gray-600 hover:bg-gray-200"
                         title="Insert Image URL"
                       >
                         Image URL
@@ -935,26 +1040,100 @@ const AdminEmailManager = () => {
           <div className="space-y-6">
             {/* Quick Templates Card */}
             <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-              <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-primary" /> Preset Templates
-              </h3>
-              <div className="space-y-2">
-                {EMAIL_TEMPLATES.map((tmpl) => (
-                  <button
-                    key={tmpl.id}
-                    type="button"
-                    onClick={() => handleApplyTemplate(tmpl)}
-                    className="w-full text-left p-3 rounded-xl border border-gray-100 hover:border-primary/40 hover:bg-primary/5 transition-all space-y-1 group"
-                  >
-                    <span className="font-semibold text-xs text-gray-900 group-hover:text-primary transition-colors block">
-                      {tmpl.name}
-                    </span>
-                    <span className="text-[11px] text-gray-400 block truncate">
-                      {tmpl.subject}
-                    </span>
-                  </button>
-                ))}
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-primary" /> Preset Templates
+                </h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenAddTemplate}
+                  className="h-7 text-xs font-semibold text-primary hover:bg-primary/10 border-primary/20 px-2 rounded-lg"
+                >
+                  + Add Template
+                </Button>
               </div>
+
+              {loadingTemplates ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary mr-2" />
+                  <span className="text-xs text-gray-400">Loading templates...</span>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[380px] overflow-y-auto pr-0.5">
+                  {templates.map((tmpl) => (
+                    <div
+                      key={tmpl.id}
+                      className="group relative p-3 rounded-xl border border-gray-100 hover:border-primary/40 hover:bg-primary/5 transition-all space-y-1.5 bg-white"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleApplyTemplate(tmpl)}
+                          className="text-left flex-1 space-y-0.5"
+                        >
+                          <span className="font-bold text-xs text-gray-900 group-hover:text-primary transition-colors block">
+                            {tmpl.name}
+                          </span>
+                          <span className="text-[11px] text-gray-400 block truncate max-w-[200px]">
+                            {tmpl.subject}
+                          </span>
+                        </button>
+                        <div className="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => handleOpenEditTemplate(tmpl, e)}
+                            className="h-7 w-7 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-lg"
+                            title="Edit Template"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteTemplateDialog({ isOpen: true, id: tmpl.id, name: tmpl.name });
+                            }}
+                            className="h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                            title="Delete Template"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleApplyTemplate(tmpl)}
+                        className="w-full h-6 text-[11px] font-semibold bg-gray-50 group-hover:bg-primary group-hover:text-white text-gray-600 transition-all"
+                      >
+                        Apply Template
+                      </Button>
+                    </div>
+                  ))}
+                  {templates.length === 0 && (
+                    <p className="text-center text-xs text-gray-400 py-4 italic">
+                      No email templates created yet.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleOpenAddTemplate}
+                className="w-full text-xs font-semibold text-gray-600 border-dashed hover:border-primary hover:text-primary h-9 rounded-xl flex items-center justify-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Save Current Form as Template
+              </Button>
             </div>
 
             {/* Template Variables Card */}
@@ -1212,6 +1391,102 @@ const AdminEmailManager = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Add / Edit Email Template Dialog */}
+      <Dialog open={templateModalOpen} onOpenChange={setTemplateModalOpen}>
+        <DialogContent className="sm:max-w-[580px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-primary text-base font-bold">
+              <Sparkles className="w-5 h-5 text-amber-500" />
+              {editingTemplate ? 'Edit Email Template' : 'Add New Email Template'}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-gray-500">
+              Create or modify reusable email templates for client dispatches. You can include dynamic tags like <code className="text-primary font-mono text-[11px] font-bold">&#123;&#123;client_name&#125;&#125;</code> and <code className="text-primary font-mono text-[11px] font-bold">&#123;&#123;contact_person&#125;&#125;</code>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Template Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                placeholder="e.g., Annual Calibration Notice"
+                value={templateForm.name}
+                onChange={(e) => setTemplateForm((prev) => ({ ...prev, name: e.target.value }))}
+                className="h-10 text-xs rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Default Subject Line <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                placeholder="e.g., Annual Calibration Notice - {{client_name}}"
+                value={templateForm.subject}
+                onChange={(e) => setTemplateForm((prev) => ({ ...prev, subject: e.target.value }))}
+                className="h-10 text-xs rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Template Body HTML Content
+              </Label>
+              <textarea
+                rows={7}
+                placeholder="Enter template HTML or text message body..."
+                value={templateForm.body}
+                onChange={(e) => setTemplateForm((prev) => ({ ...prev, body: e.target.value }))}
+                className="w-full p-3 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setTemplateModalOpen(false)}
+              className="rounded-xl text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveTemplate}
+              className="bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold"
+            >
+              {editingTemplate ? 'Save Changes' : 'Create Template'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Template Confirmation Dialog */}
+      <AlertDialog
+        open={deleteTemplateDialog.isOpen}
+        onOpenChange={(open) => setDeleteTemplateDialog((prev) => ({ ...prev, isOpen: open }))}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600 flex items-center gap-2 text-base font-bold">
+              <Trash2 className="w-5 h-5 text-red-500" /> Delete Email Template?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-gray-600">
+              Are you sure you want to delete the email template <strong>"{deleteTemplateDialog.name}"</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-xs">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDeleteTemplate}
+              className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold"
+            >
+              Delete Template
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

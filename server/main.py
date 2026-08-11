@@ -269,8 +269,39 @@ async def startup():
                         status TEXT NOT NULL DEFAULT 'SENT',
                         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                     );
+
+                    CREATE TABLE IF NOT EXISTS email_templates (
+                        id SERIAL PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        subject TEXT NOT NULL,
+                        body TEXT NOT NULL,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    );
                 """)
-                logger.info("Verified/created job_tests, technician_capabilities, vendors_suppliers, job_to_technicians, and email_logs tables.")
+                
+                tpl_count = await conn.fetchval("SELECT COUNT(*) FROM email_templates")
+                if tpl_count == 0:
+                    await conn.execute("""
+                        INSERT INTO email_templates (name, subject, body) VALUES
+                        (
+                            'Test Report Released Notice',
+                            'Laboratory Test Report Available - {{client_name}}',
+                            '<h2>Laboratory Test Report Dispatch</h2><p>Dear <strong>{{contact_person}}</strong>,</p><p>We are pleased to inform you that the requested laboratory testing for your recent job sample has been completed and verified by our quality engineers.</p><p>You can access your verified report directly through your client portal or by contacting your account representative.</p><hr /><p>Best regards,<br /><strong>{{site_name}} Quality Laboratory Team</strong></p>'
+                        ),
+                        (
+                            'Work Order & Sample Receipt Confirmation',
+                            'Work Order & Sample Receipt Confirmation - {{client_name}}',
+                            '<h2>Sample Reception & Work Order Confirmation</h2><p>Dear <strong>{{contact_person}}</strong>,</p><p>Thank you for choosing <strong>{{site_name}}</strong>. We have officially logged your work order and material samples into our LIMS testing workflow.</p><p>Our technicians have begun sample preparation and testing per the required standards.</p><hr /><p>Regards,<br /><strong>Material Receiving Department</strong></p>'
+                        ),
+                        (
+                            'General Communication Notice',
+                            'Important Update from {{site_name}}',
+                            '<h2>Important Customer Update</h2><p>Dear Valued Partner,</p><p>We are writing to share an important announcement regarding our laboratory operations and technical testing services.</p><p>Please review the details below and reach out to our support team if you have any questions.</p><hr /><p>Sincerely,<br /><strong>Management Team - {{site_name}}</strong></p>'
+                        );
+                    """)
+
+                logger.info("Verified/created job_tests, technician_capabilities, vendors_suppliers, job_to_technicians, email_logs, and email_templates tables.")
         except Exception as e:
             logger.error(f"Failed to initialize auxiliary tables on startup: {e}")
 
@@ -1169,6 +1200,11 @@ class EmailSendReq(BaseModel):
     sent_by: Optional[int] = None
     sent_by_name: Optional[str] = None
 
+class EmailTemplateReq(BaseModel):
+    name: str
+    subject: str
+    body: str
+
 class JobWorkflowLogCreateReq(BaseModel):
     job_id: int
     performed_by: int
@@ -1298,6 +1334,60 @@ async def send_email(req: EmailSendReq):
             req.sent_by_name,
         )
         return sanitize_db_val(dict(rows[0]))
+
+@app.get("/api/email/templates", tags=["Email"], summary="Get all email templates")
+@app.get("/api/email-templates", tags=["Email"], summary="Get all email templates alias")
+async def get_email_templates():
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM email_templates ORDER BY id ASC")
+        return [sanitize_db_val(dict(r)) for r in rows]
+
+@app.post("/api/email/templates", tags=["Email"], status_code=201, summary="Create new email template")
+@app.post("/api/email-templates", tags=["Email"], status_code=201, summary="Create new email template alias")
+async def create_email_template(req: EmailTemplateReq):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
+            "INSERT INTO email_templates (name, subject, body) VALUES ($1, $2, $3) RETURNING *",
+            req.name.strip(),
+            req.subject.strip(),
+            req.body.strip(),
+        )
+        return sanitize_db_val(dict(rows[0]))
+
+@app.put("/api/email/templates/{template_id}", tags=["Email"], summary="Update email template")
+@app.put("/api/email-templates/{template_id}", tags=["Email"], summary="Update email template alias")
+async def update_email_template(template_id: int, req: EmailTemplateReq):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            UPDATE email_templates
+            SET name = $1, subject = $2, body = $3, updated_at = NOW()
+            WHERE id = $4
+            RETURNING *
+            """,
+            req.name.strip(),
+            req.subject.strip(),
+            req.body.strip(),
+            template_id,
+        )
+        if not rows:
+            raise HTTPException(status_code=404, detail="Email template not found")
+        return sanitize_db_val(dict(rows[0]))
+
+@app.delete("/api/email/templates/{template_id}", tags=["Email"], summary="Delete email template")
+@app.delete("/api/email-templates/{template_id}", tags=["Email"], summary="Delete email template alias")
+async def delete_email_template(template_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM email_templates WHERE id = $1", template_id)
+        return {"message": "Template deleted successfully"}
 
 @app.get("/api/job-workflow-logs", tags=["Jobs"], summary="Get job workflow logs with pagination")
 async def list_job_workflow_logs(
