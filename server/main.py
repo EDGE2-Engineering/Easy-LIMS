@@ -1203,22 +1203,74 @@ async def unassign_job_technician(job_id: Optional[str] = None, technician_id: O
         await fetch_with_coerced_params(conn, f"DELETE FROM job_to_technicians {where_sql}", params)
         return {"message": "Unassigned successfully"}
 
-@app.get("/api/job-workflow-logs", tags=["Jobs"], summary="Get job workflow logs")
-async def list_job_workflow_logs(job_id: Optional[str] = None):
+@app.get("/api/job-workflow-logs", tags=["Jobs"], summary="Get job workflow logs with pagination")
+async def list_job_workflow_logs(
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
+    job_id: Optional[str] = None,
+    performed_by: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    q: Optional[str] = None,
+    sort_by: str = "created_at",
+    order: str = "desc"
+):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
+    safe_sort = safe_identifier(sort_by) if sort_by in ["id", "created_at", "action_id", "from_state", "to_state", "job_id", "performed_by"] else "created_at"
+    sort_order = "ASC" if order.lower() == "asc" else "DESC"
+
+    where_parts, params = [], []
+    if job_id is not None:
+        parsed = parse_id_list(job_id)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"job_id = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"job_id = ANY(${len(params)}::int[])")
+
+    if performed_by is not None:
+        parsed = parse_id_list(performed_by)
+        if len(parsed) == 1:
+            params.append(parsed[0])
+            where_parts.append(f"performed_by = ${len(params)}")
+        elif len(parsed) > 1:
+            params.append(parsed)
+            where_parts.append(f"performed_by = ANY(${len(params)}::int[])")
+
+    if date_from:
+        params.append(date_from)
+        where_parts.append(f"created_at >= ${len(params)}")
+    if date_to:
+        params.append(date_to)
+        where_parts.append(f"created_at <= ${len(params)}")
+    if q:
+        params.append(f"%{q}%")
+        idx = len(params)
+        where_parts.append(f"(remarks ILIKE ${idx} OR action_id ILIKE ${idx} OR from_state ILIKE ${idx} OR to_state ILIKE ${idx})")
+
+    where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
     async with db_pool.acquire() as conn:
-        if job_id is not None:
-            parsed = parse_id_list(job_id)
-            if len(parsed) == 1:
-                rows = await fetch_with_coerced_params(conn, "SELECT * FROM job_workflow_logs WHERE job_id = $1 ORDER BY created_at ASC", [parsed[0]])
-            elif len(parsed) > 1:
-                rows = await fetch_with_coerced_params(conn, "SELECT * FROM job_workflow_logs WHERE job_id = ANY($1::int[]) ORDER BY created_at ASC", [parsed])
-            else:
-                rows = []
+        count_rows = await fetch_with_coerced_params(conn, f"SELECT COUNT(*) FROM job_workflow_logs {where_sql}", params)
+        total = count_rows[0]["count"] if count_rows else 0
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, limit)
+            o_val = (p_val - 1) * l_val
+            query_params = list(params) + [l_val, o_val]
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            total_pages = (total + l_val - 1) // l_val if total > 0 else 0
         else:
-            rows = await fetch_with_coerced_params(conn, "SELECT * FROM job_workflow_logs ORDER BY created_at DESC", [])
-        return [dict(r) for r in rows]
+            p_val = page or 1
+            l_val = None
+            query_params = list(params)
+            limit_sql = ""
+            total_pages = 1
+
+        data_query = f"SELECT * FROM job_workflow_logs {where_sql} ORDER BY {safe_sort} {sort_order} {limit_sql}"
+        rows = await fetch_with_coerced_params(conn, data_query, query_params)
+        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.post("/api/job-workflow-logs", tags=["Jobs"], status_code=201, summary="Log job workflow step")
 async def create_job_workflow_log(log: JobWorkflowLogCreateReq):
@@ -1781,16 +1833,23 @@ class AuditLogCreate(BaseModel):
     entity_name: Optional[str] = None
     details: Optional[Any] = None
 
-@app.get("/api/audit-logs", tags=["Audit Logs"], summary="List audit logs with pagination")
+@app.get("/api/audit-logs", tags=["Audit Logs"], summary="List, search & filter audit logs with pagination")
 async def list_audit_logs(
     page: Optional[int] = None,
     limit: Optional[int] = None,
     q: Optional[str] = None,
     entity_type: Optional[str] = None,
-    performed_by: Optional[str] = None
+    performed_by: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    sort_by: str = "created_at",
+    order: str = "desc"
 ):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
+    safe_sort = safe_identifier(sort_by) if sort_by in ["id", "created_at", "action", "entity_type", "entity_name", "performed_by"] else "created_at"
+    sort_order = "ASC" if order.lower() == "asc" else "DESC"
+
     where_parts, params = [], []
     if entity_type:
         params.append(entity_type)
@@ -1803,6 +1862,12 @@ async def list_audit_logs(
         elif len(parsed) > 1:
             params.append(parsed)
             where_parts.append(f"performed_by = ANY(${len(params)}::int[])")
+    if date_from:
+        params.append(date_from)
+        where_parts.append(f"created_at >= ${len(params)}")
+    if date_to:
+        params.append(date_to)
+        where_parts.append(f"created_at <= ${len(params)}")
     if q:
         params.append(f"%{q}%")
         idx = len(params)
@@ -1826,7 +1891,8 @@ async def list_audit_logs(
             limit_sql = ""
             total_pages = 1
 
-        rows = await fetch_with_coerced_params(conn, f"SELECT * FROM audit_logs {where_sql} ORDER BY created_at DESC {limit_sql}", query_params)
+        data_query = f"SELECT * FROM audit_logs {where_sql} ORDER BY {safe_sort} {sort_order} {limit_sql}"
+        rows = await fetch_with_coerced_params(conn, data_query, query_params)
         return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/audit-logs/{log_id}", tags=["Audit Logs"], summary="Get audit log entry by ID")

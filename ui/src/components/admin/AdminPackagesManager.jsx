@@ -48,7 +48,7 @@ import { sendTelegramNotification } from '@/lib/notifier';
 import Rupee from '../Rupee';
 
 const AdminPackagesManager = () => {
-  const { packages, addPackage, updatePackage, deletePackage } = usePackages();
+  const { packages, loading, addPackage, updatePackage, deletePackage } = usePackages();
   const { fieldTests } = useFieldTests();
   const { labTests } = useLabTests();
   const { samplingData } = useSampling();
@@ -696,7 +696,19 @@ const AdminPackagesManager = () => {
             </thead>
 
             <tbody>
-              {paginatedData.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan={canManagePackages ? 6 : 5}
+                    className="py-12 text-center text-gray-500"
+                  >
+                    <div className="flex flex-col items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
+                      <p className="text-sm font-medium text-gray-500">Loading packages...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedData.length === 0 ? (
                 <tr>
                   <td
                     colSpan={canManagePackages ? 6 : 5}

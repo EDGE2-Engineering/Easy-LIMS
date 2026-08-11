@@ -133,50 +133,6 @@ const AuditLogsManager = () => {
     }, 350);
   };
 
-  // ── fetch summary stats (once on mount) ────────────────────────────────────
-  const fetchStats = useCallback(async () => {
-    setStatsLoading(true);
-    try {
-      const { count: totalAudit } = await apiClient
-        .from('audit_logs')
-        .select('*', { count: 'exact', head: true });
-      const { count: totalWorkflow } = await apiClient
-        .from('job_workflow_logs')
-        .select('*', { count: 'exact', head: true });
-      const total = (totalAudit || 0) + (totalWorkflow || 0);
-
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-
-      const { count: todayAuditCount } = await apiClient
-        .from('audit_logs')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', todayStart.toISOString());
-      const { count: todayWorkflowCount } = await apiClient
-        .from('job_workflow_logs')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', todayStart.toISOString());
-      const todayCount = (todayAuditCount || 0) + (todayWorkflowCount || 0);
-
-      // unique performers
-      const { data: performersAudit } = await apiClient.from('audit_logs').select('performed_by');
-      const { data: performersWorkflow } = await apiClient
-        .from('job_workflow_logs')
-        .select('performed_by');
-      const allPerformers = [
-        ...(performersAudit || []).map((r) => r.performed_by),
-        ...(performersWorkflow || []).map((r) => r.performed_by),
-      ].filter(Boolean);
-      const unique = new Set(allPerformers).size;
-
-      setStats({ total, today: todayCount, uniqueUsers: unique });
-    } catch (err) {
-      console.error('Error fetching stats:', err);
-    } finally {
-      setStatsLoading(false);
-    }
-  }, []);
-
   // ── fetch user list for dropdown ───────────────────────────────────────────
   const fetchUsers = useCallback(async () => {
     const { data } = await apiClient
@@ -190,14 +146,18 @@ const AuditLogsManager = () => {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+
       // 1. Fetch Audit Logs
       let auditRows = [];
+      let auditTotalCount = 0;
       if (!filterActivityType || filterActivityType !== 'job_workflow') {
         let qAudit = apiClient
           .from('audit_logs')
           .select('*')
-          .order('created_at', { ascending: false })
-          .limit(500);
+          .order(sortKey === 'action_id' ? 'action' : sortKey, { ascending: sortDir === 'asc' })
+          .range(from, to);
 
         if (filterUser) qAudit = qAudit.eq('performed_by', filterUser);
         if (filterDateFrom)
@@ -210,23 +170,28 @@ const AuditLogsManager = () => {
         if (filterActivityType) {
           qAudit = qAudit.eq('entity_type', filterActivityType);
         }
+        if (debouncedSearch.trim()) {
+          qAudit = qAudit.ilike('q', debouncedSearch.trim());
+        }
 
-        const { data, error } = await qAudit;
+        const { data, count, error } = await qAudit;
         if (error) {
           console.warn('[AuditLogsManager] Failed to fetch audit_logs:', error.message);
         } else {
           auditRows = data || [];
+          auditTotalCount = count != null ? count : (data ? data.length : 0);
         }
       }
 
       // 2. Fetch Workflow Logs
       let workflowRows = [];
+      let workflowTotalCount = 0;
       if (!filterActivityType || filterActivityType === 'job_workflow') {
         let qWorkflow = apiClient
           .from('job_workflow_logs')
           .select('*')
-          .order('created_at', { ascending: false })
-          .limit(500);
+          .order(sortKey === 'action' || sortKey === 'action_id' ? 'action_id' : sortKey, { ascending: sortDir === 'asc' })
+          .range(from, to);
 
         if (filterUser) qWorkflow = qWorkflow.eq('performed_by', filterUser);
         if (filterDateFrom)
@@ -236,15 +201,16 @@ const AuditLogsManager = () => {
           end.setHours(23, 59, 59, 999);
           qWorkflow = qWorkflow.lte('created_at', end.toISOString());
         }
-        if (filterState) {
-          qWorkflow = qWorkflow.or(`from_state.eq.${filterState},to_state.eq.${filterState}`);
+        if (debouncedSearch.trim()) {
+          qWorkflow = qWorkflow.ilike('q', debouncedSearch.trim());
         }
 
-        const { data, error } = await qWorkflow;
+        const { data, count, error } = await qWorkflow;
         if (error) {
           console.warn('[AuditLogsManager] Failed to fetch job_workflow_logs:', error.message);
         } else {
           workflowRows = data || [];
+          workflowTotalCount = count != null ? count : (data ? data.length : 0);
         }
       }
 
@@ -315,7 +281,7 @@ const AuditLogsManager = () => {
         });
       });
 
-      // Sort merged array client-side
+      // Sort merged array
       merged.sort((a, b) => {
         let valA = a[sortKey];
         let valB = b[sortKey];
@@ -333,27 +299,8 @@ const AuditLogsManager = () => {
         return 0;
       });
 
-      // Filter client-side by debouncedSearch
-      let filtered = merged;
-      if (debouncedSearch.trim()) {
-        const term = debouncedSearch.toLowerCase();
-        filtered = merged.filter((item) => {
-          return (
-            (item.user?.full_name || '').toLowerCase().includes(term) ||
-            (item.user?.username || '').toLowerCase().includes(term) ||
-            (item.entity_type || '').toLowerCase().includes(term) ||
-            (item.entity_name || '').toLowerCase().includes(term) ||
-            (item.action || '').toLowerCase().includes(term) ||
-            (item.job_code || '').toLowerCase().includes(term) ||
-            JSON.stringify(item.details || {})
-              .toLowerCase()
-              .includes(term)
-          );
-        });
-      }
-
-      setLogs(filtered);
-      setTotalCount(filtered.length);
+      setLogs(merged);
+      setTotalCount(auditTotalCount + workflowTotalCount);
     } catch (err) {
       console.error('Error fetching audit logs:', err);
     } finally {
@@ -373,9 +320,8 @@ const AuditLogsManager = () => {
   ]);
 
   useEffect(() => {
-    fetchStats();
     fetchUsers();
-  }, [fetchStats, fetchUsers]);
+  }, [fetchUsers]);
 
   useEffect(() => {
     fetchLogs();
@@ -620,35 +566,86 @@ const AuditLogsManager = () => {
     }
   };
 
+  const getActionLabel = (actionId) => {
+    if (!actionId) return '';
+    return actionId
+      .split('_')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   const renderDetails = (log) => {
-    if (log.source === 'job_workflow_logs') {
+    let details = log.details;
+    if (!details) {
+      return <span className="text-gray-300 dark:text-gray-600">—</span>;
+    }
+
+    if (typeof details === 'string') {
+      try {
+        const parsed = JSON.parse(details);
+        if (parsed && typeof parsed === 'object') {
+          details = parsed;
+        } else {
+          return <span className="text-xs text-gray-600 dark:text-gray-400 break-words">{String(parsed)}</span>;
+        }
+      } catch (e) {
+        return <span className="text-xs text-gray-600 dark:text-gray-400 break-words">{details}</span>;
+      }
+    }
+
+    if (typeof details !== 'object' || details === null || Object.keys(details).length === 0) {
+      return <span className="text-gray-300 dark:text-gray-600">—</span>;
+    }
+
+    // Check if details represents a workflow state transition (has from/to or from_state/to_state)
+    const fromState = details.from || details.from_state;
+    const toState = details.to || details.to_state;
+    const actId = details.actionId || details.action_id || (log.source === 'job_workflow_logs' ? log.action : null);
+    const remarks = details.remarks;
+
+    if (fromState || toState || log.source === 'job_workflow_logs') {
+      const handledKeys = new Set(['from', 'from_state', 'to', 'to_state', 'actionId', 'action_id', 'remarks']);
+      const extraEntries = Object.entries(details).filter(([k]) => !handledKeys.has(k));
+
       return (
         <div className="flex flex-col gap-1">
-          <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 self-start px-2 py-0.5 rounded border border-gray-100 dark:border-gray-700/50 flex items-center mb-1">
-            {log.details.from_state && log.details.to_state ? (
-              <>
-                {getStateLabel(log.details.from_state)}
-                <ArrowRight className="w-3 h-3 mx-1.5 text-gray-400" />
-                {getStateLabel(log.details.to_state)}
-              </>
-            ) : log.details.to_state ? (
-              getStateLabel(log.details.to_state)
-            ) : (
-              getStateLabel(log.details.from_state)
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {actId && actId !== 'UPDATE' && actId !== 'TRANSITION' && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                {getActionLabel(actId)}
+              </span>
             )}
-          </span>
-          {log.details.remarks && (
-            <span className="whitespace-pre-wrap leading-relaxed text-gray-600 dark:text-gray-400">
-              {log.details.remarks}
+            <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 px-2 py-0.5 rounded border border-gray-200 dark:border-gray-700/50 flex items-center">
+              {fromState && toState ? (
+                <>
+                  {getStateLabel(fromState)}
+                  <ArrowRight className="w-3 h-3 mx-1.5 text-gray-400" />
+                  {getStateLabel(toState)}
+                </>
+              ) : toState ? (
+                getStateLabel(toState)
+              ) : (
+                getStateLabel(fromState)
+              )}
             </span>
+          </div>
+          {remarks && (
+            <span className="whitespace-pre-wrap leading-relaxed text-gray-600 dark:text-gray-400 break-words text-xs">
+              {remarks}
+            </span>
+          )}
+          {extraEntries.length > 0 && (
+            <div className="text-[11px] font-mono text-gray-600 dark:text-gray-400 max-h-32 overflow-y-auto space-y-1 mt-1">
+              {extraEntries.map(([key, val]) => (
+                <div key={key} className="truncate">
+                  <span className="font-bold text-gray-500">{key}:</span>{' '}
+                  {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                </div>
+              ))}
+            </div>
           )}
         </div>
       );
-    }
-
-    const details = log.details;
-    if (!details || Object.keys(details).length === 0) {
-      return <span className="text-gray-300 dark:text-gray-600">—</span>;
     }
 
     return (
@@ -662,8 +659,6 @@ const AuditLogsManager = () => {
       </div>
     );
   };
-
-  const paginatedLogs = logs.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   // ── render ────────────────────────────────────────────────────────────────
   return (
@@ -687,53 +682,12 @@ const AuditLogsManager = () => {
             variant="ghost"
             onClick={() => {
               fetchLogs();
-              fetchStats();
             }}
             className="rounded-xl h-9 px-4 font-bold text-primary hover:bg-primary/10 border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm"
           >
             <RefreshCw className="w-4 h-4 mr-2" /> Refresh
           </Button>
         </div>
-      </div>
-
-      {/* ── Stats Strip ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          {
-            label: 'Total Log Entries',
-            value: statsLoading ? '…' : stats.total.toLocaleString(),
-            icon: Activity,
-            color: 'text-primary bg-primary/10',
-          },
-          {
-            label: 'Activity Today',
-            value: statsLoading ? '…' : stats.today.toLocaleString(),
-            icon: Clock,
-            color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400',
-          },
-          {
-            label: 'Unique Users',
-            value: statsLoading ? '…' : stats.uniqueUsers.toLocaleString(),
-            icon: User,
-            color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 dark:text-indigo-400',
-          },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <Card key={label} className="border-none shadow-sm bg-white dark:bg-gray-950 rounded-2xl">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className={`p-2.5 rounded-xl ${color} shrink-0`}>
-                <Icon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                  {label}
-                </p>
-                <p className="text-2xl font-black text-gray-900 dark:text-gray-100 leading-tight">
-                  {value}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
       </div>
 
       {/* ── Search & Filter Bar ───────────────────────────────────────────── */}
@@ -1154,7 +1108,7 @@ const AuditLogsManager = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                {paginatedLogs.map((log, idx) => (
+                {logs.map((log, idx) => (
                   <tr
                     key={log.id || idx}
                     className="hover:bg-muted/45 dark:hover:bg-gray-900/40 transition-colors group"
