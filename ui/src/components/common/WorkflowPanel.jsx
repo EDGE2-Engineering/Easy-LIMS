@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useNavigate } from 'react-router-dom';
 import { useWorkflow } from '@/hooks/useWorkflow';
@@ -14,9 +15,10 @@ import {
   ArrowLeft,
   ChevronRight,
   ChevronLeft,
+  Loader2,
 } from 'lucide-react';
 
-const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) => {
+const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick, isReloading = false }) => {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const { workflow } = useWorkflowConfig();
@@ -24,6 +26,9 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
     jobId,
     currentStatus
   );
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const isBusy = loading || actionLoading || isReloading;
   const availableActions = getAvailableActions();
   const currentStateConfig = workflow.states[currentStatus];
 
@@ -33,52 +38,76 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
   const previousStateLabel = canGoBack ? workflow.states[stateKeys[currentIndex - 1]]?.label : '';
 
   const handleRevert = async () => {
-    const success = await revertState();
-    if (success && onTransition) {
-      onTransition();
+    setActionLoading(true);
+    try {
+      const success = await revertState();
+      if (success && onTransition) {
+        await onTransition();
+      }
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleAction = async (actionId, action) => {
-    if (onActionClick) {
-      const result = await onActionClick(actionId, action, performAction);
-      if (result === false) return; // intercept automatic transition
-    }
+    setActionLoading(true);
+    try {
+      if (onActionClick) {
+        const result = await onActionClick(actionId, action, performAction);
+        if (result === false) {
+          setActionLoading(false);
+          return;
+        }
+      }
 
-    if (action.navigate) {
-      const url = action.navigate.replace('{jobId}', jobId);
-      navigate(url);
-      return;
-    }
+      if (action.navigate) {
+        const url = action.navigate.replace('{jobId}', jobId);
+        navigate(url);
+        setActionLoading(false);
+        return;
+      }
 
-    const success = await performAction(actionId);
-    if (success && onTransition) {
-      onTransition();
+      const success = await performAction(actionId);
+      if (success && onTransition) {
+        await onTransition();
+      }
+    } finally {
+      setActionLoading(false);
     }
   };
 
   return (
     <TooltipProvider delayDuration={200}>
-      <Card className="mb-2  border-l-primary shadow-sm bg-background/50 backdrop-blur-sm">
+      <Card className="mb-2 border-l-primary shadow-sm bg-background/50 backdrop-blur-sm relative overflow-hidden">
         <CardHeader className="space-y-0 p-2 flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-medium text-muted-foreground tracking-wider">
+          <CardTitle className="text-sm font-medium text-muted-foreground tracking-wider flex items-center gap-2">
             Current Job Status:{' '}
-            <span className="text-primary font-bold">
+            <span className="text-primary font-bold inline-flex items-center gap-1.5">
+              {isBusy && <Loader2 className="h-3.5 w-3.5 animate-spin text-orange-500" />}
               {currentStateConfig?.label || currentStatus}
+              {isBusy && (
+                <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-600 border-orange-200 animate-pulse py-0 px-1.5 ml-1">
+                  Updating...
+                </Badge>
+              )}
             </span>
           </CardTitle>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             {canGoBack && isAdmin() && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     onClick={handleRevert}
-                    disabled={loading}
+                    disabled={isBusy}
                     size="sm"
                     variant="outline"
                     className="transition-all hover:scale-105 border-primary/20 hover:bg-primary/5 text-primary bg-red-700 hover:bg-red-600 text-xs px-2"
                   >
-                    <ChevronLeft className="mr-1 h-4 w-4 text-white" />
+                    {isBusy ? (
+                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin text-white" />
+                    ) : (
+                      <ChevronLeft className="mr-1 h-4 w-4 text-white" />
+                    )}
                     <p className="text-white"> Revert to {previousStateLabel}</p>
                   </Button>
                 </TooltipTrigger>
@@ -92,12 +121,15 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
                 <TooltipTrigger asChild>
                   <Button
                     onClick={() => handleAction(action.id, action)}
-                    disabled={loading}
+                    disabled={isBusy}
                     size="sm"
                     className="transition-all hover:scale-105 text-xs px-2 dark:text-white"
                   >
+                    {isBusy ? (
+                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                    ) : null}
                     {action.label}
-                    <ChevronRight className="ml-1 h-4 w-4" />
+                    {!isBusy ? <ChevronRight className="ml-1 h-4 w-4" /> : null}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
@@ -122,7 +154,9 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick }) =>
                     <div
                       className={`p-0 rounded-full ${isPast ? 'workflow-state-done' : isCurrent ? 'workflow-state-active' : 'workflow-state-inactive'}`}
                     >
-                      {isPast ? (
+                      {isCurrent && isBusy ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                      ) : isPast ? (
                         <CheckCircle2 className="h-4 w-4" />
                       ) : (
                         <Circle className="h-4 w-4" />

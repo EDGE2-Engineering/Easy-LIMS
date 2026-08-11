@@ -210,12 +210,30 @@ class QueryBuilder {
         const entityId = idFilter ? idFilter.value : null;
 
         if (mtype === 'insert') {
-          const payload = Array.isArray(this._mutation.data) ? this._mutation.data[0] : this._mutation.data;
-          res = await authFetch(apiPath, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
+          if (Array.isArray(this._mutation.data)) {
+            const results = await Promise.all(
+              this._mutation.data.map(async (item) => {
+                const r = await authFetch(apiPath, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(item),
+                });
+                if (!r.ok) {
+                  const errBody = await r.json().catch(() => ({}));
+                  throw new Error(errBody.detail || `HTTP error ${r.status}`);
+                }
+                return await r.json();
+              })
+            );
+            const finalResult = { data: results, count: results.length, error: null };
+            return onfulfilled ? onfulfilled(finalResult) : finalResult;
+          } else {
+            res = await authFetch(apiPath, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this._mutation.data),
+            });
+          }
         } else if (mtype === 'update') {
           const targetUrl = entityId ? `${apiPath}/${entityId}` : apiPath;
           res = await authFetch(targetUrl, {
@@ -224,7 +242,21 @@ class QueryBuilder {
             body: JSON.stringify(this._mutation.data),
           });
         } else if (mtype === 'delete') {
-          const targetUrl = entityId ? `${apiPath}/${entityId}` : apiPath;
+          let targetUrl;
+          if (entityId) {
+            targetUrl = `${apiPath}/${entityId}`;
+          } else {
+            const urlParams = new URLSearchParams();
+            this._filters.forEach((f) => {
+              if (f.type === 'eq') {
+                urlParams.append(f.column, f.value);
+              } else if (f.type === 'in') {
+                urlParams.append(f.column, Array.isArray(f.value) ? f.value.join(',') : f.value);
+              }
+            });
+            const queryString = urlParams.toString();
+            targetUrl = queryString ? `${apiPath}?${queryString}` : apiPath;
+          }
           res = await authFetch(targetUrl, {
             method: 'DELETE',
           });

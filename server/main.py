@@ -7,8 +7,8 @@ import uuid
 import secrets
 import hashlib
 from decimal import Decimal
-from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, Request, Response, UploadFile, File, Form
+from typing import List, Dict, Any, Optional, Union
+from fastapi import FastAPI, HTTPException, Request, Response, UploadFile, File, Form, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -400,6 +400,18 @@ def parse_id_list(val: Optional[Any]) -> List[int]:
         res = []
         for x in val:
             res.extend(parse_id_list(x))
+        return res
+    return []
+
+def parse_str_list(val: Optional[Any]) -> List[str]:
+    if val is None or val == "":
+        return []
+    if isinstance(val, str):
+        return [p.strip() for p in val.split(",") if p.strip()]
+    if isinstance(val, list):
+        res = []
+        for x in val:
+            res.extend(parse_str_list(x))
         return res
     return []
 
@@ -1181,16 +1193,20 @@ async def list_job_technicians(job_id: Optional[str] = None, technician_id: Opti
         return [dict(r) for r in rows]
 
 @app.post("/api/job-technicians", tags=["Jobs"], status_code=201, summary="Assign technician to job")
-async def assign_job_technician(req: JobTechnicianAssignReq):
+async def assign_job_technician(req: Union[JobTechnicianAssignReq, List[JobTechnicianAssignReq]] = Body(...)):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
+    items = req if isinstance(req, list) else [req]
+    results = []
     async with db_pool.acquire() as conn:
-        rows = await fetch_with_coerced_params(
-            conn,
-            "INSERT INTO job_to_technicians (job_id, technician_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING *",
-            [req.job_id, req.technician_id]
-        )
-        return dict(rows[0]) if rows else {"job_id": req.job_id, "technician_id": req.technician_id}
+        for item in items:
+            rows = await fetch_with_coerced_params(
+                conn,
+                "INSERT INTO job_to_technicians (job_id, technician_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING *",
+                [item.job_id, item.technician_id]
+            )
+            results.append(dict(rows[0]) if rows else {"job_id": item.job_id, "technician_id": item.technician_id})
+    return results if isinstance(req, list) else results[0]
 
 @app.delete("/api/job-technicians", tags=["Jobs"], summary="Unassign technicians from job")
 async def unassign_job_technician(job_id: Optional[str] = None, technician_id: Optional[str] = None):
@@ -3039,8 +3055,13 @@ async def list_users(
         params.append(username)
         where_parts.append(f"username = ${len(params)}")
     if role:
-        params.append(role)
-        where_parts.append(f"role = ${len(params)}")
+        parsed_roles = parse_str_list(role)
+        if len(parsed_roles) == 1:
+            params.append(parsed_roles[0])
+            where_parts.append(f"role = ${len(params)}")
+        elif len(parsed_roles) > 1:
+            params.append(parsed_roles)
+            where_parts.append(f"role = ANY(${len(params)}::text[])")
     if exclude_role:
         params.append(exclude_role)
         where_parts.append(f"role != ${len(params)}")

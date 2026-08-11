@@ -95,6 +95,7 @@ const JobsManager = ({ id }) => {
   const [showingReportPreview, setShowingReportPreview] = useState(false);
   const [reportPreviewData, setReportPreviewData] = useState(null);
   const [isSavingReport, setIsSavingReport] = useState(false);
+  const [isStatusTransitioning, setIsStatusTransitioning] = useState(false);
   const generateReportActionRef = useRef(null);
   // Increment to force child components (e.g. inline TestingManager) to remount and re-fetch
   const [jobDetailRefreshKey, setJobDetailRefreshKey] = useState(0);
@@ -561,6 +562,7 @@ const JobsManager = ({ id }) => {
 
   const reloadEditingRecord = async () => {
     if (!editingRecord?.id) return;
+    setIsStatusTransitioning(true);
     const jobId = editingRecord.id;
     try {
       const { data: rawData, error } = await apiClient
@@ -578,15 +580,19 @@ const JobsManager = ({ id }) => {
       if (data) {
         setEditingRecord({ ...data });
       }
-      // Explicitly refresh child data — the useEffect won't re-fire since the job ID hasn't changed
-      fetchJobSamples(jobId);
-      fetchJobAssignments(jobId);
-      fetchJobDocs(jobId);
-      fetchRecords();
+      // Explicitly refresh child data & list
+      await Promise.all([
+        fetchJobSamples(jobId),
+        fetchJobAssignments(jobId),
+        fetchJobDocs(jobId),
+        fetchRecords(),
+      ]);
       // Bump the refresh key so inline child components (TestingManager, etc.) remount and re-fetch
       setJobDetailRefreshKey((k) => k + 1);
     } catch (error) {
       console.error('Failed to reload record:', error);
+    } finally {
+      setIsStatusTransitioning(false);
     }
   };
 
@@ -1239,6 +1245,7 @@ const JobsManager = ({ id }) => {
             <WorkflowPanel
               jobId={editingRecord.id}
               currentStatus={editingRecord.status}
+              isReloading={isStatusTransitioning}
               onTransition={reloadEditingRecord}
               onActionClick={async (actionId, action, performAction) => {
                 if (actionId === 'SEND_QUOTATION') {
