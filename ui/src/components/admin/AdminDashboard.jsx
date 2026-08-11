@@ -174,11 +174,61 @@ const QuickStatsWidget = ({ refreshKey }) => {
   );
 };
 
+const METRIC_ROWS = [
+  { key: 'lastWeek', label: 'LAST WEEK' },
+  { key: 'week', label: 'THIS WEEK' },
+  { key: 'lastMonth', label: 'LAST MONTH' },
+  { key: 'month', label: 'THIS MONTH' },
+  { key: 'lastThreeMonths', label: 'LAST 3 MONTHS' },
+  { key: 'year', label: 'THIS YEAR' },
+];
+
+const MetricCardBlock = ({ title, subtitle, icon: Icon, bgClass, data }) => {
+  const values = METRIC_ROWS.map((r) => data[r.key] || 0);
+  const maxVal = Math.max(...values, 1);
+
+  return (
+    <div className={`relative p-6 rounded-3xl ${bgClass} text-white shadow-lg overflow-hidden flex flex-col justify-between transition-all duration-300 hover:shadow-xl`}>
+      {/* Background Faded Icon */}
+      <Icon className="w-16 h-16 text-white/20 absolute top-4 right-4 pointer-events-none" />
+
+      {/* Header */}
+      <div className="mb-6 relative z-10">
+        <h3 className="text-2xl font-bold tracking-tight text-white">{title}</h3>
+        <p className="text-[10px] font-bold tracking-widest uppercase text-white/80 mt-0.5">{subtitle}</p>
+      </div>
+
+      {/* Rows */}
+      <div className="space-y-3.5 relative z-10">
+        {METRIC_ROWS.map((r) => {
+          const val = data[r.key] || 0;
+          const pct = Math.round((val / maxVal) * 100);
+          return (
+            <div key={r.key} className="space-y-1">
+              <div className="flex justify-between items-center text-xs font-bold tracking-wider">
+                <span className="text-white/90 text-[11px] uppercase tracking-wider">{r.label}</span>
+                <span className="text-white text-xs font-extrabold tabular-nums">
+                  ₹{Math.round(val).toLocaleString('en-IN')}
+                </span>
+              </div>
+              <div className="w-full bg-white/25 rounded-full h-1 overflow-hidden">
+                <div
+                  className="bg-white h-full rounded-full transition-all duration-500"
+                  style={{ width: `${val > 0 ? Math.max(pct, 2) : 1.5}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // Component 2: Financial Metrics & Revenue Widget
 const FinancialMetricsWidget = ({ refreshKey }) => {
   const { settings } = useSettings();
   const [loading, setLoading] = useState(true);
-  const [expTimeframe, setExpTimeframe] = useState('month');
   const [financials, setFinancials] = useState({
     expenditures: { lastWeek: 0, week: 0, lastMonth: 0, month: 0, lastThreeMonths: 0, year: 0 },
     quotations: { lastWeek: 0, week: 0, lastMonth: 0, month: 0, lastThreeMonths: 0, year: 0 },
@@ -231,7 +281,7 @@ const FinancialMetricsWidget = ({ refreshKey }) => {
               acc.year += amount;
               if (dateStr >= firstDayOfMonthStr) acc.month += amount;
               if (dateStr >= firstDayOfWeekStr) acc.week += amount;
-              if (dateStr >= firstDayOfThreeMonthsAgoStr && dateStr < firstDayOfMonthStr) acc.lastThreeMonths += amount;
+              if (dateStr >= firstDayOfThreeMonthsAgoStr) acc.lastThreeMonths += amount;
             }
             if (dateStr >= firstDayOfLastMonthStr && dateStr <= lastDayOfLastMonthStr) acc.lastMonth += amount;
             if (dateStr >= firstDayOfLastWeekStr && dateStr <= lastDayOfLastWeekStr) acc.lastWeek += amount;
@@ -263,7 +313,7 @@ const FinancialMetricsWidget = ({ refreshKey }) => {
                 acc.year += total;
                 if (dateStr >= firstDayOfMonthStr) acc.month += total;
                 if (dateStr >= firstDayOfWeekStr) acc.week += total;
-                if (dateStr >= firstDayOfThreeMonthsAgoStr && dateStr < firstDayOfMonthStr) acc.lastThreeMonths += total;
+                if (dateStr >= firstDayOfThreeMonthsAgoStr) acc.lastThreeMonths += total;
               }
               if (dateStr >= firstDayOfLastMonthStr && dateStr <= lastDayOfLastMonthStr) acc.lastMonth += total;
               if (dateStr >= firstDayOfLastWeekStr && dateStr <= lastDayOfLastWeekStr) acc.lastWeek += total;
@@ -296,86 +346,40 @@ const FinancialMetricsWidget = ({ refreshKey }) => {
     return () => { isMounted = false; };
   }, [refreshKey, settings]);
 
-  const timeframeLabels = {
-    week: 'This Week',
-    lastWeek: 'Last Week',
-    month: 'This Month',
-    lastMonth: 'Last Month',
-    lastThreeMonths: 'Last 3 Months',
-    year: 'This Year',
-  };
-
-  const currentExp = financials.expenditures[expTimeframe] || 0;
-  const currentQuote = financials.quotations[expTimeframe] || 0;
-  const currentInvoice = financials.invoices[expTimeframe] || 0;
-
   if (loading) {
     return (
-      <Card className="rounded-2xl border-gray-100 shadow-sm bg-white p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="h-5 bg-gray-100 rounded w-1/4 animate-pulse" />
-          <Loader2 className="w-5 h-5 text-gray-300 animate-spin" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <CardSkeleton />
-          <CardSkeleton />
-          <CardSkeleton />
-        </div>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="p-6 rounded-3xl bg-gray-100 dark:bg-gray-800 animate-pulse h-[340px]" />
+        ))}
+      </div>
     );
   }
 
   return (
-    <Card className="rounded-2xl border-gray-100 shadow-sm bg-white overflow-hidden">
-      <CardHeader className="p-6 pb-2 border-b border-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-primary" /> Financial Overview & Revenue Metrics
-          </CardTitle>
-          <CardDescription className="text-xs text-gray-500 font-medium mt-1">
-            Real-time financial performance breakdown ({timeframeLabels[expTimeframe]})
-          </CardDescription>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
-          {Object.keys(timeframeLabels).map((tf) => (
-            <button
-              key={tf}
-              onClick={() => setExpTimeframe(tf)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                expTimeframe === tf ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-900'
-              }`}
-            >
-              {timeframeLabels[tf]}
-            </button>
-          ))}
-        </div>
-      </CardHeader>
-      <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-5 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Expenditures</span>
-            <div className="text-2xl font-black text-gray-900 mt-2">
-              ₹{Number(currentExp).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-[11px] font-bold text-gray-400 mt-1">Total recorded operating costs</p>
-          </div>
-          <div className="p-5 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Quotation Pipeline Value</span>
-            <div className="text-2xl font-black text-gray-900 mt-2">
-              ₹{Number(currentQuote).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-[11px] font-bold text-gray-400 mt-1">Total quotation value generated</p>
-          </div>
-          <div className="p-5 rounded-2xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Invoiced Revenue</span>
-            <div className="text-2xl font-black text-gray-900 mt-2">
-              ₹{Number(currentInvoice).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-[11px] font-bold text-gray-400 mt-1">Total tax invoice revenue billed</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <MetricCardBlock
+        title="Expenditures"
+        subtitle="FINANCIAL OUTFLOW"
+        icon={Wallet}
+        bgClass="bg-[#d32f2f]"
+        data={financials.expenditures}
+      />
+      <MetricCardBlock
+        title="Quotations"
+        subtitle="BUSINESS PROPOSALS"
+        icon={TrendingUp}
+        bgClass="bg-[#1c2a48]"
+        data={financials.quotations}
+      />
+      <MetricCardBlock
+        title="Invoices"
+        subtitle="REVENUE REALIZATION"
+        icon={FileText}
+        bgClass="bg-[#0d8a57]"
+        data={financials.invoices}
+      />
+    </div>
   );
 };
 
