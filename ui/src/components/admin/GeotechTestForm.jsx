@@ -193,63 +193,93 @@ import GeotechRockSbcDetails from './GeotechRockSbcDetails';
 /**
  * Searchable soil-type dropdown.
  * Uses the app's own Select primitives so it respects the current theme.
+ * When "Others" (or a custom soil type string) is selected, renders an editable text input.
  */
 function SoilTypeSelect({ value, onChange }) {
   const [search, setSearch] = React.useState('');
+  const standardSoilTypes = React.useMemo(
+    () => soilTypes.filter((t) => t !== 'Others'),
+    []
+  );
+
   const filtered = React.useMemo(
     () => soilTypes.filter((t) => t.toLowerCase().includes(search.toLowerCase())),
     [search]
   );
 
+  // Check if current value is custom (i.e. 'Others' or a string not in standard list)
+  const isCustom = React.useMemo(() => {
+    if (!value) return false;
+    if (value === 'Others') return true;
+    return !standardSoilTypes.includes(value);
+  }, [value, standardSoilTypes]);
+
+  const selectValue = isCustom ? 'Others' : (value || '');
+
   return (
-    <Select
-      value={value || ''}
-      onValueChange={(v) => {
-        onChange(v);
-      }}
-      onOpenChange={(open) => {
-        if (!open) setSearch('');
-      }}
-    >
-      <SelectTrigger className="h-8 text-xs w-full">
-        <SelectValue placeholder="Select soil type" />
-      </SelectTrigger>
-      <SelectContent className="max-h-72">
-        {/* inline search input — not a SelectItem so it won't be selectable */}
-        <div
-          className="flex items-center border-b border-border px-2 pb-1 mb-1"
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <svg
-            className="mr-1.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+    <div className="flex flex-col gap-1.5 w-full">
+      <Select
+        value={selectValue}
+        onValueChange={(v) => {
+          if (v === 'Others') {
+            onChange('Others');
+          } else {
+            onChange(v);
+          }
+        }}
+        onOpenChange={(open) => {
+          if (!open) setSearch('');
+        }}
+      >
+        <SelectTrigger className="h-8 text-xs w-full">
+          <SelectValue placeholder="Select soil type" />
+        </SelectTrigger>
+        <SelectContent className="max-h-72">
+          {/* inline search input — not a SelectItem so it won't be selectable */}
+          <div
+            className="flex items-center border-b border-border px-2 pb-1 mb-1"
+            onPointerDown={(e) => e.stopPropagation()}
           >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
-          </svg>
-          <input
-            className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none py-1"
-            placeholder="Search soil types…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.stopPropagation()}
-          />
-        </div>
-        {filtered.length === 0 ? (
-          <div className="py-4 text-center text-xs text-muted-foreground">No results</div>
-        ) : (
-          filtered.map((type) => (
-            <SelectItem key={type} value={type} className="text-xs">
-              {type}
-            </SelectItem>
-          ))
-        )}
-      </SelectContent>
-    </Select>
+            <svg
+              className="mr-1.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none py-1"
+              placeholder="Search soil types…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.stopPropagation()}
+            />
+          </div>
+          {filtered.length === 0 ? (
+            <div className="py-4 text-center text-xs text-muted-foreground">No results</div>
+          ) : (
+            filtered.map((type) => (
+              <SelectItem key={type} value={type} className="text-xs">
+                {type}
+              </SelectItem>
+            ))
+          )}
+        </SelectContent>
+      </Select>
+
+      {isCustom && (
+        <Input
+          value={value === 'Others' ? '' : value}
+          onChange={(e) => onChange(e.target.value || 'Others')}
+          placeholder="Specify custom soil type…"
+          className="h-8 text-xs bg-white border-primary/40 focus:border-primary"
+        />
+      )}
+    </div>
   );
 }
 
