@@ -29,7 +29,7 @@ const FieldTestsProvider = ({ children }) => {
       numDays: Number(ft.num_days ?? ft.numDays ?? 1) || 1,
       hsnCode: ft.hsn_code || ft.hsnCode || '',
       tcList: (() => {
-        if (ft.field_test_to_terms_conditions)
+        if (ft.field_test_to_terms_conditions && ft.field_test_to_terms_conditions.length > 0)
           return ft.field_test_to_terms_conditions
             .map((x) => x.terms_and_conditions?.type)
             .filter(Boolean);
@@ -37,13 +37,13 @@ const FieldTestsProvider = ({ children }) => {
         return ft.tc_list || ft.tcList || [];
       })(),
       techList: (() => {
-        if (ft.field_test_to_technicals)
+        if (ft.field_test_to_technicals && ft.field_test_to_technicals.length > 0)
           return ft.field_test_to_technicals.map((x) => x.technicals?.type).filter(Boolean);
         if (Array.isArray(ft.tech_list || ft.techList)) return ft.tech_list || ft.techList;
         return ft.tech_list || ft.techList || [];
       })(),
       paymentTermsList: (() => {
-        if (ft.field_test_to_payment_terms)
+        if (ft.field_test_to_payment_terms && ft.field_test_to_payment_terms.length > 0)
           return ft.field_test_to_payment_terms.map((x) => x.payment_terms?.type).filter(Boolean);
         if (Array.isArray(ft.paymentTermsList)) return ft.paymentTermsList;
         return [];

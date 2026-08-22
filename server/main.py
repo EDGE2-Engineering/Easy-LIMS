@@ -2605,6 +2605,56 @@ class FieldTestUpdate(BaseModel):
     hsn_code: Optional[str] = None
     num_days: Optional[int] = None
 
+async def _enrich_field_tests(conn, rows):
+    """Attach junction-table relations (technicals, T&C, payment terms) to field test rows."""
+    if not rows:
+        return []
+    ids = [r["id"] for r in rows]
+
+    # Fetch junction data for all field tests at once
+    tech_rows = await conn.fetch(
+        """SELECT ftt.field_test_id, t.type
+           FROM field_test_to_technicals ftt
+           JOIN technicals t ON t.id = ftt.technical_id
+           WHERE ftt.field_test_id = ANY($1)""",
+        ids,
+    )
+    tc_rows = await conn.fetch(
+        """SELECT fttc.field_test_id, tc.type
+           FROM field_test_to_terms_conditions fttc
+           JOIN terms_and_conditions tc ON tc.id = fttc.tc_id
+           WHERE fttc.field_test_id = ANY($1)""",
+        ids,
+    )
+    pt_rows = await conn.fetch(
+        """SELECT ftp.field_test_id, pt.type
+           FROM field_test_to_payment_terms ftp
+           JOIN payment_terms pt ON pt.id = ftp.payment_term_id
+           WHERE ftp.field_test_id = ANY($1)""",
+        ids,
+    )
+
+    # Build lookup dicts
+    tech_map: Dict[int, list] = {}
+    for r in tech_rows:
+        tech_map.setdefault(r["field_test_id"], []).append({"type": r["type"]})
+    tc_map: Dict[int, list] = {}
+    for r in tc_rows:
+        tc_map.setdefault(r["field_test_id"], []).append({"type": r["type"]})
+    pt_map: Dict[int, list] = {}
+    for r in pt_rows:
+        pt_map.setdefault(r["field_test_id"], []).append({"type": r["type"]})
+
+    enriched = []
+    for row in rows:
+        d = dict(row)
+        fid = d["id"]
+        d["field_test_to_technicals"] = [{"technicals": x} for x in tech_map.get(fid, [])]
+        d["field_test_to_terms_conditions"] = [{"terms_and_conditions": x} for x in tc_map.get(fid, [])]
+        d["field_test_to_payment_terms"] = [{"payment_terms": x} for x in pt_map.get(fid, [])]
+        enriched.append(d)
+    return enriched
+
 @app.get("/api/field-tests", tags=["Field Tests"], summary="List field tests with pagination")
 async def list_field_tests(page: Optional[int] = None, limit: Optional[int] = None, q: Optional[str] = None):
     if not db_pool:
@@ -2633,7 +2683,8 @@ async def list_field_tests(page: Optional[int] = None, limit: Optional[int] = No
             total_pages = 1
 
         rows = await fetch_with_coerced_params(conn, f"SELECT * FROM field_tests {where_sql} ORDER BY name ASC {limit_sql}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
+        enriched = await _enrich_field_tests(conn, rows)
+        return {"data": enriched, "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/field-tests/{test_id}", tags=["Field Tests"], summary="Get field test by ID")
 async def get_field_test(test_id: int):
@@ -2643,7 +2694,8 @@ async def get_field_test(test_id: int):
         rows = await fetch_with_coerced_params(conn, "SELECT * FROM field_tests WHERE id = $1", [test_id])
         if not rows:
             raise HTTPException(status_code=404, detail="Field test not found")
-        return dict(rows[0])
+        enriched = await _enrich_field_tests(conn, rows)
+        return enriched[0]
 
 @app.post("/api/field-tests", tags=["Field Tests"], status_code=201, summary="Create field test")
 async def create_field_test(ft: FieldTestCreate):
@@ -2688,6 +2740,99 @@ async def delete_field_test(test_id: int):
             raise HTTPException(status_code=404, detail="Field test not found")
         return {"message": "Field test deleted", "id": test_id}
 
+# --- Junction table endpoints for field_test_to_technicals ---
+@app.get("/api/field-test-to-technicals", tags=["Field Test Junctions"])
+async def list_field_test_technicals(field_test_id: Optional[int] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        if field_test_id is not None:
+            rows = await conn.fetch("SELECT * FROM field_test_to_technicals WHERE field_test_id = $1", field_test_id)
+        else:
+            rows = await conn.fetch("SELECT * FROM field_test_to_technicals")
+        return [dict(r) for r in rows]
+
+@app.post("/api/field-test-to-technicals", tags=["Field Test Junctions"], status_code=201)
+async def create_field_test_technical(request: Request):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    body = await request.json()
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO field_test_to_technicals (field_test_id, technical_id) VALUES ($1, $2) RETURNING *",
+            int(body["field_test_id"]), int(body["technical_id"]))
+        return dict(row)
+
+@app.delete("/api/field-test-to-technicals", tags=["Field Test Junctions"])
+async def delete_field_test_technicals(field_test_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM field_test_to_technicals WHERE field_test_id = $1", field_test_id)
+        return {"message": "Deleted", "field_test_id": field_test_id}
+
+# --- Junction table endpoints for field_test_to_terms_conditions ---
+@app.get("/api/field-test-to-terms-conditions", tags=["Field Test Junctions"])
+async def list_field_test_tc(field_test_id: Optional[int] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        if field_test_id is not None:
+            rows = await conn.fetch("SELECT * FROM field_test_to_terms_conditions WHERE field_test_id = $1", field_test_id)
+        else:
+            rows = await conn.fetch("SELECT * FROM field_test_to_terms_conditions")
+        return [dict(r) for r in rows]
+
+@app.post("/api/field-test-to-terms-conditions", tags=["Field Test Junctions"], status_code=201)
+async def create_field_test_tc(request: Request):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    body = await request.json()
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO field_test_to_terms_conditions (field_test_id, tc_id) VALUES ($1, $2) RETURNING *",
+            int(body["field_test_id"]), int(body["tc_id"]))
+        return dict(row)
+
+@app.delete("/api/field-test-to-terms-conditions", tags=["Field Test Junctions"])
+async def delete_field_test_tc(field_test_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM field_test_to_terms_conditions WHERE field_test_id = $1", field_test_id)
+        return {"message": "Deleted", "field_test_id": field_test_id}
+
+# --- Junction table endpoints for field_test_to_payment_terms ---
+@app.get("/api/field-test-to-payment-terms", tags=["Field Test Junctions"])
+async def list_field_test_payment_terms(field_test_id: Optional[int] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        if field_test_id is not None:
+            rows = await conn.fetch("SELECT * FROM field_test_to_payment_terms WHERE field_test_id = $1", field_test_id)
+        else:
+            rows = await conn.fetch("SELECT * FROM field_test_to_payment_terms")
+        return [dict(r) for r in rows]
+
+@app.post("/api/field-test-to-payment-terms", tags=["Field Test Junctions"], status_code=201)
+async def create_field_test_payment_term(request: Request):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    body = await request.json()
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO field_test_to_payment_terms (field_test_id, payment_term_id) VALUES ($1, $2) RETURNING *",
+            int(body["field_test_id"]), int(body["payment_term_id"]))
+        return dict(row)
+
+@app.delete("/api/field-test-to-payment-terms", tags=["Field Test Junctions"])
+async def delete_field_test_payment_terms(field_test_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM field_test_to_payment_terms WHERE field_test_id = $1", field_test_id)
+        return {"message": "Deleted", "field_test_id": field_test_id}
+
 # ============================================================================
 # Dedicated Lab Tests REST API Endpoints
 # ============================================================================
@@ -2709,6 +2854,54 @@ class LabTestUpdate(BaseModel):
     num_days: Optional[int] = None
     price: Optional[float] = None
     hsn_code: Optional[str] = None
+
+async def _enrich_lab_tests(conn, rows):
+    """Attach junction-table relations (technicals, T&C, payment terms) to lab test rows."""
+    if not rows:
+        return []
+    ids = [r["id"] for r in rows]
+
+    tech_rows = await conn.fetch(
+        """SELECT ltt.lab_test_id, t.type
+           FROM lab_test_to_technicals ltt
+           JOIN technicals t ON t.id = ltt.technical_id
+           WHERE ltt.lab_test_id = ANY($1)""",
+        ids,
+    )
+    tc_rows = await conn.fetch(
+        """SELECT lttc.lab_test_id, tc.type
+           FROM lab_test_to_terms_conditions lttc
+           JOIN terms_and_conditions tc ON tc.id = lttc.tc_id
+           WHERE lttc.lab_test_id = ANY($1)""",
+        ids,
+    )
+    pt_rows = await conn.fetch(
+        """SELECT ltp.lab_test_id, pt.type
+           FROM lab_test_to_payment_terms ltp
+           JOIN payment_terms pt ON pt.id = ltp.payment_term_id
+           WHERE ltp.lab_test_id = ANY($1)""",
+        ids,
+    )
+
+    tech_map: Dict[int, list] = {}
+    for r in tech_rows:
+        tech_map.setdefault(r["lab_test_id"], []).append({"type": r["type"]})
+    tc_map: Dict[int, list] = {}
+    for r in tc_rows:
+        tc_map.setdefault(r["lab_test_id"], []).append({"type": r["type"]})
+    pt_map: Dict[int, list] = {}
+    for r in pt_rows:
+        pt_map.setdefault(r["lab_test_id"], []).append({"type": r["type"]})
+
+    enriched = []
+    for row in rows:
+        d = dict(row)
+        lid = d["id"]
+        d["lab_test_to_technicals"] = [{"technicals": x} for x in tech_map.get(lid, [])]
+        d["lab_test_to_terms_conditions"] = [{"terms_and_conditions": x} for x in tc_map.get(lid, [])]
+        d["lab_test_to_payment_terms"] = [{"payment_terms": x} for x in pt_map.get(lid, [])]
+        enriched.append(d)
+    return enriched
 
 @app.get("/api/lab-tests", tags=["Lab Tests"], summary="List lab tests with pagination")
 async def list_lab_tests(
@@ -2747,7 +2940,8 @@ async def list_lab_tests(
             total_pages = 1
 
         rows = await fetch_with_coerced_params(conn, f"SELECT * FROM lab_tests {where_sql} ORDER BY name ASC {limit_sql}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
+        enriched = await _enrich_lab_tests(conn, rows)
+        return {"data": enriched, "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/lab-tests/{test_id}", tags=["Lab Tests"], summary="Get lab test by ID")
 async def get_lab_test(test_id: int):
@@ -2757,7 +2951,8 @@ async def get_lab_test(test_id: int):
         rows = await fetch_with_coerced_params(conn, "SELECT * FROM lab_tests WHERE id = $1", [test_id])
         if not rows:
             raise HTTPException(status_code=404, detail="Lab test not found")
-        return dict(rows[0])
+        enriched = await _enrich_lab_tests(conn, rows)
+        return enriched[0]
 
 @app.post("/api/lab-tests", tags=["Lab Tests"], status_code=201, summary="Create lab test")
 async def create_lab_test(lt: LabTestCreate):
@@ -2803,6 +2998,99 @@ async def delete_lab_test(test_id: int):
             raise HTTPException(status_code=404, detail="Lab test not found")
         return {"message": "Lab test deleted", "id": test_id}
 
+# --- Junction table endpoints for lab_test_to_technicals ---
+@app.get("/api/lab-test-to-technicals", tags=["Lab Test Junctions"])
+async def list_lab_test_technicals(lab_test_id: Optional[int] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        if lab_test_id is not None:
+            rows = await conn.fetch("SELECT * FROM lab_test_to_technicals WHERE lab_test_id = $1", lab_test_id)
+        else:
+            rows = await conn.fetch("SELECT * FROM lab_test_to_technicals")
+        return [dict(r) for r in rows]
+
+@app.post("/api/lab-test-to-technicals", tags=["Lab Test Junctions"], status_code=201)
+async def create_lab_test_technical(request: Request):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    body = await request.json()
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO lab_test_to_technicals (lab_test_id, technical_id) VALUES ($1, $2) RETURNING *",
+            int(body["lab_test_id"]), int(body["technical_id"]))
+        return dict(row)
+
+@app.delete("/api/lab-test-to-technicals", tags=["Lab Test Junctions"])
+async def delete_lab_test_technicals(lab_test_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM lab_test_to_technicals WHERE lab_test_id = $1", lab_test_id)
+        return {"message": "Deleted", "lab_test_id": lab_test_id}
+
+# --- Junction table endpoints for lab_test_to_terms_conditions ---
+@app.get("/api/lab-test-to-terms-conditions", tags=["Lab Test Junctions"])
+async def list_lab_test_tc(lab_test_id: Optional[int] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        if lab_test_id is not None:
+            rows = await conn.fetch("SELECT * FROM lab_test_to_terms_conditions WHERE lab_test_id = $1", lab_test_id)
+        else:
+            rows = await conn.fetch("SELECT * FROM lab_test_to_terms_conditions")
+        return [dict(r) for r in rows]
+
+@app.post("/api/lab-test-to-terms-conditions", tags=["Lab Test Junctions"], status_code=201)
+async def create_lab_test_tc(request: Request):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    body = await request.json()
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO lab_test_to_terms_conditions (lab_test_id, tc_id) VALUES ($1, $2) RETURNING *",
+            int(body["lab_test_id"]), int(body["tc_id"]))
+        return dict(row)
+
+@app.delete("/api/lab-test-to-terms-conditions", tags=["Lab Test Junctions"])
+async def delete_lab_test_tc(lab_test_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM lab_test_to_terms_conditions WHERE lab_test_id = $1", lab_test_id)
+        return {"message": "Deleted", "lab_test_id": lab_test_id}
+
+# --- Junction table endpoints for lab_test_to_payment_terms ---
+@app.get("/api/lab-test-to-payment-terms", tags=["Lab Test Junctions"])
+async def list_lab_test_payment_terms(lab_test_id: Optional[int] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        if lab_test_id is not None:
+            rows = await conn.fetch("SELECT * FROM lab_test_to_payment_terms WHERE lab_test_id = $1", lab_test_id)
+        else:
+            rows = await conn.fetch("SELECT * FROM lab_test_to_payment_terms")
+        return [dict(r) for r in rows]
+
+@app.post("/api/lab-test-to-payment-terms", tags=["Lab Test Junctions"], status_code=201)
+async def create_lab_test_payment_term(request: Request):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    body = await request.json()
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO lab_test_to_payment_terms (lab_test_id, payment_term_id) VALUES ($1, $2) RETURNING *",
+            int(body["lab_test_id"]), int(body["payment_term_id"]))
+        return dict(row)
+
+@app.delete("/api/lab-test-to-payment-terms", tags=["Lab Test Junctions"])
+async def delete_lab_test_payment_terms(lab_test_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM lab_test_to_payment_terms WHERE lab_test_id = $1", lab_test_id)
+        return {"message": "Deleted", "lab_test_id": lab_test_id}
+
 # ============================================================================
 # Dedicated Sampling Services REST API Endpoints
 # ============================================================================
@@ -2828,6 +3116,65 @@ class SamplingUpdate(BaseModel):
     price: Optional[float] = None
     hsn_code: Optional[str] = None
     num_days: Optional[int] = None
+
+async def _enrich_sampling(conn, rows):
+    """Attach junction-table relations (materials, technicals, T&C, payment terms) to sampling rows."""
+    if not rows:
+        return []
+    ids = [r["id"] for r in rows]
+
+    mat_rows = await conn.fetch(
+        """SELECT stm.sampling_id, m.name
+           FROM sampling_to_materials stm
+           JOIN materials m ON m.id = stm.material_id
+           WHERE stm.sampling_id = ANY($1)""",
+        ids,
+    )
+    tech_rows = await conn.fetch(
+        """SELECT stt.sampling_id, t.type
+           FROM sampling_to_technicals stt
+           JOIN technicals t ON t.id = stt.technical_id
+           WHERE stt.sampling_id = ANY($1)""",
+        ids,
+    )
+    tc_rows = await conn.fetch(
+        """SELECT sttc.sampling_id, tc.type
+           FROM sampling_to_terms_conditions sttc
+           JOIN terms_and_conditions tc ON tc.id = sttc.tc_id
+           WHERE sttc.sampling_id = ANY($1)""",
+        ids,
+    )
+    pt_rows = await conn.fetch(
+        """SELECT stp.sampling_id, pt.type
+           FROM sampling_to_payment_terms stp
+           JOIN payment_terms pt ON pt.id = stp.payment_term_id
+           WHERE stp.sampling_id = ANY($1)""",
+        ids,
+    )
+
+    mat_map: Dict[int, list] = {}
+    for r in mat_rows:
+        mat_map.setdefault(r["sampling_id"], []).append({"name": r["name"]})
+    tech_map: Dict[int, list] = {}
+    for r in tech_rows:
+        tech_map.setdefault(r["sampling_id"], []).append({"type": r["type"]})
+    tc_map: Dict[int, list] = {}
+    for r in tc_rows:
+        tc_map.setdefault(r["sampling_id"], []).append({"type": r["type"]})
+    pt_map: Dict[int, list] = {}
+    for r in pt_rows:
+        pt_map.setdefault(r["sampling_id"], []).append({"type": r["type"]})
+
+    enriched = []
+    for row in rows:
+        d = dict(row)
+        sid = d["id"]
+        d["sampling_to_materials"] = [{"materials": x} for x in mat_map.get(sid, [])]
+        d["sampling_to_technicals"] = [{"technicals": x} for x in tech_map.get(sid, [])]
+        d["sampling_to_terms_conditions"] = [{"terms_and_conditions": x} for x in tc_map.get(sid, [])]
+        d["sampling_to_payment_terms"] = [{"payment_terms": x} for x in pt_map.get(sid, [])]
+        enriched.append(d)
+    return enriched
 
 @app.get("/api/sampling", tags=["Sampling"], summary="List sampling services with pagination")
 async def list_sampling_services(
@@ -2866,7 +3213,8 @@ async def list_sampling_services(
             total_pages = 1
 
         rows = await fetch_with_coerced_params(conn, f"SELECT * FROM sampling {where_sql} ORDER BY name ASC {limit_sql}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
+        enriched = await _enrich_sampling(conn, rows)
+        return {"data": enriched, "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/sampling/{sampling_id}", tags=["Sampling"], summary="Get sampling service by ID")
 async def get_sampling_service(sampling_id: int):
@@ -2876,7 +3224,8 @@ async def get_sampling_service(sampling_id: int):
         rows = await fetch_with_coerced_params(conn, "SELECT * FROM sampling WHERE id = $1", [sampling_id])
         if not rows:
             raise HTTPException(status_code=404, detail="Sampling service not found")
-        return dict(rows[0])
+        enriched = await _enrich_sampling(conn, rows)
+        return enriched[0]
 
 @app.post("/api/sampling", tags=["Sampling"], status_code=201, summary="Create sampling service")
 async def create_sampling_service(samp: SamplingCreate):
@@ -2921,6 +3270,130 @@ async def delete_sampling_service(sampling_id: int):
         if not rows:
             raise HTTPException(status_code=404, detail="Sampling service not found")
         return {"message": "Sampling service deleted", "id": sampling_id}
+
+# --- Junction table endpoints for sampling_to_materials ---
+@app.get("/api/sampling-to-materials", tags=["Sampling Junctions"])
+async def list_sampling_materials(sampling_id: Optional[int] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        if sampling_id is not None:
+            rows = await conn.fetch("SELECT * FROM sampling_to_materials WHERE sampling_id = $1", sampling_id)
+        else:
+            rows = await conn.fetch("SELECT * FROM sampling_to_materials")
+        return [dict(r) for r in rows]
+
+@app.post("/api/sampling-to-materials", tags=["Sampling Junctions"], status_code=201)
+async def create_sampling_material(request: Request):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    body = await request.json()
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO sampling_to_materials (sampling_id, material_id) VALUES ($1, $2) RETURNING *",
+            int(body["sampling_id"]), int(body["material_id"]))
+        return dict(row)
+
+@app.delete("/api/sampling-to-materials", tags=["Sampling Junctions"])
+async def delete_sampling_materials(sampling_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM sampling_to_materials WHERE sampling_id = $1", sampling_id)
+        return {"message": "Deleted", "sampling_id": sampling_id}
+
+# --- Junction table endpoints for sampling_to_technicals ---
+@app.get("/api/sampling-to-technicals", tags=["Sampling Junctions"])
+async def list_sampling_technicals(sampling_id: Optional[int] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        if sampling_id is not None:
+            rows = await conn.fetch("SELECT * FROM sampling_to_technicals WHERE sampling_id = $1", sampling_id)
+        else:
+            rows = await conn.fetch("SELECT * FROM sampling_to_technicals")
+        return [dict(r) for r in rows]
+
+@app.post("/api/sampling-to-technicals", tags=["Sampling Junctions"], status_code=201)
+async def create_sampling_technical(request: Request):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    body = await request.json()
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO sampling_to_technicals (sampling_id, technical_id) VALUES ($1, $2) RETURNING *",
+            int(body["sampling_id"]), int(body["technical_id"]))
+        return dict(row)
+
+@app.delete("/api/sampling-to-technicals", tags=["Sampling Junctions"])
+async def delete_sampling_technicals(sampling_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM sampling_to_technicals WHERE sampling_id = $1", sampling_id)
+        return {"message": "Deleted", "sampling_id": sampling_id}
+
+# --- Junction table endpoints for sampling_to_terms_conditions ---
+@app.get("/api/sampling-to-terms-conditions", tags=["Sampling Junctions"])
+async def list_sampling_tc(sampling_id: Optional[int] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        if sampling_id is not None:
+            rows = await conn.fetch("SELECT * FROM sampling_to_terms_conditions WHERE sampling_id = $1", sampling_id)
+        else:
+            rows = await conn.fetch("SELECT * FROM sampling_to_terms_conditions")
+        return [dict(r) for r in rows]
+
+@app.post("/api/sampling-to-terms-conditions", tags=["Sampling Junctions"], status_code=201)
+async def create_sampling_tc(request: Request):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    body = await request.json()
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO sampling_to_terms_conditions (sampling_id, tc_id) VALUES ($1, $2) RETURNING *",
+            int(body["sampling_id"]), int(body["tc_id"]))
+        return dict(row)
+
+@app.delete("/api/sampling-to-terms-conditions", tags=["Sampling Junctions"])
+async def delete_sampling_tc(sampling_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM sampling_to_terms_conditions WHERE sampling_id = $1", sampling_id)
+        return {"message": "Deleted", "sampling_id": sampling_id}
+
+# --- Junction table endpoints for sampling_to_payment_terms ---
+@app.get("/api/sampling-to-payment-terms", tags=["Sampling Junctions"])
+async def list_sampling_payment_terms(sampling_id: Optional[int] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        if sampling_id is not None:
+            rows = await conn.fetch("SELECT * FROM sampling_to_payment_terms WHERE sampling_id = $1", sampling_id)
+        else:
+            rows = await conn.fetch("SELECT * FROM sampling_to_payment_terms")
+        return [dict(r) for r in rows]
+
+@app.post("/api/sampling-to-payment-terms", tags=["Sampling Junctions"], status_code=201)
+async def create_sampling_payment_term(request: Request):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    body = await request.json()
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO sampling_to_payment_terms (sampling_id, payment_term_id) VALUES ($1, $2) RETURNING *",
+            int(body["sampling_id"]), int(body["payment_term_id"]))
+        return dict(row)
+
+@app.delete("/api/sampling-to-payment-terms", tags=["Sampling Junctions"])
+async def delete_sampling_payment_terms(sampling_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM sampling_to_payment_terms WHERE sampling_id = $1", sampling_id)
+        return {"message": "Deleted", "sampling_id": sampling_id}
 
 # ============================================================================
 # Dedicated Packages REST API Endpoints

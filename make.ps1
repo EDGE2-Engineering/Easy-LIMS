@@ -57,20 +57,20 @@ function Invoke-Clean {
 function Invoke-Dev {
     Invoke-Build
     Write-Host "Installing Python dependencies..." -ForegroundColor Green
-    pip install -r server/requirements.txt uvicorn
+    & ".venv\Scripts\python.exe" -m pip install -r server/requirements.txt uvicorn
     Write-Host "Starting FastAPI server on http://0.0.0.0:8000..." -ForegroundColor Green
     Push-Location server
-    python -m uvicorn main:app --host 0.0.0.0 --reload --port 8000
+    & "..\.venv\Scripts\python.exe" -m uvicorn main:app --host 0.0.0.0 --reload --port 8000
     Pop-Location
 }
 
 function Invoke-Preview {
     Invoke-Build
     Write-Host "Installing Python dependencies..." -ForegroundColor Green
-    pip install -r server/requirements.txt uvicorn
+    & ".venv\Scripts\python.exe" -m pip install -r server/requirements.txt uvicorn
     Write-Host "Starting FastAPI server on http://0.0.0.0:8000..." -ForegroundColor Green
     Push-Location server
-    python -m uvicorn main:app --host 0.0.0.0 --port 8000
+    & "..\.venv\Scripts\python.exe" -m uvicorn main:app --host 0.0.0.0 --port 8000
     Pop-Location
 }
 

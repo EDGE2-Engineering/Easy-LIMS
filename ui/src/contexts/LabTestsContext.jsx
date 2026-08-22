@@ -42,7 +42,7 @@ const LabTestsProvider = ({ children }) => {
       price: Number(t.price) || 0,
       hsnCode: t.hsn_code || t.hsnCode || '',
       tcList: (() => {
-        if (t.lab_test_to_terms_conditions)
+        if (t.lab_test_to_terms_conditions && t.lab_test_to_terms_conditions.length > 0)
           return t.lab_test_to_terms_conditions
             .map((x) => x.terms_and_conditions?.type)
             .filter(Boolean);
@@ -50,13 +50,13 @@ const LabTestsProvider = ({ children }) => {
         return t.tc_list || t.tcList || [];
       })(),
       techList: (() => {
-        if (t.lab_test_to_technicals)
+        if (t.lab_test_to_technicals && t.lab_test_to_technicals.length > 0)
           return t.lab_test_to_technicals.map((x) => x.technicals?.type).filter(Boolean);
         if (Array.isArray(t.tech_list || t.techList)) return t.tech_list || t.techList;
         return t.tech_list || t.techList || [];
       })(),
       paymentTermsList: (() => {
-        if (t.lab_test_to_payment_terms)
+        if (t.lab_test_to_payment_terms && t.lab_test_to_payment_terms.length > 0)
           return t.lab_test_to_payment_terms.map((x) => x.payment_terms?.type).filter(Boolean);
         if (Array.isArray(t.paymentTermsList)) return t.paymentTermsList;
         return [];

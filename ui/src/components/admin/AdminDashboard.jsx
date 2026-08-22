@@ -569,11 +569,15 @@ const RecentActivityWidget = ({ refreshKey }) => {
     const fetchRecentActivity = async () => {
       setLoading(true);
       try {
+        // Build start-of-today timestamp in local timezone
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+
         const { data: rawActivity, error } = await apiClient
           .from('job_workflow_logs')
           .select('*')
-          .order('created_at', { ascending: false })
-          .limit(5);
+          .gte('created_at', startOfToday)
+          .order('created_at', { ascending: false });
 
         if (error) throw error;
         let list = rawActivity || [];
@@ -620,9 +624,9 @@ const RecentActivityWidget = ({ refreshKey }) => {
       <CardHeader className="p-5 pb-3 border-b border-gray-50 flex items-center justify-between">
         <div>
           <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
-            <Activity className="w-5 h-5 text-primary" /> Workflow Activity Feed
+            <Activity className="w-5 h-5 text-primary" /> Today's Activity
           </CardTitle>
-          <CardDescription className="text-xs text-gray-500 font-medium">Recent status changes across laboratory jobs</CardDescription>
+          <CardDescription className="text-xs text-gray-500 font-medium">All activities performed across the organization today</CardDescription>
         </div>
         <a href="#/settings/logs" className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
           Full Log <ChevronRight className="w-3.5 h-3.5" />
@@ -630,7 +634,7 @@ const RecentActivityWidget = ({ refreshKey }) => {
       </CardHeader>
       <CardContent className="p-5">
         {activities.length === 0 ? (
-          <div className="text-center py-6 text-xs font-bold text-gray-400">No recent workflow activity logs found</div>
+          <div className="text-center py-6 text-xs font-bold text-gray-400">No activity recorded today</div>
         ) : (
           <div className="space-y-3">
             {activities.map((act) => (
