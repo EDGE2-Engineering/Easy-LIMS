@@ -51,7 +51,7 @@ test.describe('Admin User Workflow', () => {
   test('should list clients', async ({ page }) => {
     // Navigate via the Settings dropdown (Admin has it there)
     await page.click('button:has-text("Settings")');
-    await page.click('a:has-text("Clients")');
+    await page.click('a[href*="settings/clients"]');
     await expect(page).toHaveURL(/.*settings\/clients/);
     
     // Check for "Add Client" button

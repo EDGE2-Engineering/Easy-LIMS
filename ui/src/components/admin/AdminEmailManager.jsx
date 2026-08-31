@@ -1067,16 +1067,16 @@ const AdminEmailManager = () => {
                       key={tmpl.id}
                       className="group relative p-3 rounded-xl border border-gray-100 hover:border-primary/40 hover:bg-primary/5 transition-all space-y-1.5 bg-white"
                     >
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 min-w-0">
                         <button
                           type="button"
                           onClick={() => handleApplyTemplate(tmpl)}
-                          className="text-left flex-1 space-y-0.5"
+                          className="text-left flex-1 min-w-0 space-y-0.5"
                         >
-                          <span className="font-bold text-xs text-gray-900 group-hover:text-primary transition-colors block">
+                          <span className="font-bold text-xs text-gray-900 group-hover:text-primary transition-colors block truncate" title={tmpl.name}>
                             {tmpl.name}
                           </span>
-                          <span className="text-[11px] text-gray-400 block truncate max-w-[200px]">
+                          <span className="text-[11px] text-gray-400 block truncate" title={tmpl.subject}>
                             {tmpl.subject}
                           </span>
                         </button>

@@ -112,6 +112,7 @@ function Invoke-InitTest {
             "ADMIN_USERNAME=`nADMIN_PASSWORD=`nAPI_URL=http://localhost:8000" | Out-File -FilePath test.env -Encoding ascii
         }
     }
+    npx playwright install
 }
 
 function Invoke-Test {

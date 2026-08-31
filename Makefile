@@ -91,7 +91,9 @@ init-test:
 	@if [ ! -f test.env ]; then \
 		printf "username=test\npassword=test\nAPI_URL=http://localhost:8000\n" > test.env; \
 	fi
-# 	@npx playwright install --with-deps
+	@npx playwright install
+
+
 
 test: init-test
 	@npx playwright test --headed
