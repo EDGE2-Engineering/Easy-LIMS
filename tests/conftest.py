@@ -1,3 +1,5 @@
+import html
+import inspect
 import os
 from pathlib import Path
 import pytest
@@ -122,3 +124,35 @@ def browser_type_launch_args(browser_type_launch_args):
     if headless_setting is not None:
         launch_args["headless"] = headless_setting
     return launch_args
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """
+    Captures the test function's docstring (pydoc) and stores it on the test report.
+    """
+    outcome = yield
+    report = outcome.get_result()
+    test_fn = getattr(item, "function", None) or getattr(item, "_obj", None)
+    doc = getattr(test_fn, "__doc__", "") or ""
+    report.description = inspect.cleandoc(doc) if doc else ""
+
+
+def pytest_html_results_table_header(cells):
+    """
+    Inserts a 'Description' column header into the HTML report results table.
+    """
+    cells.insert(
+        2,
+        '<th class="sortable" data-column-type="description">Description</th>',
+    )
+
+
+def pytest_html_results_table_row(report, cells):
+    """
+    Populates the 'Description' column cell using the test function's pydoc.
+    """
+    description = getattr(report, "description", "") or ""
+    escaped_desc = html.escape(description)
+    cells.insert(2, f'<td class="col-description">{escaped_desc}</td>')
+

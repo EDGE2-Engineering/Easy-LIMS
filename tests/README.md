@@ -57,8 +57,8 @@ python -m playwright install chromium
 
 | Test File | Suite Name | Description | Key Verifications |
 | :--- | :--- | :--- | :--- |
-| [`test_auth.py`](./test_auth.py) | **Authentication** | Validates user login behaviors with valid & invalid credentials. | - Invalid credentials error alert (`.bg-red-50`) display.<br>- Successful authentication and navigation away from login page using `ADMIN_USERNAME` & `ADMIN_PASSWORD`. |
-| [`test_admin.py`](./test_admin.py) | **Admin User Workflow** | Verifies administrative features, navigation, and dashboard components. | - Operational Dashboard visibility & key metrics ("Active Jobs", "Total Clients").<br>- Jobs management page loading & "New Job" button.<br>- Clients management page loading via Settings & "Add Client" button.<br>- Documents list & "Create Document" button.<br>- System settings user list & user search input (`input[placeholder="Search users..."]`). |
+| [`scenarios/test_auth.py`](./scenarios/test_auth.py) | **Authentication** | Validates user login behaviors with valid & invalid credentials. | - Invalid credentials error alert (`.bg-red-50`) display.<br>- Successful authentication and navigation away from login page using `ADMIN_USERNAME` & `ADMIN_PASSWORD`. |
+| [`scenarios/test_admin.py`](./scenarios/test_admin.py) | **Admin User Workflow** | Verifies administrative features, navigation, and dashboard components. | - Operational Dashboard visibility & key metrics ("Active Jobs", "Total Clients").<br>- Jobs management page loading & "New Job" button.<br>- Clients management page loading via Settings & "Add Client" button.<br>- Documents list & "Create Document" button.<br>- System settings user list & user search input (`input[placeholder="Search users..."]`). |
 
 ---
 
@@ -72,7 +72,7 @@ python -m playwright install chromium
 | **Run All Tests (Headed Mode)** | `python tests/run_tests.py --headed`<br>or `make test` / `.\make.ps1 test` / `npm test` | Runs tests with visible browser window and opens HTML report on completion. |
 | **Run Tests with Custom `.env` File** | `.\make.ps1 test dev.env`<br>`.\make.ps1 .\dev.env`<br>`make test ENV_FILE=dev.env`<br>`python tests/run_tests.py --env-file dev.env` | Executes tests using the specified environment configuration file instead of `test.env`. |
 | **Run Tests in Interactive / Tracing Mode** | `python tests/run_tests.py --ui`<br>or `make test-ui` / `.\make.ps1 test-ui` / `npm run test:ui` | Runs tests with tracing enabled for debugging. |
-| **Run Specific Test File** | `python -m pytest tests/test_auth.py`<br>or `python tests/run_tests.py -k test_auth` | Runs only the specified test module or filter. |
+| **Run Specific Test File** | `python -m pytest tests/scenarios/test_auth.py`<br>or `python tests/run_tests.py -k test_auth` | Runs only the specified test module or filter. |
 | **Run Single Test by Name** | `python tests/run_tests.py -k "invalid_credentials"` | Filters execution to test cases matching the string pattern. |
 | **View HTML Test Report** | `playwright-report/index.html` | Self-contained HTML report generated automatically after each test run and opened in browser. |
 | **View Pytest Trace Artifacts** | `python -m playwright show-trace <trace.zip>` | Opens trace file in Playwright Trace Viewer. |
