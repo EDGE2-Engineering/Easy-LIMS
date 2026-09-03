@@ -98,3 +98,27 @@ def configure_timeouts(page: Page):
     page.set_default_timeout(20000)
     page.set_default_navigation_timeout(30000)
     yield
+
+
+def get_headless_setting():
+    val = os.getenv("HEADLESS") or os.getenv("headless")
+    if val is not None:
+        v = val.strip().lower()
+        if v in ("true", "1", "yes", "on"):
+            return True
+        elif v in ("false", "0", "no", "off"):
+            return False
+    return None
+
+
+@pytest.fixture(scope="session")
+def browser_type_launch_args(browser_type_launch_args):
+    """
+    Overrides Playwright launch options to respect headless=true/false
+    from the environment configuration file.
+    """
+    launch_args = dict(browser_type_launch_args)
+    headless_setting = get_headless_setting()
+    if headless_setting is not None:
+        launch_args["headless"] = headless_setting
+    return launch_args

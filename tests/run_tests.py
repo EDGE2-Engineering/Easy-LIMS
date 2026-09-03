@@ -174,7 +174,26 @@ def main():
         "--self-contained-html",
     ]
 
-    if args.headed or args.ui:
+    # Check headless setting from environment
+    headless_env = (
+        os.getenv("HEADLESS")
+        or os.getenv("headless")
+        or parsed_env.get("HEADLESS")
+        or parsed_env.get("headless")
+    )
+    headless_setting = None
+    if headless_env is not None:
+        v = headless_env.strip().lower()
+        if v in ("true", "1", "yes", "on"):
+            headless_setting = True
+        elif v in ("false", "0", "no", "off"):
+            headless_setting = False
+
+    if headless_setting is False:
+        pytest_cmd.append("--headed")
+    elif headless_setting is True:
+        pass
+    elif args.headed or args.ui:
         pytest_cmd.append("--headed")
 
     if args.ui:

@@ -37,7 +37,8 @@ ADMIN_USERNAME=superadmin
 ADMIN_PASSWORD=gw123
 MRO_USERNAME=superadmin
 MRO_PASSWORD=gw123
-APP_URL=http://test-easy-lims.onrender.com
+APP_URL=https://test-easy-lims.onrender.com
+HEADLESS=false
 ```
 
 > **Note for LLMs**: Tests in `test_admin.py` and authenticated tests in `test_auth.py` require valid credentials in `test.env`. If credentials are not present, tests will be automatically skipped using `pytest.skip()`.
@@ -71,7 +72,7 @@ python -m playwright install chromium
 | **Run All Tests (Headed Mode)** | `python tests/run_tests.py --headed`<br>or `make test` / `.\make.ps1 test` / `npm test` | Runs tests with visible browser window and opens HTML report on completion. |
 | **Run Tests with Custom `.env` File** | `.\make.ps1 test dev.env`<br>`.\make.ps1 .\dev.env`<br>`make test ENV_FILE=dev.env`<br>`python tests/run_tests.py --env-file dev.env` | Executes tests using the specified environment configuration file instead of `test.env`. |
 | **Run Tests in Interactive / Tracing Mode** | `python tests/run_tests.py --ui`<br>or `make test-ui` / `.\make.ps1 test-ui` / `npm run test:ui` | Runs tests with tracing enabled for debugging. |
-| **Run Specific Test File** | `pytest tests/test_auth.py` | Runs only the specified test module. |
+| **Run Specific Test File** | `python -m pytest tests/test_auth.py`<br>or `python tests/run_tests.py -k test_auth` | Runs only the specified test module or filter. |
 | **Run Single Test by Name** | `python tests/run_tests.py -k "invalid_credentials"` | Filters execution to test cases matching the string pattern. |
 | **View HTML Test Report** | `playwright-report/index.html` | Self-contained HTML report generated automatically after each test run and opened in browser. |
 | **View Pytest Trace Artifacts** | `python -m playwright show-trace <trace.zip>` | Opens trace file in Playwright Trace Viewer. |

@@ -94,7 +94,7 @@ When instructed to add or modify test coverage:
 
 - **Run E2E Tests (Headless)**: `python tests/run_tests.py --e2e` or `make test-e2e` or `.\make.ps1 test-e2e`
 - **Run Headed Tests (Interactive)**: `python tests/run_tests.py --headed` or `make test` or `.\make.ps1 test`
-- **Run Specific File**: `pytest tests/test_admin.py`
+- **Run Specific File**: `python -m pytest tests/test_admin.py` or `python tests/run_tests.py -k "test_admin"`
 - **Run Filtered Test**: `python tests/run_tests.py -k "clients"`
 - **Trace Viewer**: `python -m playwright show-trace <trace.zip>`
 
