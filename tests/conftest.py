@@ -34,12 +34,14 @@ def pytest_configure(config):
 @pytest.fixture(scope="session")
 def base_url(base_url):
     """
-    Returns the base URL for tests.
-    Defaults to APP_URL from env config, then BASE_URL, then http://localhost:3000.
+    Returns the target application URL for tests from APP_URL.
     """
     if base_url:
         return base_url
-    return os.getenv("APP_URL") or os.getenv("BASE_URL") or "http://localhost:3000"
+    app_url = os.getenv("APP_URL")
+    if not app_url:
+        raise pytest.UsageError("APP_URL is not set in the environment file.")
+    return app_url
 
 
 @pytest.fixture(autouse=True)

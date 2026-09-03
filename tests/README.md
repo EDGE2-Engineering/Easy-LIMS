@@ -8,8 +8,7 @@ This document provides instructions, methodology, test inventories, and best pra
 
 Easy-LIMS uses **Python Playwright** with **pytest** (`pytest-playwright`) as its primary End-to-End (E2E) testing framework.
 
-- **Frontend Application**: React / Vite UI running on `http://localhost:3000` (or served via FastAPI).
-- **Backend API**: Python FastAPI server running on `http://localhost:8000`.
+- **Target Application UI**: Configured directly via `APP_URL` in `test.env` (e.g. `http://test-easy-lims.onrender.com`).
 - **Test Framework**: `pytest-playwright` / `playwright` for Python (sync API).
 - **Test Directory**: `tests/` (`test_*.py`).
 - **Test Runner**: `tests/run_tests.py` (CLI wrapper) and `pytest`.
@@ -19,33 +18,26 @@ Easy-LIMS uses **Python Playwright** with **pytest** (`pytest-playwright`) as it
 
 ## 2. Environment Setup & Prerequisites
 
-Before running tests, ensure the Python test environment is configured:
+Before running tests, ensure `test.env` exists with the target application configuration:
 
-### Step 1: Initialize Test Environment File
+### Step 1: Create `test.env` from Example
 If `test.env` does not exist in the root directory, create it from `test.env.example`:
 
 ```bash
 cp test.env.example test.env
 ```
 
-Or run the initialization command:
-
-```bash
-make init-test
-# or on Windows PowerShell:
-.\make.ps1 init-test
-```
+> **Note**: If `test.env` is missing, tests will fail immediately with an informative error prompting you to create it from `test.env.example`.
 
 ### Step 2: Configure Credentials & URLs in `test.env`
-Update `test.env` with valid target credentials:
+Update `test.env` with target credentials and application URL:
 
 ```env
-# Application Base API URL
-API_URL=http://localhost:8000
-
-# Admin Test Credentials
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=your_secure_password
+ADMIN_USERNAME=superadmin
+ADMIN_PASSWORD=gw123
+MRO_USERNAME=superadmin
+MRO_PASSWORD=gw123
+APP_URL=http://test-easy-lims.onrender.com
 ```
 
 > **Note for LLMs**: Tests in `test_admin.py` and authenticated tests in `test_auth.py` require valid credentials in `test.env`. If credentials are not present, tests will be automatically skipped using `pytest.skip()`.

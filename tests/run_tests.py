@@ -2,49 +2,16 @@
 """
 Python Playwright Test Runner for Easy-LIMS.
 Provides a unified CLI for running E2E tests, headed tests, HTML reporting, and UI debugging.
+Uses APP_URL from the configured .env file to access the target UI.
 """
 
 import argparse
 import os
 import subprocess
 import sys
-import time
-import urllib.error
-import urllib.parse
-import urllib.request
 import webbrowser
 from pathlib import Path
 from dotenv import load_dotenv
-
-
-def check_server_available(url: str, timeout: float = 3.0) -> bool:
-    """Checks if the web server URL is responsive."""
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Easy-LIMS-Test-Runner"})
-        with urllib.request.urlopen(req, timeout=timeout) as response:
-            return response.status in (200, 301, 302, 304, 404)
-    except Exception:
-        return False
-
-
-def wait_for_server(url: str, timeout: float = 30.0) -> bool:
-    """Polls until the server is ready or timeout is reached."""
-    start_time = time.time()
-    while time.time() - start_time < timeout:
-        if check_server_available(url, timeout=1.0):
-            return True
-        time.sleep(0.5)
-    return False
-
-
-def is_local_url(url: str) -> bool:
-    """Checks if a URL points to localhost or a local IP."""
-    try:
-        parsed = urllib.parse.urlparse(url)
-        hostname = (parsed.hostname or "").lower()
-        return hostname in ("localhost", "127.0.0.1", "0.0.0.0", "::1")
-    except Exception:
-        return False
 
 
 def main():
@@ -87,7 +54,7 @@ def main():
     parser.add_argument(
         "--base-url",
         default=None,
-        help="Application base URL (defaults to APP_URL in env config, or BASE_URL)",
+        help="Application base URL (defaults to APP_URL in env config)",
     )
     parser.add_argument(
         "--report-dir",
@@ -98,18 +65,6 @@ def main():
         "--show-report",
         action="store_true",
         help="Automatically open the HTML report in the browser after tests finish",
-    )
-    parser.add_argument(
-        "--auto-server",
-        action="store_true",
-        default=True,
-        help="Automatically spawn the dev server if it is local and not running (default: True)",
-    )
-    parser.add_argument(
-        "--no-auto-server",
-        dest="auto_server",
-        action="store_false",
-        help="Do not attempt to start the dev server automatically",
     )
 
     args, unknown_args = parser.parse_known_args()
@@ -132,43 +87,16 @@ def main():
     load_dotenv(dotenv_path=env_file_path, override=True)
     os.environ["TEST_ENV_FILE"] = str(env_file_path)
 
-    # Base URL defaults to APP_URL from env config (e.g. http://test-easy-lims.onrender.com)
-    base_url = (
-        args.base_url
-        or os.getenv("APP_URL")
-        or os.getenv("BASE_URL")
-        or "http://localhost:3000"
-    )
+    # Base URL strictly taken from APP_URL
+    base_url = args.base_url or os.getenv("APP_URL")
+    if not base_url:
+        print(
+            f"\n[ERROR] 'APP_URL' is not defined in '{env_file_path.name}'. Please configure APP_URL to access the UI.\n",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
-    dev_proc = None
-    if is_local_url(base_url):
-        server_ready = check_server_available(base_url)
-        if not server_ready and args.auto_server:
-            print(f"[INFO] Local server at '{base_url}' is not running. Starting UI dev server via 'npm run dev'...", file=sys.stderr)
-            try:
-                dev_proc = subprocess.Popen(
-                    ["npm", "run", "dev"],
-                    cwd=str(project_root),
-                    shell=(os.name == "nt"),
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                )
-                print("[INFO] Waiting for dev server to start...", file=sys.stderr)
-                if wait_for_server(base_url, timeout=25.0):
-                    server_ready = True
-                    print(f"[INFO] UI dev server started and responding at '{base_url}'!", file=sys.stderr)
-                else:
-                    print(f"[WARNING] UI dev server did not respond at '{base_url}' in time.", file=sys.stderr)
-            except Exception as e:
-                print(f"[WARNING] Could not automatically spawn dev server: {e}", file=sys.stderr)
-
-        if not server_ready:
-            print(
-                f"[WARNING] Target server at '{base_url}' is not reachable.",
-                file=sys.stderr,
-            )
-    else:
-        print(f"[INFO] Target remote application URL: {base_url}")
+    print(f"[INFO] Target application UI URL: {base_url}")
 
     # Setup report path
     report_dir = project_root / args.report_dir
@@ -207,14 +135,6 @@ def main():
     except KeyboardInterrupt:
         print("\n[INFO] Tests interrupted by user.", file=sys.stderr)
         exit_code = 130
-    finally:
-        if dev_proc is not None:
-            print("[INFO] Terminating auto-spawned dev server...", file=sys.stderr)
-            dev_proc.terminate()
-            try:
-                dev_proc.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                dev_proc.kill()
 
     # Display report location
     if report_file.exists():
