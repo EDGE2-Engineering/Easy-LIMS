@@ -1,6 +1,22 @@
 param (
-    [string]$Target = "help"
+    [Parameter(Position = 0)]
+    [string]$Target = "help",
+    [Parameter(Position = 1)]
+    [string]$EnvFile = "test.env",
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$ExtraArgs
 )
+
+# Normalize if user typed .\target or ./target
+if ($Target.StartsWith(".\") -or $Target.StartsWith("./")) {
+    $Target = $Target.Substring(2)
+}
+
+# Normalize if user specified an env file as target (e.g. .\make.ps1 test.env or .\make.ps1 dev.env)
+if ($Target.EndsWith(".env") -or (Test-Path $Target -PathType Leaf)) {
+    $EnvFile = $Target
+    $Target = "test"
+}
 
 function Show-Help {
     Write-Host "Available targets:"
@@ -15,9 +31,9 @@ function Show-Help {
     Write-Host "  ./make.ps1 docker-build     - Build Docker image (easy-lims:latest)"
     Write-Host "  ./make.ps1 docker-run       - Build & run Docker container"
     Write-Host "  ./make.ps1 android          - Run Android build/run process"
-    Write-Host "  ./make.ps1 test             - Run E2E tests with Playwright (headed)"
-    Write-Host "  ./make.ps1 test-e2e         - Run E2E tests"
-    Write-Host "  ./make.ps1 test-ui          - Run Playwright tests with UI"
+    Write-Host "  ./make.ps1 test             - Run E2E tests with Python Playwright (headed)"
+    Write-Host "  ./make.ps1 test-e2e         - Run E2E tests with Python Playwright (headless)"
+    Write-Host "  ./make.ps1 test-ui          - Run Python Playwright tests with UI/tracing"
     Write-Host "  ./make.ps1 format           - Format source files with Prettier"
     Write-Host "  ./make.ps1 format-check     - Check formatting without writing"
     Write-Host "  ./make.ps1 setup-hooks      - Install Git hooks"
@@ -104,33 +120,50 @@ function Invoke-Android {
     Pop-Location
 }
 
-function Invoke-InitTest {
-    if (-not (Test-Path test.env)) {
-        if (Test-Path test.env.example) {
-            Copy-Item test.env.example test.env
-        } else {
-            "ADMIN_USERNAME=`nADMIN_PASSWORD=`nAPI_URL=http://localhost:8000" | Out-File -FilePath test.env -Encoding ascii
-        }
+function Get-PythonPath {
+    if (Test-Path "$PSScriptRoot\.venv\Scripts\python.exe") {
+        return "$PSScriptRoot\.venv\Scripts\python.exe"
+    } elseif (Test-Path ".venv\Scripts\python.exe") {
+        return ".venv\Scripts\python.exe"
     }
-    npx playwright install
+    return "python"
+}
+
+function Invoke-InitTest {
+    param ([string]$EnvFile = "test.env")
+    if (-not (Test-Path $EnvFile)) {
+        Write-Error "Error: '$EnvFile' file is missing. Please create '$EnvFile' using example file 'test.env.example'."
+        exit 1
+    }
+    $py = Get-PythonPath
+    Write-Host "Installing Python test dependencies..." -ForegroundColor Green
+    & $py -m pip install -r tests/requirements.txt
+    Write-Host "Installing Playwright chromium browser..." -ForegroundColor Green
+    & $py -m playwright install chromium
 }
 
 function Invoke-Test {
-    Invoke-InitTest
-    npx playwright test --headed
-    npx playwright show-report
+    param ([string]$EnvFile = "test.env")
+    Invoke-InitTest -EnvFile $EnvFile
+    $py = Get-PythonPath
+    Write-Host "Running Playwright tests (headed) via Python with $EnvFile..." -ForegroundColor Green
+    & $py tests/run_tests.py --headed --env-file $EnvFile @ExtraArgs
 }
 
 function Invoke-TestE2E {
-    Invoke-InitTest
-    npm run test:e2e
-    npx playwright show-report
+    param ([string]$EnvFile = "test.env")
+    Invoke-InitTest -EnvFile $EnvFile
+    $py = Get-PythonPath
+    Write-Host "Running Playwright tests (E2E headless) via Python with $EnvFile..." -ForegroundColor Green
+    & $py tests/run_tests.py --e2e --env-file $EnvFile @ExtraArgs
 }
 
 function Invoke-TestUI {
-    Invoke-InitTest
-    npx playwright test --ui
-    npx playwright show-report
+    param ([string]$EnvFile = "test.env")
+    Invoke-InitTest -EnvFile $EnvFile
+    $py = Get-PythonPath
+    Write-Host "Running Playwright tests (UI mode) via Python with $EnvFile..." -ForegroundColor Green
+    & $py tests/run_tests.py --ui --env-file $EnvFile @ExtraArgs
 }
 
 function Invoke-DbDump {
@@ -199,10 +232,10 @@ switch ($Target) {
     "docker-run"       { Invoke-DockerRun }
     "android-install"  { Invoke-AndroidInstall }
     "android"          { Invoke-Android }
-    "init-test"        { Invoke-InitTest }
-    "test"             { Invoke-Test }
-    "test-e2e"         { Invoke-TestE2E }
-    "test-ui"          { Invoke-TestUI }
+    "init-test"        { Invoke-InitTest -EnvFile $EnvFile }
+    "test"             { Invoke-Test -EnvFile $EnvFile }
+    "test-e2e"         { Invoke-TestE2E -EnvFile $EnvFile }
+    "test-ui"          { Invoke-TestUI -EnvFile $EnvFile }
     "db-dump"          { Invoke-DbDump }
     "format"           { Invoke-Format }
     "format-check"     { Invoke-FormatCheck }

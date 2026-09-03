@@ -1,24 +1,25 @@
-# Automated Testing Guide for Easy-LIMS
+# Automated Testing Guide for Easy-LIMS (Python Playwright)
 
-This document provides instructions, methodology, test inventories, and best practices for developers performing automated tests on the **Easy-LIMS** platform.
+This document provides instructions, methodology, test inventories, and best practices for developers performing automated tests on the **Easy-LIMS** platform using Python and Playwright.
 
 ---
 
 ## 1. Test Architecture Overview
 
-Easy-LIMS uses **Playwright** as its primary End-to-End (E2E) testing framework.
+Easy-LIMS uses **Python Playwright** with **pytest** (`pytest-playwright`) as its primary End-to-End (E2E) testing framework.
 
 - **Frontend Application**: React / Vite UI running on `http://localhost:3000` (or served via FastAPI).
 - **Backend API**: Python FastAPI server running on `http://localhost:8000`.
-- **Test Framework**: `@playwright/test` (v1.50+).
-- **Test Directory**: `tests/`
-- **Environment Configuration**: `test.env` (loaded automatically by `playwright.config.js` and individual spec files).
+- **Test Framework**: `pytest-playwright` / `playwright` for Python (sync API).
+- **Test Directory**: `tests/` (`test_*.py`).
+- **Test Runner**: `tests/run_tests.py` (CLI wrapper) and `pytest`.
+- **Environment Configuration**: `test.env` (loaded automatically by `tests/conftest.py`).
 
 ---
 
 ## 2. Environment Setup & Prerequisites
 
-Before running tests, ensure the test environment is configured:
+Before running tests, ensure the Python test environment is configured:
 
 ### Step 1: Initialize Test Environment File
 If `test.env` does not exist in the root directory, create it from `test.env.example`:
@@ -27,10 +28,12 @@ If `test.env` does not exist in the root directory, create it from `test.env.exa
 cp test.env.example test.env
 ```
 
-Or run the Makefile initialization command:
+Or run the initialization command:
 
 ```bash
 make init-test
+# or on Windows PowerShell:
+.\make.ps1 init-test
 ```
 
 ### Step 2: Configure Credentials & URLs in `test.env`
@@ -45,13 +48,14 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD=your_secure_password
 ```
 
-> **Note for LLMs**: Tests in `admin.spec.js` and authenticated tests in `auth.spec.js` require valid credentials in `test.env`. If credentials are not present, tests will be automatically skipped using `test.skip()`.
+> **Note for LLMs**: Tests in `test_admin.py` and authenticated tests in `test_auth.py` require valid credentials in `test.env`. If credentials are not present, tests will be automatically skipped using `pytest.skip()`.
 
-### Step 3: Install Playwright Browsers
-Ensure browser binaries are installed:
+### Step 3: Install Test Dependencies & Playwright Browsers
+Install Python requirements and browser binaries:
 
 ```bash
-npx playwright install
+pip install -r tests/requirements.txt
+python -m playwright install chromium
 ```
 
 ---
@@ -60,23 +64,25 @@ npx playwright install
 
 | Test File | Suite Name | Description | Key Verifications |
 | :--- | :--- | :--- | :--- |
-| [`auth.spec.js`](./auth.spec.js) | **Authentication** | Validates user login behaviors with valid & invalid credentials. | - Invalid credentials error alert (`.bg-red-50`) display.<br>- Successful authentication and navigation away from login page using `ADMIN_USERNAME` & `ADMIN_PASSWORD`. |
-| [`admin.spec.js`](./admin.spec.js) | **Admin User Workflow** | Verifies administrative features, navigation, and dashboard components. | - Operational Dashboard visibility & key metrics ("Active Jobs", "Total Clients").<br>- Jobs management page loading & "New Job" button.<br>- Clients management page loading via Settings & "Add Client" button.<br>- Documents list & "Create Document" button.<br>- System settings user list & user search input (`input[placeholder="Search users..."]`). |
+| [`test_auth.py`](./test_auth.py) | **Authentication** | Validates user login behaviors with valid & invalid credentials. | - Invalid credentials error alert (`.bg-red-50`) display.<br>- Successful authentication and navigation away from login page using `ADMIN_USERNAME` & `ADMIN_PASSWORD`. |
+| [`test_admin.py`](./test_admin.py) | **Admin User Workflow** | Verifies administrative features, navigation, and dashboard components. | - Operational Dashboard visibility & key metrics ("Active Jobs", "Total Clients").<br>- Jobs management page loading & "New Job" button.<br>- Clients management page loading via Settings & "Add Client" button.<br>- Documents list & "Create Document" button.<br>- System settings user list & user search input (`input[placeholder="Search users..."]`). |
 
 ---
 
-## 4. How LLMs Should Execute Tests
+## 4. How LLMs and Developers Should Execute Tests
 
 ### Command Reference
 
 | Goal | Command | Description |
 | :--- | :--- | :--- |
-| **Run All Tests (Headless / E2E)** | `npm run test:e2e`<br>or `make test-e2e` | Runs Playwright tests headlessly in background. Ideal for CI and LLM automated verification. |
-| **Run All Tests (Headed Mode)** | `npm test`<br>or `make test` | Runs tests with visible browser window and opens Playwright HTML report on completion. |
-| **Run Tests in Interactive UI** | `npm run test:ui`<br>or `make test-ui` | Opens Playwright interactive UI runner for interactive debugging. |
-| **Run Specific Test File** | `npx playwright test tests/auth.spec.js` | Runs only the specified test spec file. |
-| **Run Single Test by Name** | `npx playwright test -g "should login successfully"` | Filters execution to test cases matching the string pattern. |
-| **View Test HTML Report** | `npx playwright show-report` | Opens the generated HTML report from `playwright-report/`. |
+| **Run All Tests (Headless / E2E)** | `python tests/run_tests.py --e2e`<br>or `make test-e2e` / `.\make.ps1 test-e2e` / `npm run test:e2e` | Runs Playwright tests headlessly. Auto-starts dev server if not running. Generates HTML report. |
+| **Run All Tests (Headed Mode)** | `python tests/run_tests.py --headed`<br>or `make test` / `.\make.ps1 test` / `npm test` | Runs tests with visible browser window and opens HTML report on completion. |
+| **Run Tests with Custom `.env` File** | `.\make.ps1 test dev.env`<br>`.\make.ps1 .\dev.env`<br>`make test ENV_FILE=dev.env`<br>`python tests/run_tests.py --env-file dev.env` | Executes tests using the specified environment configuration file instead of `test.env`. |
+| **Run Tests in Interactive / Tracing Mode** | `python tests/run_tests.py --ui`<br>or `make test-ui` / `.\make.ps1 test-ui` / `npm run test:ui` | Runs tests with tracing enabled for debugging. |
+| **Run Specific Test File** | `pytest tests/test_auth.py` | Runs only the specified test module. |
+| **Run Single Test by Name** | `python tests/run_tests.py -k "invalid_credentials"` | Filters execution to test cases matching the string pattern. |
+| **View HTML Test Report** | `playwright-report/index.html` | Self-contained HTML report generated automatically after each test run and opened in browser. |
+| **View Pytest Trace Artifacts** | `python -m playwright show-trace <trace.zip>` | Opens trace file in Playwright Trace Viewer. |
 
 ---
 
@@ -86,8 +92,8 @@ When tasked with running, writing, or debugging tests in Easy-LIMS, LLMs must fo
 
 ### 1. Pre-Run Checks
 1. Check if `test.env` exists and contains non-placeholder values for `ADMIN_USERNAME` and `ADMIN_PASSWORD`.
-2. Ensure the dev server is stopped or clean before test execution, or rely on Playwright's automatic `webServer` configuration.
-3. If ports `3000` or `8000` are blocked by stale processes, execute `make stop` before proceeding.
+2. Ensure the dev server is responsive or allow `tests/run_tests.py` to auto-spawn it.
+3. If ports `3000` or `8000` are blocked by stale processes, execute `make stop` or `./make.ps1 stop` before proceeding.
 
 ### 2. Standard Selector Strategy
 - Prefer text-based selectors: `page.locator('button:has-text("...")')` or `page.locator('h1:has-text("...")')`.
@@ -99,29 +105,30 @@ When tasked with running, writing, or debugging tests in Easy-LIMS, LLMs must fo
 ### 3. Handling Asynchronous UI States
 - Easy-LIMS UI components load asynchronously. Always await element state or navigation before asserting UI elements.
 - Wait for loaders to disappear before asserting content visibility:
-  ```js
-  await page.waitForSelector('text=Initializing Admin Dashboard...', { state: 'hidden' });
+  ```python
+  page.wait_for_selector('text=Initializing Admin Dashboard...', state='hidden')
   ```
-- Default action and expect timeouts are configured to `15,000ms` in `playwright.config.js`.
+- Default action and navigation timeouts are configured to `15,000ms` in `tests/conftest.py`.
 
 ### 4. Authoring New Test Suites
 When creating a new test file under `tests/`:
-1. Use standard naming convention: `<feature_name>.spec.js`.
-2. Load environment variables using `dotenv.config({ path: 'test.env' })`.
-3. Wrap test cases inside `test.describe('<Feature Category>', () => { ... })`.
-4. Include credential validation and call `test.skip('No credentials provided in test.env')` if required environment variables are absent.
+1. Use standard naming convention: `test_<feature_name>.py`.
+2. Use Python `playwright.sync_api` types: `Page`, `expect`.
+3. Wrap test cases inside a test class or functions prefixed with `test_`.
+4. Include credential validation and call `pytest.skip('No credentials provided in test.env')` if required environment variables are absent.
 5. Update this `README.md` to document any newly added test suites or scenarios.
 
 ---
 
 ## 6. Troubleshooting & Diagnostics
 
-- **Trace Viewer**: Traces are recorded automatically on first retry. View trace logs using:
+- **Trace Viewer**: Traces can be recorded with `--ui` or `--tracing=on`. View trace logs using:
   ```bash
-  npx playwright show-trace test-results/<test-folder>/trace.zip
+  python -m playwright show-trace <path-to-trace.zip>
   ```
-- **Test Artifacts**: Test artifacts, screenshots, and videos (if enabled) are located in `test-results/` and `playwright-report/`.
 - **Server Shutdown**: To force kill running backend/frontend dev server processes:
   ```bash
   make stop
+  # or
+  .\make.ps1 stop
   ```

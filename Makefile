@@ -1,6 +1,14 @@
 # Makefile for running the project
 
-.PHONY: help install dev preview stop build build-production clean clean-build android android-install format format-check setup-hooks docker-build docker-run
+ifeq ($(OS),Windows_NT)
+    PYTHON ?= $(if $(wildcard .venv/Scripts/python.exe),.venv/Scripts/python.exe,python)
+    PIP ?= $(if $(wildcard .venv/Scripts/pip.exe),.venv/Scripts/pip.exe,pip)
+else
+    PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
+    PIP ?= $(if $(wildcard .venv/bin/pip),.venv/bin/pip,pip3)
+endif
+
+.PHONY: help install dev preview stop build build-production clean clean-build android android-install format format-check setup-hooks docker-build docker-run init-test test test-e2e test-ui
 
 # Default target
 help:
@@ -13,6 +21,9 @@ help:
 	@echo "  make build-production - Build with optimizations (alias for build)"
 	@echo "  make clean            - Remove build artifacts and dependencies"
 	@echo "  make clean-build      - Remove only build artifacts"
+	@echo "  make test             - Run E2E tests (headed) via Python Playwright"
+	@echo "  make test-e2e         - Run E2E tests (headless) via Python Playwright"
+	@echo "  make test-ui          - Run E2E tests (UI/trace mode) via Python Playwright"
 	@echo "  make docker-build     - Build Docker image (easy-lims:latest)"
 	@echo "  make docker-run       - Build & run Docker container"
 	@echo "  make format           - Format source files with Prettier (writes in-place)"
@@ -87,25 +98,23 @@ android: android-install
 	@cd mobile-apps/android && npm run android
 
 
+ENV_FILE ?= test.env
+
 init-test:
-	@if [ ! -f test.env ]; then \
-		printf "username=test\npassword=test\nAPI_URL=http://localhost:8000\n" > test.env; \
-	fi
-	@npx playwright install
-
-
+	@$(PYTHON) -c "import os, sys; sys.exit(0) if os.path.exists('$(ENV_FILE)') else (print(f'[ERROR] \'$(ENV_FILE)\' file is missing. Please create \'$(ENV_FILE)\' using example file \'test.env.example\'.', file=sys.stderr), sys.exit(1))"
+	@echo "Installing Python test dependencies..."
+	@$(PIP) install -r tests/requirements.txt
+	@echo "Installing Playwright browser binaries..."
+	@$(PYTHON) -m playwright install chromium
 
 test: init-test
-	@npx playwright test --headed
-	@npx playwright show-report
+	@$(PYTHON) tests/run_tests.py --headed --env-file $(ENV_FILE)
 
 test-e2e: init-test
-	@npm run test:e2e
-	@npx playwright show-report
+	@$(PYTHON) tests/run_tests.py --e2e --env-file $(ENV_FILE)
 
 test-ui: init-test
-	@npx playwright test --ui
-	@npx playwright show-report
+	@$(PYTHON) tests/run_tests.py --ui --env-file $(ENV_FILE)
 
 
 db-dump:

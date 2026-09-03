@@ -5,9 +5,9 @@
     "dev": "npm --prefix ui run dev",
     "build": "npm --prefix ui run build",
     "preview": "npm --prefix ui run preview",
-    "test": "playwright test --headed",
-    "test:e2e": "playwright test",
-    "test:ui": "playwright test --ui"
+    "test": "python tests/run_tests.py --headed",
+    "test:e2e": "python tests/run_tests.py --e2e",
+    "test:ui": "python tests/run_tests.py --ui"
   },
   "devDependencies": {
     "@playwright/test": "^1.50.0",
