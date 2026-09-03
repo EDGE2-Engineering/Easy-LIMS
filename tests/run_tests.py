@@ -14,6 +14,48 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
+def load_env_file_robustly(env_file_path: Path) -> dict:
+    """
+    Robustly loads environment variables from a file into os.environ.
+    Handles UTF-8, UTF-8 with BOM, UTF-16 LE/BE, and Latin-1 encodings,
+    as well as stripping quotes, trailing carriage returns, and whitespace.
+    """
+    parsed = {}
+    content = ""
+
+    # Try reading with multiple encodings
+    for encoding in ("utf-8-sig", "utf-8", "utf-16", "utf-16-le", "utf-16-be", "cp1252", "latin-1"):
+        try:
+            with open(env_file_path, "r", encoding=encoding) as f:
+                text = f.read()
+                if "\x00" not in text:
+                    content = text
+                    break
+        except Exception:
+            continue
+
+    for line in content.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" in line:
+            key, val = line.split("=", 1)
+            key = key.strip().lstrip("\ufeff\xef\xbb\xbf")
+            val = val.strip().strip("\r\n")
+            if len(val) >= 2 and ((val[0] == '"' and val[-1] == '"') or (val[0] == "'" and val[-1] == "'")):
+                val = val[1:-1]
+            if key:
+                parsed[key] = val
+                os.environ[key] = val
+
+    try:
+        load_dotenv(dotenv_path=env_file_path, override=True)
+    except Exception:
+        pass
+
+    return parsed
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Easy-LIMS Playwright Python Test Runner",
@@ -84,16 +126,33 @@ def main():
         sys.exit(1)
 
     print(f"[INFO] Using environment file: {env_file_path}")
-    load_dotenv(dotenv_path=env_file_path, override=True)
+    parsed_env = load_env_file_robustly(env_file_path)
     os.environ["TEST_ENV_FILE"] = str(env_file_path)
 
-    # Base URL strictly taken from APP_URL
-    base_url = args.base_url or os.getenv("APP_URL")
+    # Base URL: check APP_URL, case-insensitive, or fallback to BASE_URL / API_URL
+    base_url = (
+        args.base_url
+        or os.getenv("APP_URL")
+        or os.getenv("app_url")
+        or parsed_env.get("APP_URL")
+        or parsed_env.get("app_url")
+        or os.getenv("BASE_URL")
+        or parsed_env.get("BASE_URL")
+        or os.getenv("API_URL")
+        or parsed_env.get("API_URL")
+    )
+
     if not base_url:
+        found_keys = list(parsed_env.keys())
         print(
-            f"\n[ERROR] 'APP_URL' is not defined in '{env_file_path.name}'. Please configure APP_URL to access the UI.\n",
+            f"\n[ERROR] 'APP_URL' is not defined in '{env_file_path.name}'.",
             file=sys.stderr,
         )
+        if found_keys:
+            print(f"[DEBUG] Keys found in '{env_file_path.name}': {found_keys}", file=sys.stderr)
+        else:
+            print(f"[DEBUG] No environment variables could be parsed from '{env_file_path.name}' (file may be empty or use unsupported encoding).", file=sys.stderr)
+        print("Please configure APP_URL to access the UI (e.g. APP_URL=http://test-easy-lims.onrender.com).\n", file=sys.stderr)
         sys.exit(1)
 
     print(f"[INFO] Target application UI URL: {base_url}")
