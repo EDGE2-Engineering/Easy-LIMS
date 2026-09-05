@@ -191,7 +191,7 @@ const NewQuotationPage = () => {
   const navigate = useNavigate();
   const [savedRecordId, setSavedRecordId] = useState(pathId || searchParams.get('id') || null);
   const [loadedDocumentType, setLoadedDocumentType] = useState(null);
-  const [isLoadingDoc, setIsLoadingDoc] = useState(!!(pathId || searchParams.get('id')));
+  const [isLoadingDoc, setIsLoadingDoc] = useState(!!(pathId || searchParams.get('id') || searchParams.get('jobId')));
   const [isSavingRecord, setIsSavingRecord] = useState(false);
   const [lastSavedData, setLastSavedData] = useState(null);
   const [currentVersion, setCurrentVersion] = useState(1);
@@ -728,6 +728,7 @@ const NewQuotationPage = () => {
     const docType = searchParams.get('type') || 'Quotation';
     if (jobId && !savedRecordId && clients.length > 0) {
       const loadJobDetails = async () => {
+        setIsLoadingDoc(true);
         try {
           // Check if a document of this type already exists for this job
           const { data: existingDoc } = await apiClient
@@ -756,16 +757,27 @@ const NewQuotationPage = () => {
           if (error) throw error;
 
           if (data) {
-            const client = data.clients;
-            const contacts = client?.contacts || [];
+            // The /api/jobs/{id} endpoint returns client_name as a flat field,
+            // not a nested clients object. Look up the full client from the
+            // already-loaded clients context using client_id.
+            const client = data.client_id
+              ? clients.find((c) => c.id === data.client_id || c.id === Number(data.client_id))
+              : null;
+            // Parse contacts robustly (may be JSON string from raw API)
+            let rawContacts = client?.contacts || [];
+            if (typeof rawContacts === 'string') {
+              try { rawContacts = JSON.parse(rawContacts); } catch (e) { rawContacts = []; }
+            }
+            const contacts = Array.isArray(rawContacts) ? rawContacts : [];
             const primaryContact = contacts.find((con) => con.is_primary) || contacts[0] || {};
             const primaryIdx = contacts.findIndex((con) => con.is_primary);
 
             setQuoteDetails((prev) => {
               const newDetails = {
                 ...prev,
-                clientName: client?.client_name || '',
-                clientAddress: client?.client_address || '',
+                clientName: client?.clientName || client?.client_name || data.client_name || '',
+                clientAddress: client?.clientAddress || client?.client_address || '',
+                gstin: client?.gstin || '',
                 projectName: data.project_name || '',
                 projectAddress: data.project_address || '',
                 email: primaryContact.contact_email || client?.email || '',
@@ -797,8 +809,9 @@ const NewQuotationPage = () => {
               return newDetails;
             });
 
-            if (client?.client_name) {
-              setClientNameSelection(client.client_name);
+            const resolvedClientName = client?.clientName || client?.client_name || data.client_name || '';
+            if (resolvedClientName) {
+              setClientNameSelection(resolvedClientName);
               if (primaryIdx >= 0) {
                 setContactSelectionIdx(primaryIdx.toString());
               } else if (contacts.length > 0) {
@@ -808,6 +821,8 @@ const NewQuotationPage = () => {
           }
         } catch (err) {
           console.error('Error loading job details for pre-fill:', err);
+        } finally {
+          setIsLoadingDoc(false);
         }
       };
       loadJobDetails();
@@ -2191,7 +2206,9 @@ const NewQuotationPage = () => {
       {isLoadingDoc && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
           <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
-          <p className="text-sm font-medium text-gray-500">Loading document…</p>
+          <p className="text-sm font-medium text-gray-500">
+            {searchParams.get('jobId') && !savedRecordId ? 'Loading job details…' : 'Loading document…'}
+          </p>
         </div>
       )}
       <div className="shrink-0">
@@ -2403,7 +2420,7 @@ const NewQuotationPage = () => {
                 <div>
                   <Label>Client Name</Label>
                   <ReactSelect
-                    isDisabled={isReadOnly}
+                    isDisabled={isReadOnly || !!linkedJobId}
                     value={
                       clientNameSelection
                         ? CLIENT_OPTIONS.find((o) => o.value === clientNameSelection) || null
@@ -2468,8 +2485,8 @@ const NewQuotationPage = () => {
                     }}
                     options={CLIENT_OPTIONS}
                     placeholder="Search client..."
-                    isSearchable
-                    isClearable
+                    isSearchable={!linkedJobId}
+                    isClearable={!linkedJobId}
                     classNamePrefix="react-select"
                     styles={themedReactSelectStyles({ borderRadius: '0.75rem' })}
                   />
@@ -2512,7 +2529,7 @@ const NewQuotationPage = () => {
                                 });
                               }
                             }}
-                            disabled={isReadOnly}
+                            disabled={isReadOnly || !!linkedJobId}
                           >
                             <SelectTrigger
                               className={cn(

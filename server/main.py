@@ -222,6 +222,7 @@ async def startup():
                         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                     );
+                    ALTER TABLE job_tests ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
                     CREATE INDEX IF NOT EXISTS idx_job_tests_job_id ON job_tests(job_id);
 
                     CREATE TABLE IF NOT EXISTS technician_capabilities (
@@ -342,6 +343,17 @@ def coerce_value(val: Any, type_name: str) -> Any:
                     return datetime.date.fromisoformat(val)
                 except Exception:
                     pass
+    elif type_name in ('time', 'time without time zone', 'timetz', 'time with time zone'):
+        if isinstance(val, str):
+            try:
+                parts = val.split(':')
+                if len(parts) >= 2:
+                    h = int(parts[0])
+                    m = int(parts[1])
+                    s = int(parts[2].split('.')[0]) if len(parts) > 2 else 0
+                    return datetime.time(h, m, s)
+            except Exception:
+                pass
     elif type_name in ('int2', 'int4', 'int8', 'integer', 'bigint', 'smallint'):
         if isinstance(val, (str, float)):
             try:
@@ -366,7 +378,7 @@ def coerce_value(val: Any, type_name: str) -> Any:
 def sanitize_db_val(v: Any) -> Any:
     if isinstance(v, Decimal):
         return float(v)
-    if isinstance(v, (datetime.date, datetime.datetime)):
+    if isinstance(v, (datetime.date, datetime.datetime, datetime.time)):
         return v.isoformat()
     if isinstance(v, uuid.UUID):
         return str(v)
@@ -404,7 +416,7 @@ async def fetch_with_coerced_params(conn, query: str, params: list):
 # ============================================================================
 
 class DocumentCreate(BaseModel):
-    quote_number: str
+    quote_number: Optional[str] = None
     document_type: str
     content: Any
     created_by: int
@@ -466,6 +478,43 @@ def parse_str_list(val: Optional[Any]) -> List[str]:
             res.extend(parse_str_list(x))
         return res
     return []
+
+def parse_date_val(val: Any) -> Optional[datetime.date]:
+    if not val:
+        return datetime.date.today()
+    if isinstance(val, datetime.date):
+        return val
+    if isinstance(val, datetime.datetime):
+        return val.date()
+    if isinstance(val, str):
+        val_clean = val.strip()
+        if not val_clean:
+            return datetime.date.today()
+        try:
+            return datetime.date.fromisoformat(val_clean.split('T')[0].split(' ')[0])
+        except Exception:
+            return datetime.date.today()
+    return datetime.date.today()
+
+def parse_time_val(val: Any) -> Optional[datetime.time]:
+    if not val:
+        return datetime.datetime.now().time().replace(microsecond=0)
+    if isinstance(val, datetime.time):
+        return val
+    if isinstance(val, str):
+        val_clean = val.strip()
+        if not val_clean:
+            return datetime.datetime.now().time().replace(microsecond=0)
+        try:
+            parts = val_clean.split(':')
+            if len(parts) >= 2:
+                h = int(parts[0])
+                m = int(parts[1])
+                s = int(parts[2].split('.')[0]) if len(parts) > 2 else 0
+                return datetime.time(h, m, s)
+        except Exception:
+            return datetime.datetime.now().time().replace(microsecond=0)
+    return datetime.datetime.now().time().replace(microsecond=0)
 
 @app.get("/api/documents", tags=["Documents"], summary="List, search & filter documents with pagination")
 async def list_documents(
@@ -1217,19 +1266,29 @@ class MaterialSampleCreateReq(BaseModel):
     inward_id: int
     sample_code: str
     sample_name: Optional[str] = None
-    quantity: Optional[str] = None
+    sample_description: Optional[str] = None
+    material_type: Optional[Any] = None
+    quantity: Optional[Any] = None
     status: Optional[str] = "RECEIVED"
+    received_date: Optional[Any] = None
+    received_time: Optional[Any] = None
     received_by: Optional[int] = None
     collection_center_id: Optional[int] = None
+    expected_test_days: Optional[int] = 7
     remarks: Optional[str] = None
 
 class MaterialSampleUpdateReq(BaseModel):
     sample_code: Optional[str] = None
     sample_name: Optional[str] = None
-    quantity: Optional[str] = None
+    sample_description: Optional[str] = None
+    material_type: Optional[Any] = None
+    quantity: Optional[Any] = None
     status: Optional[str] = None
+    received_date: Optional[Any] = None
+    received_time: Optional[Any] = None
     received_by: Optional[int] = None
     collection_center_id: Optional[int] = None
+    expected_test_days: Optional[int] = None
     remarks: Optional[str] = None
 
 @app.get("/api/job-technicians", tags=["Jobs"], summary="Get job technicians assignments")
@@ -1480,6 +1539,8 @@ class JobTestCreate(BaseModel):
     results: Optional[Any] = None
     status: Optional[str] = "IN_PROGRESS"
     assigned_technician_id: Optional[int] = None
+    remarks: Optional[str] = None
+    updated_at: Optional[Any] = None
 
 class JobTestUpdate(BaseModel):
     job_id: Optional[int] = None
@@ -1487,6 +1548,8 @@ class JobTestUpdate(BaseModel):
     results: Optional[Any] = None
     status: Optional[str] = None
     assigned_technician_id: Optional[int] = None
+    remarks: Optional[str] = None
+    updated_at: Optional[Any] = None
 
 @app.get("/api/job-tests", tags=["Job Tests"], summary="List and filter job tests")
 async def list_job_tests(
@@ -1558,19 +1621,25 @@ async def create_job_test(jt: JobTestCreate):
         raise HTTPException(status_code=500, detail="Database not connected")
     results_str = format_content(jt.results) if jt.results is not None else "{}"
     query = """
-        INSERT INTO job_tests (job_id, category, results, status, assigned_technician_id, created_at, updated_at)
-        VALUES ($1, $2, $3::jsonb, $4, $5, NOW(), NOW()) RETURNING *
+        INSERT INTO job_tests (job_id, category, results, status, assigned_technician_id, remarks, created_at, updated_at)
+        VALUES ($1, $2, $3::jsonb, $4, $5, $6, NOW(), NOW()) RETURNING *
     """
     async with db_pool.acquire() as conn:
-        rows = await fetch_with_coerced_params(conn, query, [jt.job_id, jt.category, results_str, jt.status or "IN_PROGRESS", jt.assigned_technician_id])
-        return dict(rows[0])
+        rows = await fetch_with_coerced_params(conn, query, [jt.job_id, jt.category, results_str, jt.status or "IN_PROGRESS", jt.assigned_technician_id, jt.remarks])
+        doc = dict(rows[0])
+        if isinstance(doc.get("results"), str):
+            try: doc["results"] = json.loads(doc["results"])
+            except Exception: pass
+        return doc
 
 @app.put("/api/job-tests/{test_id}", tags=["Job Tests"], summary="Update job test entry")
 async def update_job_test(test_id: int, payload: JobTestUpdate):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
     fields, params = [], []
-    for k, v in payload.model_dump(exclude_unset=True).items():
+    data = payload.model_dump(exclude_unset=True)
+    data.pop("updated_at", None)
+    for k, v in data.items():
         if v is not None:
             if k == "results":
                 params.append(format_content(v))
@@ -1587,7 +1656,11 @@ async def update_job_test(test_id: int, payload: JobTestUpdate):
         rows = await fetch_with_coerced_params(conn, query, params)
         if not rows:
             raise HTTPException(status_code=404, detail="Job test not found")
-        return dict(rows[0])
+        doc = dict(rows[0])
+        if isinstance(doc.get("results"), str):
+            try: doc["results"] = json.loads(doc["results"])
+            except Exception: pass
+        return doc
 
 @app.delete("/api/job-tests/{test_id}", tags=["Job Tests"], summary="Delete job test entry")
 async def delete_job_test(test_id: int):
@@ -1652,12 +1725,18 @@ async def create_technician_capability(tc: TechnicianCapabilityCreate):
         return dict(rows[0])
 
 @app.get("/api/material-samples", tags=["Material Inward"], summary="Get material samples")
-async def list_material_samples(inward_id: Optional[str] = None):
+async def list_material_samples(inward_id: Optional[str] = None, id: Optional[str] = None):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
     async with db_pool.acquire() as conn:
-        if inward_id:
-            ids = [int(i.strip()) for i in inward_id.split(",") if i.strip().isdigit()]
+        if id:
+            ids = parse_id_list(id)
+            if ids:
+                rows = await fetch_with_coerced_params(conn, "SELECT * FROM material_samples WHERE id = ANY($1::int[]) ORDER BY id ASC", [ids])
+            else:
+                rows = []
+        elif inward_id:
+            ids = parse_id_list(inward_id)
             if ids:
                 rows = await fetch_with_coerced_params(conn, "SELECT * FROM material_samples WHERE inward_id = ANY($1::int[]) ORDER BY id ASC", [ids])
             else:
@@ -1670,12 +1749,46 @@ async def list_material_samples(inward_id: Optional[str] = None):
 async def create_material_sample(s: MaterialSampleCreateReq):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
+
+    mat_type = None
+    if s.material_type is not None:
+        val_str = str(s.material_type).strip()
+        if val_str.isdigit():
+            mat_type = int(val_str)
+        elif val_str:
+            async with db_pool.acquire() as conn:
+                m_rows = await conn.fetch("SELECT id FROM materials WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) LIMIT 1", val_str)
+                if m_rows:
+                    mat_type = m_rows[0]['id']
+
+    desc = s.sample_description or s.sample_name or s.remarks or ""
+    qty = 0.0
+    if s.quantity is not None:
+        try:
+            qty = float(s.quantity)
+        except (ValueError, TypeError):
+            qty = 0.0
+
+    rec_date = parse_date_val(s.received_date)
+    rec_time = parse_time_val(s.received_time)
+    test_days = int(s.expected_test_days) if (s.expected_test_days is not None and str(s.expected_test_days).isdigit()) else 7
+
     query = """
-        INSERT INTO material_samples (inward_id, sample_code, sample_name, quantity, status, received_by, collection_center_id, remarks, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *
+        INSERT INTO material_samples (
+            inward_id, sample_code, sample_description, material_type,
+            quantity, status, received_date, received_time,
+            received_by, collection_center_id, expected_test_days,
+            created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+        RETURNING *
     """
     async with db_pool.acquire() as conn:
-        rows = await fetch_with_coerced_params(conn, query, [s.inward_id, s.sample_code, s.sample_name, s.quantity, s.status, s.received_by, s.collection_center_id, s.remarks])
+        rows = await fetch_with_coerced_params(conn, query, [
+            s.inward_id, s.sample_code, desc, mat_type,
+            qty, s.status or "RECEIVED", rec_date, rec_time,
+            s.received_by, s.collection_center_id, test_days
+        ])
         return dict(rows[0])
 
 @app.put("/api/material-samples/{sample_id}", tags=["Material Inward"], summary="Update material sample")
@@ -1683,12 +1796,51 @@ async def update_material_sample(sample_id: int, payload: MaterialSampleUpdateRe
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
     fields, params = [], []
-    for k, v in payload.model_dump(exclude_unset=True).items():
-        if v is not None:
-            params.append(v)
-            fields.append(f"{k} = ${len(params)}")
+    data = payload.model_dump(exclude_unset=True)
+
+    if "sample_description" not in data and ("sample_name" in data or "remarks" in data):
+        data["sample_description"] = data.pop("sample_name", None) or data.pop("remarks", None)
+    else:
+        data.pop("sample_name", None)
+        data.pop("remarks", None)
+
+    if "material_type" in data:
+        mv = data["material_type"]
+        if mv is not None and str(mv).strip().isdigit():
+            data["material_type"] = int(str(mv).strip())
+        elif mv:
+            async with db_pool.acquire() as conn:
+                m_rows = await conn.fetch("SELECT id FROM materials WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) LIMIT 1", str(mv).strip())
+                data["material_type"] = m_rows[0]['id'] if m_rows else None
+        else:
+            data["material_type"] = None
+
+    if "quantity" in data and data["quantity"] is not None:
+        try:
+            data["quantity"] = float(data["quantity"])
+        except (ValueError, TypeError):
+            pass
+
+    if "received_date" in data and data["received_date"] is not None:
+        data["received_date"] = parse_date_val(data["received_date"])
+
+    if "received_time" in data and data["received_time"] is not None:
+        data["received_time"] = parse_time_val(data["received_time"])
+
+    if "expected_test_days" in data and data["expected_test_days"] is not None:
+        try:
+            data["expected_test_days"] = int(data["expected_test_days"])
+        except (ValueError, TypeError):
+            data["expected_test_days"] = 7
+
+    for k, v in data.items():
+        params.append(v)
+        fields.append(f"{k} = ${len(params)}")
+
     if not fields:
         raise HTTPException(status_code=400, detail="No fields to update")
+
+    fields.append("updated_at = NOW()")
     params.append(sample_id)
     query = f"UPDATE material_samples SET {', '.join(fields)} WHERE id = ${len(params)} RETURNING *"
     async with db_pool.acquire() as conn:
@@ -1706,6 +1858,27 @@ async def delete_material_sample(sample_id: int):
         if not rows:
             raise HTTPException(status_code=404, detail="Material sample not found")
         return {"message": "Sample deleted", "id": sample_id}
+
+@app.delete("/api/material-samples", tags=["Material Inward"], summary="Delete material samples by filter")
+async def delete_material_samples_by_filter(inward_id: Optional[str] = None, id: Optional[str] = None):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    if not inward_id and not id:
+        raise HTTPException(status_code=400, detail="inward_id or id is required")
+    async with db_pool.acquire() as conn:
+        if id:
+            parsed_id = parse_id_list(id)
+            if len(parsed_id) == 1:
+                await conn.execute("DELETE FROM material_samples WHERE id = $1", parsed_id[0])
+            elif len(parsed_id) > 1:
+                await conn.execute("DELETE FROM material_samples WHERE id = ANY($1::int[])", parsed_id)
+        if inward_id:
+            parsed_inward = parse_id_list(inward_id)
+            if len(parsed_inward) == 1:
+                await conn.execute("DELETE FROM material_samples WHERE inward_id = $1", parsed_inward[0])
+            elif len(parsed_inward) > 1:
+                await conn.execute("DELETE FROM material_samples WHERE inward_id = ANY($1::int[])", parsed_inward)
+        return {"message": "Material samples deleted"}
 
 # ============================================================================
 # Dedicated Expenses REST API Endpoints

@@ -51,7 +51,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
-const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
+const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess }) => {
   const [records, setRecords] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,8 +75,31 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
   const { materials } = useMaterials();
 
   // Management State (Consistent with AdminServicesManager)
-  const [editingRecord, setEditingRecord] = useState(null);
-  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [editingRecord, setEditingRecord] = useState(() => {
+    if (initialJobId) {
+      return {
+        job_order_no: '',
+        po_wo_number: initialJob?.work_order_id || '',
+        client_id: initialJob?.client_id ? String(initialJob.client_id) : '',
+        job_id: initialJobId,
+        samples: [
+          {
+            sample_code: '',
+            material_type: '',
+            sample_description: '',
+            quantity: '',
+            received_date: format(new Date(), 'yyyy-MM-dd'),
+            received_time: format(new Date(), 'HH:mm'),
+            received_by: user?.id || '',
+            collection_center_id: '',
+            expected_test_days: 7,
+          },
+        ],
+      };
+    }
+    return null;
+  });
+  const [isAddingNew, setIsAddingNew] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [inwardOption, setInwardOption] = useState('add_samples');
   const [showNoSamplesConfirm, setShowNoSamplesConfirm] = useState(false);
@@ -153,14 +176,17 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
   };
 
   useEffect(() => {
-    fetchRecords();
+    if (!initialJobId) {
+      fetchRecords();
+    }
     fetchClients();
     fetchUsers();
     fetchCollectionCenters();
-  }, []);
+  }, [initialJobId]);
 
   useEffect(() => {
     if (initialJobId) {
+      let isMounted = true;
       const checkExistingOrAddNew = async (jobId) => {
         setLoading(true);
         try {
@@ -172,34 +198,61 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
             .order('created_at', { ascending: false })
             .limit(1);
 
+          if (!isMounted) return;
+
           const existing =
             existingRecords && existingRecords.length > 0 ? existingRecords[0] : null;
 
           if (!fetchError && existing) {
-            // Enter EDIT mode for existing record
-            await handleEdit(existing);
+            // Fetch samples for existing record
+            const { data: samples, error: samplesError } = await apiClient
+              .from('material_samples')
+              .select('*')
+              .eq('inward_id', existing.id);
+
+            if (samplesError) throw samplesError;
+            if (!isMounted) return;
+
+            setEditingRecord({
+              ...existing,
+              client_id: existing.client_id ? String(existing.client_id) : '',
+              samples:
+                samples?.map((s) => ({
+                  ...s,
+                  material_type: s.material_type || '',
+                  sample_description: s.sample_description || '',
+                  received_date: safeFormatDate(s.received_date, 'yyyy-MM-dd', format(new Date(), 'yyyy-MM-dd')),
+                  received_by: s.received_by || user?.id,
+                })) || [],
+            });
+            setIsAddingNew(false);
             return;
           }
 
           // 2. If not, create a new one based on job details
-          const { data: rawJob, error } = await apiClient
-            .from('jobs')
-            .select('*')
-            .eq('id', jobId)
-            .single();
-          if (error) throw error;
+          let job = initialJob;
+          if (!job || !job.client_id) {
+            const { data: rawJob, error } = await apiClient
+              .from('jobs')
+              .select('*')
+              .eq('id', jobId)
+              .single();
+            if (error) throw error;
+            job = rawJob;
+          }
 
-          let job = rawJob;
-          if (job && job.client_id) {
+          if (job && job.client_id && !job.clients) {
             const { data: cData } = await apiClient.from('clients').select('*').eq('id', job.client_id).maybeSingle();
             if (cData) job = { ...job, clients: cData };
           }
 
+          if (!isMounted) return;
+
           setEditingRecord({
             job_order_no: '',
-            po_wo_number: job.work_order_id || '',
-            client_id: job.client_id,
-            job_id: job.id,
+            po_wo_number: job?.work_order_id || '',
+            client_id: job?.client_id ? String(job.client_id) : '',
+            job_id: job?.id || jobId,
             samples: [
               {
                 sample_code: '',
@@ -208,7 +261,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
                 quantity: '',
                 received_date: format(new Date(), 'yyyy-MM-dd'),
                 received_time: format(new Date(), 'HH:mm'),
-                received_by: user.id || '',
+                received_by: user?.id || '',
                 collection_center_id: '',
                 expected_test_days: 7,
               },
@@ -217,16 +270,24 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
           setIsAddingNew(true);
         } catch (error) {
           console.error('Error in inward check:', error);
-          toast({
-            title: 'Error',
-            description: 'Failed to load/check inward details.',
-            variant: 'destructive',
-          });
+          if (isMounted) {
+            toast({
+              title: 'Error',
+              description: 'Failed to load/check inward details.',
+              variant: 'destructive',
+            });
+          }
         } finally {
-          setLoading(false);
+          if (isMounted) {
+            setLoading(false);
+          }
         }
       };
       checkExistingOrAddNew(initialJobId);
+
+      return () => {
+        isMounted = false;
+      };
     }
   }, [initialJobId]);
 
@@ -539,8 +600,10 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
         }
       }
 
-      // Refresh the list immediately
-      await fetchRecords();
+      // Refresh the list immediately if not in modal mode
+      if (!initialJobId) {
+        await fetchRecords();
+      }
 
       if (onSuccess) {
         onSuccess();
@@ -678,7 +741,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
     setCurrentPage(1);
   };
 
-  if (loading && records.length === 0) {
+  if (!initialJobId && loading && records.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
@@ -690,43 +753,68 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
   // --- RENDERING EDIT FORM (Consistent with AdminServicesManager) ---
   if (editingRecord) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm animate-in slide-in-from-right-4 duration-300">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => (onClose ? onClose() : setEditingRecord(null))}
-              className="rounded-full"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-400" />
-            </Button>
-            <h2 className="text-xl font-bold">
-              {isAddingNew ? 'Add New Material Inward Entry' : 'Edit Material Inward Entry'}
-            </h2>
+      <div className="relative bg-white p-6 rounded-lg shadow-sm animate-in slide-in-from-right-4 duration-300 min-h-[450px]">
+        {/* Loading / Saving Blocking Overlay */}
+        {(loading || isSaving) && (
+          <div className="absolute inset-0 z-50 bg-white/75 backdrop-blur-[2px] rounded-lg flex flex-col items-center justify-center transition-all duration-200">
+            <div className="flex flex-col items-center p-6 bg-white/95 border border-gray-100 shadow-xl rounded-2xl max-w-sm text-center">
+              <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
+              <p className="text-base font-semibold text-gray-800">
+                {isSaving ? 'Saving Material Inward Entry...' : 'Loading Material Samples...'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {isSaving
+                  ? 'Updating records and workflow state...'
+                  : 'Retrieving sample details and specifications...'}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => (onClose ? onClose() : setEditingRecord(null))}
-              disabled={isSaving}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              className="bg-primary hover:bg-primary-dark flex items-center text-white px-6"
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
-              )}
-              {isSaving ? 'Saving...' : isAddingNew ? 'Create Inward Entry' : 'Save'}
-            </Button>
+        )}
+
+        <div
+          className={`transition-all duration-200 ${
+            loading || isSaving
+              ? 'opacity-30 pointer-events-none select-none filter blur-[0.5px]'
+              : 'opacity-100'
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => (onClose ? onClose() : setEditingRecord(null))}
+                className="rounded-full"
+                disabled={loading || isSaving}
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-400" />
+              </Button>
+              <h2 className="text-xl font-bold">
+                {isAddingNew ? 'Add New Material Inward Entry' : 'Edit Material Inward Entry'}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => (onClose ? onClose() : setEditingRecord(null))}
+                disabled={isSaving || loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                className="bg-primary hover:bg-primary-dark flex items-center text-white px-6"
+                disabled={isSaving || loading}
+              >
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
+                {isSaving ? 'Saving...' : isAddingNew ? 'Create Inward Entry' : 'Save'}
+              </Button>
+            </div>
           </div>
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-4">
           <div className="space-y-2">
@@ -994,6 +1082,7 @@ const MaterialInwardManager = ({ initialJobId, onClose, onSuccess }) => {
             </div>
           </div>
         )}
+        </div>
       </div>
     );
   }

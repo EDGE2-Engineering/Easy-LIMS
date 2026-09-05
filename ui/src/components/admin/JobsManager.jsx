@@ -1337,7 +1337,8 @@ const JobsManager = ({ id }) => {
                   <DialogTitle>Material Samples Input</DialogTitle>
                 </DialogHeader>
                 <MaterialInwardManager
-                  initialJobId={editingRecord.id}
+                  initialJobId={editingRecord?.id}
+                  initialJob={editingRecord}
                   onClose={() => setShowingMaterialForm(false)}
                   onSuccess={() => {
                     setShowingMaterialForm(false);
