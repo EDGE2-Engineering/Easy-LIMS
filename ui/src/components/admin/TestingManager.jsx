@@ -213,6 +213,92 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
   const handleSaveResults = async (category) => {
     setIsSaving(true);
     try {
+      // Validate Geotechnical borehole depth matches maximum depth of exploration
+      const geotechData = testResults[category]?.GeotechData;
+      if (geotechData?.boreholeLogs?.length > 0) {
+        for (let bIndex = 0; bIndex < geotechData.boreholeLogs.length; bIndex++) {
+          const logs = geotechData.boreholeLogs[bIndex] || [];
+          if (logs.length === 0) continue;
+          const finalRow = logs[logs.length - 1];
+          const finalToRaw = finalRow?.toDepth;
+          const maxDepthRaw = geotechData.maxDepths?.[bIndex];
+
+          const hasFinalTo =
+            finalToRaw !== '' &&
+            finalToRaw !== null &&
+            finalToRaw !== undefined &&
+            !isNaN(parseFloat(finalToRaw));
+          const hasMaxDepth =
+            maxDepthRaw !== '' &&
+            maxDepthRaw !== null &&
+            maxDepthRaw !== undefined &&
+            !isNaN(parseFloat(maxDepthRaw));
+
+          if (hasFinalTo || hasMaxDepth) {
+            const finalToNum = hasFinalTo ? parseFloat(finalToRaw) : null;
+            const maxDepthNum = hasMaxDepth ? parseFloat(maxDepthRaw) : null;
+
+            if (
+              finalToNum === null ||
+              maxDepthNum === null ||
+              Math.abs(finalToNum - maxDepthNum) > 0.0001
+            ) {
+              const bhName = `BH - ${bIndex + 1}`;
+              const errorDesc =
+                finalToNum === null
+                  ? `${bhName}: Maximum Depth of Exploration is ${maxDepthRaw} m, but final row "To (m)" has not been entered. Both values must match.`
+                  : maxDepthNum === null
+                  ? `${bhName}: Final row "To (m)" is ${finalToRaw} m, but Maximum Depth of Exploration has not been entered. Both values must match.`
+                  : `${bhName}: Final row "To (m)" (${finalToRaw} m) does not match Maximum Depth of Exploration (${maxDepthRaw} m).`;
+
+              toast({
+                title: 'Borehole Depth Mismatch Warning',
+                description: `${errorDesc} Please ensure both values match before saving results.`,
+                variant: 'destructive',
+              });
+              setIsSaving(false);
+              return false;
+            }
+          }
+
+          // Validate mandatory Core sampling fields (CR % and RQD %)
+          for (let rIndex = 0; rIndex < logs.length; rIndex++) {
+            const row = logs[rIndex];
+            if (row?.natureOfSampling === 'Core') {
+              const isCrEmpty =
+                row.coreRecovery === '' ||
+                row.coreRecovery === null ||
+                row.coreRecovery === undefined ||
+                (typeof row.coreRecovery === 'string' && row.coreRecovery.trim() === '') ||
+                isNaN(parseFloat(row.coreRecovery));
+
+              const isRqdEmpty =
+                row.rqd === '' ||
+                row.rqd === null ||
+                row.rqd === undefined ||
+                (typeof row.rqd === 'string' && row.rqd.trim() === '') ||
+                isNaN(parseFloat(row.rqd));
+
+              if (isCrEmpty || isRqdEmpty) {
+                const bhName = `BH - ${bIndex + 1}`;
+                const rowDepth = `depth ${row.fromDepth || '0'} - ${row.toDepth || '?'} m (Row ${rIndex + 1})`;
+                const missingParts = [];
+                if (isCrEmpty) missingParts.push('CR (%)');
+                if (isRqdEmpty) missingParts.push('RQD (%)');
+
+                toast({
+                  title: 'Mandatory Field Missing',
+                  description: `${bhName} [${rowDepth}]: ${missingParts.join(' and ')} cannot be left empty when sampling type is Core. Please fill in all mandatory fields before saving.`,
+                  variant: 'destructive',
+                });
+                setIsSaving(false);
+                return false;
+              }
+            }
+          }
+        }
+      }
+
       let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
       if (isNaN(userId) && user.username) {
         const { data: userData } = await apiClient
@@ -603,7 +689,9 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                     {d.soilType || '-'}
                                                   </td>
                                                   <td className="p-3 font-mono text-gray-500">
-                                                    {d.spt1 || '-'}/{d.spt2 || '-'}/{d.spt3 || '-'}
+                                                    {d.natureOfSampling === 'Core'
+                                                      ? `- (CR: ${d.coreRecovery || '-'}%, RQD: ${d.rqd || '-'}%)`
+                                                      : `${d.spt1 || '-'}/${d.spt2 || '-'}/${d.spt3 || '-'}`}
                                                   </td>
                                                 </tr>
                                               ))

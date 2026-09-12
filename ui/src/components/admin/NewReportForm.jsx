@@ -45,6 +45,8 @@ import {
   X,
   Loader2,
   Settings,
+  AlertTriangle,
+  CheckCircle2,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import ReportPreview from '@/components/ReportPreview';
@@ -740,6 +742,77 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
         message: 'At least one Recommendation Type is required',
         tab: 'survey',
       };
+    }
+
+    // Borehole Logs Tab
+    if (formData.boreholeLogs?.length > 0) {
+      formData.boreholeLogs.forEach((logs, levelIndex) => {
+        if (logs.length > 0) {
+          const finalRow = logs[logs.length - 1];
+          const finalToRaw = finalRow?.toDepth;
+          const maxDepthRaw = formData.maxDepths?.[levelIndex];
+
+          const hasFinalTo =
+            finalToRaw !== '' &&
+            finalToRaw !== null &&
+            finalToRaw !== undefined &&
+            !isNaN(parseFloat(finalToRaw));
+          const hasMaxDepth =
+            maxDepthRaw !== '' &&
+            maxDepthRaw !== null &&
+            maxDepthRaw !== undefined &&
+            !isNaN(parseFloat(maxDepthRaw));
+
+          if (hasFinalTo || hasMaxDepth) {
+            const finalToNum = hasFinalTo ? parseFloat(finalToRaw) : null;
+            const maxDepthNum = hasMaxDepth ? parseFloat(maxDepthRaw) : null;
+
+            if (
+              finalToNum === null ||
+              maxDepthNum === null ||
+              Math.abs(finalToNum - maxDepthNum) > 0.0001
+            ) {
+              newErrors[`borehole_${levelIndex}_depth`] = {
+                message:
+                  finalToNum === null
+                    ? `Borehole Level ${levelIndex + 1}: Maximum Depth of Exploration is ${maxDepthRaw} m, but final row "To (m)" has not been entered. Both must match.`
+                    : maxDepthNum === null
+                    ? `Borehole Level ${levelIndex + 1}: Final row "To (m)" is ${finalToRaw} m, but Maximum Depth of Exploration is not entered. Both must match.`
+                    : `Borehole Level ${levelIndex + 1}: Final row "To (m)" (${finalToRaw} m) does not match Maximum Depth of Exploration (${maxDepthRaw} m).`,
+                tab: 'borehole',
+              };
+            }
+          }
+
+          logs.forEach((log, logIndex) => {
+            if (log.natureOfSampling === 'Core') {
+              const isCrEmpty =
+                log.coreRecovery === '' ||
+                log.coreRecovery === null ||
+                log.coreRecovery === undefined ||
+                (typeof log.coreRecovery === 'string' && log.coreRecovery.trim() === '') ||
+                isNaN(parseFloat(log.coreRecovery));
+
+              const isRqdEmpty =
+                log.rqd === '' ||
+                log.rqd === null ||
+                log.rqd === undefined ||
+                (typeof log.rqd === 'string' && log.rqd.trim() === '') ||
+                isNaN(parseFloat(log.rqd));
+
+              if (isCrEmpty || isRqdEmpty) {
+                const missing = [];
+                if (isCrEmpty) missing.push('CR (%)');
+                if (isRqdEmpty) missing.push('RQD (%)');
+                newErrors[`borehole_${levelIndex}_log_${logIndex}_core`] = {
+                  message: `Borehole Level ${levelIndex + 1} (Row ${logIndex + 1}): ${missing.join(' and ')} cannot be left empty for Core sampling.`,
+                  tab: 'borehole',
+                };
+              }
+            }
+          });
+        }
+      });
     }
 
     setErrors(newErrors);
@@ -2934,7 +3007,34 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
                       Borehole Logs
                     </h3>
                     <div className="space-y-8">
-                      {formData.boreholeLogs.map((levelLogs, levelIndex) => (
+                      {formData.boreholeLogs.map((levelLogs, levelIndex) => {
+                        const finalRow = levelLogs[levelLogs.length - 1];
+                        const finalToRaw = finalRow?.toDepth;
+                        const maxDepthRaw = formData.maxDepths?.[levelIndex];
+
+                        const hasFinalTo =
+                          finalToRaw !== '' &&
+                          finalToRaw !== null &&
+                          finalToRaw !== undefined &&
+                          !isNaN(parseFloat(finalToRaw));
+                        const hasMaxDepth =
+                          maxDepthRaw !== '' &&
+                          maxDepthRaw !== null &&
+                          maxDepthRaw !== undefined &&
+                          !isNaN(parseFloat(maxDepthRaw));
+
+                        const isDepthMismatch =
+                          (hasFinalTo &&
+                            hasMaxDepth &&
+                            Math.abs(parseFloat(finalToRaw) - parseFloat(maxDepthRaw)) > 0.0001) ||
+                          (hasFinalTo && !hasMaxDepth);
+
+                        const isDepthMatched =
+                          hasFinalTo &&
+                          hasMaxDepth &&
+                          Math.abs(parseFloat(finalToRaw) - parseFloat(maxDepthRaw)) <= 0.0001;
+
+                        return (
                         <div
                           key={levelIndex}
                           className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm"
@@ -2949,7 +3049,13 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
                                   Maximum Depth of Exploration (m)
                                 </Label>
                                 <Input
-                                  className="h-8 text-xs w-36"
+                                  className={`h-8 text-xs w-36 transition-colors ${
+                                    isDepthMismatch
+                                      ? 'border-red-500 focus-visible:ring-red-500 bg-red-50/50 text-red-900 font-semibold ring-1 ring-red-400/40'
+                                      : isDepthMatched
+                                      ? 'border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-50/30'
+                                      : ''
+                                  }`}
                                   placeholder="Max Depth"
                                   type="number"
                                   step="0.1"
@@ -2970,6 +3076,44 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
                               )}
                             </div>
                           </div>
+
+                          {isDepthMismatch && (
+                            <div className="flex items-start gap-2.5 p-3 mb-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs shadow-sm">
+                              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                              <div className="flex-1 text-left">
+                                <p className="font-bold text-red-800">
+                                  Depth Mismatch Warning (Level {levelIndex + 1})
+                                </p>
+                                <p className="mt-0.5 text-[11px] leading-relaxed">
+                                  {!hasMaxDepth ? (
+                                    <>
+                                      Final row &quot;To (m)&quot; is entered as{' '}
+                                      <strong>{finalToRaw} m</strong>, but Maximum Depth of
+                                      Exploration is not set. Both values must match.
+                                    </>
+                                  ) : (
+                                    <>
+                                      Final row &quot;To (m)&quot; value (
+                                      <strong>{finalToRaw} m</strong>) does not match Maximum Depth
+                                      of Exploration (<strong>{maxDepthRaw} m</strong>). Both values
+                                      must match.
+                                    </>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {isDepthMatched && (
+                            <div className="flex items-center gap-2 p-2 mb-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700 text-xs text-left">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <span>
+                                Final row &quot;To (m)&quot; matches Maximum Depth of Exploration (
+                                {finalToRaw} m).
+                              </span>
+                            </div>
+                          )}
+
                           <div className="overflow-x-auto border border-gray-200 rounded-lg bg-white mb-4">
                             <table className="w-full text-sm text-left">
                               <thead className="text-xs text-gray-700 uppercase bg-gray-100 border-b">
@@ -2991,7 +3135,12 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {levelLogs.map((log, logIndex) => (
+                                {levelLogs.map((log, logIndex) => {
+                                  const isFinalRow = logIndex === levelLogs.length - 1;
+                                  const isRowMismatch = isFinalRow && isDepthMismatch;
+                                  const isRowMatched = isFinalRow && isDepthMatched;
+
+                                  return (
                                   <tr
                                     key={logIndex}
                                     className="bg-white border-b hover:bg-gray-50/50"
@@ -3015,22 +3164,40 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
                                       />
                                     </td>
                                     <td className="px-2 py-2">
-                                      <Input
-                                        value={log.toDepth}
-                                        onChange={(e) =>
-                                          handleBoreholeLogChange(
-                                            levelIndex,
-                                            logIndex,
-                                            'toDepth',
-                                            e.target.value
-                                          )
-                                        }
-                                        className="h-8"
-                                        type="number"
-                                        min="0"
-                                        step="0.1"
-                                        placeholder="0.00"
-                                      />
+                                      <div className="flex flex-col">
+                                        <Input
+                                          value={log.toDepth}
+                                          onChange={(e) =>
+                                            handleBoreholeLogChange(
+                                              levelIndex,
+                                              logIndex,
+                                              'toDepth',
+                                              e.target.value
+                                            )
+                                          }
+                                          className={`h-8 transition-colors ${
+                                            isRowMismatch
+                                              ? 'border-red-500 focus-visible:ring-red-500 bg-red-50/50 text-red-900 font-semibold ring-1 ring-red-400/40'
+                                              : isRowMatched
+                                              ? 'border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-50/30'
+                                              : ''
+                                          }`}
+                                          type="number"
+                                          min="0"
+                                          step="0.1"
+                                          placeholder="0.00"
+                                          title={
+                                            isFinalRow
+                                              ? `Final To depth (Must match Max Depth: ${maxDepthRaw ?? 'not set'} m)`
+                                              : 'To depth below ground level (m)'
+                                          }
+                                        />
+                                        {isRowMismatch && (
+                                          <span className="text-[10px] text-red-600 font-semibold mt-0.5 whitespace-nowrap">
+                                            Must match Max Depth ({maxDepthRaw ? `${maxDepthRaw} m` : 'not set'})
+                                          </span>
+                                        )}
+                                      </div>
                                     </td>
                                     <td className="px-2 py-2">
                                       <Select
@@ -3197,34 +3364,78 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
                                       />
                                     </td>
                                     <td className="px-2 py-2">
-                                      <Input
-                                        value={log.coreRecovery}
-                                        onChange={(e) =>
-                                          handleBoreholeLogChange(
-                                            levelIndex,
-                                            logIndex,
-                                            'coreRecovery',
-                                            e.target.value
-                                          )
-                                        }
-                                        className="h-8"
-                                        placeholder="Recovery"
-                                      />
+                                      {(() => {
+                                        const isCore = log.natureOfSampling === 'Core';
+                                        const isCrEmpty =
+                                          isCore &&
+                                          (log.coreRecovery === '' ||
+                                            log.coreRecovery === null ||
+                                            log.coreRecovery === undefined ||
+                                            (typeof log.coreRecovery === 'string' &&
+                                              log.coreRecovery.trim() === '') ||
+                                            isNaN(parseFloat(log.coreRecovery)));
+                                        return (
+                                          <Input
+                                            value={log.coreRecovery}
+                                            onChange={(e) =>
+                                              handleBoreholeLogChange(
+                                                levelIndex,
+                                                logIndex,
+                                                'coreRecovery',
+                                                e.target.value
+                                              )
+                                            }
+                                            className={`h-8 transition-colors ${
+                                              isCrEmpty
+                                                ? 'border-red-500 focus-visible:ring-red-500 bg-red-50/50 text-red-900 font-semibold ring-1 ring-red-400/40'
+                                                : ''
+                                            }`}
+                                            placeholder={isCore ? 'CR % *' : 'Recovery'}
+                                            title={
+                                              isCore
+                                                ? 'Core Recovery (%) - Mandatory for Core sampling'
+                                                : 'Core Recovery'
+                                            }
+                                          />
+                                        );
+                                      })()}
                                     </td>
                                     <td className="px-2 py-2">
-                                      <Input
-                                        value={log.rqd}
-                                        onChange={(e) =>
-                                          handleBoreholeLogChange(
-                                            levelIndex,
-                                            logIndex,
-                                            'rqd',
-                                            e.target.value
-                                          )
-                                        }
-                                        className="h-8"
-                                        placeholder="RQD"
-                                      />
+                                      {(() => {
+                                        const isCore = log.natureOfSampling === 'Core';
+                                        const isRqdEmpty =
+                                          isCore &&
+                                          (log.rqd === '' ||
+                                            log.rqd === null ||
+                                            log.rqd === undefined ||
+                                            (typeof log.rqd === 'string' &&
+                                              log.rqd.trim() === '') ||
+                                            isNaN(parseFloat(log.rqd)));
+                                        return (
+                                          <Input
+                                            value={log.rqd}
+                                            onChange={(e) =>
+                                              handleBoreholeLogChange(
+                                                levelIndex,
+                                                logIndex,
+                                                'rqd',
+                                                e.target.value
+                                              )
+                                            }
+                                            className={`h-8 transition-colors ${
+                                              isRqdEmpty
+                                                ? 'border-red-500 focus-visible:ring-red-500 bg-red-50/50 text-red-900 font-semibold ring-1 ring-red-400/40'
+                                                : ''
+                                            }`}
+                                            placeholder={isCore ? 'RQD % *' : 'RQD'}
+                                            title={
+                                              isCore
+                                                ? 'Rock Quality Designation (%) - Mandatory for Core sampling'
+                                                : 'RQD'
+                                            }
+                                          />
+                                        );
+                                      })()}
                                     </td>
                                     <td className="px-2 py-2">
                                       <Input

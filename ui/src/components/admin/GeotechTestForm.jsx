@@ -29,7 +29,10 @@ import {
   Plus,
   FlaskConical,
   TestTube,
+  AlertTriangle,
+  CheckCircle2,
 } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { soilTypes } from '@/data/soilTypes';
 import { useSettings } from '@/contexts/SettingsContext';
 
@@ -284,6 +287,7 @@ function SoilTypeSelect({ value, onChange }) {
 }
 
 export default function GeotechTestForm({ value, onChange, materialCategory, enabledForms }) {
+  const { toast } = useToast();
   const defaultTab = enabledForms?.length > 0 ? enabledForms[0] : 'borehole';
   const [activeTab, setActiveTab] = useState(defaultTab);
 
@@ -464,13 +468,25 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
   // --- Borehole Handlers ---
   const handleBoreholeDepthChange = (boreholeIndex, depthIndex, field, val) => {
     const newLogs = [...formData.boreholeLogs];
-    const depthData = newLogs[boreholeIndex][depthIndex];
-    if (field.includes('.')) {
+    const depthData = { ...newLogs[boreholeIndex][depthIndex] };
+    if (field === 'natureOfSampling') {
+      depthData.natureOfSampling = val;
+      if (val === 'Core') {
+        depthData.spt1 = '-';
+        depthData.spt2 = '-';
+        depthData.spt3 = '-';
+      } else if (val === 'SPT') {
+        if (depthData.spt1 === '-') depthData.spt1 = '';
+        if (depthData.spt2 === '-') depthData.spt2 = '';
+        if (depthData.spt3 === '-') depthData.spt3 = '';
+      }
+    } else if (field.includes('.')) {
       const [parent, child] = field.split('.');
-      depthData[parent][child] = val;
+      depthData[parent] = { ...depthData[parent], [child]: val };
     } else {
       depthData[field] = val;
     }
+    newLogs[boreholeIndex][depthIndex] = depthData;
     setFormData({ ...formData, boreholeLogs: newLogs });
   };
 
@@ -821,6 +837,46 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     newResults[boreholeIndex][rowIndex].stressReadings.splice(stressIndex, 1);
     setFormData({ ...formData, directShearResults: newResults });
   };
+  const hasAnyBoreholeMismatch = formData.boreholeLogs.some((logs, bIndex) => {
+    if (!logs || logs.length === 0) return false;
+    const finalRow = logs[logs.length - 1];
+    const finalToRaw = finalRow?.toDepth;
+    const maxDepthRaw = formData.maxDepths?.[bIndex];
+
+    const hasFinalTo =
+      finalToRaw !== '' &&
+      finalToRaw !== null &&
+      finalToRaw !== undefined &&
+      !isNaN(parseFloat(finalToRaw));
+    const hasMaxDepth =
+      maxDepthRaw !== '' &&
+      maxDepthRaw !== null &&
+      maxDepthRaw !== undefined &&
+      !isNaN(parseFloat(maxDepthRaw));
+
+    if (hasFinalTo && hasMaxDepth) {
+      return Math.abs(parseFloat(finalToRaw) - parseFloat(maxDepthRaw)) > 0.0001;
+    }
+    return hasFinalTo && !hasMaxDepth;
+  });
+
+  const hasAnyCoreMissing = formData.boreholeLogs.some((logs) =>
+    logs?.some(
+      (row) =>
+        row.natureOfSampling === 'Core' &&
+        (row.coreRecovery === '' ||
+          row.coreRecovery === null ||
+          row.coreRecovery === undefined ||
+          (typeof row.coreRecovery === 'string' && row.coreRecovery.trim() === '') ||
+          isNaN(parseFloat(row.coreRecovery)) ||
+          row.rqd === '' ||
+          row.rqd === null ||
+          row.rqd === undefined ||
+          (typeof row.rqd === 'string' && row.rqd.trim() === '') ||
+          isNaN(parseFloat(row.rqd)))
+    )
+  );
+
   return (
     <div className="w-full">
       {/* Sieve weight validation error dialog */}
@@ -851,6 +907,12 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               title="Manage borehole logs, sampling, and SPT data"
             >
               <FlaskConical className="w-4 h-4" /> Borehole
+              {(hasAnyBoreholeMismatch || hasAnyCoreMissing) && (
+                <span
+                  className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-0.5"
+                  title="Warnings in borehole logs: Depth mismatch or missing mandatory Core sampling fields (CR% / RQD%)"
+                />
+              )}
             </TabsTrigger>
           )}
           {(!enabledForms || enabledForms.includes('lab')) && (
@@ -903,262 +965,564 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               blow counts at various depths.
             </p>
             <div className="space-y-4">
-              {formData.boreholeLogs.map((logs, boreholeIndex) => (
-                <div
-                  key={boreholeIndex}
-                  className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm"
-                >
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-sm font-bold text-gray-800">BH - {boreholeIndex + 1}</h4>
-                    <div className="flex items-end gap-4">
-                      <div className="flex flex-col gap-1">
-                        <Label className="text-left text-xs">
-                          Maximum Depth of Exploration (m)
-                        </Label>
-                        <Input
-                          className="h-8 text-xs w-full"
-                          placeholder="Max Exploration Depth"
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          value={formData.maxDepths?.[boreholeIndex] ?? ''}
-                          onChange={(e) => handleMaxDepthChange(boreholeIndex, e.target.value)}
-                        />
+              {formData.boreholeLogs.map((logs, boreholeIndex) => {
+                const finalRow = logs[logs.length - 1];
+                const finalToRaw = finalRow?.toDepth;
+                const maxDepthRaw = formData.maxDepths?.[boreholeIndex];
+
+                const hasFinalTo =
+                  finalToRaw !== '' &&
+                  finalToRaw !== null &&
+                  finalToRaw !== undefined &&
+                  !isNaN(parseFloat(finalToRaw));
+                const hasMaxDepth =
+                  maxDepthRaw !== '' &&
+                  maxDepthRaw !== null &&
+                  maxDepthRaw !== undefined &&
+                  !isNaN(parseFloat(maxDepthRaw));
+
+                const isDepthMismatch =
+                  (hasFinalTo &&
+                    hasMaxDepth &&
+                    Math.abs(parseFloat(finalToRaw) - parseFloat(maxDepthRaw)) > 0.0001) ||
+                  (hasFinalTo && !hasMaxDepth);
+
+                const isDepthMatched =
+                  hasFinalTo &&
+                  hasMaxDepth &&
+                  Math.abs(parseFloat(finalToRaw) - parseFloat(maxDepthRaw)) <= 0.0001;
+
+                const hasCoreMissingInBH = logs.some(
+                  (row) =>
+                    row.natureOfSampling === 'Core' &&
+                    (row.coreRecovery === '' ||
+                      row.coreRecovery === null ||
+                      row.coreRecovery === undefined ||
+                      (typeof row.coreRecovery === 'string' && row.coreRecovery.trim() === '') ||
+                      isNaN(parseFloat(row.coreRecovery)) ||
+                      row.rqd === '' ||
+                      row.rqd === null ||
+                      row.rqd === undefined ||
+                      (typeof row.rqd === 'string' && row.rqd.trim() === '') ||
+                      isNaN(parseFloat(row.rqd)))
+                );
+
+                return (
+                  <div
+                    key={boreholeIndex}
+                    className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm"
+                  >
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-sm font-bold text-gray-800">BH - {boreholeIndex + 1}</h4>
+                      <div className="flex items-end gap-4">
+                        <div className="flex flex-col gap-1">
+                          <Label className="text-left text-xs">
+                            Maximum Depth of Exploration (m)
+                          </Label>
+                          <Input
+                            className={`h-8 text-xs w-full transition-colors ${
+                              isDepthMismatch
+                                ? 'border-red-500 focus-visible:ring-red-500 bg-red-50/50 text-red-900 font-semibold ring-1 ring-red-400/40'
+                                : isDepthMatched
+                                ? 'border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-50/30'
+                                : ''
+                            }`}
+                            placeholder="Max Exploration Depth"
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            value={formData.maxDepths?.[boreholeIndex] ?? ''}
+                            onChange={(e) => handleMaxDepthChange(boreholeIndex, e.target.value)}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Label className="text-left text-xs">Latitude (°)</Label>
+                          <Input
+                            className="h-8 text-xs w-36"
+                            placeholder="e.g. 12.971599"
+                            value={formData.latitudes?.[boreholeIndex] ?? ''}
+                            onChange={(e) => handleLatitudeChange(boreholeIndex, e.target.value)}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Label className="text-left text-xs">Longitude (°)</Label>
+                          <Input
+                            className="h-8 text-xs w-36"
+                            placeholder="e.g. 77.594566"
+                            value={formData.longitudes?.[boreholeIndex] ?? ''}
+                            onChange={(e) => handleLongitudeChange(boreholeIndex, e.target.value)}
+                          />
+                        </div>
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <Label className="text-left text-xs">Latitude (°)</Label>
-                        <Input
-                          className="h-8 text-xs w-36"
-                          placeholder="e.g. 12.971599"
-                          value={formData.latitudes?.[boreholeIndex] ?? ''}
-                          onChange={(e) => handleLatitudeChange(boreholeIndex, e.target.value)}
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <Label className="text-left text-xs">Longitude (°)</Label>
-                        <Input
-                          className="h-8 text-xs w-36"
-                          placeholder="e.g. 77.594566"
-                          value={formData.longitudes?.[boreholeIndex] ?? ''}
-                          onChange={(e) => handleLongitudeChange(boreholeIndex, e.target.value)}
-                        />
-                      </div>
+                      {formData.boreholeLogs.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removeBorehole(boreholeIndex)}
+                          className="bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60"
+                          title="Remove this entire borehole and its associated data"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" /> Remove Borehole
+                        </Button>
+                      )}
                     </div>
-                    {formData.boreholeLogs.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => removeBorehole(boreholeIndex)}
-                        className="bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-400 dark:hover:bg-red-900/60"
-                        title="Remove this entire borehole and its associated data"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" /> Remove Borehole
-                      </Button>
+
+                    {isDepthMismatch && (
+                      <div className="flex items-start gap-2.5 p-3 mb-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl text-red-700 dark:text-red-300 text-xs shadow-sm">
+                        <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="font-bold text-red-800 dark:text-red-200">
+                            Depth Mismatch Warning (BH - {boreholeIndex + 1})
+                          </p>
+                          <p className="mt-0.5 text-[11px] leading-relaxed">
+                            {!hasMaxDepth ? (
+                              <>
+                                Final row &quot;To (m)&quot; is entered as{' '}
+                                <strong>{finalToRaw} m</strong>, but &quot;Maximum Depth of
+                                Exploration&quot; has not been set. Both values must match exactly
+                                before you can save results.
+                              </>
+                            ) : (
+                              <>
+                                The final row &quot;To (m)&quot; value (
+                                <strong>{finalToRaw} m</strong>) does not match the Maximum Depth of
+                                Exploration (<strong>{maxDepthRaw} m</strong>). Both values must
+                                match exactly before you can save results.
+                              </>
+                            )}
+                          </p>
+                        </div>
+                      </div>
                     )}
-                  </div>
-                  <div className="border rounded-lg bg-white mb-4 overflow-visible">
-                    <table className="w-full text-sm text-left border-collapse">
-                      <thead className="text-[11px] text-gray-500 uppercase bg-gray-50/50 border-b">
-                        <tr>
-                          <th
-                            className="px-3 py-2 font-bold min-w-[80px]"
-                            title="From depth below ground level (m)"
-                          >
-                            From (m)
-                          </th>
-                          <th
-                            className="px-3 py-2 font-bold min-w-[80px]"
-                            title="To depth below ground level (m)"
-                          >
-                            To (m)
-                          </th>
-                          <th
-                            className="px-3 py-2 font-bold min-w-[150px]"
-                            title="Method used to collect soil sample (CR/DS/UDS/SPT)"
-                          >
-                            Sampling
-                          </th>
-                          <th
-                            className="px-3 py-2 font-bold min-w-[200px]"
-                            title="Visual soil or rock classification"
-                          >
-                            Soil Type
-                          </th>
-                          <th
-                            className="px-3 py-2 font-bold min-w-[150px]"
-                            title="SPT blow counts for 15/30/45cm intervals"
-                          >
-                            SPT N Value
-                          </th>
-                          <th className="px-3 py-2 w-[50px]"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {logs.map((depthData, depthIndex) => (
-                          <tr key={depthIndex} className="border-b">
-                            <td className="px-2 py-2">
-                              <Input
-                                value={depthData.fromDepth}
-                                onChange={(e) =>
-                                  handleBoreholeDepthChange(
-                                    boreholeIndex,
-                                    depthIndex,
-                                    'fromDepth',
-                                    e.target.value
-                                  )
-                                }
-                                className="h-8"
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                placeholder="0.00"
-                                title="From depth below ground level (m)"
-                              />
-                            </td>
-                            <td className="px-2 py-2">
-                              <Input
-                                value={depthData.toDepth}
-                                onChange={(e) =>
-                                  handleBoreholeDepthChange(
-                                    boreholeIndex,
-                                    depthIndex,
-                                    'toDepth',
-                                    e.target.value
-                                  )
-                                }
-                                className="h-8"
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                placeholder="0.00"
-                                title="To depth below ground level (m)"
-                              />
-                            </td>
-                            <td className="px-2 py-2">
-                              <Select
-                                value={depthData.natureOfSampling}
-                                onValueChange={(v) =>
-                                  handleBoreholeDepthChange(
-                                    boreholeIndex,
-                                    depthIndex,
-                                    'natureOfSampling',
-                                    v
-                                  )
-                                }
-                              >
-                                <SelectTrigger
-                                  className="h-8"
-                                  title="Nature of Sampling (CR: Core Recovery, DS: Disturbed, UDS: Undisturbed, SPT: Split Spoon)"
-                                >
-                                  <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Core">Core</SelectItem>
-                                  <SelectItem value="DS">DS</SelectItem>
-                                  <SelectItem value="UDS">UDS</SelectItem>
-                                  <SelectItem value="SPT">SPT</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </td>
-                            <td className="px-2 py-2">
-                              <SoilTypeSelect
-                                value={depthData.soilType || ''}
-                                onChange={(val) => selectSoilType(val, boreholeIndex, depthIndex)}
-                              />
-                            </td>
-                            <td className="px-2 py-2">
-                              {depthData.natureOfSampling === 'DS' ? (
-                                <div className="flex flex-col items-center justify-center h-full min-h-[100px] text-[10px] text-gray-400 font-medium italic bg-gray-50/50 rounded-md border border-dashed border-gray-200 px-2 text-center leading-tight">
-                                  SPT Not Required for Disturbed Sampling (DS)
-                                </div>
-                              ) : (
-                                <>
+                    {isDepthMatched && (
+                      <div className="flex items-center gap-2 p-2 mb-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 rounded-lg text-emerald-700 dark:text-emerald-300 text-xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span>
+                          Final row &quot;To (m)&quot; matches Maximum Depth of Exploration (
+                          {finalToRaw} m).
+                        </span>
+                      </div>
+                    )}
+                    {hasCoreMissingInBH && (
+                      <div className="flex items-start gap-2.5 p-3 mb-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 rounded-xl text-amber-800 dark:text-amber-200 text-xs shadow-sm">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="font-bold text-amber-900 dark:text-amber-100">
+                            Mandatory Core Data Required (BH - {boreholeIndex + 1})
+                          </p>
+                          <p className="mt-0.5 text-[11px] leading-relaxed">
+                            One or more rows have <strong>Core</strong> sampling selected. Both{' '}
+                            <strong>CR (%)</strong> and <strong>RQD (%)</strong> are mandatory fields and
+                            cannot be left empty before saving results.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="border rounded-lg bg-white mb-4 overflow-visible">
+                      <table className="w-full text-sm text-left border-collapse">
+                        <thead className="text-[11px] text-gray-500 uppercase bg-gray-50/50 border-b">
+                          <tr>
+                            <th
+                              className="px-3 py-2 font-bold min-w-[80px]"
+                              title="From depth below ground level (m)"
+                            >
+                              From (m)
+                            </th>
+                            <th
+                              className="px-3 py-2 font-bold min-w-[80px]"
+                              title="To depth below ground level (m)"
+                            >
+                              To (m)
+                            </th>
+                            <th
+                              className="px-3 py-2 font-bold min-w-[150px]"
+                              title="Method used to collect soil sample (CR/DS/UDS/SPT)"
+                            >
+                              Sampling
+                            </th>
+                            <th
+                              className="px-3 py-2 font-bold min-w-[200px]"
+                              title="Visual soil or rock classification"
+                            >
+                              Soil Type
+                            </th>
+                            <th
+                              className="px-3 py-2 font-bold min-w-[170px]"
+                              title="SPT blow counts for 15/30/45cm intervals, or CR% and RQD% for Core sampling"
+                            >
+                              SPT N Value
+                            </th>
+                            <th className="px-3 py-2 w-[50px]"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {logs.map((depthData, depthIndex) => {
+                            const isFinalRow = depthIndex === logs.length - 1;
+                            const isRowMismatch = isFinalRow && isDepthMismatch;
+                            const isRowMatched = isFinalRow && isDepthMatched;
+
+                            return (
+                              <tr key={depthIndex} className="border-b">
+                                <td className="px-2 py-2">
                                   <Input
-                                    value={depthData.spt1}
+                                    value={depthData.fromDepth}
                                     onChange={(e) =>
                                       handleBoreholeDepthChange(
                                         boreholeIndex,
                                         depthIndex,
-                                        'spt1',
-                                        e.target.value
-                                      )
-                                    }
-                                    className="h-8 mb-1"
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    placeholder="15cm"
-                                    title="SPT N-Value for first 15cm"
-                                  />
-                                  <Input
-                                    value={depthData.spt2}
-                                    onChange={(e) =>
-                                      handleBoreholeDepthChange(
-                                        boreholeIndex,
-                                        depthIndex,
-                                        'spt2',
-                                        e.target.value
-                                      )
-                                    }
-                                    className="h-8 mb-1"
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    placeholder="30cm"
-                                    title="SPT N-Value for second 15cm"
-                                  />
-                                  <Input
-                                    value={depthData.spt3}
-                                    onChange={(e) =>
-                                      handleBoreholeDepthChange(
-                                        boreholeIndex,
-                                        depthIndex,
-                                        'spt3',
+                                        'fromDepth',
                                         e.target.value
                                       )
                                     }
                                     className="h-8"
                                     type="number"
                                     min="0"
-                                    step="1"
-                                    placeholder="45cm"
-                                    title="SPT N-Value for third 15cm"
+                                    step="0.1"
+                                    placeholder="0.00"
+                                    title="From depth below ground level (m)"
                                   />
-                                </>
-                              )}
-                            </td>
-                            <td className="px-2 py-2">
-                              {logs.length > 1 && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeBoreholeDepth(boreholeIndex, depthIndex)}
-                                  className="text-red-500"
-                                  title="Remove this depth entry"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                                </td>
+                                <td className="px-2 py-2">
+                                  <div className="flex flex-col">
+                                    <Input
+                                      value={depthData.toDepth}
+                                      onChange={(e) =>
+                                        handleBoreholeDepthChange(
+                                          boreholeIndex,
+                                          depthIndex,
+                                          'toDepth',
+                                          e.target.value
+                                        )
+                                      }
+                                      onBlur={() => {
+                                        if (isFinalRow && isDepthMismatch) {
+                                          toast({
+                                            title: 'Depth Mismatch Warning',
+                                            description: !hasMaxDepth
+                                              ? `BH - ${boreholeIndex + 1}: Final row To (m) is ${finalToRaw} m, but Maximum Depth of Exploration is not set.`
+                                              : `BH - ${boreholeIndex + 1}: Final row To (m) (${finalToRaw} m) does not match Maximum Depth of Exploration (${maxDepthRaw} m).`,
+                                            variant: 'destructive',
+                                          });
+                                        }
+                                      }}
+                                      className={`h-8 transition-colors ${
+                                        isRowMismatch
+                                          ? 'border-red-500 focus-visible:ring-red-500 bg-red-50/50 text-red-900 font-semibold ring-1 ring-red-400/40'
+                                          : isRowMatched
+                                          ? 'border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-50/30'
+                                          : ''
+                                      }`}
+                                      type="number"
+                                      min="0"
+                                      step="0.1"
+                                      placeholder="0.00"
+                                      title={
+                                        isFinalRow
+                                          ? `Final To depth (Must match Maximum Depth of Exploration: ${maxDepthRaw ?? 'not set'} m)`
+                                          : 'To depth below ground level (m)'
+                                      }
+                                    />
+                                    {isRowMismatch && (
+                                      <span className="text-[10px] text-red-600 font-semibold mt-0.5 whitespace-nowrap">
+                                        Must match Max Depth ({maxDepthRaw ? `${maxDepthRaw} m` : 'not set'})
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-2 py-2">
+                                  <Select
+                                    value={depthData.natureOfSampling}
+                                    onValueChange={(v) =>
+                                      handleBoreholeDepthChange(
+                                        boreholeIndex,
+                                        depthIndex,
+                                        'natureOfSampling',
+                                        v
+                                      )
+                                    }
+                                  >
+                                    <SelectTrigger
+                                      className="h-8"
+                                      title="Nature of Sampling (CR: Core Recovery, DS: Disturbed, UDS: Undisturbed, SPT: Split Spoon)"
+                                    >
+                                      <SelectValue placeholder="Select" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="Core">Core</SelectItem>
+                                      <SelectItem value="DS">DS</SelectItem>
+                                      <SelectItem value="UDS">UDS</SelectItem>
+                                      <SelectItem value="SPT">SPT</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </td>
+                                <td className="px-2 py-2">
+                                  <SoilTypeSelect
+                                    value={depthData.soilType || ''}
+                                    onChange={(val) =>
+                                      selectSoilType(val, boreholeIndex, depthIndex)
+                                    }
+                                  />
+                                </td>
+                                <td className="px-2 py-2">
+                                  {depthData.natureOfSampling === 'DS' ? (
+                                    <div className="flex flex-col items-center justify-center h-full min-h-[100px] text-[10px] text-gray-400 font-medium italic bg-gray-50/50 rounded-md border border-dashed border-gray-200 px-2 text-center leading-tight">
+                                      SPT Not Required for Disturbed Sampling (DS)
+                                    </div>
+                                  ) : depthData.natureOfSampling === 'Core' ? (
+                                    (() => {
+                                      const isCrMissing =
+                                        depthData.coreRecovery === '' ||
+                                        depthData.coreRecovery === null ||
+                                        depthData.coreRecovery === undefined ||
+                                        (typeof depthData.coreRecovery === 'string' &&
+                                          depthData.coreRecovery.trim() === '') ||
+                                        isNaN(parseFloat(depthData.coreRecovery));
+
+                                      const isRqdMissing =
+                                        depthData.rqd === '' ||
+                                        depthData.rqd === null ||
+                                        depthData.rqd === undefined ||
+                                        (typeof depthData.rqd === 'string' &&
+                                          depthData.rqd.trim() === '') ||
+                                        isNaN(parseFloat(depthData.rqd));
+
+                                      return (
+                                        <div
+                                          className={`flex flex-col gap-2 min-w-[160px] p-2 rounded-lg border transition-colors ${
+                                            isCrMissing || isRqdMissing
+                                              ? 'bg-red-50/40 dark:bg-red-950/20 border-red-300 dark:border-red-900/60'
+                                              : 'bg-blue-50/40 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/40'
+                                          }`}
+                                        >
+                                          <div className="flex flex-col gap-0.5">
+                                            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                              SPT N Value
+                                            </span>
+                                            <Input
+                                              value={depthData.spt1 || '-'}
+                                              onChange={(e) => {
+                                                handleBoreholeDepthChange(
+                                                  boreholeIndex,
+                                                  depthIndex,
+                                                  'spt1',
+                                                  e.target.value
+                                                );
+                                                handleBoreholeDepthChange(
+                                                  boreholeIndex,
+                                                  depthIndex,
+                                                  'spt2',
+                                                  e.target.value
+                                                );
+                                                handleBoreholeDepthChange(
+                                                  boreholeIndex,
+                                                  depthIndex,
+                                                  'spt3',
+                                                  e.target.value
+                                                );
+                                              }}
+                                              className="h-8 text-xs font-mono font-bold text-center bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200"
+                                              placeholder="-"
+                                              title="SPT N-Value (filled with '-' for Core)"
+                                            />
+                                          </div>
+                                          <div className="grid grid-cols-2 gap-1.5 pt-1.5 border-t border-blue-100 dark:border-blue-900/40">
+                                            <div className="flex flex-col gap-0.5">
+                                              <label className="text-[10px] font-bold text-blue-700 dark:text-blue-300 flex items-center justify-between">
+                                                <span>CR (%)</span>
+                                                <span
+                                                  className="text-red-500 font-extrabold text-[11px]"
+                                                  title="Mandatory field - cannot be left empty"
+                                                >
+                                                  *
+                                                </span>
+                                              </label>
+                                              <Input
+                                                value={depthData.coreRecovery ?? ''}
+                                                onChange={(e) =>
+                                                  handleBoreholeDepthChange(
+                                                    boreholeIndex,
+                                                    depthIndex,
+                                                    'coreRecovery',
+                                                    e.target.value
+                                                  )
+                                                }
+                                                onBlur={() => {
+                                                  if (isCrMissing) {
+                                                    toast({
+                                                      title: 'Mandatory Field Missing',
+                                                      description: `BH - ${boreholeIndex + 1} (Row ${depthIndex + 1}): Core Recovery (CR %) is mandatory for Core sampling and cannot be left empty.`,
+                                                      variant: 'destructive',
+                                                    });
+                                                  }
+                                                }}
+                                                className={`h-8 text-xs font-semibold transition-colors ${
+                                                  isCrMissing
+                                                    ? 'border-red-500 focus-visible:ring-red-500 bg-red-50/60 dark:bg-red-950/40 text-red-900 dark:text-red-200 font-bold ring-1 ring-red-400/40'
+                                                    : 'border-blue-200 dark:border-blue-800 focus-visible:ring-blue-500 bg-white dark:bg-gray-900'
+                                                }`}
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                step="0.1"
+                                                placeholder="CR % *"
+                                                title="Core Recovery (%) - Mandatory for Core sampling"
+                                                required
+                                              />
+                                              {isCrMissing && (
+                                                <span className="text-[9px] text-red-600 dark:text-red-400 font-bold leading-none mt-0.5">
+                                                  Required
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div className="flex flex-col gap-0.5">
+                                              <label className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 flex items-center justify-between">
+                                                <span>RQD (%)</span>
+                                                <span
+                                                  className="text-red-500 font-extrabold text-[11px]"
+                                                  title="Mandatory field - cannot be left empty"
+                                                >
+                                                  *
+                                                </span>
+                                              </label>
+                                              <Input
+                                                value={depthData.rqd ?? ''}
+                                                onChange={(e) =>
+                                                  handleBoreholeDepthChange(
+                                                    boreholeIndex,
+                                                    depthIndex,
+                                                    'rqd',
+                                                    e.target.value
+                                                  )
+                                                }
+                                                onBlur={() => {
+                                                  if (isRqdMissing) {
+                                                    toast({
+                                                      title: 'Mandatory Field Missing',
+                                                      description: `BH - ${boreholeIndex + 1} (Row ${depthIndex + 1}): Rock Quality Designation (RQD %) is mandatory for Core sampling and cannot be left empty.`,
+                                                      variant: 'destructive',
+                                                    });
+                                                  }
+                                                }}
+                                                className={`h-8 text-xs font-semibold transition-colors ${
+                                                  isRqdMissing
+                                                    ? 'border-red-500 focus-visible:ring-red-500 bg-red-50/60 dark:bg-red-950/40 text-red-900 dark:text-red-200 font-bold ring-1 ring-red-400/40'
+                                                    : 'border-indigo-200 dark:border-indigo-800 focus-visible:ring-indigo-500 bg-white dark:bg-gray-900'
+                                                }`}
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                step="0.1"
+                                                placeholder="RQD % *"
+                                                title="Rock Quality Designation (%) - Mandatory for Core sampling"
+                                                required
+                                              />
+                                              {isRqdMissing && (
+                                                <span className="text-[9px] text-red-600 dark:text-red-400 font-bold leading-none mt-0.5">
+                                                  Required
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                          {(isCrMissing || isRqdMissing) && (
+                                            <div className="flex items-center gap-1 text-[9px] font-semibold text-red-600 dark:text-red-400 pt-0.5">
+                                              <AlertTriangle className="w-3 h-3 shrink-0" />
+                                              <span>CR &amp; RQD are mandatory</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })()
+                                  ) : (
+                                    <>
+                                      <Input
+                                        value={depthData.spt1}
+                                        onChange={(e) =>
+                                          handleBoreholeDepthChange(
+                                            boreholeIndex,
+                                            depthIndex,
+                                            'spt1',
+                                            e.target.value
+                                          )
+                                        }
+                                        className="h-8 mb-1"
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        placeholder="15cm"
+                                        title="SPT N-Value for first 15cm"
+                                      />
+                                      <Input
+                                        value={depthData.spt2}
+                                        onChange={(e) =>
+                                          handleBoreholeDepthChange(
+                                            boreholeIndex,
+                                            depthIndex,
+                                            'spt2',
+                                            e.target.value
+                                          )
+                                        }
+                                        className="h-8 mb-1"
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        placeholder="30cm"
+                                        title="SPT N-Value for second 15cm"
+                                      />
+                                      <Input
+                                        value={depthData.spt3}
+                                        onChange={(e) =>
+                                          handleBoreholeDepthChange(
+                                            boreholeIndex,
+                                            depthIndex,
+                                            'spt3',
+                                            e.target.value
+                                          )
+                                        }
+                                        className="h-8"
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        placeholder="45cm"
+                                        title="SPT N-Value for third 15cm"
+                                      />
+                                    </>
+                                  )}
+                                </td>
+                                <td className="px-2 py-2">
+                                  {logs.length > 1 && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => removeBoreholeDepth(boreholeIndex, depthIndex)}
+                                      className="text-red-500"
+                                      title="Remove this depth entry"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addBoreholeDepth(boreholeIndex)}
+                      className="text-primary"
+                      title="Add a new depth level for this borehole"
+                    >
+                      <Plus className="w-4 h-4 mr-2" /> Add Depth
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => addBoreholeDepth(boreholeIndex)}
-                    className="text-primary"
-                    title="Add a new depth level for this borehole"
-                  >
-                    <Plus className="w-4 h-4 mr-2" /> Add Depth
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
               <div className="flex justify-center pt-4 border-t">
                 <Button
                   type="button"
