@@ -748,7 +748,15 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                   </td>
                                                   <td className="p-3 text-gray-600">
                                                     {d.bulkDensity || '-'}/
-                                                    {d.moistureContent || '-'}%
+                                                    {d.moistureContent ? `${d.moistureContent}%` : '-'}
+                                                    {d.containerNo && (
+                                                      <span
+                                                        className="ml-1 text-[10px] text-gray-400 block cursor-help"
+                                                        title={`Cont: #${d.containerNo}, w₁=${d.w1 || '-'}g, w₂=${d.w2 || '-'}g, w₃=${d.w3 || '-'}g (w₄=${d.w4 || '-'}g, w₅=${d.w5 || '-'}g)`}
+                                                      >
+                                                        (Cont: #{d.containerNo})
+                                                      </span>
+                                                    )}
                                                   </td>
                                                   <td className="p-3 text-gray-600">
                                                     {d.grainSizeDistribution?.gravel || '-'}/

@@ -31,10 +31,14 @@ import {
   TestTube,
   AlertTriangle,
   CheckCircle2,
+  Calculator,
+  Scale,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { soilTypes } from '@/data/soilTypes';
 import { useSettings } from '@/contexts/SettingsContext';
+import MoistureContentModal from './MoistureContentModal';
+import { calculateMoistureValues } from '@/utils/moistureCalculation';
 
 /**
  * Look up the Correction Factor (CF) from the overburden correction table stored
@@ -295,6 +299,12 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     setActiveTab(defaultTab);
   }, [defaultTab]);
   const [sieveError, setSieveError] = useState(null); // { boreholeIndex, depthIndex, message }
+  const [moistureModalState, setMoistureModalState] = useState({
+    isOpen: false,
+    boreholeIndex: 0,
+    depthIndex: 0,
+  });
+  const [showMoistureInputsInline, setShowMoistureInputsInline] = useState(false);
 
   // Overburden correction table from Settings → System → Overburden
   const { settings } = useSettings();
@@ -341,6 +351,13 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
             depth: entry.depth ?? '',
             bulkDensity: entry.bulkDensity ?? '',
             moistureContent: entry.moistureContent ?? '',
+            containerNo: entry.containerNo ?? '',
+            w1: entry.w1 ?? '',
+            w2: entry.w2 ?? '',
+            w3: entry.w3 ?? '',
+            w4: entry.w4 ?? '',
+            w5: entry.w5 ?? '',
+            precisionMode: entry.precisionMode || 'two_sig_figs',
             grainSizeDistribution: {
               gravel: entry.grainSizeDistribution?.gravel ?? '',
               sand: entry.grainSizeDistribution?.sand ?? '',
@@ -361,6 +378,13 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               depth: '',
               bulkDensity: '',
               moistureContent: '',
+              containerNo: '',
+              w1: '',
+              w2: '',
+              w3: '',
+              w4: '',
+              w5: '',
+              precisionMode: 'two_sig_figs',
               grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' },
               atterbergLimits: {
                 liquidLimit: '',
@@ -569,6 +593,13 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
             depth: '',
             bulkDensity: '',
             moistureContent: '',
+            containerNo: '',
+            w1: '',
+            w2: '',
+            w3: '',
+            w4: '',
+            w5: '',
+            precisionMode: 'two_sig_figs',
             grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' },
             atterbergLimits: {
               liquidLimit: '',
@@ -671,13 +702,44 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
   // --- Lab Test Handlers ---
   const handleLabTestDepthChange = (boreholeIndex, depthIndex, field, val) => {
     const newResults = [...formData.labTestResults];
-    const depthData = newResults[boreholeIndex][depthIndex];
+    const depthData = { ...newResults[boreholeIndex][depthIndex] };
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
-      depthData[parent][child] = val;
+      depthData[parent] = { ...depthData[parent], [child]: val };
     } else {
       depthData[field] = val;
     }
+
+    // Auto-compute moisture content if w1, w2, w3 or precisionMode changed
+    if (['w1', 'w2', 'w3', 'precisionMode'].includes(field)) {
+      const calc = calculateMoistureValues({
+        w1: field === 'w1' ? val : depthData.w1,
+        w2: field === 'w2' ? val : depthData.w2,
+        w3: field === 'w3' ? val : depthData.w3,
+        precisionMode: field === 'precisionMode' ? val : (depthData.precisionMode || 'two_sig_figs'),
+      });
+      depthData.w4 = calc.w4;
+      depthData.w5 = calc.w5;
+      depthData.moistureContent = calc.moistureContent;
+    }
+
+    newResults[boreholeIndex][depthIndex] = depthData;
+    setFormData({ ...formData, labTestResults: newResults });
+  };
+
+  const handleApplyMoistureModal = (boreholeIndex, depthIndex, appliedData) => {
+    const newResults = [...formData.labTestResults];
+    newResults[boreholeIndex][depthIndex] = {
+      ...newResults[boreholeIndex][depthIndex],
+      containerNo: appliedData.containerNo,
+      w1: appliedData.w1,
+      w2: appliedData.w2,
+      w3: appliedData.w3,
+      w4: appliedData.w4,
+      w5: appliedData.w5,
+      moistureContent: appliedData.moistureContent,
+      precisionMode: appliedData.precisionMode,
+    };
     setFormData({ ...formData, labTestResults: newResults });
   };
 
@@ -687,6 +749,13 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
       depth: '',
       bulkDensity: '',
       moistureContent: '',
+      containerNo: '',
+      w1: '',
+      w2: '',
+      w3: '',
+      w4: '',
+      w5: '',
+      precisionMode: 'two_sig_figs',
       grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' },
       atterbergLimits: {
         liquidLimit: '',
@@ -898,6 +967,32 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {moistureModalState.isOpen && (
+        <MoistureContentModal
+          isOpen={moistureModalState.isOpen}
+          onClose={() => setMoistureModalState((prev) => ({ ...prev, isOpen: false }))}
+          boreholeNo={`BH-${moistureModalState.boreholeIndex + 1}`}
+          depth={
+            formData.labTestResults?.[moistureModalState.boreholeIndex]?.[
+              moistureModalState.depthIndex
+            ]?.depth || ''
+          }
+          initialData={
+            formData.labTestResults?.[moistureModalState.boreholeIndex]?.[
+              moistureModalState.depthIndex
+            ] || {}
+          }
+          onApply={(appliedData) =>
+            handleApplyMoistureModal(
+              moistureModalState.boreholeIndex,
+              moistureModalState.depthIndex,
+              appliedData
+            )
+          }
+        />
+      )}
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-white rounded-lg p-1 shadow-sm mb-4 flex flex-wrap h-auto gap-1">
           {(!enabledForms || enabledForms.includes('borehole')) && (
@@ -1866,6 +1961,17 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                     <h4 className="text-sm font-bold text-gray-800">
                       Lab Tests - BH {boreholeIndex + 1}
                     </h4>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowMoistureInputsInline(!showMoistureInputsInline)}
+                      className="text-xs h-8 text-gray-600 hover:text-gray-900 border-gray-200"
+                      title="Toggle inline entry for Container No, w1, w2, w3"
+                    >
+                      <Scale className="w-3.5 h-3.5 mr-1 text-primary" />
+                      {showMoistureInputsInline ? 'Hide Moisture Details' : 'Show Moisture Details (w₁, w₂, w₃)'}
+                    </Button>
                   </div>
                   <div className="border rounded-lg bg-white mb-4 overflow-visible">
                     <table className="w-full text-sm text-left border-collapse">
@@ -1881,52 +1987,77 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                       </thead>
                       <tbody>
                         {logs.map((depthData, depthIndex) => (
-                          <tr key={depthIndex} className="border-b">
-                            <td className="px-2 py-2">
-                              <Input
-                                value={depthData.depth}
-                                onChange={(e) =>
-                                  handleLabTestDepthChange(
-                                    boreholeIndex,
-                                    depthIndex,
-                                    'depth',
-                                    e.target.value
-                                  )
-                                }
-                                className="h-8 w-20"
-                                title="Depth below ground level (m)"
-                              />
-                            </td>
-                            <td className="px-2 py-2">
-                              <Input
-                                value={depthData.bulkDensity}
-                                onChange={(e) =>
-                                  handleLabTestDepthChange(
-                                    boreholeIndex,
-                                    depthIndex,
-                                    'bulkDensity',
-                                    e.target.value
-                                  )
-                                }
-                                className="h-8 mb-1"
-                                placeholder="Bulk Density"
-                                title="Mass per unit volume of soil in natural state"
-                              />
-                              <Input
-                                value={depthData.moistureContent}
-                                onChange={(e) =>
-                                  handleLabTestDepthChange(
-                                    boreholeIndex,
-                                    depthIndex,
-                                    'moistureContent',
-                                    e.target.value
-                                  )
-                                }
-                                className="h-8"
-                                placeholder="Moisture Content"
-                                title="Ratio of water weight to soil solids weight (%)"
-                              />
-                            </td>
+                          <React.Fragment key={depthIndex}>
+                            <tr className="border-b">
+                              <td className="px-2 py-2">
+                                <Input
+                                  value={depthData.depth}
+                                  onChange={(e) =>
+                                    handleLabTestDepthChange(
+                                      boreholeIndex,
+                                      depthIndex,
+                                      'depth',
+                                      e.target.value
+                                    )
+                                  }
+                                  className="h-8 w-20"
+                                  title="Depth below ground level (m)"
+                                />
+                              </td>
+                              <td className="px-2 py-2">
+                                <Input
+                                  value={depthData.bulkDensity}
+                                  onChange={(e) =>
+                                    handleLabTestDepthChange(
+                                      boreholeIndex,
+                                      depthIndex,
+                                      'bulkDensity',
+                                      e.target.value
+                                    )
+                                  }
+                                  className="h-8 mb-1"
+                                  placeholder="Bulk Density"
+                                  title="Mass per unit volume of soil in natural state"
+                                />
+                                <div className="relative flex items-center">
+                                  <Input
+                                    value={
+                                      depthData.moistureContent !== '' && depthData.moistureContent !== null && depthData.moistureContent !== undefined
+                                        ? `${depthData.moistureContent}%`
+                                        : ''
+                                    }
+                                    readOnly
+                                    onClick={() =>
+                                      setMoistureModalState({
+                                        isOpen: true,
+                                        boreholeIndex,
+                                        depthIndex,
+                                      })
+                                    }
+                                    className="h-8 pr-8 cursor-pointer bg-gray-50/70 hover:bg-gray-100/80 font-medium text-gray-800 transition-colors"
+                                    placeholder="Moisture % (IS:2720)"
+                                    title={
+                                      depthData.containerNo || depthData.w1
+                                        ? `Cont: ${depthData.containerNo || '-'}, w₁=${depthData.w1 || '-'}g, w₂=${depthData.w2 || '-'}g, w₃=${depthData.w3 || '-'}g (w₄=${depthData.w4 || '-'}g, w₅=${depthData.w5 || '-'}g). Click to open calculator.`
+                                        : 'Click to calculate Moisture Content (IS:2720 Part II)'
+                                    }
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setMoistureModalState({
+                                        isOpen: true,
+                                        boreholeIndex,
+                                        depthIndex,
+                                      })
+                                    }
+                                    className="absolute right-1 text-primary hover:text-primary/80 p-1 rounded transition-colors"
+                                    title="Open Moisture Content Calculator"
+                                  >
+                                    <Calculator className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
                             <td className="px-2 py-2">
                               <div className="flex gap-1">
                                 <Input
@@ -2064,7 +2195,103 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                               )}
                             </td>
                           </tr>
-                        ))}
+                          {showMoistureInputsInline && (
+                            <tr className="bg-blue-50/25 border-b">
+                              <td colSpan={6} className="px-3 py-2.5 bg-gradient-to-r from-blue-50/40 via-emerald-50/20 to-transparent">
+                                <div className="flex flex-wrap items-center gap-3 text-xs">
+                                  <span className="font-bold text-gray-700 flex items-center gap-1 text-[11px] uppercase tracking-wider">
+                                    <Calculator className="w-3.5 h-3.5 text-primary" /> Moisture Inputs:
+                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[11px] text-gray-600 font-medium">Cont #:</span>
+                                    <Input
+                                      value={depthData.containerNo || ''}
+                                      onChange={(e) =>
+                                        handleLabTestDepthChange(
+                                          boreholeIndex,
+                                          depthIndex,
+                                          'containerNo',
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="Cont #"
+                                      className="h-7 w-20 text-xs bg-white"
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[11px] text-gray-600 font-medium">w₁ (tare):</span>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={depthData.w1 || ''}
+                                      onChange={(e) =>
+                                        handleLabTestDepthChange(
+                                          boreholeIndex,
+                                          depthIndex,
+                                          'w1',
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="w1 (g)"
+                                      className="h-7 w-20 text-xs bg-white"
+                                      title="Weight of Container - w1 (gm)"
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[11px] text-gray-600 font-medium">w₂ (wet):</span>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={depthData.w2 || ''}
+                                      onChange={(e) =>
+                                        handleLabTestDepthChange(
+                                          boreholeIndex,
+                                          depthIndex,
+                                          'w2',
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="w2 (g)"
+                                      className="h-7 w-20 text-xs bg-white"
+                                      title="Weight of Container + Wet Soil - w2 (gm)"
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[11px] text-gray-600 font-medium">w₃ (dry):</span>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={depthData.w3 || ''}
+                                      onChange={(e) =>
+                                        handleLabTestDepthChange(
+                                          boreholeIndex,
+                                          depthIndex,
+                                          'w3',
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="w3 (g)"
+                                      className="h-7 w-20 text-xs bg-white"
+                                      title="Weight of Container + Dry Soil - w3 (gm)"
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
+                                    <span className="text-[11px] text-blue-700">
+                                      w₄: <strong>{depthData.w4 ? `${depthData.w4}g` : '—'}</strong>
+                                    </span>
+                                    <span className="text-[11px] text-amber-700">
+                                      w₅: <strong>{depthData.w5 ? `${depthData.w5}g` : '—'}</strong>
+                                    </span>
+                                    <span className="text-[11px] text-emerald-800 font-bold bg-emerald-100/80 px-2 py-0.5 rounded">
+                                      w: {depthData.moistureContent ? `${depthData.moistureContent}%` : '—'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
                       </tbody>
                     </table>
                   </div>
