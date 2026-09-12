@@ -39,6 +39,7 @@ import { soilTypes } from '@/data/soilTypes';
 import { useSettings } from '@/contexts/SettingsContext';
 import MoistureContentModal from './MoistureContentModal';
 import { calculateMoistureValues } from '@/utils/moistureCalculation';
+import SpecificGravityModal from './SpecificGravityModal';
 
 /**
  * Look up the Correction Factor (CF) from the overburden correction table stored
@@ -304,6 +305,11 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     boreholeIndex: 0,
     depthIndex: 0,
   });
+  const [sgModalState, setSgModalState] = useState({
+    isOpen: false,
+    boreholeIndex: 0,
+    depthIndex: 0,
+  });
   const [showMoistureInputsInline, setShowMoistureInputsInline] = useState(false);
 
   // Overburden correction table from Settings → System → Overburden
@@ -369,6 +375,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               plasticityIndex: entry.atterbergLimits?.plasticityIndex ?? '',
             },
             specificGravity: entry.specificGravity ?? '',
+            specificGravityTrials: entry.specificGravityTrials || null,
             freeSwellIndex: entry.freeSwellIndex ?? '',
           }))
         )
@@ -392,6 +399,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                 plasticityIndex: '',
               },
               specificGravity: '',
+              specificGravityTrials: null,
               freeSwellIndex: '',
             },
           ],
@@ -607,6 +615,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               plasticityIndex: '',
             },
             specificGravity: '',
+            specificGravityTrials: null,
             freeSwellIndex: '',
           },
         ],
@@ -743,6 +752,16 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     setFormData({ ...formData, labTestResults: newResults });
   };
 
+  const handleApplySpecificGravityModal = (boreholeIndex, depthIndex, { trials, averageSg }) => {
+    const newResults = [...formData.labTestResults];
+    newResults[boreholeIndex][depthIndex] = {
+      ...newResults[boreholeIndex][depthIndex],
+      specificGravity: averageSg,
+      specificGravityTrials: trials,
+    };
+    setFormData({ ...formData, labTestResults: newResults });
+  };
+
   const addLabTestDepth = (boreholeIndex) => {
     const newResults = [...formData.labTestResults];
     newResults[boreholeIndex].push({
@@ -763,6 +782,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
         plasticityIndex: '',
       },
       specificGravity: '',
+      specificGravityTrials: null,
       freeSwellIndex: '',
     });
     setFormData({ ...formData, labTestResults: newResults });
@@ -988,6 +1008,31 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               moistureModalState.boreholeIndex,
               moistureModalState.depthIndex,
               appliedData
+            )
+          }
+        />
+      )}
+
+      {sgModalState.isOpen && (
+        <SpecificGravityModal
+          isOpen={sgModalState.isOpen}
+          onClose={() => setSgModalState((prev) => ({ ...prev, isOpen: false }))}
+          boreholeNo={`BH-${sgModalState.boreholeIndex + 1}`}
+          depth={
+            formData.labTestResults?.[sgModalState.boreholeIndex]?.[
+              sgModalState.depthIndex
+            ]?.depth || ''
+          }
+          initialData={
+            formData.labTestResults?.[sgModalState.boreholeIndex]?.[
+              sgModalState.depthIndex
+            ]?.specificGravityTrials || {}
+          }
+          onApply={({ trials, averageSg }) =>
+            handleApplySpecificGravityModal(
+              sgModalState.boreholeIndex,
+              sgModalState.depthIndex,
+              { trials, averageSg }
             )
           }
         />
@@ -2151,20 +2196,46 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                               </div>
                             </td>
                             <td className="px-2 py-2">
-                              <Input
-                                value={depthData.specificGravity}
-                                onChange={(e) =>
-                                  handleLabTestDepthChange(
-                                    boreholeIndex,
-                                    depthIndex,
-                                    'specificGravity',
-                                    e.target.value
-                                  )
-                                }
-                                className="h-8 mb-1"
-                                placeholder="SG"
-                                title="Specific Gravity of soil solids"
-                              />
+                              <div className="relative flex items-center mb-1">
+                                <Input
+                                  value={depthData.specificGravity || ''}
+                                  readOnly
+                                  onClick={() =>
+                                    setSgModalState({
+                                      isOpen: true,
+                                      boreholeIndex,
+                                      depthIndex,
+                                    })
+                                  }
+                                  className={`h-8 pr-8 cursor-pointer bg-gray-50/70 hover:bg-gray-100/80 font-medium text-gray-800 transition-colors ${
+                                    depthData.specificGravityTrials?.isDiffExceeded
+                                      ? 'border-amber-400 bg-amber-50/30'
+                                      : ''
+                                  }`}
+                                  placeholder="SG (Auto)"
+                                  title={
+                                    depthData.specificGravityTrials?.averageSg
+                                      ? `SG₁=${depthData.specificGravityTrials?.t1?.sg || '-'}, SG₂=${depthData.specificGravityTrials?.t2?.sg || '-'}, Diff=${depthData.specificGravityTrials?.diff || '-'}${
+                                          depthData.specificGravityTrials?.isDiffExceeded ? ' (⚠️ Difference > 0.03)' : ''
+                                        }. Click to edit.`
+                                      : 'Click to calculate Specific Gravity (Density Bottle Method)'
+                                  }
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setSgModalState({
+                                      isOpen: true,
+                                      boreholeIndex,
+                                      depthIndex,
+                                    })
+                                  }
+                                  className="absolute right-1 text-primary hover:text-primary/80 p-1 rounded transition-colors"
+                                  title="Open Specific Gravity Calculator"
+                                >
+                                  <Calculator className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                               <Input
                                 value={depthData.freeSwellIndex}
                                 onChange={(e) =>

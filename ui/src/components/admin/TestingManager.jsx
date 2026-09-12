@@ -771,6 +771,20 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                   <td className="p-3 text-gray-600">
                                                     {d.specificGravity || '-'}/
                                                     {d.freeSwellIndex || '-'}%
+                                                    {d.specificGravityTrials?.averageSg && (
+                                                      <span
+                                                        className={`ml-1 text-[10px] block cursor-help ${
+                                                          d.specificGravityTrials?.isDiffExceeded
+                                                            ? 'text-amber-600 font-semibold'
+                                                            : 'text-gray-400'
+                                                        }`}
+                                                        title={`SG₁=${d.specificGravityTrials?.t1?.sg || '-'}, SG₂=${d.specificGravityTrials?.t2?.sg || '-'}, Diff=${d.specificGravityTrials?.diff || '-'}${
+                                                          d.specificGravityTrials?.isDiffExceeded ? ' (⚠️ Difference > 0.03)' : ''
+                                                        }`}
+                                                      >
+                                                        (SG₁: {d.specificGravityTrials?.t1?.sg || '-'}, SG₂: {d.specificGravityTrials?.t2?.sg || '-'})
+                                                      </span>
+                                                    )}
                                                   </td>
                                                 </tr>
                                               ))
