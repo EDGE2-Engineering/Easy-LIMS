@@ -40,6 +40,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import MoistureContentModal from './MoistureContentModal';
 import { calculateMoistureValues } from '@/utils/moistureCalculation';
 import SpecificGravityModal from './SpecificGravityModal';
+import FreeSwellIndexModal from './FreeSwellIndexModal';
 
 /**
  * Look up the Correction Factor (CF) from the overburden correction table stored
@@ -310,6 +311,11 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     boreholeIndex: 0,
     depthIndex: 0,
   });
+  const [fsiModalState, setFsiModalState] = useState({
+    isOpen: false,
+    boreholeIndex: 0,
+    depthIndex: 0,
+  });
   const [showMoistureInputsInline, setShowMoistureInputsInline] = useState(false);
 
   // Overburden correction table from Settings → System → Overburden
@@ -377,6 +383,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
             specificGravity: entry.specificGravity ?? '',
             specificGravityTrials: entry.specificGravityTrials || null,
             freeSwellIndex: entry.freeSwellIndex ?? '',
+            freeSwellIndexTrials: entry.freeSwellIndexTrials || null,
           }))
         )
       : [
@@ -401,6 +408,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               specificGravity: '',
               specificGravityTrials: null,
               freeSwellIndex: '',
+              freeSwellIndexTrials: null,
             },
           ],
         ],
@@ -617,6 +625,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
             specificGravity: '',
             specificGravityTrials: null,
             freeSwellIndex: '',
+            freeSwellIndexTrials: null,
           },
         ],
       ],
@@ -762,6 +771,16 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     setFormData({ ...formData, labTestResults: newResults });
   };
 
+  const handleApplyFreeSwellIndexModal = (boreholeIndex, depthIndex, { trials, averageFsi }) => {
+    const newResults = [...formData.labTestResults];
+    newResults[boreholeIndex][depthIndex] = {
+      ...newResults[boreholeIndex][depthIndex],
+      freeSwellIndex: averageFsi,
+      freeSwellIndexTrials: trials,
+    };
+    setFormData({ ...formData, labTestResults: newResults });
+  };
+
   const addLabTestDepth = (boreholeIndex) => {
     const newResults = [...formData.labTestResults];
     newResults[boreholeIndex].push({
@@ -784,6 +803,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
       specificGravity: '',
       specificGravityTrials: null,
       freeSwellIndex: '',
+      freeSwellIndexTrials: null,
     });
     setFormData({ ...formData, labTestResults: newResults });
   };
@@ -1033,6 +1053,31 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               sgModalState.boreholeIndex,
               sgModalState.depthIndex,
               { trials, averageSg }
+            )
+          }
+        />
+      )}
+
+      {fsiModalState.isOpen && (
+        <FreeSwellIndexModal
+          isOpen={fsiModalState.isOpen}
+          onClose={() => setFsiModalState((prev) => ({ ...prev, isOpen: false }))}
+          boreholeNo={`BH-${fsiModalState.boreholeIndex + 1}`}
+          depth={
+            formData.labTestResults?.[fsiModalState.boreholeIndex]?.[
+              fsiModalState.depthIndex
+            ]?.depth || ''
+          }
+          initialData={
+            formData.labTestResults?.[fsiModalState.boreholeIndex]?.[
+              fsiModalState.depthIndex
+            ]?.freeSwellIndexTrials || {}
+          }
+          onApply={({ trials, averageFsi }) =>
+            handleApplyFreeSwellIndexModal(
+              fsiModalState.boreholeIndex,
+              fsiModalState.depthIndex,
+              { trials, averageFsi }
             )
           }
         />
@@ -2236,20 +2281,50 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                   <Calculator className="w-3.5 h-3.5" />
                                 </button>
                               </div>
-                              <Input
-                                value={depthData.freeSwellIndex}
-                                onChange={(e) =>
-                                  handleLabTestDepthChange(
-                                    boreholeIndex,
-                                    depthIndex,
-                                    'freeSwellIndex',
-                                    e.target.value
-                                  )
-                                }
-                                className="h-8"
-                                placeholder="FSI"
-                                title="Free Swell Index indicating expansion potential (%)"
-                              />
+                              <div className="relative flex items-center">
+                                <Input
+                                  value={
+                                    depthData.freeSwellIndex !== '' &&
+                                    depthData.freeSwellIndex !== null &&
+                                    depthData.freeSwellIndex !== undefined
+                                      ? `${depthData.freeSwellIndex}%`
+                                      : ''
+                                  }
+                                  readOnly
+                                  onClick={() =>
+                                    setFsiModalState({
+                                      isOpen: true,
+                                      boreholeIndex,
+                                      depthIndex,
+                                    })
+                                  }
+                                  className="h-8 pr-8 cursor-pointer bg-gray-50/70 hover:bg-gray-100/80 font-medium text-gray-800 transition-colors"
+                                  placeholder="FSI % (Auto)"
+                                  title={
+                                    depthData.freeSwellIndexTrials?.averageFsi
+                                      ? `FSI₁=${depthData.freeSwellIndexTrials?.t1?.fsi || '-'}%, FSI₂=${depthData.freeSwellIndexTrials?.t2?.fsi || '-'}% (Avg: ${depthData.freeSwellIndexTrials?.averageFsi}%${
+                                          depthData.freeSwellIndexTrials?.expansiveness
+                                            ? `, ${depthData.freeSwellIndexTrials.expansiveness} Swell`
+                                            : ''
+                                        }). Click to edit.`
+                                      : 'Click to calculate Free Swell Index (IS 2720 Part 40)'
+                                  }
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFsiModalState({
+                                      isOpen: true,
+                                      boreholeIndex,
+                                      depthIndex,
+                                    })
+                                  }
+                                  className="absolute right-1 text-primary hover:text-primary/80 p-1 rounded transition-colors"
+                                  title="Open Free Swell Index Calculator"
+                                >
+                                  <Calculator className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </td>
                             <td className="px-2 py-2">
                               {logs.length > 1 && (

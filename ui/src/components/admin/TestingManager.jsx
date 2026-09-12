@@ -769,11 +769,13 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                     {d.atterbergLimits?.plasticityIndex || '-'}
                                                   </td>
                                                   <td className="p-3 text-gray-600">
-                                                    {d.specificGravity || '-'}/
-                                                    {d.freeSwellIndex || '-'}%
+                                                    <div>
+                                                      <span>{d.specificGravity || '-'}</span>/
+                                                      <span>{d.freeSwellIndex ? `${d.freeSwellIndex}%` : '-'}</span>
+                                                    </div>
                                                     {d.specificGravityTrials?.averageSg && (
                                                       <span
-                                                        className={`ml-1 text-[10px] block cursor-help ${
+                                                        className={`text-[10px] block cursor-help ${
                                                           d.specificGravityTrials?.isDiffExceeded
                                                             ? 'text-amber-600 font-semibold'
                                                             : 'text-gray-400'
@@ -782,7 +784,17 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                           d.specificGravityTrials?.isDiffExceeded ? ' (⚠️ Difference > 0.03)' : ''
                                                         }`}
                                                       >
-                                                        (SG₁: {d.specificGravityTrials?.t1?.sg || '-'}, SG₂: {d.specificGravityTrials?.t2?.sg || '-'})
+                                                        (SG: {d.specificGravityTrials?.averageSg})
+                                                      </span>
+                                                    )}
+                                                    {d.freeSwellIndexTrials?.averageFsi && (
+                                                      <span
+                                                        className="text-[10px] text-purple-600 block cursor-help font-medium"
+                                                        title={`FSI₁=${d.freeSwellIndexTrials?.t1?.fsi || '-'}%, FSI₂=${d.freeSwellIndexTrials?.t2?.fsi || '-'}% (Avg: ${d.freeSwellIndexTrials?.averageFsi}%${
+                                                          d.freeSwellIndexTrials?.expansiveness ? `, ${d.freeSwellIndexTrials.expansiveness} Swell` : ''
+                                                        })`}
+                                                      >
+                                                        (FSI: {d.freeSwellIndexTrials?.averageFsi}%{d.freeSwellIndexTrials?.expansiveness ? ` • ${d.freeSwellIndexTrials.expansiveness}` : ''})
                                                       </span>
                                                     )}
                                                   </td>
