@@ -1,18 +1,19 @@
 # Makefile for running the project
 
 ifeq ($(OS),Windows_NT)
-    PYTHON ?= $(if $(wildcard .venv/Scripts/python.exe),.venv/Scripts/python.exe,python)
-    PIP ?= $(if $(wildcard .venv/Scripts/pip.exe),.venv/Scripts/pip.exe,pip)
+    PYTHON ?= $(if $(wildcard .venv/Scripts/python.exe),$(CURDIR)/.venv/Scripts/python.exe,python)
+    PIP ?= $(if $(wildcard .venv/Scripts/pip.exe),$(CURDIR)/.venv/Scripts/pip.exe,pip)
 else
-    PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
-    PIP ?= $(if $(wildcard .venv/bin/pip),.venv/bin/pip,pip3)
+    PYTHON ?= $(if $(wildcard .venv/bin/python),$(CURDIR)/.venv/bin/python,python3)
+    PIP ?= $(if $(wildcard .venv/bin/pip),$(CURDIR)/.venv/bin/pip,pip3)
 endif
 
-.PHONY: help install dev preview stop build build-production clean clean-build android android-install format format-check setup-hooks docker-build docker-run init-test test test-e2e test-ui
+.PHONY: help install venv dev preview stop build build-production clean clean-build android android-install format format-check setup-hooks docker-build docker-run init-test test test-e2e test-ui
 
 # Default target
 help:
 	@echo "Available targets:"
+	@echo "  make venv             - Create Python virtual environment and install dependencies"
 	@echo "  make install          - Install dependencies"
 	@echo "  make dev              - Run development server (http://localhost:3000)"
 	@echo "  make preview          - Preview production build (http://localhost:3000)"
@@ -29,6 +30,12 @@ help:
 	@echo "  make format           - Format source files with Prettier (writes in-place)"
 	@echo "  make format-check     - Check formatting without writing (CI-friendly)"
 	@echo "  make setup-hooks      - Install Git hooks (run once after cloning)"
+
+# Python virtual environment
+venv:
+	@test -d .venv || (echo "Creating virtual environment in .venv..." && python3 -m venv .venv)
+	@echo "Installing python dependencies into .venv..."
+	@$(CURDIR)/.venv/bin/pip install -r server/requirements.txt uvicorn
 
 # Install dependencies
 install:
@@ -59,17 +66,19 @@ clean: clean-build
 
 # Run development server with hot reload (Python FastAPI server on port 8000)
 dev: build
+	@test -d .venv || (echo "Creating virtual environment in .venv..." && python3 -m venv .venv)
 	@echo "Installing python dependencies..."
-	pip3 install --break-system-packages -r server/requirements.txt uvicorn || pip install -r server/requirements.txt uvicorn
+	@$(PIP) install -r server/requirements.txt uvicorn 2>/dev/null || $(PIP) install --break-system-packages -r server/requirements.txt uvicorn
 	@echo "Starting FastAPI server on http://0.0.0.0:8000..."
-	cd server && python3 -m uvicorn main:app --host 0.0.0.0 --reload --port 8000
+	cd server && $(PYTHON) -m uvicorn main:app --host 0.0.0.0 --reload --port 8000
 
 # Preview production build
 preview: build
+	@test -d .venv || (echo "Creating virtual environment in .venv..." && python3 -m venv .venv)
 	@echo "Installing python dependencies..."
-	pip3 install --break-system-packages -r server/requirements.txt uvicorn || pip install -r server/requirements.txt uvicorn
+	@$(PIP) install -r server/requirements.txt uvicorn 2>/dev/null || $(PIP) install --break-system-packages -r server/requirements.txt uvicorn
 	@echo "Starting production server on http://0.0.0.0:8000..."
-	cd server && python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
+	cd server && $(PYTHON) -m uvicorn main:app --host 0.0.0.0 --port 8000
 
 # Stop running servers (kills processes on port 8000)
 stop:
