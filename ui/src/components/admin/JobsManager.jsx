@@ -207,21 +207,18 @@ const JobsManager = ({ id }) => {
 
   useEffect(() => {
     if (id) {
-      // Wait for listing to load first if it's in progress
-      if (loading && records.length === 0) return;
-
       const existing = records.find((r) => String(r.id) === String(id));
       if (existing) {
-        setEditingRecord({ ...existing });
+        setEditingRecord((prev) => (prev?.id === existing.id ? prev : { ...existing }));
         setIsAddingNew(false);
-      } else if (!authLoading) {
-        // Only fetch directly if not found in already loaded records
+      }
+      if (!authLoading && user?.id) {
         fetchJobById(id);
       }
     } else {
       setEditingRecord(null);
     }
-  }, [id, records, authLoading, loading]);
+  }, [id, authLoading, user?.id]);
 
   const fetchJobById = async (jobId) => {
     if (!user || !user.id) return;
@@ -249,6 +246,9 @@ const JobsManager = ({ id }) => {
       if (data && data.client_id) {
         const { data: cData } = await apiClient.from('clients').select('id, client_name, client_address, gstin').eq('id', data.client_id).maybeSingle();
         if (cData) data = { ...data, clients: cData };
+      } else if (data && !data.client_id && data.client_name) {
+        const { data: cData } = await apiClient.from('clients').select('id, client_name, client_address, gstin').ilike('client_name', data.client_name.trim()).maybeSingle();
+        if (cData) data = { ...data, client_id: cData.id, clients: cData };
       }
 
       if (data) {
@@ -390,6 +390,26 @@ const JobsManager = ({ id }) => {
     const { data } = await apiClient.from('client_options').select('*');
     setClients(data || []);
   };
+
+  // Automatically resolve client_id if editingRecord has client_name but missing client_id
+  useEffect(() => {
+    if (editingRecord && (!editingRecord.client_id || isNaN(Number(editingRecord.client_id))) && clients.length > 0) {
+      const targetName = (editingRecord.client_name || editingRecord.clients?.client_name || '').trim().toLowerCase();
+      if (targetName) {
+        const matched = clients.find(
+          (c) => (c.client_name || c.clientName || '').trim().toLowerCase() === targetName
+        );
+        if (matched?.id) {
+          setEditingRecord((prev) => (prev ? {
+            ...prev,
+            client_id: matched.id,
+            client_name: matched.client_name || matched.clientName,
+            clients: matched,
+          } : prev));
+        }
+      }
+    }
+  }, [clients, editingRecord?.client_name, editingRecord?.clients?.client_name, editingRecord?.client_id]);
 
   useEffect(() => {
     if (editingRecord?.id) {
@@ -584,6 +604,9 @@ const JobsManager = ({ id }) => {
       if (data && data.client_id) {
         const { data: cData } = await apiClient.from('clients').select('id, client_name, client_address, gstin').eq('id', data.client_id).maybeSingle();
         if (cData) data = { ...data, clients: cData };
+      } else if (data && !data.client_id && data.client_name) {
+        const { data: cData } = await apiClient.from('clients').select('id, client_name, client_address, gstin').ilike('client_name', data.client_name.trim()).maybeSingle();
+        if (cData) data = { ...data, client_id: cData.id, clients: cData };
       }
       if (data) {
         setEditingRecord({ ...data });
@@ -916,11 +939,49 @@ const JobsManager = ({ id }) => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Ensure client_id is an integer
-      const clientId =
+      // Ensure client_id is an integer, with comprehensive fallbacks from page data
+      let clientId =
         typeof editingRecord.client_id === 'string'
           ? parseInt(editingRecord.client_id)
           : editingRecord.client_id;
+
+      if (!clientId || isNaN(clientId)) {
+        if (editingRecord.clients?.id) {
+          clientId =
+            typeof editingRecord.clients.id === 'string'
+              ? parseInt(editingRecord.clients.id)
+              : editingRecord.clients.id;
+        }
+      }
+
+      // If clientId still missing, attempt resolution from client_name
+      const targetName = (editingRecord.client_name || editingRecord.clients?.client_name || '').trim();
+      if ((!clientId || isNaN(clientId)) && targetName) {
+        // 1. Check loaded clients list
+        if (clients?.length > 0) {
+          const matched = clients.find(
+            (c) => (c.client_name || c.clientName || '').trim().toLowerCase() === targetName.toLowerCase()
+          );
+          if (matched?.id) {
+            clientId = parseInt(matched.id);
+          }
+        }
+        // 2. Query clients table by name if still not found
+        if (!clientId || isNaN(clientId)) {
+          try {
+            const { data: dbClient } = await apiClient
+              .from('clients')
+              .select('id, client_name')
+              .ilike('client_name', targetName)
+              .maybeSingle();
+            if (dbClient?.id) {
+              clientId = parseInt(dbClient.id);
+            }
+          } catch (e) {
+            console.warn('Could not query client by name:', e);
+          }
+        }
+      }
 
       if (!clientId || isNaN(clientId)) {
         throw new Error('Please select a valid client.');
@@ -932,6 +993,7 @@ const JobsManager = ({ id }) => {
         project_address: editingRecord.project_address || null,
         work_order_id: editingRecord.work_order_id || null,
         status: editingRecord.status,
+        ...(editingRecord.test_types ? { test_types: editingRecord.test_types } : {}),
         updated_at: new Date().toISOString(),
       };
 
@@ -1001,9 +1063,12 @@ const JobsManager = ({ id }) => {
       toast({ title: 'Success', description: 'Job saved successfully' });
       // If we were adding a new job, return to the jobs list
       if (isAddingNew) {
+        setIsAddingNew(false);
+        setEditingRecord(null);
         navigate('/settings/jobs');
+      } else {
+        await reloadEditingRecord();
       }
-      setEditingRecord(null);
       fetchRecords();
     } catch (err) {
       console.error('Save Error:', err);
@@ -1565,6 +1630,7 @@ const JobsManager = ({ id }) => {
                           ...editingRecord,
                           client_id: option ? option.value : null,
                           client_name: selectedClient ? (selectedClient.client_name || selectedClient.clientName) : (option ? option.label : ''),
+                          clients: selectedClient || editingRecord.clients,
                         });
                       }}
                       placeholder="Search Clients..."

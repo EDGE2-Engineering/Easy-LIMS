@@ -1037,12 +1037,7 @@ async def list_jobs(
                 {limit_clause}
             """
             rows = await fetch_with_coerced_params(conn, data_query, query_params)
-            jobs = []
-            for r in rows:
-                job = dict(r)
-                for k in ["client_id", "created_by", "updated_by"]:
-                    job.pop(k, None)
-                jobs.append(job)
+            jobs = [dict(r) for r in rows]
 
             return {
                 "data": jobs,
