@@ -2056,7 +2056,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                       variant="outline"
                       size="sm"
                       onClick={() => setShowMoistureInputsInline(!showMoistureInputsInline)}
-                      className="text-xs h-8 text-gray-600 hover:text-gray-900 border-gray-200"
+                      className="hidden text-xs h-8 text-gray-600 hover:text-gray-900 border-gray-200"
                       title="Toggle inline entry for Container No, w1, w2, w3"
                     >
                       <Scale className="w-3.5 h-3.5 mr-1 text-primary" />

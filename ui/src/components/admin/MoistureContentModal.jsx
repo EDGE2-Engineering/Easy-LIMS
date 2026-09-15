@@ -137,7 +137,7 @@ export default function MoistureContentModal({
               <button
                 type="button"
                 onClick={() => handleFillSample(1)}
-                className="text-[11px] text-primary hover:underline font-medium"
+                className="hidden text-[11px] text-primary hover:underline font-medium"
                 title="Fill BH-01 (1.50m) sample data"
               >
                 Sample 1
@@ -146,7 +146,7 @@ export default function MoistureContentModal({
               <button
                 type="button"
                 onClick={() => handleFillSample(2)}
-                className="text-[11px] text-primary hover:underline font-medium"
+                className="hidden text-[11px] text-primary hover:underline font-medium"
                 title="Fill BH-01 (3.00m) sample data"
               >
                 Sample 2

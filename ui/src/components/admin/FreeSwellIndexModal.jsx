@@ -120,7 +120,7 @@ export default function FreeSwellIndexModal({
               variant="outline"
               size="sm"
               onClick={handleFillSample}
-              className="text-xs h-7 border-primary/30 text-primary hover:bg-primary/5"
+              className="hidden text-xs h-7 border-primary/30 text-primary hover:bg-primary/5"
               title="Autofill sample values from specification"
             >
               Fill Sample Data
