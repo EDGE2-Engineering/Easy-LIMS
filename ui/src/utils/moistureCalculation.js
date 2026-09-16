@@ -60,16 +60,24 @@ export function formatOneDecimal(val) {
  * @returns {Object} Calculated values, formatted outputs, and validation status
  */
 export function calculateMoistureValues({ w1, w2, w3, precisionMode = 'two_sig_figs' }) {
-  const numW1 = w1 !== '' && w1 !== null && w1 !== undefined ? parseFloat(w1) : NaN;
-  const numW2 = w2 !== '' && w2 !== null && w2 !== undefined ? parseFloat(w2) : NaN;
-  const numW3 = w3 !== '' && w3 !== null && w3 !== undefined ? parseFloat(w3) : NaN;
+  const isPresent = (v) => v !== '' && v !== null && v !== undefined && v !== '-';
+  const numW1 = isPresent(w1) ? parseFloat(w1) : NaN;
+  const numW2 = isPresent(w2) ? parseFloat(w2) : NaN;
+  const numW3 = isPresent(w3) ? parseFloat(w3) : NaN;
 
   const hasW1 = !isNaN(numW1);
   const hasW2 = !isNaN(numW2);
   const hasW3 = !isNaN(numW3);
 
+  const hasAny = isPresent(w1) || isPresent(w2) || isPresent(w3);
+  const hasAll = hasW1 && hasW2 && hasW3;
+
   const errors = [];
   const warnings = [];
+
+  if (hasAny && !hasAll) {
+    errors.push('All 3 container weight measurements (w₁, w₂, w₃) are required for a complete calculation.');
+  }
 
   // Validation checks
   if (hasW2 && hasW3 && numW3 > numW2) {

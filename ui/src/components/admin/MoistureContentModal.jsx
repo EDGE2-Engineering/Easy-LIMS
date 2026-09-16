@@ -42,10 +42,11 @@ export default function MoistureContentModal({
   // Initialize or reset when modal opens or initialData changes
   useEffect(() => {
     if (isOpen) {
-      setContainerNo(initialData?.containerNo ?? '');
-      setW1(initialData?.w1 ?? '');
-      setW2(initialData?.w2 ?? '');
-      setW3(initialData?.w3 ?? '');
+      const cleanVal = (v) => (v === '-' || v === undefined || v === null ? '' : String(v));
+      setContainerNo(cleanVal(initialData?.containerNo));
+      setW1(cleanVal(initialData?.w1));
+      setW2(cleanVal(initialData?.w2));
+      setW3(cleanVal(initialData?.w3));
       setPrecisionMode(initialData?.precisionMode || 'two_sig_figs');
     }
   }, [isOpen, initialData]);
@@ -56,15 +57,16 @@ export default function MoistureContentModal({
   }, [w1, w2, w3, precisionMode]);
 
   const handleApply = () => {
+    const finalMoisture = calc.moistureContent || '-';
     onApply({
       containerNo,
-      w1: w1 !== '' ? String(w1) : '',
-      w2: w2 !== '' ? String(w2) : '',
-      w3: w3 !== '' ? String(w3) : '',
-      w4: calc.w4,
-      w5: calc.w5,
+      w1: w1 !== '' && w1 !== '-' ? String(w1) : '',
+      w2: w2 !== '' && w2 !== '-' ? String(w2) : '',
+      w3: w3 !== '' && w3 !== '-' ? String(w3) : '',
+      w4: calc.w4 || '-',
+      w5: calc.w5 || '-',
       rawMoisture: calc.rawMoisture !== null ? String(calc.rawMoisture.toFixed(2)) : '',
-      moistureContent: calc.moistureContent,
+      moistureContent: finalMoisture,
       precisionMode,
     });
     onClose();
@@ -272,7 +274,7 @@ export default function MoistureContentModal({
               </div>
               <div className="mt-2 flex items-baseline gap-1">
                 <span className="text-xl font-bold text-blue-900">
-                  {calc.w4 !== '' ? calc.w4 : '—'}
+                  {calc.w4 && calc.w4 !== '-' ? calc.w4 : '—'}
                 </span>
                 <span className="text-xs text-blue-700 font-medium">gm</span>
               </div>
@@ -286,7 +288,7 @@ export default function MoistureContentModal({
               </div>
               <div className="mt-2 flex items-baseline gap-1">
                 <span className="text-xl font-bold text-amber-900">
-                  {calc.w5 !== '' ? calc.w5 : '—'}
+                  {calc.w5 && calc.w5 !== '-' ? calc.w5 : '—'}
                 </span>
                 <span className="text-xs text-amber-800 font-medium">gm</span>
               </div>
@@ -305,7 +307,7 @@ export default function MoistureContentModal({
               </div>
               <div className="mt-2 flex items-baseline gap-1">
                 <span className="text-2xl font-extrabold text-emerald-900">
-                  {calc.moistureContent !== '' ? `${calc.moistureContent}%` : '—'}
+                  {calc.moistureContent && calc.moistureContent !== '-' ? `${calc.moistureContent}%` : '—'}
                 </span>
                 {calc.rawMoisture !== null && (
                   <span className="text-[11px] text-emerald-700 font-normal ml-1">

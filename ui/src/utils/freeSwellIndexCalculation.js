@@ -25,16 +25,22 @@
  * @returns {Object}
  */
 export function calculateSingleTrialFSI({ soilMass, vd, vk }) {
-  const numVd = vd !== '' && vd !== null && vd !== undefined ? parseFloat(vd) : NaN;
-  const numVk = vk !== '' && vk !== null && vk !== undefined ? parseFloat(vk) : NaN;
-  const numSoilMass = soilMass !== '' && soilMass !== null && soilMass !== undefined ? parseFloat(soilMass) : NaN;
+  const isPresent = (v) => v !== '' && v !== null && v !== undefined && v !== '-';
+  const numVd = isPresent(vd) ? parseFloat(vd) : NaN;
+  const numVk = isPresent(vk) ? parseFloat(vk) : NaN;
+  const numSoilMass = isPresent(soilMass) ? parseFloat(soilMass) : NaN;
 
+  const hasAnyVolume = isPresent(vd) || isPresent(vk);
   const hasVolumes = !isNaN(numVd) && !isNaN(numVk);
   if (!hasVolumes) {
+    const errors = [];
+    if (hasAnyVolume) {
+      errors.push('Both volume in water (V_d) and volume in kerosene (V_k) are required for a complete determination.');
+    }
     return {
       fsi: '',
       rawFsi: null,
-      errors: [],
+      errors,
       isValid: false,
     };
   }

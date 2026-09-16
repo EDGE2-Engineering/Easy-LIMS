@@ -28,17 +28,23 @@
  * @returns {Object}
  */
 export function calculateSingleTrialSG({ m1, m2, m3, m4 }) {
-  const numM1 = m1 !== '' && m1 !== null && m1 !== undefined ? parseFloat(m1) : NaN;
-  const numM2 = m2 !== '' && m2 !== null && m2 !== undefined ? parseFloat(m2) : NaN;
-  const numM3 = m3 !== '' && m3 !== null && m3 !== undefined ? parseFloat(m3) : NaN;
-  const numM4 = m4 !== '' && m4 !== null && m4 !== undefined ? parseFloat(m4) : NaN;
+  const isPresent = (v) => v !== '' && v !== null && v !== undefined && v !== '-';
+  const numM1 = isPresent(m1) ? parseFloat(m1) : NaN;
+  const numM2 = isPresent(m2) ? parseFloat(m2) : NaN;
+  const numM3 = isPresent(m3) ? parseFloat(m3) : NaN;
+  const numM4 = isPresent(m4) ? parseFloat(m4) : NaN;
 
+  const hasAny = isPresent(m1) || isPresent(m2) || isPresent(m3) || isPresent(m4);
   const hasAll = !isNaN(numM1) && !isNaN(numM2) && !isNaN(numM3) && !isNaN(numM4);
   if (!hasAll) {
+    const errors = [];
+    if (hasAny) {
+      errors.push('All 4 mass measurements (M₁ to M₄) are required for a complete determination.');
+    }
     return {
       sg: '',
       rawSg: null,
-      errors: [],
+      errors,
       isValid: false,
     };
   }

@@ -748,8 +748,8 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                   </td>
                                                   <td className="p-3 text-gray-600">
                                                     {d.bulkDensity || '-'}/
-                                                    {d.moistureContent ? `${d.moistureContent}%` : '-'}
-                                                    {d.containerNo && (
+                                                    {d.moistureContent && d.moistureContent !== '-' ? `${d.moistureContent}%` : '-'}
+                                                    {d.containerNo && d.containerNo !== '-' && (
                                                       <span
                                                         className="ml-1 text-[10px] text-gray-400 block cursor-help"
                                                         title={`Cont: #${d.containerNo}, w₁=${d.w1 || '-'}g, w₂=${d.w2 || '-'}g, w₃=${d.w3 || '-'}g (w₄=${d.w4 || '-'}g, w₅=${d.w5 || '-'}g)`}
@@ -771,9 +771,9 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                   <td className="p-3 text-gray-600">
                                                     <div>
                                                       <span>{d.specificGravity || '-'}</span>/
-                                                      <span>{d.freeSwellIndex ? `${d.freeSwellIndex}%` : '-'}</span>
+                                                      <span>{d.freeSwellIndex && d.freeSwellIndex !== '-' ? `${d.freeSwellIndex}%` : '-'}</span>
                                                     </div>
-                                                    {d.specificGravityTrials?.averageSg && (
+                                                    {d.specificGravityTrials?.averageSg && d.specificGravityTrials?.averageSg !== '-' && (
                                                       <span
                                                         className={`text-[10px] block cursor-help ${
                                                           d.specificGravityTrials?.isDiffExceeded
@@ -787,7 +787,7 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
                                                         (SG: {d.specificGravityTrials?.averageSg})
                                                       </span>
                                                     )}
-                                                    {d.freeSwellIndexTrials?.averageFsi && (
+                                                    {d.freeSwellIndexTrials?.averageFsi && d.freeSwellIndexTrials?.averageFsi !== '-' && (
                                                       <span
                                                         className="text-[10px] text-purple-600 block cursor-help font-medium"
                                                         title={`FSI₁=${d.freeSwellIndexTrials?.t1?.fsi || '-'}%, FSI₂=${d.freeSwellIndexTrials?.t2?.fsi || '-'}% (Avg: ${d.freeSwellIndexTrials?.averageFsi}%${

@@ -747,15 +747,16 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
 
   const handleApplyMoistureModal = (boreholeIndex, depthIndex, appliedData) => {
     const newResults = [...formData.labTestResults];
+    const finalMoisture = appliedData.moistureContent && appliedData.moistureContent !== '' ? appliedData.moistureContent : '-';
     newResults[boreholeIndex][depthIndex] = {
       ...newResults[boreholeIndex][depthIndex],
       containerNo: appliedData.containerNo,
       w1: appliedData.w1,
       w2: appliedData.w2,
       w3: appliedData.w3,
-      w4: appliedData.w4,
-      w5: appliedData.w5,
-      moistureContent: appliedData.moistureContent,
+      w4: appliedData.w4 || '-',
+      w5: appliedData.w5 || '-',
+      moistureContent: finalMoisture,
       precisionMode: appliedData.precisionMode,
     };
     setFormData({ ...formData, labTestResults: newResults });
@@ -763,9 +764,10 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
 
   const handleApplySpecificGravityModal = (boreholeIndex, depthIndex, { trials, averageSg }) => {
     const newResults = [...formData.labTestResults];
+    const finalVal = averageSg && averageSg !== '' ? averageSg : '-';
     newResults[boreholeIndex][depthIndex] = {
       ...newResults[boreholeIndex][depthIndex],
-      specificGravity: averageSg,
+      specificGravity: finalVal,
       specificGravityTrials: trials,
     };
     setFormData({ ...formData, labTestResults: newResults });
@@ -773,9 +775,10 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
 
   const handleApplyFreeSwellIndexModal = (boreholeIndex, depthIndex, { trials, averageFsi }) => {
     const newResults = [...formData.labTestResults];
+    const finalVal = averageFsi && averageFsi !== '' ? averageFsi : '-';
     newResults[boreholeIndex][depthIndex] = {
       ...newResults[boreholeIndex][depthIndex],
-      freeSwellIndex: averageFsi,
+      freeSwellIndex: finalVal,
       freeSwellIndexTrials: trials,
     };
     setFormData({ ...formData, labTestResults: newResults });
@@ -2112,8 +2115,14 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                 <div className="relative flex items-center">
                                   <Input
                                     value={
-                                      depthData.moistureContent !== '' && depthData.moistureContent !== null && depthData.moistureContent !== undefined
-                                        ? `${depthData.moistureContent}%`
+                                      depthData.moistureContent !== '' &&
+                                      depthData.moistureContent !== null &&
+                                      depthData.moistureContent !== undefined
+                                        ? depthData.moistureContent === '-'
+                                          ? '-'
+                                          : String(depthData.moistureContent).endsWith('%')
+                                          ? depthData.moistureContent
+                                          : `${depthData.moistureContent}%`
                                         : ''
                                     }
                                     readOnly
@@ -2127,7 +2136,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                     className="h-8 pr-8 cursor-pointer bg-gray-50/70 hover:bg-gray-100/80 font-medium text-gray-800 transition-colors"
                                     placeholder="Moisture % (IS:2720)"
                                     title={
-                                      depthData.containerNo || depthData.w1
+                                      depthData.moistureContent && depthData.moistureContent !== '-'
                                         ? `Cont: ${depthData.containerNo || '-'}, w₁=${depthData.w1 || '-'}g, w₂=${depthData.w2 || '-'}g, w₃=${depthData.w3 || '-'}g (w₄=${depthData.w4 || '-'}g, w₅=${depthData.w5 || '-'}g). Click to open calculator.`
                                         : 'Click to calculate Moisture Content (IS:2720 Part II)'
                                     }
@@ -2259,7 +2268,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                   }`}
                                   placeholder="SG (Auto)"
                                   title={
-                                    depthData.specificGravityTrials?.averageSg
+                                    depthData.specificGravityTrials?.averageSg && depthData.specificGravityTrials?.averageSg !== '-'
                                       ? `SG₁=${depthData.specificGravityTrials?.t1?.sg || '-'}, SG₂=${depthData.specificGravityTrials?.t2?.sg || '-'}, Diff=${depthData.specificGravityTrials?.diff || '-'}${
                                           depthData.specificGravityTrials?.isDiffExceeded ? ' (⚠️ Difference > 0.03)' : ''
                                         }. Click to edit.`
@@ -2287,7 +2296,11 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                     depthData.freeSwellIndex !== '' &&
                                     depthData.freeSwellIndex !== null &&
                                     depthData.freeSwellIndex !== undefined
-                                      ? `${depthData.freeSwellIndex}%`
+                                      ? depthData.freeSwellIndex === '-'
+                                        ? '-'
+                                        : String(depthData.freeSwellIndex).endsWith('%')
+                                        ? depthData.freeSwellIndex
+                                        : `${depthData.freeSwellIndex}%`
                                       : ''
                                   }
                                   readOnly
@@ -2301,7 +2314,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                   className="h-8 pr-8 cursor-pointer bg-gray-50/70 hover:bg-gray-100/80 font-medium text-gray-800 transition-colors"
                                   placeholder="FSI % (Auto)"
                                   title={
-                                    depthData.freeSwellIndexTrials?.averageFsi
+                                    depthData.freeSwellIndexTrials?.averageFsi && depthData.freeSwellIndexTrials?.averageFsi !== '-'
                                       ? `FSI₁=${depthData.freeSwellIndexTrials?.t1?.fsi || '-'}%, FSI₂=${depthData.freeSwellIndexTrials?.t2?.fsi || '-'}% (Avg: ${depthData.freeSwellIndexTrials?.averageFsi}%${
                                           depthData.freeSwellIndexTrials?.expansiveness
                                             ? `, ${depthData.freeSwellIndexTrials.expansiveness} Swell`
@@ -2423,13 +2436,13 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                   </div>
                                   <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
                                     <span className="text-[11px] text-blue-700">
-                                      w₄: <strong>{depthData.w4 ? `${depthData.w4}g` : '—'}</strong>
+                                      w₄: <strong>{depthData.w4 && depthData.w4 !== '-' ? `${depthData.w4}g` : '—'}</strong>
                                     </span>
                                     <span className="text-[11px] text-amber-700">
-                                      w₅: <strong>{depthData.w5 ? `${depthData.w5}g` : '—'}</strong>
+                                      w₅: <strong>{depthData.w5 && depthData.w5 !== '-' ? `${depthData.w5}g` : '—'}</strong>
                                     </span>
                                     <span className="text-[11px] text-emerald-800 font-bold bg-emerald-100/80 px-2 py-0.5 rounded">
-                                      w: {depthData.moistureContent ? `${depthData.moistureContent}%` : '—'}
+                                      w: {depthData.moistureContent && depthData.moistureContent !== '-' ? `${depthData.moistureContent}%` : '—'}
                                     </span>
                                   </div>
                                 </div>

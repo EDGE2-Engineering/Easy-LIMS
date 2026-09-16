@@ -44,15 +44,16 @@ export default function SpecificGravityModal({
   // Load initialData when opening
   useEffect(() => {
     if (isOpen) {
-      setT1M1(initialData?.t1?.m1 ?? '');
-      setT1M2(initialData?.t1?.m2 ?? '');
-      setT1M3(initialData?.t1?.m3 ?? '');
-      setT1M4(initialData?.t1?.m4 ?? '');
+      const cleanVal = (v) => (v === '-' || v === undefined || v === null ? '' : String(v));
+      setT1M1(cleanVal(initialData?.t1?.m1));
+      setT1M2(cleanVal(initialData?.t1?.m2));
+      setT1M3(cleanVal(initialData?.t1?.m3));
+      setT1M4(cleanVal(initialData?.t1?.m4));
 
-      setT2M1(initialData?.t2?.m1 ?? '');
-      setT2M2(initialData?.t2?.m2 ?? '');
-      setT2M3(initialData?.t2?.m3 ?? '');
-      setT2M4(initialData?.t2?.m4 ?? '');
+      setT2M1(cleanVal(initialData?.t2?.m1));
+      setT2M2(cleanVal(initialData?.t2?.m2));
+      setT2M3(cleanVal(initialData?.t2?.m3));
+      setT2M4(cleanVal(initialData?.t2?.m4));
     }
   }, [isOpen, initialData]);
 
@@ -65,15 +66,16 @@ export default function SpecificGravityModal({
   }, [t1M1, t1M2, t1M3, t1M4, t2M1, t2M2, t2M3, t2M4]);
 
   const handleApply = () => {
+    const finalAverageSg = calc.averageSg || '-';
     onApply({
       trials: {
-        t1: { m1: t1M1, m2: t1M2, m3: t1M3, m4: t1M4, sg: calc.t1.sg },
-        t2: { m1: t2M1, m2: t2M2, m3: t2M3, m4: t2M4, sg: calc.t2.sg },
-        diff: calc.diff,
-        averageSg: calc.averageSg,
+        t1: { m1: t1M1, m2: t1M2, m3: t1M3, m4: t1M4, sg: calc.t1.sg || '-' },
+        t2: { m1: t2M1, m2: t2M2, m3: t2M3, m4: t2M4, sg: calc.t2.sg || '-' },
+        diff: calc.diff || '-',
+        averageSg: finalAverageSg,
         isDiffExceeded: calc.isDiffExceeded,
       },
-      averageSg: calc.averageSg,
+      averageSg: finalAverageSg,
     });
     onClose();
   };
@@ -316,7 +318,7 @@ export default function SpecificGravityModal({
               </div>
               <div className="mt-2">
                 <span className="text-xl font-bold text-gray-800">
-                  {calc.t1.sg !== '' ? calc.t1.sg : '—'}
+                  {calc.t1.sg && calc.t1.sg !== '-' ? calc.t1.sg : '—'}
                 </span>
               </div>
             </div>
@@ -329,7 +331,7 @@ export default function SpecificGravityModal({
               </div>
               <div className="mt-2">
                 <span className="text-xl font-bold text-gray-800">
-                  {calc.t2.sg !== '' ? calc.t2.sg : '—'}
+                  {calc.t2.sg && calc.t2.sg !== '-' ? calc.t2.sg : '—'}
                 </span>
               </div>
             </div>
@@ -348,9 +350,9 @@ export default function SpecificGravityModal({
               </div>
               <div className="mt-2 flex items-center gap-1.5">
                 <span className={`text-xl font-bold ${calc.isDiffExceeded ? 'text-amber-900' : 'text-gray-800'}`}>
-                  {calc.diff !== '' ? calc.diff : '—'}
+                  {calc.diff && calc.diff !== '-' ? calc.diff : '—'}
                 </span>
-                {calc.diff !== '' && (
+                {calc.diff && calc.diff !== '-' && (
                   calc.isDiffExceeded ? (
                     <Badge variant="outline" className="text-[10px] bg-amber-100 text-amber-800 border-amber-300">
                       &gt; 0.03
@@ -374,7 +376,7 @@ export default function SpecificGravityModal({
               </div>
               <div className="mt-2">
                 <span className="text-2xl font-extrabold text-emerald-900">
-                  {calc.averageSg !== '' ? calc.averageSg : '—'}
+                  {calc.averageSg && calc.averageSg !== '-' ? calc.averageSg : '—'}
                 </span>
               </div>
             </div>
@@ -406,7 +408,7 @@ export default function SpecificGravityModal({
               type="button"
               size="sm"
               onClick={handleApply}
-              disabled={!calc.averageSg || calc.t1.errors.length > 0 || calc.t2.errors.length > 0}
+              disabled={calc.t1.errors.length > 0 || calc.t2.errors.length > 0}
               className="text-xs bg-primary hover:bg-primary/90 text-white flex items-center gap-1"
             >
               <Check className="w-3.5 h-3.5" /> Apply Specific Gravity

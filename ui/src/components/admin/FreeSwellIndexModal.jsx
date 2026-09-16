@@ -42,13 +42,14 @@ export default function FreeSwellIndexModal({
   // Load initialData when opening
   useEffect(() => {
     if (isOpen) {
-      setT1SoilMass(initialData?.t1?.soilMass ?? '10.000');
-      setT1Vd(initialData?.t1?.vd ?? '');
-      setT1Vk(initialData?.t1?.vk ?? '');
+      const cleanVal = (v) => (v === '-' || v === undefined || v === null ? '' : String(v));
+      setT1SoilMass(cleanVal(initialData?.t1?.soilMass) || '10.000');
+      setT1Vd(cleanVal(initialData?.t1?.vd));
+      setT1Vk(cleanVal(initialData?.t1?.vk));
 
-      setT2SoilMass(initialData?.t2?.soilMass ?? '10.000');
-      setT2Vd(initialData?.t2?.vd ?? '');
-      setT2Vk(initialData?.t2?.vk ?? '');
+      setT2SoilMass(cleanVal(initialData?.t2?.soilMass) || '10.000');
+      setT2Vd(cleanVal(initialData?.t2?.vd));
+      setT2Vk(cleanVal(initialData?.t2?.vk));
     }
   }, [isOpen, initialData]);
 
@@ -61,14 +62,15 @@ export default function FreeSwellIndexModal({
   }, [t1SoilMass, t1Vd, t1Vk, t2SoilMass, t2Vd, t2Vk]);
 
   const handleApply = () => {
+    const finalAverageFsi = calc.averageFsi || '-';
     onApply({
       trials: {
-        t1: { soilMass: t1SoilMass, vd: t1Vd, vk: t1Vk, fsi: calc.t1.fsi },
-        t2: { soilMass: t2SoilMass, vd: t2Vd, vk: t2Vk, fsi: calc.t2.fsi },
-        averageFsi: calc.averageFsi,
-        expansiveness: calc.expansiveness,
+        t1: { soilMass: t1SoilMass, vd: t1Vd, vk: t1Vk, fsi: calc.t1.fsi || '-' },
+        t2: { soilMass: t2SoilMass, vd: t2Vd, vk: t2Vk, fsi: calc.t2.fsi || '-' },
+        averageFsi: finalAverageFsi,
+        expansiveness: calc.expansiveness || '',
       },
-      averageFsi: calc.averageFsi,
+      averageFsi: finalAverageFsi,
     });
     onClose();
   };
@@ -268,7 +270,7 @@ export default function FreeSwellIndexModal({
               </div>
               <div className="mt-2">
                 <span className="text-xl font-bold text-gray-800">
-                  {calc.t1.fsi !== '' ? `${calc.t1.fsi}%` : '—'}
+                  {calc.t1.fsi && calc.t1.fsi !== '-' ? `${calc.t1.fsi}%` : '—'}
                 </span>
               </div>
             </div>
@@ -281,7 +283,7 @@ export default function FreeSwellIndexModal({
               </div>
               <div className="mt-2">
                 <span className="text-xl font-bold text-gray-800">
-                  {calc.t2.fsi !== '' ? `${calc.t2.fsi}%` : '—'}
+                  {calc.t2.fsi && calc.t2.fsi !== '-' ? `${calc.t2.fsi}%` : '—'}
                 </span>
               </div>
             </div>
@@ -301,7 +303,7 @@ export default function FreeSwellIndexModal({
               </div>
               <div className="mt-2">
                 <span className="text-2xl font-extrabold text-purple-900">
-                  {calc.averageFsi !== '' ? `${calc.averageFsi}%` : '—'}
+                  {calc.averageFsi && calc.averageFsi !== '-' ? `${calc.averageFsi}%` : '—'}
                 </span>
               </div>
             </div>
@@ -333,7 +335,7 @@ export default function FreeSwellIndexModal({
               type="button"
               size="sm"
               onClick={handleApply}
-              disabled={!calc.averageFsi || calc.t1.errors.length > 0 || calc.t2.errors.length > 0}
+              disabled={calc.t1.errors.length > 0 || calc.t2.errors.length > 0}
               className="text-xs bg-primary hover:bg-primary/90 text-white flex items-center gap-1"
             >
               <Check className="w-3.5 h-3.5" /> Apply Free Swell Index
