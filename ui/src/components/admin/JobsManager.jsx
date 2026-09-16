@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { cn, safeFormatDate } from '@/lib/utils';
+import { encodeId, decodeId } from '@/lib/idObfuscation';
 import {
   Search,
   Plus,
@@ -206,14 +207,19 @@ const JobsManager = ({ id }) => {
   });
 
   useEffect(() => {
-    if (id) {
-      const existing = records.find((r) => String(r.id) === String(id));
+    const rawId = id;
+    const activeId = decodeId(rawId);
+    if (activeId) {
+      if (rawId && /^\d+$/.test(String(rawId).trim())) {
+        navigate(`/settings/jobs/${encodeId(activeId)}`, { replace: true });
+      }
+      const existing = records.find((r) => String(r.id) === String(activeId));
       if (existing) {
         setEditingRecord((prev) => (prev?.id === existing.id ? prev : { ...existing }));
         setIsAddingNew(false);
       }
       if (!authLoading && user?.id) {
-        fetchJobById(id);
+        fetchJobById(activeId);
       }
     } else {
       setEditingRecord(null);
@@ -1326,7 +1332,7 @@ const JobsManager = ({ id }) => {
                   if (existingQuotation) {
                     const success = await performAction(actionId);
                     if (success) {
-                      navigate(`/doc/${existingQuotation.id}`);
+                      navigate(`/doc/${encodeId(existingQuotation.id)}`);
                     }
                     return false;
                   }
@@ -1556,7 +1562,7 @@ const JobsManager = ({ id }) => {
                               setReportPreviewData(doc.content);
                               setShowingReportPreview(true);
                             } else {
-                              navigate(`/doc/${doc.id}`);
+                              navigate(`/doc/${encodeId(doc.id)}`);
                             }
                           }}
                         >
@@ -1722,11 +1728,12 @@ const JobsManager = ({ id }) => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() =>
-                          navigate(
-                            `/doc/${linkedDocs.find((d) => d.document_type === 'Quotation').id}`
-                          )
-                        }
+                        onClick={() => {
+                          const qDoc = linkedDocs.find((d) => d.document_type === 'Quotation');
+                          if (qDoc) {
+                            navigate(`/doc/${encodeId(qDoc.id)}`);
+                          }
+                        }}
                         className="h-8 text-xs text-primary hover:bg-primary/5"
                       >
                         <ExternalLink className="w-3 h-3 mr-1" /> View Full Document
@@ -2453,7 +2460,7 @@ const JobsManager = ({ id }) => {
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7"
-                              onClick={() => navigate(`/settings/jobs/${r.id}`)}
+                              onClick={() => navigate(`/settings/jobs/${encodeId(r.id)}`)}
                             >
                               <ArrowRight className="w-4 h-4" />
                             </Button>

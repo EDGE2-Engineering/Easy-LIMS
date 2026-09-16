@@ -12,6 +12,7 @@ import {
   Receipt,
 } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
+import { encodeId } from '@/lib/idObfuscation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -289,7 +290,7 @@ const AccountsDashboard = () => {
                       <div
                         key={job.id}
                         className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center group cursor-pointer"
-                        onClick={() => (window.location.hash = `/settings/jobs/${job.id}`)}
+                        onClick={() => (window.location.hash = `/settings/jobs/${encodeId(job.id)}`)}
                       >
                         <div>
                           <p className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">
@@ -352,7 +353,7 @@ const AccountsDashboard = () => {
                             size="icon"
                             variant="ghost"
                             className="rounded-full h-8 w-8 text-gray-400 hover:text-primary hover:bg-primary/10"
-                            onClick={() => (window.location.hash = `#/doc/${doc.id}`)}
+                            onClick={() => (window.location.hash = `#/doc/${encodeId(doc.id)}`)}
                           >
                             <ChevronRight className="w-4 h-4" />
                           </Button>

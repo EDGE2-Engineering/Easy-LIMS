@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input';
 import { AppDatePicker } from '@/components/ui/AppDatePicker';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { encodeId } from '@/lib/idObfuscation';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { safeFormatDate } from '@/lib/utils';
@@ -249,7 +250,7 @@ const DocumentsManager = () => {
   };
 
   const handleOpen = (recordId, docNumber) => {
-    navigate(`/doc/${recordId}`);
+    navigate(`/doc/${encodeId(recordId)}`);
   };
 
   const applyDatePreset = (preset) => {

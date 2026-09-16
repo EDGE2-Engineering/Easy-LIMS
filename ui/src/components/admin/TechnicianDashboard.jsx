@@ -12,6 +12,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
+import { encodeId } from '@/lib/idObfuscation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -222,7 +223,7 @@ const TechnicianDashboard = () => {
                         key={job.id}
                         className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center group cursor-pointer"
                         onClick={() => {
-                          window.location.hash = `/settings/jobs/${job.id}`;
+                          window.location.hash = `/settings/jobs/${encodeId(job.id)}`;
                         }}
                       >
                         <div>

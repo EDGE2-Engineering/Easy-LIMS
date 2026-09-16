@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useNavigate } from 'react-router-dom';
+import { encodeId } from '@/lib/idObfuscation';
 import { useWorkflow } from '@/hooks/useWorkflow';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -61,7 +62,7 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick, isRe
       }
 
       if (action.navigate) {
-        const url = action.navigate.replace('{jobId}', jobId);
+        const url = action.navigate.replace('{jobId}', encodeId(jobId));
         navigate(url);
         setActionLoading(false);
         return;

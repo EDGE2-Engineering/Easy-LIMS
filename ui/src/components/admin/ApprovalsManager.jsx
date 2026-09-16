@@ -15,6 +15,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
+import { encodeId } from '@/lib/idObfuscation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -303,7 +304,7 @@ const ApprovalsManager = () => {
                     variant="outline"
                     size="sm"
                     className="w-full rounded-xl border-dashed border-primary/20 text-primary hover:bg-primary/5 gap-2 font-bold text-[10px] uppercase tracking-widest"
-                    onClick={() => (window.location.hash = `#/settings/jobs/${data.id}`)}
+                    onClick={() => (window.location.hash = `#/settings/jobs/${encodeId(data.id)}`)}
                   >
                     <ExternalLink className="w-3 h-3" /> View Full Job Details
                   </Button>

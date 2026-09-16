@@ -30,6 +30,7 @@ import {
   useBlocker,
 } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
+import { encodeId, decodeId } from '@/lib/idObfuscation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -187,9 +188,12 @@ const NewQuotationPage = () => {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
-  const { id: pathId } = useParams();
+  const { id: rawPathId } = useParams();
+  const pathId = useMemo(() => (rawPathId ? decodeId(rawPathId) : null), [rawPathId]);
   const navigate = useNavigate();
-  const [savedRecordId, setSavedRecordId] = useState(pathId || searchParams.get('id') || null);
+  const [savedRecordId, setSavedRecordId] = useState(
+    (rawPathId ? decodeId(rawPathId) : null) || decodeId(searchParams.get('id')) || null
+  );
   const [loadedDocumentType, setLoadedDocumentType] = useState(null);
   const [isLoadingDoc, setIsLoadingDoc] = useState(!!(pathId || searchParams.get('id') || searchParams.get('jobId')));
   const [isSavingRecord, setIsSavingRecord] = useState(false);
@@ -200,7 +204,7 @@ const NewQuotationPage = () => {
   const [targetVersionToLoad, setTargetVersionToLoad] = useState(null);
   const [showSaveAsNewConfirm, setShowSaveAsNewConfirm] = useState(false);
   const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
-  const [linkedJobId, setLinkedJobId] = useState(searchParams.get('jobId') || null);
+  const [linkedJobId, setLinkedJobId] = useState(decodeId(searchParams.get('jobId')) || null);
   const [documentCreatorId, setDocumentCreatorId] = useState(null);
   const [showAutoJobDialog, setShowAutoJobDialog] = useState(false);
   const bypassJobCheckRef = useRef(false);
@@ -388,11 +392,18 @@ const NewQuotationPage = () => {
 
   const handleBack = () => {
     if (linkedJobId) {
-      navigate(`/settings/jobs/${linkedJobId}`);
+      navigate(`/settings/jobs/${encodeId(linkedJobId)}`);
     } else {
       navigate('/');
     }
   };
+
+  // Rewrite unencoded numeric URL to base64 encoded URL
+  useEffect(() => {
+    if (rawPathId && /^\d+$/.test(String(rawPathId).trim())) {
+      navigate(`/doc/${encodeId(rawPathId)}`, { replace: true });
+    }
+  }, [rawPathId, navigate]);
 
   // Navigation guard for unsaved changes (Page reload/close)
 
@@ -690,7 +701,8 @@ const NewQuotationPage = () => {
       }
     };
 
-    const id = searchParams.get('id') || pathId;
+    const rawDocId = searchParams.get('id') || pathId;
+    const id = rawDocId ? decodeId(rawDocId) : null;
     if (id && !isSavingRecord) {
       loadFromApi(id);
     }
@@ -724,7 +736,8 @@ const NewQuotationPage = () => {
 
   // Load job details if jobId is present in searchParams (to pre-fill for a new document)
   useEffect(() => {
-    const jobId = searchParams.get('jobId');
+    const rawJobId = searchParams.get('jobId');
+    const jobId = rawJobId ? decodeId(rawJobId) : null;
     const docType = searchParams.get('type') || 'Quotation';
     if (jobId && !savedRecordId && clients.length > 0) {
       const loadJobDetails = async () => {
@@ -739,7 +752,7 @@ const NewQuotationPage = () => {
             .maybeSingle();
 
           if (existingDoc) {
-            navigate(`/doc/${existingDoc.id}`, { replace: true });
+            navigate(`/doc/${encodeId(existingDoc.id)}`, { replace: true });
             return;
           }
 
@@ -903,7 +916,7 @@ const NewQuotationPage = () => {
       }
 
       // Resolve job_id — auto-create a job if one isn't already linked
-      let resolvedJobId = linkedJobId || searchParams.get('jobId') || null;
+      let resolvedJobId = linkedJobId || (searchParams.get('jobId') ? decodeId(searchParams.get('jobId')) : null);
 
       if (!resolvedJobId && !bypassJobCheckRef.current) {
         setIsSavingRecord(false);
@@ -1030,7 +1043,7 @@ const NewQuotationPage = () => {
           setLastSavedData(JSON.stringify(snapshot));
 
           isNavigatingRef.current = true;
-          navigate(`/doc/${data.id}`, { replace: true });
+          navigate(`/doc/${encodeId(data.id)}`, { replace: true });
         }
       }
 
@@ -1045,7 +1058,8 @@ const NewQuotationPage = () => {
       });
 
       // If we have a jobId and just created a Quotation or Purchase Order, update the job status
-      const jobId = searchParams.get('jobId');
+      const rawJobId = searchParams.get('jobId');
+      const jobId = rawJobId ? decodeId(rawJobId) : null;
       if (jobId && (!savedRecordId || isTypeChanged)) {
         let targetStatus = null;
         if (documentType === 'Quotation') targetStatus = 'QUOTATION_SENT';
@@ -1154,7 +1168,7 @@ const NewQuotationPage = () => {
       );
       const clientId = selectedClient?.id || null;
 
-      let resolvedJobId = linkedJobId || searchParams.get('jobId') || null;
+      let resolvedJobId = linkedJobId || (searchParams.get('jobId') ? decodeId(searchParams.get('jobId')) : null);
 
       const updatedQuoteDetails = { ...quoteDetails, quoteNumber: quoteDetails.quoteNumber };
 
@@ -1222,7 +1236,7 @@ const NewQuotationPage = () => {
       }
 
       isNavigatingRef.current = true;
-      navigate(`/doc/${data.id}`, { replace: true });
+      navigate(`/doc/${encodeId(data.id)}`, { replace: true });
       return true;
     } catch (err) {
       console.error('Error saving new version:', err);
@@ -1245,7 +1259,7 @@ const NewQuotationPage = () => {
       setTargetVersionToLoad(selected);
       setShowVersionSwitchConfirm(true);
     } else {
-      navigate(`/doc/${selected.id}`);
+      navigate(`/doc/${encodeId(selected.id)}`);
     }
   };
 
@@ -1263,7 +1277,7 @@ const NewQuotationPage = () => {
       isInterstate,
     };
     setLastSavedData(JSON.stringify(currentSnapshot));
-    navigate(`/doc/${targetVersionToLoad.id}`);
+    navigate(`/doc/${encodeId(targetVersionToLoad.id)}`);
     setTargetVersionToLoad(null);
   };
 
@@ -1272,7 +1286,7 @@ const NewQuotationPage = () => {
     setShowVersionSwitchConfirm(false);
     const success = await handleSaveToDatabase();
     if (success) {
-      navigate(`/doc/${targetVersionToLoad.id}`);
+      navigate(`/doc/${encodeId(targetVersionToLoad.id)}`);
     }
     setTargetVersionToLoad(null);
   };
