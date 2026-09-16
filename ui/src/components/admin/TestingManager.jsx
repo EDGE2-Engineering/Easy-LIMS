@@ -828,9 +828,19 @@ const TestingManager = ({
                                                     {d.grainSizeDistribution?.siltAndClay || '-'}
                                                   </td>
                                                   <td className="p-3 text-gray-600">
-                                                    {d.atterbergLimits?.liquidLimit || '-'}/
-                                                    {d.atterbergLimits?.plasticLimit || '-'}/
-                                                    {d.atterbergLimits?.plasticityIndex || '-'}
+                                                    <div>
+                                                      {d.atterbergLimits?.liquidLimit || '-'}/
+                                                      {d.atterbergLimits?.plasticLimit || '-'}/
+                                                      {d.atterbergLimits?.plasticityIndex || '-'}
+                                                    </div>
+                                                    {d.atterbergData?.method && (
+                                                      <span
+                                                        className="text-[10px] text-primary block cursor-help font-medium"
+                                                        title={`Method: ${d.atterbergData.method === 'casagrande' ? 'Casagrande Apparatus' : 'Cone Penetration'}`}
+                                                      >
+                                                        ({d.atterbergData.method === 'casagrande' ? 'Casagrande' : 'Cone Pen'})
+                                                      </span>
+                                                    )}
                                                   </td>
                                                   <td className="p-3 text-gray-600">
                                                     <div>

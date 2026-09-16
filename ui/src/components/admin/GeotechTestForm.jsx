@@ -42,6 +42,7 @@ import { calculateMoistureValues } from '@/utils/moistureCalculation';
 import SpecificGravityModal from './SpecificGravityModal';
 import FreeSwellIndexModal from './FreeSwellIndexModal';
 import SieveAnalysisModal from './SieveAnalysisModal';
+import AtterbergLimitsModal from './AtterbergLimitsModal';
 
 /**
  * Look up the Correction Factor (CF) from the overburden correction table stored
@@ -322,6 +323,11 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     boreholeIndex: 0,
     depthIndex: 0,
   });
+  const [atterbergModalState, setAtterbergModalState] = useState({
+    isOpen: false,
+    boreholeIndex: 0,
+    depthIndex: 0,
+  });
   const [showMoistureInputsInline, setShowMoistureInputsInline] = useState(false);
 
   // Overburden correction table from Settings → System → Overburden
@@ -387,6 +393,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               plasticLimit: entry.atterbergLimits?.plasticLimit ?? '',
               plasticityIndex: entry.atterbergLimits?.plasticityIndex ?? '',
             },
+            atterbergData: entry.atterbergData || null,
             specificGravity: entry.specificGravity ?? '',
             specificGravityTrials: entry.specificGravityTrials || null,
             freeSwellIndex: entry.freeSwellIndex ?? '',
@@ -413,6 +420,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                 plasticLimit: '',
                 plasticityIndex: '',
               },
+              atterbergData: null,
               specificGravity: '',
               specificGravityTrials: null,
               freeSwellIndex: '',
@@ -630,6 +638,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               plasticLimit: '',
               plasticityIndex: '',
             },
+            atterbergData: null,
             specificGravity: '',
             specificGravityTrials: null,
             freeSwellIndex: '',
@@ -855,6 +864,30 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     setFormData({ ...formData, labTestResults: newResults });
   };
 
+  const handleApplyAtterbergModal = (boreholeIndex, depthIndex, appliedData) => {
+    const newResults = [...formData.labTestResults];
+    const { atterbergLimits } = appliedData;
+    const finalLL = atterbergLimits?.liquidLimit && atterbergLimits.liquidLimit !== '' ? atterbergLimits.liquidLimit : '-';
+    const finalPL = atterbergLimits?.plasticLimit && atterbergLimits.plasticLimit !== '' ? atterbergLimits.plasticLimit : '-';
+    const finalPI = atterbergLimits?.plasticityIndex && atterbergLimits.plasticityIndex !== '' ? atterbergLimits.plasticityIndex : '-';
+
+    newResults[boreholeIndex][depthIndex] = {
+      ...newResults[boreholeIndex][depthIndex],
+      atterbergLimits: {
+        liquidLimit: finalLL,
+        plasticLimit: finalPL,
+        plasticityIndex: finalPI,
+      },
+      atterbergData: appliedData,
+    };
+    setFormData({ ...formData, labTestResults: newResults });
+
+    toast({
+      title: 'Atterberg Limits Computed',
+      description: `LL: ${finalLL}%, PL: ${finalPL}, PI: ${finalPI} applied.`,
+    });
+  };
+
   const addLabTestDepth = (boreholeIndex) => {
     const newResults = [...formData.labTestResults];
     newResults[boreholeIndex].push({
@@ -875,6 +908,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
         plasticLimit: '',
         plasticityIndex: '',
       },
+      atterbergData: null,
       specificGravity: '',
       specificGravityTrials: null,
       freeSwellIndex: '',
@@ -1224,6 +1258,31 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
             handleApplySieveModal(
               sieveModalState.boreholeIndex,
               sieveModalState.depthIndex,
+              appliedData
+            )
+          }
+        />
+      )}
+
+      {atterbergModalState.isOpen && (
+        <AtterbergLimitsModal
+          isOpen={atterbergModalState.isOpen}
+          onClose={() => setAtterbergModalState((prev) => ({ ...prev, isOpen: false }))}
+          boreholeNo={`BH-${atterbergModalState.boreholeIndex + 1}`}
+          depth={
+            formData.labTestResults?.[atterbergModalState.boreholeIndex]?.[
+              atterbergModalState.depthIndex
+            ]?.depth || ''
+          }
+          initialData={
+            formData.labTestResults?.[atterbergModalState.boreholeIndex]?.[
+              atterbergModalState.depthIndex
+            ]?.atterbergData || {}
+          }
+          onApply={(appliedData) =>
+            handleApplyAtterbergModal(
+              atterbergModalState.boreholeIndex,
+              atterbergModalState.depthIndex,
               appliedData
             )
           }
@@ -2205,7 +2264,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                               </div>
                             </td>
                             <td className="px-2 py-2">
-                              <div className="flex gap-1">
+                              <div className="flex gap-1 items-center">
                                 <Input
                                   value={depthData.atterbergLimits.liquidLimit}
                                   onChange={(e) =>
@@ -2248,6 +2307,31 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                   placeholder="PI"
                                   title="Plasticity Index (LL - PL)"
                                 />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setAtterbergModalState({
+                                      isOpen: true,
+                                      boreholeIndex,
+                                      depthIndex,
+                                    })
+                                  }
+                                  className={`h-8 w-8 flex items-center justify-center rounded-lg transition-colors flex-shrink-0 border ${
+                                    depthData.atterbergData ||
+                                    depthData.atterbergLimits.liquidLimit !== '' ||
+                                    depthData.atterbergLimits.plasticLimit !== '' ||
+                                    depthData.atterbergLimits.plasticityIndex !== ''
+                                      ? 'text-primary bg-primary/10 border-primary/30 hover:bg-primary/20'
+                                      : 'text-gray-400 bg-gray-50/70 border-gray-200 hover:text-primary hover:bg-primary/5 hover:border-primary/20'
+                                  }`}
+                                  title={
+                                    depthData.atterbergData?.method
+                                      ? `Atterberg (${depthData.atterbergData.method === 'casagrande' ? 'Casagrande' : 'Cone Pen'}): LL=${depthData.atterbergLimits.liquidLimit}%, PL=${depthData.atterbergLimits.plasticLimit}, PI=${depthData.atterbergLimits.plasticityIndex}. Click to edit.`
+                                      : 'Click to calculate Atterberg Limits (LL/PL/PI) from Casagrande or Cone Penetration'
+                                  }
+                                >
+                                  <Calculator className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             </td>
                             <td className="px-2 py-2">
