@@ -87,7 +87,7 @@ const TestingManager = ({
       if (['soil', 'rock', 'soil and rock'].includes(lowerName)) {
         return {
           material,
-          forms: ['borehole', 'sieve', 'lab', 'subsoil', 'directshear'],
+          forms: ['borehole', 'lab', 'subsoil', 'directshear'],
           isGeotech: true,
           isRegular: false,
         };

@@ -24,7 +24,7 @@ const FORM_TYPES = [
     id: 'geotech',
     name: 'Geotechnical Inputs',
     description:
-      'Applicable for material type "Soil and Rock". Includes borehole logs, sieve analysis, lab tests, sub-soil profile, and direct shear.',
+      'Applicable for material type "Soil and Rock". Includes borehole logs, lab tests (with grain size / sieve analysis), sub-soil profile, and direct shear.',
   },
   {
     id: 'rock',
@@ -475,7 +475,7 @@ const AdminMaterialFormsManager = () => {
                       <GeotechTestForm
                         materialCategory="Soil and Rock"
                         value={DUMMY_GEOTECH_VALUE}
-                        enabledForms={['borehole', 'sieve', 'lab', 'subsoil', 'directshear']}
+                        enabledForms={['borehole', 'lab', 'subsoil', 'directshear']}
                         onChange={() => {}}
                       />
                     </div>
@@ -493,7 +493,7 @@ const AdminMaterialFormsManager = () => {
                       <GeotechTestForm
                         materialCategory="Rock"
                         value={DUMMY_ROCK_VALUE}
-                        enabledForms={['borehole', 'sieve', 'lab', 'subsoil', 'directshear']}
+                        enabledForms={['borehole', 'lab', 'subsoil', 'directshear']}
                         onChange={() => {}}
                       />
                     </div>

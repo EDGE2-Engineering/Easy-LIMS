@@ -41,6 +41,7 @@ import MoistureContentModal from './MoistureContentModal';
 import { calculateMoistureValues } from '@/utils/moistureCalculation';
 import SpecificGravityModal from './SpecificGravityModal';
 import FreeSwellIndexModal from './FreeSwellIndexModal';
+import SieveAnalysisModal from './SieveAnalysisModal';
 
 /**
  * Look up the Correction Factor (CF) from the overburden correction table stored
@@ -294,7 +295,7 @@ function SoilTypeSelect({ value, onChange }) {
 
 export default function GeotechTestForm({ value, onChange, materialCategory, enabledForms }) {
   const { toast } = useToast();
-  const defaultTab = enabledForms?.length > 0 ? enabledForms[0] : 'borehole';
+  const defaultTab = enabledForms?.length > 0 ? (enabledForms[0] === 'sieve' ? 'borehole' : enabledForms[0]) : 'borehole';
   const [activeTab, setActiveTab] = useState(defaultTab);
 
   useEffect(() => {
@@ -312,6 +313,11 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     depthIndex: 0,
   });
   const [fsiModalState, setFsiModalState] = useState({
+    isOpen: false,
+    boreholeIndex: 0,
+    depthIndex: 0,
+  });
+  const [sieveModalState, setSieveModalState] = useState({
     isOpen: false,
     boreholeIndex: 0,
     depthIndex: 0,
@@ -375,6 +381,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               sand: entry.grainSizeDistribution?.sand ?? '',
               siltAndClay: entry.grainSizeDistribution?.siltAndClay ?? '',
             },
+            sieveData: entry.sieveData || null,
             atterbergLimits: {
               liquidLimit: entry.atterbergLimits?.liquidLimit ?? '',
               plasticLimit: entry.atterbergLimits?.plasticLimit ?? '',
@@ -400,6 +407,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               w5: '',
               precisionMode: 'two_sig_figs',
               grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' },
+              sieveData: null,
               atterbergLimits: {
                 liquidLimit: '',
                 plasticLimit: '',
@@ -742,7 +750,70 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     }
 
     newResults[boreholeIndex][depthIndex] = depthData;
-    setFormData({ ...formData, labTestResults: newResults });
+
+    let updatedAnalysis = formData.grainSizeAnalysis;
+    if (field === 'depth' && updatedAnalysis?.[boreholeIndex]?.[depthIndex]) {
+      const nextAnalysis = [...updatedAnalysis];
+      nextAnalysis[boreholeIndex][depthIndex] = {
+        ...nextAnalysis[boreholeIndex][depthIndex],
+        depth: val,
+      };
+      updatedAnalysis = nextAnalysis;
+    }
+
+    setFormData({
+      ...formData,
+      labTestResults: newResults,
+      grainSizeAnalysis: updatedAnalysis,
+    });
+  };
+
+  const handleApplySieveModal = (boreholeIndex, depthIndex, { sieveData, grainSizeDistribution }) => {
+    const newResults = [...formData.labTestResults];
+    const finalGravel = grainSizeDistribution.gravel && grainSizeDistribution.gravel !== '' ? grainSizeDistribution.gravel : '-';
+    const finalSand = grainSizeDistribution.sand && grainSizeDistribution.sand !== '' ? grainSizeDistribution.sand : '-';
+    const finalSiltAndClay = grainSizeDistribution.siltAndClay && grainSizeDistribution.siltAndClay !== '' ? grainSizeDistribution.siltAndClay : '-';
+
+    const currentDepth = newResults[boreholeIndex]?.[depthIndex]?.depth || '';
+    newResults[boreholeIndex][depthIndex] = {
+      ...newResults[boreholeIndex][depthIndex],
+      grainSizeDistribution: {
+        gravel: finalGravel,
+        sand: finalSand,
+        siltAndClay: finalSiltAndClay,
+      },
+      sieveData: sieveData || null,
+    };
+
+    // Synchronize with formData.grainSizeAnalysis for reports, charts & exports
+    const newAnalysis = [...(formData.grainSizeAnalysis || [])];
+    if (!newAnalysis[boreholeIndex]) newAnalysis[boreholeIndex] = [];
+    newAnalysis[boreholeIndex][depthIndex] = {
+      depth: currentDepth,
+      totalWeight: sieveData?.totalWeight || '',
+      sieve0: sieveData?.sieve0 || '',
+      sieve1: sieveData?.sieve1 || '',
+      sieve2: sieveData?.sieve2 || '',
+      sieve3: sieveData?.sieve3 || '',
+      sieve4: sieveData?.sieve4 || '',
+      sieve5: sieveData?.sieve5 || '',
+      sieve6: sieveData?.sieve6 || '',
+      sieve7: sieveData?.sieve7 || '',
+      sieve8: sieveData?.sieve8 || '',
+      sieve9: sieveData?.sieve9 || '',
+      sieve10: sieveData?.sieve10 || '',
+    };
+
+    setFormData({
+      ...formData,
+      labTestResults: newResults,
+      grainSizeAnalysis: newAnalysis,
+    });
+
+    toast({
+      title: 'Grain Size Computed',
+      description: `Gravel: ${finalGravel}%, Sand: ${finalSand}%, Silt & Clay: ${finalSiltAndClay}% applied from Sieve Analysis.`,
+    });
   };
 
   const handleApplyMoistureModal = (boreholeIndex, depthIndex, appliedData) => {
@@ -798,6 +869,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
       w5: '',
       precisionMode: 'two_sig_figs',
       grainSizeDistribution: { gravel: '', sand: '', siltAndClay: '' },
+      sieveData: null,
       atterbergLimits: {
         liquidLimit: '',
         plasticLimit: '',
@@ -808,13 +880,46 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
       freeSwellIndex: '',
       freeSwellIndexTrials: null,
     });
-    setFormData({ ...formData, labTestResults: newResults });
+
+    const newAnalysis = [...(formData.grainSizeAnalysis || [])];
+    if (!newAnalysis[boreholeIndex]) newAnalysis[boreholeIndex] = [];
+    newAnalysis[boreholeIndex].push({
+      depth: '',
+      totalWeight: '',
+      sieve0: '',
+      sieve1: '',
+      sieve2: '',
+      sieve3: '',
+      sieve4: '',
+      sieve5: '',
+      sieve6: '',
+      sieve7: '',
+      sieve8: '',
+      sieve9: '',
+      sieve10: '',
+    });
+
+    setFormData({
+      ...formData,
+      labTestResults: newResults,
+      grainSizeAnalysis: newAnalysis,
+    });
   };
 
   const removeLabTestDepth = (boreholeIndex, depthIndex) => {
     const newResults = [...formData.labTestResults];
     newResults[boreholeIndex].splice(depthIndex, 1);
-    setFormData({ ...formData, labTestResults: newResults });
+
+    const newAnalysis = [...(formData.grainSizeAnalysis || [])];
+    if (newAnalysis[boreholeIndex] && newAnalysis[boreholeIndex].length > depthIndex) {
+      newAnalysis[boreholeIndex].splice(depthIndex, 1);
+    }
+
+    setFormData({
+      ...formData,
+      labTestResults: newResults,
+      grainSizeAnalysis: newAnalysis,
+    });
   };
 
   // --- Grain Size Analysis Handlers ---
@@ -1086,6 +1191,45 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
         />
       )}
 
+      {sieveModalState.isOpen && (
+        <SieveAnalysisModal
+          isOpen={sieveModalState.isOpen}
+          onClose={() => setSieveModalState((prev) => ({ ...prev, isOpen: false }))}
+          boreholeNo={`BH-${sieveModalState.boreholeIndex + 1}`}
+          depth={
+            formData.labTestResults?.[sieveModalState.boreholeIndex]?.[
+              sieveModalState.depthIndex
+            ]?.depth || ''
+          }
+          initialData={
+            formData.labTestResults?.[sieveModalState.boreholeIndex]?.[
+              sieveModalState.depthIndex
+            ]?.sieveData ||
+            formData.grainSizeAnalysis?.[sieveModalState.boreholeIndex]?.[
+              sieveModalState.depthIndex
+            ] ||
+            formData.grainSizeAnalysis?.[sieveModalState.boreholeIndex]?.find(
+              (r) =>
+                r.depth &&
+                String(r.depth) ===
+                  String(
+                    formData.labTestResults?.[sieveModalState.boreholeIndex]?.[
+                      sieveModalState.depthIndex
+                    ]?.depth
+                  )
+            ) ||
+            {}
+          }
+          onApply={(appliedData) =>
+            handleApplySieveModal(
+              sieveModalState.boreholeIndex,
+              sieveModalState.depthIndex,
+              appliedData
+            )
+          }
+        />
+      )}
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-white rounded-lg p-1 shadow-sm mb-4 flex flex-wrap h-auto gap-1">
           {(!enabledForms || enabledForms.includes('borehole')) && (
@@ -1112,15 +1256,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               <TestTube className="w-4 h-4" /> Lab Tests
             </TabsTrigger>
           )}
-          {(!enabledForms || enabledForms.includes('sieve')) && (
-            <TabsTrigger
-              value="sieve"
-              className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2"
-              title="Manage detailed grain size analysis data"
-            >
-              <Layers className="w-4 h-4" /> Sieve Analysis
-            </TabsTrigger>
-          )}
+
           {(!enabledForms || enabledForms.includes('subsoil')) && (
             <TabsTrigger
               value="subsoil"
@@ -1859,179 +1995,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
           </div>
         </TabsContent>
 
-        {/* SIEVE ANALYSIS TAB */}
-        <TabsContent value="sieve" className="mt-0 space-y-4">
-          <div className="bg-gray-50/30 p-4 rounded-xl border border-gray-100">
-            <h3 className="text-md font-bold text-gray-800 mb-1 pb-1 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-primary" />
-              Sieve Analysis
-            </h3>
-            <p className="text-[11px] text-gray-500 mb-4 italic">
-              Enter weight retained (gms) for each sieve size. % Weight Retained, % Cumulative
-              Weight Retained, and % Fines Passing are computed automatically in the report.
-            </p>
-            <div className="space-y-4">
-              {formData.grainSizeAnalysis.map((logs, boreholeIndex) => (
-                <div
-                  key={boreholeIndex}
-                  className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm"
-                >
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-sm font-bold text-gray-800">
-                      Sieve Analysis - BH {boreholeIndex + 1}
-                    </h4>
-                  </div>
-                  <div className="border rounded-lg bg-white mb-4 overflow-x-auto">
-                    <table className="w-full text-sm text-left border-collapse min-w-[1200px]">
-                      <thead className="text-[11px] text-gray-500 uppercase bg-gray-50/50 border-b">
-                        <tr>
-                          <th className="px-3 py-2 font-bold w-20">Depth (m)</th>
-                          <th className="px-2 py-2 font-bold text-center">Total Wt. (g)</th>
-                          <th className="px-2 py-2 font-bold text-center">10mm</th>
-                          <th className="px-2 py-2 font-bold text-center">4.75mm</th>
-                          <th className="px-2 py-2 font-bold text-center">2.36mm</th>
-                          <th className="px-2 py-2 font-bold text-center">2mm</th>
-                          <th className="px-2 py-2 font-bold text-center">1.18mm</th>
-                          <th className="px-2 py-2 font-bold text-center">0.60mm</th>
-                          <th className="px-2 py-2 font-bold text-center">0.425mm</th>
-                          <th className="px-2 py-2 font-bold text-center">0.30mm</th>
-                          <th className="px-2 py-2 font-bold text-center">0.15mm</th>
-                          <th className="px-2 py-2 font-bold text-center">0.075mm</th>
-                          <th className="px-2 py-2 font-bold text-center">Pan</th>
-                          <th className="px-2 py-2 w-[50px]"></th>
-                        </tr>
-                        <tr className="text-[10px] text-gray-400 border-b">
-                          <td className="px-3 py-1 italic">depth</td>
-                          <td className="px-2 py-1 text-center italic">sample wt.</td>
-                          {[
-                            'sieve0',
-                            'sieve1',
-                            'sieve2',
-                            'sieve3',
-                            'sieve4',
-                            'sieve5',
-                            'sieve6',
-                            'sieve7',
-                            'sieve8',
-                            'sieve9',
-                            'sieve10',
-                          ].map((k) => (
-                            <td key={k} className="px-2 py-1 text-center italic">
-                              Wt. Ret. (g)
-                            </td>
-                          ))}
-                          <td></td>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {logs.map((depthData, depthIndex) => (
-                          <tr key={depthIndex} className="border-b">
-                            <td className="px-2 py-2">
-                              <Input
-                                value={depthData.depth}
-                                onChange={(e) =>
-                                  handleGrainSizeChange(
-                                    boreholeIndex,
-                                    depthIndex,
-                                    'depth',
-                                    e.target.value
-                                  )
-                                }
-                                className="h-8 w-16"
-                                title="Depth (m)"
-                              />
-                            </td>
-                            <td className="px-1 py-2">
-                              <Input
-                                value={depthData.totalWeight ?? ''}
-                                onChange={(e) =>
-                                  handleGrainSizeChange(
-                                    boreholeIndex,
-                                    depthIndex,
-                                    'totalWeight',
-                                    e.target.value
-                                  )
-                                }
-                                className="h-8 text-center"
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                placeholder="gms"
-                                title="Total weight of sample taken for the test (g)"
-                              />
-                            </td>
-                            {[
-                              'sieve0',
-                              'sieve1',
-                              'sieve2',
-                              'sieve3',
-                              'sieve4',
-                              'sieve5',
-                              'sieve6',
-                              'sieve7',
-                              'sieve8',
-                              'sieve9',
-                              'sieve10',
-                            ].map((key) => (
-                              <td key={key} className="px-1 py-2">
-                                <Input
-                                  value={depthData[key] ?? ''}
-                                  onChange={(e) =>
-                                    handleGrainSizeChange(
-                                      boreholeIndex,
-                                      depthIndex,
-                                      key,
-                                      e.target.value
-                                    )
-                                  }
-                                  className="h-8 text-center"
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  placeholder="gms"
-                                  title="Weight retained (gms)"
-                                />
-                              </td>
-                            ))}
-                            <td className="px-2 py-2">
-                              {logs.length > 1 && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeGrainSizeDepth(boreholeIndex, depthIndex)}
-                                  className="text-red-500"
-                                  title="Remove this sieve analysis entry"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => addGrainSizeDepth(boreholeIndex)}
-                    className="text-primary"
-                    title="Add a new depth for sieve analysis"
-                  >
-                    <Plus className="w-4 h-4 mr-2" /> Add Depth
-                  </Button>
-                </div>
-              ))}
-              {formData.boreholeLogs.length === 0 && (
-                <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500 italic">
-                  Add a borehole in the 'Borehole' tab to enter sieve analysis details.
-                </div>
-              )}
-            </div>
-          </div>
-        </TabsContent>
+
 
         {/* LAB TAB */}
         <TabsContent value="lab" className="mt-0 space-y-4">
@@ -2158,7 +2122,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                 </div>
                               </td>
                             <td className="px-2 py-2">
-                              <div className="flex gap-1">
+                              <div className="flex items-center gap-1">
                                 <Input
                                   value={depthData.grainSizeDistribution.gravel}
                                   onChange={(e) =>
@@ -2169,9 +2133,13 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                       e.target.value
                                     )
                                   }
-                                  className="h-8"
+                                  className="h-8 text-center text-xs"
                                   placeholder="G"
-                                  title="Gravel percentage (%)"
+                                  title={
+                                    depthData.grainSizeDistribution.gravel !== ''
+                                      ? `Gravel: ${depthData.grainSizeDistribution.gravel}%. Click calculator to view/edit Sieve Analysis.`
+                                      : 'Gravel percentage (%)'
+                                  }
                                 />
                                 <Input
                                   value={depthData.grainSizeDistribution.sand}
@@ -2183,9 +2151,13 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                       e.target.value
                                     )
                                   }
-                                  className="h-8"
+                                  className="h-8 text-center text-xs"
                                   placeholder="S"
-                                  title="Sand percentage (%)"
+                                  title={
+                                    depthData.grainSizeDistribution.sand !== ''
+                                      ? `Sand: ${depthData.grainSizeDistribution.sand}%. Click calculator to view/edit Sieve Analysis.`
+                                      : 'Sand percentage (%)'
+                                  }
                                 />
                                 <Input
                                   value={depthData.grainSizeDistribution.siltAndClay}
@@ -2197,10 +2169,39 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                       e.target.value
                                     )
                                   }
-                                  className="h-8"
+                                  className="h-8 text-center text-xs"
                                   placeholder="SC"
-                                  title="Silt and Clay percentage (%)"
+                                  title={
+                                    depthData.grainSizeDistribution.siltAndClay !== ''
+                                      ? `Silt & Clay: ${depthData.grainSizeDistribution.siltAndClay}%. Click calculator to view/edit Sieve Analysis.`
+                                      : 'Silt and Clay percentage (%)'
+                                  }
                                 />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setSieveModalState({
+                                      isOpen: true,
+                                      boreholeIndex,
+                                      depthIndex,
+                                    })
+                                  }
+                                  className={`h-8 w-8 flex items-center justify-center rounded-lg transition-colors flex-shrink-0 border ${
+                                    depthData.sieveData ||
+                                    depthData.grainSizeDistribution.gravel !== '' ||
+                                    depthData.grainSizeDistribution.sand !== '' ||
+                                    depthData.grainSizeDistribution.siltAndClay !== ''
+                                      ? 'text-primary bg-primary/10 border-primary/30 hover:bg-primary/20'
+                                      : 'text-gray-400 bg-gray-50/70 border-gray-200 hover:text-primary hover:bg-primary/5 hover:border-primary/20'
+                                  }`}
+                                  title={
+                                    depthData.sieveData?.totalWeight
+                                      ? `Sieve Analysis: Total Wt=${depthData.sieveData.totalWeight}g. Click to edit.`
+                                      : 'Click to calculate Grain Size (G/S/SC) from Sieve Analysis'
+                                  }
+                                >
+                                  <Calculator className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             </td>
                             <td className="px-2 py-2">
