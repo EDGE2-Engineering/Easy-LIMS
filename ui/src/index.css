@@ -115,7 +115,10 @@
   }
 
   .dark .bg-gray-100,
+  .dark .bg-gray-50\/80,
+  .dark .bg-gray-50\/70,
   .dark .bg-gray-50\/50,
+  .dark .bg-gray-50\/40,
   .dark .bg-gray-50\/30 {
     background-color: #1d2a25 !important;
   }
@@ -127,6 +130,7 @@
 
   .dark .hover\:bg-gray-50:hover,
   .dark .hover\:bg-gray-100:hover,
+  .dark .hover\:bg-gray-100\/80:hover,
   .dark .hover\:bg-gray-300:hover {
     background-color: #223029 !important;
   }

@@ -106,23 +106,23 @@ export default function SpecificGravityModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl bg-white p-6 rounded-2xl shadow-xl border border-gray-100 max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="space-y-1 pb-3 border-b border-gray-100">
+      <DialogContent className="max-w-2xl bg-white dark:bg-card p-6 rounded-2xl shadow-xl border border-gray-100 dark:border-border max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-1 pb-3 border-b border-gray-100 dark:border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-primary/10 text-primary">
                 <FlaskConical className="w-5 h-5" />
               </div>
               <div>
-                <DialogTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <DialogTitle className="text-lg font-bold text-gray-900 dark:text-foreground flex items-center gap-2">
                   Specific Gravity (SG) Calculation
-                  <Badge variant="secondary" className="text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                  <Badge variant="secondary" className="text-[11px] font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
                     Density Bottle Method
                   </Badge>
                 </DialogTitle>
-                <p className="text-xs text-gray-500">
-                  Sample: <span className="font-semibold text-gray-700">{boreholeNo}</span>
-                  {depth ? <> • Depth: <span className="font-semibold text-gray-700">{depth} m</span></> : null}
+                <p className="text-xs text-gray-500 dark:text-muted-foreground">
+                  Sample: <span className="font-semibold text-gray-700 dark:text-foreground">{boreholeNo}</span>
+                  {depth ? <> • Depth: <span className="font-semibold text-gray-700 dark:text-foreground">{depth} m</span></> : null}
                 </p>
               </div>
             </div>
@@ -140,34 +140,34 @@ export default function SpecificGravityModal({
         </DialogHeader>
 
         {/* Formula Banner */}
-        <div className="bg-gradient-to-r from-amber-50/70 via-orange-50/50 to-amber-50/70 p-3 rounded-xl border border-amber-100/80 text-xs text-amber-900 space-y-1.5">
-          <div className="flex items-center gap-1.5 font-semibold text-amber-800">
-            <Info className="w-4 h-4 text-amber-600 flex-shrink-0" />
+        <div className="bg-gradient-to-r from-amber-50/70 via-orange-50/50 to-amber-50/70 dark:from-amber-950/30 dark:via-orange-950/20 dark:to-amber-950/30 p-3 rounded-xl border border-amber-100/80 dark:border-amber-800/40 text-xs text-amber-900 dark:text-amber-200 space-y-1.5">
+          <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300">
+            <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
             <span>Formula: SG = (M₂ - M₁) / [(M₄ - M₁) - (M₃ - M₂)]</span>
           </div>
-          <p className="text-[11px] text-amber-700 pl-5 leading-relaxed">
+          <p className="text-[11px] text-amber-700 dark:text-amber-400 pl-5 leading-relaxed">
             Two trials required for one depth of soil. Specific gravity values are rounded to 2 decimal places. Difference between SG₁ and SG₂ should not exceed 0.03.
           </p>
         </div>
 
         {/* TRIAL MEASUREMENTS TABLE */}
         <div className="space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-muted-foreground flex items-center gap-1.5">
             <Scale className="w-3.5 h-3.5 text-primary" /> Trial Measurements
           </h4>
 
-          <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+          <div className="border border-gray-200 dark:border-border rounded-xl overflow-hidden bg-white dark:bg-background shadow-sm">
             <table className="w-full text-xs text-left border-collapse">
-              <thead className="bg-gray-50/80 border-b text-[11px] text-gray-600 uppercase font-semibold">
+              <thead className="bg-gray-50/80 dark:bg-muted/40 border-b dark:border-border text-[11px] text-gray-600 dark:text-muted-foreground uppercase font-semibold">
                 <tr>
                   <th className="px-3 py-2.5">Parameter</th>
                   <th className="px-3 py-2.5 text-center w-40">Determination 1 (SG₁)</th>
                   <th className="px-3 py-2.5 text-center w-40">Determination 2 (SG₂)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-border">
                 <tr>
-                  <td className="px-3 py-2 font-medium text-gray-700">
+                  <td className="px-3 py-2 font-medium text-gray-700 dark:text-foreground">
                     Mass of Density Bottle (M₁) (g)
                   </td>
                   <td className="px-3 py-2">
@@ -177,7 +177,7 @@ export default function SpecificGravityModal({
                       value={t1M1}
                       onChange={(e) => setT1M1(e.target.value)}
                       placeholder="e.g. 30.038"
-                      className="h-8 text-xs bg-gray-50/40 text-center"
+                      className="h-8 text-xs bg-gray-50/40 dark:bg-muted/30 dark:border-border dark:text-foreground text-center"
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -187,13 +187,13 @@ export default function SpecificGravityModal({
                       value={t2M1}
                       onChange={(e) => setT2M1(e.target.value)}
                       placeholder="e.g. 30.907"
-                      className="h-8 text-xs bg-gray-50/40 text-center"
+                      className="h-8 text-xs bg-gray-50/40 dark:bg-muted/30 dark:border-border dark:text-foreground text-center"
                     />
                   </td>
                 </tr>
 
                 <tr>
-                  <td className="px-3 py-2 font-medium text-gray-700">
+                  <td className="px-3 py-2 font-medium text-gray-700 dark:text-foreground">
                     Mass of Density Bottle + Dry soil (M₂) (g)
                   </td>
                   <td className="px-3 py-2">
@@ -203,7 +203,7 @@ export default function SpecificGravityModal({
                       value={t1M2}
                       onChange={(e) => setT1M2(e.target.value)}
                       placeholder="e.g. 40.037"
-                      className="h-8 text-xs bg-gray-50/40 text-center"
+                      className="h-8 text-xs bg-gray-50/40 dark:bg-muted/30 dark:border-border dark:text-foreground text-center"
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -213,13 +213,13 @@ export default function SpecificGravityModal({
                       value={t2M2}
                       onChange={(e) => setT2M2(e.target.value)}
                       placeholder="e.g. 40.907"
-                      className="h-8 text-xs bg-gray-50/40 text-center"
+                      className="h-8 text-xs bg-gray-50/40 dark:bg-muted/30 dark:border-border dark:text-foreground text-center"
                     />
                   </td>
                 </tr>
 
                 <tr>
-                  <td className="px-3 py-2 font-medium text-gray-700">
+                  <td className="px-3 py-2 font-medium text-gray-700 dark:text-foreground">
                     Mass of Density Bottle + Soil + Water (M₃) (g)
                   </td>
                   <td className="px-3 py-2">
@@ -229,7 +229,7 @@ export default function SpecificGravityModal({
                       value={t1M3}
                       onChange={(e) => setT1M3(e.target.value)}
                       placeholder="e.g. 90.189"
-                      className="h-8 text-xs bg-gray-50/40 text-center"
+                      className="h-8 text-xs bg-gray-50/40 dark:bg-muted/30 dark:border-border dark:text-foreground text-center"
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -239,13 +239,13 @@ export default function SpecificGravityModal({
                       value={t2M3}
                       onChange={(e) => setT2M3(e.target.value)}
                       placeholder="e.g. 89.696"
-                      className="h-8 text-xs bg-gray-50/40 text-center"
+                      className="h-8 text-xs bg-gray-50/40 dark:bg-muted/30 dark:border-border dark:text-foreground text-center"
                     />
                   </td>
                 </tr>
 
                 <tr>
-                  <td className="px-3 py-2 font-medium text-gray-700">
+                  <td className="px-3 py-2 font-medium text-gray-700 dark:text-foreground">
                     Mass of Density Bottle + Full water (M₄) (g)
                   </td>
                   <td className="px-3 py-2">
@@ -255,7 +255,7 @@ export default function SpecificGravityModal({
                       value={t1M4}
                       onChange={(e) => setT1M4(e.target.value)}
                       placeholder="e.g. 84.321"
-                      className="h-8 text-xs bg-gray-50/40 text-center"
+                      className="h-8 text-xs bg-gray-50/40 dark:bg-muted/30 dark:border-border dark:text-foreground text-center"
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -265,7 +265,7 @@ export default function SpecificGravityModal({
                       value={t2M4}
                       onChange={(e) => setT2M4(e.target.value)}
                       placeholder="e.g. 83.725"
-                      className="h-8 text-xs bg-gray-50/40 text-center"
+                      className="h-8 text-xs bg-gray-50/40 dark:bg-muted/30 dark:border-border dark:text-foreground text-center"
                     />
                   </td>
                 </tr>
@@ -276,9 +276,9 @@ export default function SpecificGravityModal({
 
         {/* Validation Errors */}
         {(calc.t1.errors.length > 0 || calc.t2.errors.length > 0) && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs space-y-1">
+          <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-300 p-3 rounded-xl text-xs space-y-1">
             <div className="flex items-center gap-1.5 font-bold">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
+              <AlertTriangle className="w-4 h-4 text-red-500 dark:text-red-400" />
               <span>Input Error</span>
             </div>
             {calc.t1.errors.map((err, i) => (
@@ -292,9 +292,9 @@ export default function SpecificGravityModal({
 
         {/* Validation Warning: Difference > 0.03 */}
         {calc.isDiffExceeded && (
-          <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-xl text-xs space-y-1">
-            <div className="flex items-center gap-1.5 font-bold text-amber-900">
-              <AlertTriangle className="w-4 h-4 text-amber-600" />
+          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-300 p-3 rounded-xl text-xs space-y-1">
+            <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-200">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span>Validation Warning (NOTE 2)</span>
             </div>
             <p className="pl-5 text-[11px] leading-relaxed">
@@ -305,32 +305,32 @@ export default function SpecificGravityModal({
 
         {/* COMPUTED OUTPUTS */}
         <div className="space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-muted-foreground flex items-center gap-1.5">
             <Calculator className="w-3.5 h-3.5 text-primary" /> Computed Specific Gravity
           </h4>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {/* Trial 1 */}
-            <div className="bg-gray-50/80 p-3 rounded-xl border border-gray-100 flex flex-col justify-between">
+            <div className="bg-gray-50/80 dark:bg-muted/30 p-3 rounded-xl border border-gray-100 dark:border-border flex flex-col justify-between">
               <div>
-                <span className="text-[11px] text-gray-600 font-medium">Trial 1 (SG₁)</span>
-                <p className="text-[10px] text-gray-400">Determination 1</p>
+                <span className="text-[11px] text-gray-600 dark:text-gray-400 font-medium">Trial 1 (SG₁)</span>
+                <p className="text-[10px] text-gray-400 dark:text-muted-foreground">Determination 1</p>
               </div>
               <div className="mt-2">
-                <span className="text-xl font-bold text-gray-800">
+                <span className="text-xl font-bold text-gray-800 dark:text-foreground">
                   {calc.t1.sg && calc.t1.sg !== '-' ? calc.t1.sg : '—'}
                 </span>
               </div>
             </div>
 
             {/* Trial 2 */}
-            <div className="bg-gray-50/80 p-3 rounded-xl border border-gray-100 flex flex-col justify-between">
+            <div className="bg-gray-50/80 dark:bg-muted/30 p-3 rounded-xl border border-gray-100 dark:border-border flex flex-col justify-between">
               <div>
-                <span className="text-[11px] text-gray-600 font-medium">Trial 2 (SG₂)</span>
-                <p className="text-[10px] text-gray-400">Determination 2</p>
+                <span className="text-[11px] text-gray-600 dark:text-gray-400 font-medium">Trial 2 (SG₂)</span>
+                <p className="text-[10px] text-gray-400 dark:text-muted-foreground">Determination 2</p>
               </div>
               <div className="mt-2">
-                <span className="text-xl font-bold text-gray-800">
+                <span className="text-xl font-bold text-gray-800 dark:text-foreground">
                   {calc.t2.sg && calc.t2.sg !== '-' ? calc.t2.sg : '—'}
                 </span>
               </div>
@@ -339,26 +339,26 @@ export default function SpecificGravityModal({
             {/* Difference */}
             <div className={`p-3 rounded-xl border flex flex-col justify-between ${
               calc.isDiffExceeded
-                ? 'bg-amber-50/60 border-amber-200'
-                : 'bg-gray-50/80 border-gray-100'
+                ? 'bg-amber-50/60 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40'
+                : 'bg-gray-50/80 dark:bg-muted/30 border-gray-100 dark:border-border'
             }`}>
               <div>
-                <span className={`text-[11px] font-medium ${calc.isDiffExceeded ? 'text-amber-800' : 'text-gray-600'}`}>
+                <span className={`text-[11px] font-medium ${calc.isDiffExceeded ? 'text-amber-800 dark:text-amber-300' : 'text-gray-600 dark:text-gray-400'}`}>
                   Difference |SG₁ - SG₂|
                 </span>
-                <p className="text-[10px] text-gray-400">Limit: ≤ 0.03</p>
+                <p className="text-[10px] text-gray-400 dark:text-muted-foreground">Limit: ≤ 0.03</p>
               </div>
               <div className="mt-2 flex items-center gap-1.5">
-                <span className={`text-xl font-bold ${calc.isDiffExceeded ? 'text-amber-900' : 'text-gray-800'}`}>
+                <span className={`text-xl font-bold ${calc.isDiffExceeded ? 'text-amber-900 dark:text-amber-200' : 'text-gray-800 dark:text-foreground'}`}>
                   {calc.diff && calc.diff !== '-' ? calc.diff : '—'}
                 </span>
                 {calc.diff && calc.diff !== '-' && (
                   calc.isDiffExceeded ? (
-                    <Badge variant="outline" className="text-[10px] bg-amber-100 text-amber-800 border-amber-300">
+                    <Badge variant="outline" className="text-[10px] bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800">
                       &gt; 0.03
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                    <Badge variant="outline" className="text-[10px] bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800">
                       ✓ OK
                     </Badge>
                   )
@@ -367,15 +367,15 @@ export default function SpecificGravityModal({
             </div>
 
             {/* Average SG */}
-            <div className="bg-emerald-50/70 p-3 rounded-xl border border-emerald-200 flex flex-col justify-between">
+            <div className="bg-emerald-50/70 dark:bg-emerald-950/25 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/40 flex flex-col justify-between">
               <div>
-                <span className="text-[11px] text-emerald-800 font-bold">
+                <span className="text-[11px] text-emerald-800 dark:text-emerald-300 font-bold">
                   Average SG
                 </span>
-                <p className="text-[10px] text-emerald-600">(SG₁ + SG₂) / 2</p>
+                <p className="text-[10px] text-emerald-600 dark:text-emerald-400">(SG₁ + SG₂) / 2</p>
               </div>
               <div className="mt-2">
-                <span className="text-2xl font-extrabold text-emerald-900">
+                <span className="text-2xl font-extrabold text-emerald-900 dark:text-emerald-200">
                   {calc.averageSg && calc.averageSg !== '-' ? calc.averageSg : '—'}
                 </span>
               </div>
@@ -383,13 +383,13 @@ export default function SpecificGravityModal({
           </div>
         </div>
 
-        <DialogFooter className="pt-3 border-t border-gray-100 flex items-center justify-between sm:justify-between w-full">
+        <DialogFooter className="pt-3 border-t border-gray-100 dark:border-border flex items-center justify-between sm:justify-between w-full">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={handleClear}
-            className="text-gray-500 hover:text-gray-800 text-xs flex items-center gap-1"
+            className="text-gray-500 dark:text-muted-foreground hover:text-gray-800 dark:hover:text-foreground text-xs flex items-center gap-1"
           >
             <RotateCcw className="w-3.5 h-3.5" /> Clear
           </Button>
@@ -400,7 +400,7 @@ export default function SpecificGravityModal({
               variant="outline"
               size="sm"
               onClick={onClose}
-              className="text-xs"
+              className="text-xs dark:bg-muted/30 dark:border-border dark:hover:bg-muted/60"
             >
               Cancel
             </Button>

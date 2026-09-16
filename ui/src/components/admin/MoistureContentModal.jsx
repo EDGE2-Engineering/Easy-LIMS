@@ -95,23 +95,23 @@ export default function MoistureContentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl bg-white p-6 rounded-2xl shadow-xl border border-gray-100 max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="space-y-1 pb-3 border-b border-gray-100">
+      <DialogContent className="max-w-2xl bg-white dark:bg-card p-6 rounded-2xl shadow-xl border border-gray-100 dark:border-border max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-1 pb-3 border-b border-gray-100 dark:border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-primary/10 text-primary">
                 <Calculator className="w-5 h-5" />
               </div>
               <div>
-                <DialogTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <DialogTitle className="text-lg font-bold text-gray-900 dark:text-foreground flex items-center gap-2">
                   Moisture Content Calculation
-                  <Badge variant="secondary" className="text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <Badge variant="secondary" className="text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60">
                     IS:2720 (Part II)
                   </Badge>
                 </DialogTitle>
-                <p className="text-xs text-gray-500">
-                  Sample: <span className="font-semibold text-gray-700">{boreholeNo}</span>
-                  {depth ? <> • Depth: <span className="font-semibold text-gray-700">{depth} m</span></> : null}
+                <p className="text-xs text-gray-500 dark:text-muted-foreground">
+                  Sample: <span className="font-semibold text-gray-700 dark:text-foreground">{boreholeNo}</span>
+                  {depth ? <> • Depth: <span className="font-semibold text-gray-700 dark:text-foreground">{depth} m</span></> : null}
                 </p>
               </div>
             </div>
@@ -119,12 +119,12 @@ export default function MoistureContentModal({
         </DialogHeader>
 
         {/* Info banner about IS 2720 Part 2 */}
-        <div className="bg-gradient-to-r from-blue-50/70 to-indigo-50/50 p-3 rounded-xl border border-blue-100/80 text-xs text-blue-900 space-y-1">
-          <div className="flex items-center gap-1.5 font-semibold text-blue-800">
-            <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
+        <div className="bg-gradient-to-r from-blue-50/70 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20 p-3 rounded-xl border border-blue-100/80 dark:border-blue-800/40 text-xs text-blue-900 dark:text-blue-200 space-y-1">
+          <div className="flex items-center gap-1.5 font-semibold text-blue-800 dark:text-blue-300">
+            <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
             <span>Oven-Drying Method Standard Formulas</span>
           </div>
-          <p className="text-[11px] text-blue-700 leading-relaxed pl-5">
+          <p className="text-[11px] text-blue-700 dark:text-blue-300/80 leading-relaxed pl-5">
             Water content (w) is calculated as the ratio of the weight of water to the weight of dry soil, reported to two significant figures.
           </p>
         </div>
@@ -132,7 +132,7 @@ export default function MoistureContentModal({
         {/* INPUT FIELDS SECTION */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-muted-foreground flex items-center gap-1.5">
               <Scale className="w-3.5 h-3.5 text-primary" /> Input Measurements
             </h4>
             <div className="flex gap-1.5 text-xs">
@@ -144,7 +144,7 @@ export default function MoistureContentModal({
               >
                 Sample 1
               </button>
-              <span className="text-gray-300">•</span>
+              <span className="text-gray-300 dark:text-muted-foreground/40">•</span>
               <button
                 type="button"
                 onClick={() => handleFillSample(2)}
@@ -156,22 +156,22 @@ export default function MoistureContentModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50/60 p-4 rounded-xl border border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50/60 dark:bg-muted/25 p-4 rounded-xl border border-gray-100 dark:border-border">
             <div>
-              <Label className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+              <Label className="text-xs font-semibold text-gray-700 dark:text-foreground flex items-center gap-1">
                 Container Number
               </Label>
               <Input
                 value={containerNo}
                 onChange={(e) => setContainerNo(e.target.value)}
                 placeholder="e.g. 3 or C-1"
-                className="h-9 mt-1 bg-white"
+                className="h-9 mt-1 bg-white dark:bg-background/80 dark:border-border"
               />
-              <span className="text-[10px] text-gray-400">Tare tin / container identifier</span>
+              <span className="text-[10px] text-gray-400 dark:text-muted-foreground">Tare tin / container identifier</span>
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+              <Label className="text-xs font-semibold text-gray-700 dark:text-foreground flex items-center gap-1">
                 Weight of Container — w₁ (gm)
               </Label>
               <Input
@@ -180,13 +180,13 @@ export default function MoistureContentModal({
                 value={w1}
                 onChange={(e) => setW1(e.target.value)}
                 placeholder="e.g. 12.59"
-                className="h-9 mt-1 bg-white"
+                className="h-9 mt-1 bg-white dark:bg-background/80 dark:border-border"
               />
-              <span className="text-[10px] text-gray-400">Empty clean dry container</span>
+              <span className="text-[10px] text-gray-400 dark:text-muted-foreground">Empty clean dry container</span>
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+              <Label className="text-xs font-semibold text-gray-700 dark:text-foreground flex items-center gap-1">
                 Weight of Container + Wet Soil — w₂ (gm)
               </Label>
               <Input
@@ -195,13 +195,13 @@ export default function MoistureContentModal({
                 value={w2}
                 onChange={(e) => setW2(e.target.value)}
                 placeholder="e.g. 36.02"
-                className="h-9 mt-1 bg-white"
+                className="h-9 mt-1 bg-white dark:bg-background/80 dark:border-border"
               />
-              <span className="text-[10px] text-gray-400">Initial sample before oven drying</span>
+              <span className="text-[10px] text-gray-400 dark:text-muted-foreground">Initial sample before oven drying</span>
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+              <Label className="text-xs font-semibold text-gray-700 dark:text-foreground flex items-center gap-1">
                 Weight of Container + Dry Soil — w₃ (gm)
               </Label>
               <Input
@@ -210,16 +210,16 @@ export default function MoistureContentModal({
                 value={w3}
                 onChange={(e) => setW3(e.target.value)}
                 placeholder="e.g. 33.72"
-                className="h-9 mt-1 bg-white"
+                className="h-9 mt-1 bg-white dark:bg-background/80 dark:border-border"
               />
-              <span className="text-[10px] text-gray-400">After oven drying at 105°C - 110°C</span>
+              <span className="text-[10px] text-gray-400 dark:text-muted-foreground">After oven drying at 105°C - 110°C</span>
             </div>
           </div>
         </div>
 
         {/* Validation Errors */}
         {calc.errors.length > 0 && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs space-y-1">
+          <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 text-red-700 dark:text-red-300 p-3 rounded-xl text-xs space-y-1">
             <div className="flex items-center gap-1.5 font-bold">
               <AlertTriangle className="w-4 h-4 text-red-500" />
               <span>Measurement Discrepancy</span>
@@ -233,18 +233,18 @@ export default function MoistureContentModal({
         {/* COMPUTED OUTPUTS SECTION */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-muted-foreground flex items-center gap-1.5">
               <Droplets className="w-3.5 h-3.5 text-blue-500" /> Computed Outputs
             </h4>
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-gray-500 text-[11px]">Precision:</span>
+              <span className="text-gray-500 dark:text-muted-foreground text-[11px]">Precision:</span>
               <button
                 type="button"
                 onClick={() => setPrecisionMode('two_sig_figs')}
                 className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
                   precisionMode === 'two_sig_figs'
                     ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-muted/40 text-gray-600 dark:text-muted-foreground hover:bg-gray-200 dark:hover:bg-muted/60 dark:hover:text-foreground'
                 }`}
                 title="Reported to two significant figures as per IS:2720 Part II"
               >
@@ -256,7 +256,7 @@ export default function MoistureContentModal({
                 className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
                   precisionMode === 'one_decimal'
                     ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-muted/40 text-gray-600 dark:text-muted-foreground hover:bg-gray-200 dark:hover:bg-muted/60 dark:hover:text-foreground'
                 }`}
                 title="1 Decimal place (e.g. 10.9%, 15.5%)"
               >
@@ -267,50 +267,50 @@ export default function MoistureContentModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* w4 */}
-            <div className="bg-blue-50/50 p-3.5 rounded-xl border border-blue-100 flex flex-col justify-between">
+            <div className="bg-blue-50/50 dark:bg-blue-950/25 p-3.5 rounded-xl border border-blue-100 dark:border-blue-800/40 flex flex-col justify-between">
               <div>
-                <span className="text-[11px] text-blue-700 font-medium">Weight of Water (w₄)</span>
-                <p className="text-[10px] text-gray-400">w₄ = w₂ - w₃</p>
+                <span className="text-[11px] text-blue-700 dark:text-blue-300 font-medium">Weight of Water (w₄)</span>
+                <p className="text-[10px] text-gray-400 dark:text-muted-foreground">w₄ = w₂ - w₃</p>
               </div>
               <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-xl font-bold text-blue-900">
+                <span className="text-xl font-bold text-blue-900 dark:text-blue-100">
                   {calc.w4 && calc.w4 !== '-' ? calc.w4 : '—'}
                 </span>
-                <span className="text-xs text-blue-700 font-medium">gm</span>
+                <span className="text-xs text-blue-700 dark:text-blue-300 font-medium">gm</span>
               </div>
             </div>
 
             {/* w5 */}
-            <div className="bg-amber-50/50 p-3.5 rounded-xl border border-amber-100 flex flex-col justify-between">
+            <div className="bg-amber-50/50 dark:bg-amber-950/25 p-3.5 rounded-xl border border-amber-100 dark:border-amber-800/40 flex flex-col justify-between">
               <div>
-                <span className="text-[11px] text-amber-800 font-medium">Weight of Dry Soil (w₅)</span>
-                <p className="text-[10px] text-gray-400">w₅ = w₃ - w₁</p>
+                <span className="text-[11px] text-amber-800 dark:text-amber-300 font-medium">Weight of Dry Soil (w₅)</span>
+                <p className="text-[10px] text-gray-400 dark:text-muted-foreground">w₅ = w₃ - w₁</p>
               </div>
               <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-xl font-bold text-amber-900">
+                <span className="text-xl font-bold text-amber-900 dark:text-amber-100">
                   {calc.w5 && calc.w5 !== '-' ? calc.w5 : '—'}
                 </span>
-                <span className="text-xs text-amber-800 font-medium">gm</span>
+                <span className="text-xs text-amber-800 dark:text-amber-300 font-medium">gm</span>
               </div>
             </div>
 
             {/* w (Moisture Content %) */}
-            <div className="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-200 flex flex-col justify-between">
+            <div className="bg-emerald-50/70 dark:bg-emerald-950/25 p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-800/40 flex flex-col justify-between">
               <div>
-                <span className="text-[11px] text-emerald-800 font-bold flex items-center justify-between">
+                <span className="text-[11px] text-emerald-800 dark:text-emerald-300 font-bold flex items-center justify-between">
                   Moisture Content (w)
-                  <span className="text-[10px] text-emerald-600 font-normal">
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">
                     {precisionMode === 'two_sig_figs' ? '2 Sig Figs' : '1 Dec'}
                   </span>
                 </span>
-                <p className="text-[10px] text-emerald-600">w = (w₄ / w₅) × 100</p>
+                <p className="text-[10px] text-emerald-600 dark:text-emerald-400">w = (w₄ / w₅) × 100</p>
               </div>
               <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-2xl font-extrabold text-emerald-900">
+                <span className="text-2xl font-extrabold text-emerald-900 dark:text-emerald-100">
                   {calc.moistureContent && calc.moistureContent !== '-' ? `${calc.moistureContent}%` : '—'}
                 </span>
                 {calc.rawMoisture !== null && (
-                  <span className="text-[11px] text-emerald-700 font-normal ml-1">
+                  <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-normal ml-1">
                     ({calc.rawMoisture.toFixed(2)}%)
                   </span>
                 )}
@@ -320,18 +320,18 @@ export default function MoistureContentModal({
         </div>
 
         {/* Reporting Note */}
-        <div className="text-[11px] text-gray-500 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
-          <span className="font-semibold text-gray-700">Note per IS:2720 (Part II): </span>
+        <div className="text-[11px] text-gray-500 dark:text-muted-foreground bg-gray-50 dark:bg-muted/30 p-2.5 rounded-lg border border-gray-100 dark:border-border">
+          <span className="font-semibold text-gray-700 dark:text-foreground">Note per IS:2720 (Part II): </span>
           The water content (w) shall be reported to two significant figures (e.g. 5.44% → 5.4%, 12.81% → 13%).
         </div>
 
-        <DialogFooter className="pt-3 border-t border-gray-100 flex items-center justify-between sm:justify-between w-full">
+        <DialogFooter className="pt-3 border-t border-gray-100 dark:border-border flex items-center justify-between sm:justify-between w-full">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={handleClear}
-            className="text-gray-500 hover:text-gray-800 text-xs flex items-center gap-1"
+            className="text-gray-500 dark:text-muted-foreground hover:text-gray-800 dark:hover:text-foreground text-xs flex items-center gap-1"
           >
             <RotateCcw className="w-3.5 h-3.5" /> Clear
           </Button>
@@ -342,7 +342,7 @@ export default function MoistureContentModal({
               variant="outline"
               size="sm"
               onClick={onClose}
-              className="text-xs"
+              className="text-xs dark:border-border dark:hover:bg-muted/30"
             >
               Cancel
             </Button>

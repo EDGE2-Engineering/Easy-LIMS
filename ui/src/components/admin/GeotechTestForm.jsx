@@ -2058,12 +2058,12 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
 
         {/* LAB TAB */}
         <TabsContent value="lab" className="mt-0 space-y-4">
-          <div className="bg-gray-50/30 p-4 rounded-xl border border-gray-100">
-            <h3 className="text-md font-bold text-gray-800 mb-1 pb-1 flex items-center gap-2">
+          <div className="bg-gray-50/30 dark:bg-card/40 p-4 rounded-xl border border-gray-100 dark:border-border">
+            <h3 className="text-md font-bold text-gray-800 dark:text-foreground mb-1 pb-1 flex items-center gap-2">
               <TestTube className="w-4 h-4 text-primary" />
               Lab Test Results
             </h3>
-            <p className="text-[11px] text-gray-500 mb-4 italic">
+            <p className="text-[11px] text-gray-500 dark:text-muted-foreground mb-4 italic">
               Record laboratory analysis including soil density, moisture, grain size distribution,
               and consistency limits.
             </p>
@@ -2071,10 +2071,10 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               {formData.labTestResults.map((logs, boreholeIndex) => (
                 <div
                   key={boreholeIndex}
-                  className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm"
+                  className="bg-white dark:bg-card p-4 rounded-xl border border-gray-200 dark:border-border shadow-sm"
                 >
                   <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-sm font-bold text-gray-800">
+                    <h4 className="text-sm font-bold text-gray-800 dark:text-foreground">
                       Lab Tests - BH {boreholeIndex + 1}
                     </h4>
                     <Button
@@ -2082,16 +2082,16 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                       variant="outline"
                       size="sm"
                       onClick={() => setShowMoistureInputsInline(!showMoistureInputsInline)}
-                      className="hidden text-xs h-8 text-gray-600 hover:text-gray-900 border-gray-200"
+                      className="hidden text-xs h-8 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-foreground border-gray-200 dark:border-border"
                       title="Toggle inline entry for Container No, w1, w2, w3"
                     >
                       <Scale className="w-3.5 h-3.5 mr-1 text-primary" />
                       {showMoistureInputsInline ? 'Hide Moisture Details' : 'Show Moisture Details (w₁, w₂, w₃)'}
                     </Button>
                   </div>
-                  <div className="border rounded-lg bg-white mb-4 overflow-visible">
+                  <div className="border border-gray-200 dark:border-border rounded-lg bg-white dark:bg-card mb-4 overflow-visible">
                     <table className="w-full text-sm text-left border-collapse">
-                      <thead className="text-[11px] text-gray-500 uppercase bg-gray-50/50 border-b">
+                      <thead className="text-[11px] text-gray-500 dark:text-muted-foreground uppercase bg-gray-50/50 dark:bg-muted/40 border-b dark:border-border">
                         <tr>
                           <th className="px-3 py-2 font-bold">Depth</th>
                           <th className="px-3 py-2 font-bold">Density/Moisture</th>
@@ -2104,7 +2104,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                       <tbody>
                         {logs.map((depthData, depthIndex) => (
                           <React.Fragment key={depthIndex}>
-                            <tr className="border-b">
+                            <tr className="border-b dark:border-border">
                               <td className="px-2 py-2">
                                 <Input
                                   value={depthData.depth}
@@ -2156,7 +2156,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                         depthIndex,
                                       })
                                     }
-                                    className="h-8 pr-8 cursor-pointer bg-gray-50/70 hover:bg-gray-100/80 font-medium text-gray-800 transition-colors"
+                                    className="h-8 pr-8 cursor-pointer bg-gray-50/70 dark:bg-background/80 hover:bg-gray-100/80 dark:hover:bg-muted/40 font-medium text-gray-800 dark:text-foreground transition-colors"
                                     placeholder="Moisture % (IS:2720)"
                                     title={
                                       depthData.moistureContent && depthData.moistureContent !== '-'
@@ -2250,8 +2250,8 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                     depthData.grainSizeDistribution.gravel !== '' ||
                                     depthData.grainSizeDistribution.sand !== '' ||
                                     depthData.grainSizeDistribution.siltAndClay !== ''
-                                      ? 'text-primary bg-primary/10 border-primary/30 hover:bg-primary/20'
-                                      : 'text-gray-400 bg-gray-50/70 border-gray-200 hover:text-primary hover:bg-primary/5 hover:border-primary/20'
+                                      ? 'text-primary bg-primary/10 border-primary/30 hover:bg-primary/20 dark:bg-primary/20 dark:border-primary/40 dark:text-primary'
+                                      : 'text-gray-400 bg-gray-50/70 border-gray-200 hover:text-primary hover:bg-primary/5 hover:border-primary/20 dark:bg-card/90 dark:border-border dark:text-gray-400 dark:hover:text-primary dark:hover:bg-primary/20 dark:hover:border-primary/40'
                                   }`}
                                   title={
                                     depthData.sieveData?.totalWeight
@@ -2321,8 +2321,8 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                     depthData.atterbergLimits.liquidLimit !== '' ||
                                     depthData.atterbergLimits.plasticLimit !== '' ||
                                     depthData.atterbergLimits.plasticityIndex !== ''
-                                      ? 'text-primary bg-primary/10 border-primary/30 hover:bg-primary/20'
-                                      : 'text-gray-400 bg-gray-50/70 border-gray-200 hover:text-primary hover:bg-primary/5 hover:border-primary/20'
+                                      ? 'text-primary bg-primary/10 border-primary/30 hover:bg-primary/20 dark:bg-primary/20 dark:border-primary/40 dark:text-primary'
+                                      : 'text-gray-400 bg-gray-50/70 border-gray-200 hover:text-primary hover:bg-primary/5 hover:border-primary/20 dark:bg-card/90 dark:border-border dark:text-gray-400 dark:hover:text-primary dark:hover:bg-primary/20 dark:hover:border-primary/40'
                                   }`}
                                   title={
                                     depthData.atterbergData?.method
@@ -2346,9 +2346,9 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                       depthIndex,
                                     })
                                   }
-                                  className={`h-8 pr-8 cursor-pointer bg-gray-50/70 hover:bg-gray-100/80 font-medium text-gray-800 transition-colors ${
+                                  className={`h-8 pr-8 cursor-pointer bg-gray-50/70 dark:bg-background/80 hover:bg-gray-100/80 dark:hover:bg-muted/40 font-medium text-gray-800 dark:text-foreground transition-colors ${
                                     depthData.specificGravityTrials?.isDiffExceeded
-                                      ? 'border-amber-400 bg-amber-50/30'
+                                      ? 'border-amber-400 bg-amber-50/30 dark:border-amber-500/60 dark:bg-amber-950/20'
                                       : ''
                                   }`}
                                   placeholder="SG (Auto)"
@@ -2396,7 +2396,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                       depthIndex,
                                     })
                                   }
-                                  className="h-8 pr-8 cursor-pointer bg-gray-50/70 hover:bg-gray-100/80 font-medium text-gray-800 transition-colors"
+                                  className="h-8 pr-8 cursor-pointer bg-gray-50/70 dark:bg-background/80 hover:bg-gray-100/80 dark:hover:bg-muted/40 font-medium text-gray-800 dark:text-foreground transition-colors"
                                   placeholder="FSI % (Auto)"
                                   title={
                                     depthData.freeSwellIndexTrials?.averageFsi && depthData.freeSwellIndexTrials?.averageFsi !== '-'
@@ -2440,14 +2440,14 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                             </td>
                           </tr>
                           {showMoistureInputsInline && (
-                            <tr className="bg-blue-50/25 border-b">
-                              <td colSpan={6} className="px-3 py-2.5 bg-gradient-to-r from-blue-50/40 via-emerald-50/20 to-transparent">
+                            <tr className="bg-blue-50/25 dark:bg-blue-950/20 border-b dark:border-border">
+                              <td colSpan={6} className="px-3 py-2.5 bg-gradient-to-r from-blue-50/40 via-emerald-50/20 to-transparent dark:from-blue-950/30 dark:via-emerald-950/20 dark:to-transparent">
                                 <div className="flex flex-wrap items-center gap-3 text-xs">
-                                  <span className="font-bold text-gray-700 flex items-center gap-1 text-[11px] uppercase tracking-wider">
+                                  <span className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1 text-[11px] uppercase tracking-wider">
                                     <Calculator className="w-3.5 h-3.5 text-primary" /> Moisture Inputs:
                                   </span>
                                   <div className="flex items-center gap-1">
-                                    <span className="text-[11px] text-gray-600 font-medium">Cont #:</span>
+                                    <span className="text-[11px] text-gray-600 dark:text-gray-400 font-medium">Cont #:</span>
                                     <Input
                                       value={depthData.containerNo || ''}
                                       onChange={(e) =>
@@ -2458,12 +2458,12 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                           e.target.value
                                         )
                                       }
-                                      placeholder="Cont #"
-                                      className="h-7 w-20 text-xs bg-white"
+                                      placeholder="e.g. 1"
+                                      className="h-7 w-16 text-xs bg-white dark:bg-background"
                                     />
                                   </div>
                                   <div className="flex items-center gap-1">
-                                    <span className="text-[11px] text-gray-600 font-medium">w₁ (tare):</span>
+                                    <span className="text-[11px] text-gray-600 dark:text-gray-400 font-medium">w₁ (tare):</span>
                                     <Input
                                       type="number"
                                       step="0.01"
@@ -2477,12 +2477,12 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                         )
                                       }
                                       placeholder="w1 (g)"
-                                      className="h-7 w-20 text-xs bg-white"
+                                      className="h-7 w-20 text-xs bg-white dark:bg-background"
                                       title="Weight of Container - w1 (gm)"
                                     />
                                   </div>
                                   <div className="flex items-center gap-1">
-                                    <span className="text-[11px] text-gray-600 font-medium">w₂ (wet):</span>
+                                    <span className="text-[11px] text-gray-600 dark:text-gray-400 font-medium">w₂ (wet):</span>
                                     <Input
                                       type="number"
                                       step="0.01"
@@ -2496,12 +2496,12 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                         )
                                       }
                                       placeholder="w2 (g)"
-                                      className="h-7 w-20 text-xs bg-white"
+                                      className="h-7 w-20 text-xs bg-white dark:bg-background"
                                       title="Weight of Container + Wet Soil - w2 (gm)"
                                     />
                                   </div>
                                   <div className="flex items-center gap-1">
-                                    <span className="text-[11px] text-gray-600 font-medium">w₃ (dry):</span>
+                                    <span className="text-[11px] text-gray-600 dark:text-gray-400 font-medium">w₃ (dry):</span>
                                     <Input
                                       type="number"
                                       step="0.01"
@@ -2515,18 +2515,18 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                         )
                                       }
                                       placeholder="w3 (g)"
-                                      className="h-7 w-20 text-xs bg-white"
+                                      className="h-7 w-20 text-xs bg-white dark:bg-background"
                                       title="Weight of Container + Dry Soil - w3 (gm)"
                                     />
                                   </div>
-                                  <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
-                                    <span className="text-[11px] text-blue-700">
+                                  <div className="flex items-center gap-2 pl-2 border-l border-gray-200 dark:border-border">
+                                    <span className="text-[11px] text-blue-700 dark:text-blue-400">
                                       w₄: <strong>{depthData.w4 && depthData.w4 !== '-' ? `${depthData.w4}g` : '—'}</strong>
                                     </span>
-                                    <span className="text-[11px] text-amber-700">
+                                    <span className="text-[11px] text-amber-700 dark:text-amber-400">
                                       w₅: <strong>{depthData.w5 && depthData.w5 !== '-' ? `${depthData.w5}g` : '—'}</strong>
                                     </span>
-                                    <span className="text-[11px] text-emerald-800 font-bold bg-emerald-100/80 px-2 py-0.5 rounded">
+                                    <span className="text-[11px] text-emerald-800 dark:text-emerald-300 font-bold bg-emerald-100/80 dark:bg-emerald-950/50 px-2 py-0.5 rounded">
                                       w: {depthData.moistureContent && depthData.moistureContent !== '-' ? `${depthData.moistureContent}%` : '—'}
                                     </span>
                                   </div>
@@ -2552,7 +2552,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                 </div>
               ))}
               {formData.boreholeLogs.length === 0 && (
-                <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500 italic">
+                <div className="bg-white dark:bg-card p-8 rounded-xl border border-gray-200 dark:border-border text-center text-gray-500 dark:text-muted-foreground italic">
                   Add a borehole in the 'Borehole' tab to enter lab test results.
                 </div>
               )}

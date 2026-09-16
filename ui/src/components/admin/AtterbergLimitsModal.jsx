@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   Dialog,
   DialogContent,
@@ -47,12 +48,14 @@ import {
  * Y-axis: Linear (Water Content, %)
  */
 function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange }) {
+  const { isDark } = useTheme();
+
   if (!validPoints || validPoints.length < 2 || !regression) {
     return (
-      <div className="h-64 border border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 p-4 bg-gray-50/50">
+      <div className="h-64 border border-dashed border-gray-200 dark:border-border rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-muted-foreground p-4 bg-gray-50/50 dark:bg-muted/20">
         <LineChart className="w-8 h-8 mb-2 opacity-40" />
         <p className="text-sm font-medium">Flow Curve (Semi-Logarithmic)</p>
-        <p className="text-xs text-gray-400 mt-1">Enter at least 2 valid trials to generate the curve</p>
+        <p className="text-xs text-gray-400 dark:text-muted-foreground mt-1">Enter at least 2 valid trials to generate the curve</p>
       </div>
     );
   }
@@ -105,17 +108,17 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
   const logTicks = [10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 100];
 
   return (
-    <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-xs">
+    <div className="bg-white dark:bg-card border border-gray-100 dark:border-border rounded-xl p-3 shadow-xs">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+          <span className="text-xs font-bold text-gray-700 dark:text-foreground uppercase tracking-wider">
             Flow Curve (Semi-Logarithmic)
           </span>
-          <Badge variant="outline" className="text-[10px] font-mono text-primary bg-primary/5 border-primary/20">
+          <Badge variant="outline" className="text-[10px] font-mono text-primary bg-primary/5 dark:bg-primary/20 border-primary/20 dark:border-primary/40">
             IS:2720 (Part 5)
           </Badge>
         </div>
-        <div className="text-[11px] text-gray-500 font-mono">
+        <div className="text-[11px] text-gray-500 dark:text-muted-foreground font-mono">
           y = {regression.slope.toFixed(2)} log₁₀(N) + {regression.intercept.toFixed(1)} (R²={regression.rSquared})
         </div>
       </div>
@@ -131,7 +134,7 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
                 y1={yPos}
                 x2={width - padding.right}
                 y2={yPos}
-                stroke="#f1f5f9"
+                stroke={isDark ? '#26362f' : '#f1f5f9'}
                 strokeWidth="1"
               />
               <text
@@ -156,7 +159,7 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
                 y1={padding.top}
                 x2={xPos}
                 y2={height - padding.bottom}
-                stroke={isMajor ? '#e2e8f0' : '#f8fafc'}
+                stroke={isMajor ? (isDark ? '#33473e' : '#e2e8f0') : (isDark ? '#1a2721' : '#f8fafc')}
                 strokeWidth={isMajor ? '1' : '0.5'}
                 strokeDasharray={b === 25 ? '2,2' : undefined}
               />
@@ -180,7 +183,7 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
           y1={height - padding.bottom}
           x2={width - padding.right}
           y2={height - padding.bottom}
-          stroke="#94a3b8"
+          stroke={isDark ? '#4b6357' : '#94a3b8'}
           strokeWidth="1.2"
         />
         <line
@@ -188,7 +191,7 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
           y1={padding.top}
           x2={padding.left}
           y2={height - padding.bottom}
-          stroke="#94a3b8"
+          stroke={isDark ? '#4b6357' : '#94a3b8'}
           strokeWidth="1.2"
         />
 
@@ -259,7 +262,7 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
             textAnchor="middle"
             className="text-[10px] fill-white font-bold font-mono"
           >
-            LL: {llVal.toFixed(1)}% @ 25
+            LL: {llVal.toFixed(1)}% @ 25N
           </text>
         </g>
 
@@ -278,14 +281,7 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
                 strokeWidth="1.5"
                 className="transition-transform group-hover:scale-125"
               />
-              <text
-                x={cx}
-                y={cy - 8}
-                textAnchor="middle"
-                className="text-[9px] fill-gray-600 font-mono font-bold group-hover:fill-blue-700"
-              >
-                {pt.roundedY}%
-              </text>
+              <title>Trial {idx + 1}: {pt.blows} blows, {pt.y.toFixed(2)}% water content</title>
             </g>
           );
         })}
@@ -300,12 +296,14 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
  * Y-axis: Water Content (%, linear scale)
  */
 function ConeFlowCurve({ validPoints, regression, targetLL }) {
+  const { isDark } = useTheme();
+
   if (!validPoints || validPoints.length < 2 || !regression) {
     return (
-      <div className="h-64 border border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 p-4 bg-gray-50/50">
+      <div className="h-64 border border-dashed border-gray-200 dark:border-border rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-muted-foreground p-4 bg-gray-50/50 dark:bg-muted/20">
         <LineChart className="w-8 h-8 mb-2 opacity-40" />
         <p className="text-sm font-medium">Flow Curve (Linear Plot)</p>
-        <p className="text-xs text-gray-400 mt-1">Enter at least 2 valid trials to generate the curve</p>
+        <p className="text-xs text-gray-400 dark:text-muted-foreground mt-1">Enter at least 2 valid trials to generate the curve</p>
       </div>
     );
   }
@@ -352,17 +350,17 @@ function ConeFlowCurve({ validPoints, regression, targetLL }) {
   const xTicks = [10, 15, 20, 25, 30];
 
   return (
-    <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-xs">
+    <div className="bg-white dark:bg-card border border-gray-100 dark:border-border rounded-xl p-3 shadow-xs">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+          <span className="text-xs font-bold text-gray-700 dark:text-foreground uppercase tracking-wider">
             Flow Curve (Linear Plot)
           </span>
-          <Badge variant="outline" className="text-[10px] font-mono text-emerald-600 bg-emerald-50 border-emerald-200">
+          <Badge variant="outline" className="text-[10px] font-mono text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60">
             IS:2720 (Part 5)
           </Badge>
         </div>
-        <div className="text-[11px] text-gray-500 font-mono">
+        <div className="text-[11px] text-gray-500 dark:text-muted-foreground font-mono">
           y = {regression.slope.toFixed(3)} x + {regression.intercept.toFixed(1)} (R²={regression.rSquared})
         </div>
       </div>
@@ -378,7 +376,7 @@ function ConeFlowCurve({ validPoints, regression, targetLL }) {
                 y1={yPos}
                 x2={width - padding.right}
                 y2={yPos}
-                stroke="#f1f5f9"
+                stroke={isDark ? '#26362f' : '#f1f5f9'}
                 strokeWidth="1"
               />
               <text
@@ -403,7 +401,7 @@ function ConeFlowCurve({ validPoints, regression, targetLL }) {
                 y1={padding.top}
                 x2={xPos}
                 y2={height - padding.bottom}
-                stroke={xVal === 20 ? '#e2e8f0' : '#f8fafc'}
+                stroke={xVal === 20 ? (isDark ? '#33473e' : '#e2e8f0') : (isDark ? '#1a2721' : '#f8fafc')}
                 strokeWidth="1"
                 strokeDasharray={xVal === 20 ? '2,2' : undefined}
               />
@@ -425,7 +423,7 @@ function ConeFlowCurve({ validPoints, regression, targetLL }) {
           y1={height - padding.bottom}
           x2={width - padding.right}
           y2={height - padding.bottom}
-          stroke="#94a3b8"
+          stroke={isDark ? '#4b6357' : '#94a3b8'}
           strokeWidth="1.2"
         />
         <line
@@ -433,7 +431,7 @@ function ConeFlowCurve({ validPoints, regression, targetLL }) {
           y1={padding.top}
           x2={padding.left}
           y2={height - padding.bottom}
-          stroke="#94a3b8"
+          stroke={isDark ? '#4b6357' : '#94a3b8'}
           strokeWidth="1.2"
         />
 
@@ -693,28 +691,28 @@ export default function AtterbergLimitsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-5xl bg-white p-6 rounded-2xl shadow-2xl border border-gray-100 max-h-[92vh] overflow-y-auto">
-        <DialogHeader className="border-b pb-4 border-gray-100">
+      <DialogContent className="max-w-5xl bg-white dark:bg-card p-6 rounded-2xl shadow-2xl border border-gray-100 dark:border-border max-h-[92vh] overflow-y-auto">
+        <DialogHeader className="border-b pb-4 border-gray-100 dark:border-border">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <DialogTitle className="text-xl font-bold flex items-center gap-2 text-gray-900">
+              <DialogTitle className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-foreground">
                 <Calculator className="w-5 h-5 text-primary" />
                 Atterberg Limits Calculation
-                <Badge variant="outline" className="text-xs font-semibold text-primary bg-primary/5 border-primary/20">
+                <Badge variant="outline" className="text-xs font-semibold text-primary bg-primary/5 dark:bg-primary/20 border-primary/20 dark:border-primary/40">
                   IS:2720 (Part 5)
                 </Badge>
               </DialogTitle>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">
                 Determination of Liquid Limit (LL), Plastic Limit (PL) and Plasticity Index (PI)
               </p>
             </div>
 
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="px-3 py-1 font-semibold text-gray-700 bg-gray-100">
+              <Badge variant="secondary" className="px-3 py-1 font-semibold text-gray-700 dark:text-foreground bg-gray-100 dark:bg-muted/40">
                 {boreholeNo}
               </Badge>
               {depth && (
-                <Badge variant="outline" className="px-3 py-1 font-semibold text-gray-600">
+                <Badge variant="outline" className="px-3 py-1 font-semibold text-gray-600 dark:text-muted-foreground dark:border-border">
                   Depth: {depth} m
                 </Badge>
               )}
@@ -723,13 +721,13 @@ export default function AtterbergLimitsModal({
         </DialogHeader>
 
         {/* Top Control Bar: Method Selector & Sample Data Action */}
-        <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50/80 rounded-xl border border-gray-100">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50/80 dark:bg-muted/30 rounded-xl border border-gray-100 dark:border-border">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+            <span className="text-xs font-bold text-gray-700 dark:text-foreground uppercase tracking-wider">
               Testing Method:
             </span>
             <Select value={method} onValueChange={(v) => setMethod(v)}>
-              <SelectTrigger className="w-[400px] h-9 bg-white font-medium text-sm shadow-xs border-gray-200">
+              <SelectTrigger className="w-[400px] h-9 bg-white dark:bg-background/90 font-medium text-sm shadow-xs border-gray-200 dark:border-border dark:text-foreground">
                 <SelectValue placeholder="Select Method" />
               </SelectTrigger>
               <SelectContent>
@@ -760,7 +758,7 @@ export default function AtterbergLimitsModal({
               variant="ghost"
               size="sm"
               onClick={handleClear}
-              className="h-8 text-xs text-gray-500 hover:text-gray-700"
+              className="h-8 text-xs text-gray-500 dark:text-muted-foreground hover:text-gray-700 dark:hover:text-foreground"
               title="Reset all inputs"
             >
               <RotateCcw className="w-3.5 h-3.5 mr-1" />
@@ -773,20 +771,20 @@ export default function AtterbergLimitsModal({
         {method === ATTERBERG_METHODS.CASAGRANDE && (
           <div className="space-y-6">
             {/* Section A: Liquid Limit Table (5 Trials) */}
-            <div className="border border-gray-200 rounded-xl p-4 bg-white shadow-xs">
+            <div className="border border-gray-200 dark:border-border rounded-xl p-4 bg-white dark:bg-card/90 shadow-xs">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-primary/10 text-primary hover:bg-primary/15 border-0 font-bold">
+                  <Badge className="bg-primary/10 text-primary hover:bg-primary/15 border-0 font-bold dark:bg-primary/20">
                     Part A
                   </Badge>
-                  <h4 className="text-sm font-bold text-gray-800">
+                  <h4 className="text-sm font-bold text-gray-800 dark:text-foreground">
                     Liquid Limit (LL) — 5 Mandatory Trials
                   </h4>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400 dark:text-muted-foreground">
                     (Standard: IS:2720 Part 5, Clause 3.4)
                   </span>
                 </div>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 dark:text-muted-foreground">
                   Target blows: 15 to 35
                 </span>
               </div>
@@ -794,29 +792,29 @@ export default function AtterbergLimitsModal({
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left">
                   <thead>
-                    <tr className="bg-gray-50/80 border-b border-gray-200 text-gray-600 uppercase tracking-wider">
+                    <tr className="bg-gray-50/80 dark:bg-muted/50 border-b border-gray-200 dark:border-border text-gray-600 dark:text-muted-foreground uppercase tracking-wider">
                       <th className="p-2 w-10 text-center font-bold">#</th>
                       <th className="p-2 w-20 font-bold">Cup No</th>
                       <th className="p-2 w-24 font-bold text-primary">No of Blows</th>
                       <th className="p-2 font-bold" title="W1: Empty wt of cup (g)">Empty Cup W₁ (g)</th>
                       <th className="p-2 font-bold" title="W2: Cup wt + Wet Soil (g)">Cup + Wet W₂ (g)</th>
                       <th className="p-2 font-bold" title="W3: Cup wt + Dry Soil (g)">Cup + Dry W₃ (g)</th>
-                      <th className="p-2 bg-gray-100/50 font-bold text-gray-700" title="Ww = W2 - W3">Water Wt (g)</th>
-                      <th className="p-2 bg-gray-100/50 font-bold text-gray-700" title="Ws = W3 - W1">Solids Wt (g)</th>
-                      <th className="p-2 bg-blue-50/60 font-bold text-blue-900 text-right" title="w% = (Ww / Ws) * 100">
+                      <th className="p-2 bg-gray-100/50 dark:bg-muted/30 font-bold text-gray-700 dark:text-foreground" title="Ww = W2 - W3">Water Wt (g)</th>
+                      <th className="p-2 bg-gray-100/50 dark:bg-muted/30 font-bold text-gray-700 dark:text-foreground" title="Ws = W3 - W1">Solids Wt (g)</th>
+                      <th className="p-2 bg-blue-50/60 dark:bg-blue-950/40 font-bold text-blue-900 dark:text-blue-300 text-right" title="w% = (Ww / Ws) * 100">
                         Water Content w (%)
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-gray-100 dark:divide-border">
                     {calc.liquidLimitCalc.trials.map((trial, idx) => (
-                      <tr key={idx} className={trial.isValid ? 'hover:bg-gray-50/50' : 'bg-red-50/20'}>
-                        <td className="p-2 text-center font-bold text-gray-400">{idx + 1}</td>
+                      <tr key={idx} className={trial.isValid ? 'hover:bg-gray-50/50 dark:hover:bg-muted/20' : 'bg-red-50/20 dark:bg-red-950/20'}>
+                        <td className="p-2 text-center font-bold text-gray-400 dark:text-muted-foreground">{idx + 1}</td>
                         <td className="p-1">
                           <Input
                             value={casagrandeLLTrials[idx].cupNo}
                             onChange={(e) => handleCasagrandeLLChange(idx, 'cupNo', e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-7 text-xs dark:bg-background dark:border-border"
                             placeholder="e.g. 36"
                           />
                         </td>
@@ -826,7 +824,7 @@ export default function AtterbergLimitsModal({
                             step="any"
                             value={casagrandeLLTrials[idx].blows}
                             onChange={(e) => handleCasagrandeLLChange(idx, 'blows', e.target.value)}
-                            className="h-7 text-xs font-semibold text-primary"
+                            className="h-7 text-xs font-semibold text-primary dark:bg-background dark:border-border"
                             placeholder="e.g. 25"
                           />
                         </td>
@@ -836,7 +834,7 @@ export default function AtterbergLimitsModal({
                             step="any"
                             value={casagrandeLLTrials[idx].cupEmpty}
                             onChange={(e) => handleCasagrandeLLChange(idx, 'cupEmpty', e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-7 text-xs dark:bg-background dark:border-border"
                             placeholder="e.g. 18.58"
                           />
                         </td>
@@ -846,7 +844,7 @@ export default function AtterbergLimitsModal({
                             step="any"
                             value={casagrandeLLTrials[idx].cupWet}
                             onChange={(e) => handleCasagrandeLLChange(idx, 'cupWet', e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-7 text-xs dark:bg-background dark:border-border"
                             placeholder="e.g. 28.76"
                           />
                         </td>
@@ -856,17 +854,17 @@ export default function AtterbergLimitsModal({
                             step="any"
                             value={casagrandeLLTrials[idx].cupDry}
                             onChange={(e) => handleCasagrandeLLChange(idx, 'cupDry', e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-7 text-xs dark:bg-background dark:border-border"
                             placeholder="e.g. 25.53"
                           />
                         </td>
-                        <td className="p-2 bg-gray-50/50 font-mono text-gray-700">
+                        <td className="p-2 bg-gray-50/50 dark:bg-muted/20 font-mono text-gray-700 dark:text-foreground">
                           {trial.waterWeight !== null ? trial.waterWeight.toFixed(2) : '-'}
                         </td>
-                        <td className="p-2 bg-gray-50/50 font-mono text-gray-700">
+                        <td className="p-2 bg-gray-50/50 dark:bg-muted/20 font-mono text-gray-700 dark:text-foreground">
                           {trial.solidsWeight !== null ? trial.solidsWeight.toFixed(2) : '-'}
                         </td>
-                        <td className="p-2 bg-blue-50/50 font-mono font-bold text-blue-800 text-right">
+                        <td className="p-2 bg-blue-50/50 dark:bg-blue-950/30 font-mono font-bold text-blue-800 dark:text-blue-300 text-right">
                           {trial.waterContent !== null ? `${trial.waterContent.toFixed(2)}%` : '-'}
                         </td>
                       </tr>
@@ -876,7 +874,7 @@ export default function AtterbergLimitsModal({
               </div>
 
               {/* Flow Curve Graph */}
-              <div className="mt-4 pt-3 border-t border-gray-100">
+              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-border">
                 <CasagrandeFlowCurve
                   validPoints={calc.liquidLimitCalc.validPoints}
                   regression={calc.liquidLimitCalc.regression}
@@ -886,21 +884,21 @@ export default function AtterbergLimitsModal({
             </div>
 
             {/* Section B: Plastic Limit Table (2 Trials) */}
-            <div className="border border-gray-200 rounded-xl p-4 bg-white shadow-xs">
+            <div className="border border-gray-200 dark:border-border rounded-xl p-4 bg-white dark:bg-card/90 shadow-xs">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-0 font-bold">
+                  <Badge className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border-0 font-bold">
                     Part B
                   </Badge>
-                  <h4 className="text-sm font-bold text-gray-800">
+                  <h4 className="text-sm font-bold text-gray-800 dark:text-foreground">
                     Plastic Limit (PL) — 2 Trials
                   </h4>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400 dark:text-muted-foreground">
                     (Standard: IS:2720 Part 5, Clause 4)
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs text-gray-600 flex items-center gap-1.5 cursor-pointer select-none">
+                  <label className="text-xs text-gray-600 dark:text-muted-foreground flex items-center gap-1.5 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={roundPlasticLimitToWhole}
@@ -915,28 +913,28 @@ export default function AtterbergLimitsModal({
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left">
                   <thead>
-                    <tr className="bg-gray-50/80 border-b border-gray-200 text-gray-600 uppercase tracking-wider">
+                    <tr className="bg-gray-50/80 dark:bg-muted/50 border-b border-gray-200 dark:border-border text-gray-600 dark:text-muted-foreground uppercase tracking-wider">
                       <th className="p-2 w-10 text-center font-bold">#</th>
                       <th className="p-2 w-28 font-bold">Cup No</th>
                       <th className="p-2 font-bold" title="W1: Empty wt of cup (g)">Empty Cup W₁ (g)</th>
                       <th className="p-2 font-bold" title="W2: Cup wt + Wet Soil (g)">Cup + Wet W₂ (g)</th>
                       <th className="p-2 font-bold" title="W3: Cup wt + Dry Soil (g)">Cup + Dry W₃ (g)</th>
-                      <th className="p-2 bg-gray-100/50 font-bold text-gray-700">Water Wt (g)</th>
-                      <th className="p-2 bg-gray-100/50 font-bold text-gray-700">Solids Wt (g)</th>
-                      <th className="p-2 bg-emerald-50/60 font-bold text-emerald-900 text-right">
+                      <th className="p-2 bg-gray-100/50 dark:bg-muted/30 font-bold text-gray-700 dark:text-foreground">Water Wt (g)</th>
+                      <th className="p-2 bg-gray-100/50 dark:bg-muted/30 font-bold text-gray-700 dark:text-foreground">Solids Wt (g)</th>
+                      <th className="p-2 bg-emerald-50/60 dark:bg-emerald-950/40 font-bold text-emerald-900 dark:text-emerald-300 text-right">
                         Water Content w (%)
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-gray-100 dark:divide-border">
                     {calc.plasticLimitCalc.trials.map((trial, idx) => (
-                      <tr key={idx} className={trial.isValid ? 'hover:bg-gray-50/50' : 'bg-red-50/20'}>
-                        <td className="p-2 text-center font-bold text-gray-400">{idx + 1}</td>
+                      <tr key={idx} className={trial.isValid ? 'hover:bg-gray-50/50 dark:hover:bg-muted/20' : 'bg-red-50/20 dark:bg-red-950/20'}>
+                        <td className="p-2 text-center font-bold text-gray-400 dark:text-muted-foreground">{idx + 1}</td>
                         <td className="p-1">
                           <Input
                             value={casagrandePLTrials[idx].cupNo}
                             onChange={(e) => handleCasagrandePLChange(idx, 'cupNo', e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-7 text-xs dark:bg-background dark:border-border"
                             placeholder="e.g. 47"
                           />
                         </td>
@@ -946,7 +944,7 @@ export default function AtterbergLimitsModal({
                             step="any"
                             value={casagrandePLTrials[idx].cupEmpty}
                             onChange={(e) => handleCasagrandePLChange(idx, 'cupEmpty', e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-7 text-xs dark:bg-background dark:border-border"
                             placeholder="e.g. 18.62"
                           />
                         </td>
@@ -956,7 +954,7 @@ export default function AtterbergLimitsModal({
                             step="any"
                             value={casagrandePLTrials[idx].cupWet}
                             onChange={(e) => handleCasagrandePLChange(idx, 'cupWet', e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-7 text-xs dark:bg-background dark:border-border"
                             placeholder="e.g. 20.32"
                           />
                         </td>
@@ -966,17 +964,17 @@ export default function AtterbergLimitsModal({
                             step="any"
                             value={casagrandePLTrials[idx].cupDry}
                             onChange={(e) => handleCasagrandePLChange(idx, 'cupDry', e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-7 text-xs dark:bg-background dark:border-border"
                             placeholder="e.g. 19.95"
                           />
                         </td>
-                        <td className="p-2 bg-gray-50/50 font-mono text-gray-700">
+                        <td className="p-2 bg-gray-50/50 dark:bg-muted/20 font-mono text-gray-700 dark:text-foreground">
                           {trial.waterWeight !== null ? trial.waterWeight.toFixed(2) : '-'}
                         </td>
-                        <td className="p-2 bg-gray-50/50 font-mono text-gray-700">
+                        <td className="p-2 bg-gray-50/50 dark:bg-muted/20 font-mono text-gray-700 dark:text-foreground">
                           {trial.solidsWeight !== null ? trial.solidsWeight.toFixed(2) : '-'}
                         </td>
-                        <td className="p-2 bg-emerald-50/50 font-mono font-bold text-emerald-800 text-right">
+                        <td className="p-2 bg-emerald-50/50 dark:bg-emerald-950/30 font-mono font-bold text-emerald-800 dark:text-emerald-300 text-right">
                           {trial.waterContent !== null ? `${trial.waterContent.toFixed(2)}%` : '-'}
                         </td>
                       </tr>
@@ -986,13 +984,13 @@ export default function AtterbergLimitsModal({
               </div>
 
               {/* Plastic limit summary */}
-              <div className="mt-3 p-3 bg-emerald-50/40 border border-emerald-100 rounded-lg flex items-center justify-between text-xs">
-                <span className="text-gray-700">
+              <div className="mt-3 p-3 bg-emerald-50/40 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40 rounded-lg flex items-center justify-between text-xs">
+                <span className="text-gray-700 dark:text-foreground">
                   Plastic Limit = Average of Water Content = ({' '}
                   {calc.plasticLimitCalc.trials[0]?.waterContent ?? '-' } +{' '}
                   {calc.plasticLimitCalc.trials[1]?.waterContent ?? '-' } ) / 2
                 </span>
-                <span className="font-bold text-emerald-800 font-mono text-sm">
+                <span className="font-bold text-emerald-800 dark:text-emerald-300 font-mono text-sm">
                   PL = {calc.plasticLimit || '-'}%
                 </span>
               </div>
@@ -1003,20 +1001,20 @@ export default function AtterbergLimitsModal({
         {/* METHOD 2: CONE PENETRATION METHOD */}
         {method === ATTERBERG_METHODS.CONE_PENETRATION && (
           <div className="space-y-6">
-            <div className="border border-gray-200 rounded-xl p-4 bg-white shadow-xs">
+            <div className="border border-gray-200 dark:border-border rounded-xl p-4 bg-white dark:bg-card/90 shadow-xs">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-emerald-50 text-emerald-700 border-0 font-bold">
+                  <Badge className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-0 font-bold">
                     Cone Penetration
                   </Badge>
-                  <h4 className="text-sm font-bold text-gray-800">
+                  <h4 className="text-sm font-bold text-gray-800 dark:text-foreground">
                     Liquid Limit (LL) — 4 Trials
                   </h4>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400 dark:text-muted-foreground">
                     (Standard: IS:2720 Part 5, Clause 3.5)
                   </span>
                 </div>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 dark:text-muted-foreground">
                   Standard penetration range: 14 mm to 28 mm
                 </span>
               </div>
@@ -1024,31 +1022,31 @@ export default function AtterbergLimitsModal({
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left">
                   <thead>
-                    <tr className="bg-gray-50/80 border-b border-gray-200 text-gray-600 uppercase tracking-wider">
+                    <tr className="bg-gray-50/80 dark:bg-muted/50 border-b border-gray-200 dark:border-border text-gray-600 dark:text-muted-foreground uppercase tracking-wider">
                       <th className="p-2 w-10 text-center font-bold">#</th>
                       <th className="p-2 w-20 font-bold">Cup No</th>
-                      <th className="p-2 w-28 font-bold text-emerald-700" title="Penetration of cone in mm">
+                      <th className="p-2 w-28 font-bold text-emerald-700 dark:text-emerald-400" title="Penetration of cone in mm">
                         Penetration (mm)
                       </th>
                       <th className="p-2 font-bold" title="W1: Empty wt of cup (g)">Empty Cup W₁ (g)</th>
                       <th className="p-2 font-bold" title="W2: Cup wt + Wet Soil (g)">Cup + Wet W₂ (g)</th>
                       <th className="p-2 font-bold" title="W3: Cup wt + Dry Soil (g)">Cup + Dry W₃ (g)</th>
-                      <th className="p-2 bg-gray-100/50 font-bold text-gray-700">Water Wt (g)</th>
-                      <th className="p-2 bg-gray-100/50 font-bold text-gray-700">Solids Wt (g)</th>
-                      <th className="p-2 bg-emerald-50/60 font-bold text-emerald-900 text-right">
+                      <th className="p-2 bg-gray-100/50 dark:bg-muted/30 font-bold text-gray-700 dark:text-foreground">Water Wt (g)</th>
+                      <th className="p-2 bg-gray-100/50 dark:bg-muted/30 font-bold text-gray-700 dark:text-foreground">Solids Wt (g)</th>
+                      <th className="p-2 bg-emerald-50/60 dark:bg-emerald-950/40 font-bold text-emerald-900 dark:text-emerald-300 text-right">
                         Water Content w (%)
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-gray-100 dark:divide-border">
                     {calc.cone.trials.map((trial, idx) => (
-                      <tr key={idx} className={trial.isValid ? 'hover:bg-gray-50/50' : 'bg-red-50/20'}>
-                        <td className="p-2 text-center font-bold text-gray-400">{idx + 1}</td>
+                      <tr key={idx} className={trial.isValid ? 'hover:bg-gray-50/50 dark:hover:bg-muted/20' : 'bg-red-50/20 dark:bg-red-950/20'}>
+                        <td className="p-2 text-center font-bold text-gray-400 dark:text-muted-foreground">{idx + 1}</td>
                         <td className="p-1">
                           <Input
                             value={coneTrials[idx].cupNo}
                             onChange={(e) => handleConeChange(idx, 'cupNo', e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-7 text-xs dark:bg-background dark:border-border"
                             placeholder="e.g. 9"
                           />
                         </td>
@@ -1058,7 +1056,7 @@ export default function AtterbergLimitsModal({
                             step="any"
                             value={coneTrials[idx].penetration}
                             onChange={(e) => handleConeChange(idx, 'penetration', e.target.value)}
-                            className="h-7 text-xs font-semibold text-emerald-700"
+                            className="h-7 text-xs font-semibold text-emerald-700 dark:text-emerald-400 dark:bg-background dark:border-border"
                             placeholder="e.g. 20.0"
                           />
                         </td>
@@ -1068,7 +1066,7 @@ export default function AtterbergLimitsModal({
                             step="any"
                             value={coneTrials[idx].cupEmpty}
                             onChange={(e) => handleConeChange(idx, 'cupEmpty', e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-7 text-xs dark:bg-background dark:border-border"
                             placeholder="e.g. 12.80"
                           />
                         </td>
@@ -1078,7 +1076,7 @@ export default function AtterbergLimitsModal({
                             step="any"
                             value={coneTrials[idx].cupWet}
                             onChange={(e) => handleConeChange(idx, 'cupWet', e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-7 text-xs dark:bg-background dark:border-border"
                             placeholder="e.g. 21.68"
                           />
                         </td>
@@ -1088,17 +1086,17 @@ export default function AtterbergLimitsModal({
                             step="any"
                             value={coneTrials[idx].cupDry}
                             onChange={(e) => handleConeChange(idx, 'cupDry', e.target.value)}
-                            className="h-7 text-xs"
+                            className="h-7 text-xs dark:bg-background dark:border-border"
                             placeholder="e.g. 19.97"
                           />
                         </td>
-                        <td className="p-2 bg-gray-50/50 font-mono text-gray-700">
+                        <td className="p-2 bg-gray-50/50 dark:bg-muted/20 font-mono text-gray-700 dark:text-foreground">
                           {trial.waterWeight !== null ? trial.waterWeight.toFixed(2) : '-'}
                         </td>
-                        <td className="p-2 bg-gray-50/50 font-mono text-gray-700">
+                        <td className="p-2 bg-gray-50/50 dark:bg-muted/20 font-mono text-gray-700 dark:text-foreground">
                           {trial.solidsWeight !== null ? trial.solidsWeight.toFixed(2) : '-'}
                         </td>
-                        <td className="p-2 bg-emerald-50/50 font-mono font-bold text-emerald-800 text-right">
+                        <td className="p-2 bg-emerald-50/50 dark:bg-emerald-950/30 font-mono font-bold text-emerald-800 dark:text-emerald-300 text-right">
                           {trial.waterContent !== null ? `${trial.waterContent.toFixed(2)}%` : '-'}
                         </td>
                       </tr>
@@ -1108,7 +1106,7 @@ export default function AtterbergLimitsModal({
               </div>
 
               {/* Linear Flow Curve */}
-              <div className="mt-4 pt-3 border-t border-gray-100">
+              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-border">
                 <ConeFlowCurve
                   validPoints={calc.cone.validPoints}
                   regression={calc.cone.regression}
@@ -1117,8 +1115,8 @@ export default function AtterbergLimitsModal({
               </div>
 
               {/* Note per page 3 of reference PDF */}
-              <div className="mt-4 p-3 bg-amber-50/60 border border-amber-200/80 rounded-xl flex items-start gap-2 text-xs text-amber-800">
-                <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="mt-4 p-3 bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/40 rounded-xl flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
+                <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-semibold">IS:2720 Cone Penetration Specification:</p>
                   <p className="mt-0.5">
@@ -1132,41 +1130,41 @@ export default function AtterbergLimitsModal({
         )}
 
         {/* Fine-Tuning & Result Summary Bar */}
-        <div className="p-4 bg-gray-50/80 border border-gray-200 rounded-2xl space-y-3">
+        <div className="p-4 bg-gray-50/80 dark:bg-muted/30 border border-gray-200 dark:border-border rounded-2xl space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+              <span className="text-xs font-bold text-gray-700 dark:text-foreground uppercase tracking-wider">
                 Computed Limits
               </span>
-              <span className="text-[11px] text-gray-500">
+              <span className="text-[11px] text-gray-500 dark:text-muted-foreground">
                 (Reported to 1 decimal place per IS:2720 Part 5)
               </span>
             </div>
 
             {/* Optional Manual Adjustment for Flow Curve reading */}
             <div className="flex items-center gap-3 text-xs">
-              <span className="text-gray-500">Adjust from graph if needed:</span>
+              <span className="text-gray-500 dark:text-muted-foreground">Adjust from graph if needed:</span>
               <div className="flex items-center gap-1.5">
-                <span className="font-medium text-gray-700">LL:</span>
+                <span className="font-medium text-gray-700 dark:text-foreground">LL:</span>
                 <Input
                   type="number"
                   step="0.1"
                   value={overrideLL}
                   onChange={(e) => setOverrideLL(e.target.value)}
                   placeholder={calc.liquidLimit || 'Auto'}
-                  className="w-20 h-7 text-xs font-mono font-bold bg-white"
+                  className="w-20 h-7 text-xs font-mono font-bold bg-white dark:bg-background/90 dark:border-border dark:text-foreground"
                 />
               </div>
               {method === ATTERBERG_METHODS.CASAGRANDE && (
                 <div className="flex items-center gap-1.5">
-                  <span className="font-medium text-gray-700">PL:</span>
+                  <span className="font-medium text-gray-700 dark:text-foreground">PL:</span>
                   <Input
                     type="number"
                     step="0.1"
                     value={overridePL}
                     onChange={(e) => setOverridePL(e.target.value)}
                     placeholder={calc.plasticLimit || 'Auto'}
-                    className="w-20 h-7 text-xs font-mono font-bold bg-white"
+                    className="w-20 h-7 text-xs font-mono font-bold bg-white dark:bg-background/90 dark:border-border dark:text-foreground"
                   />
                 </div>
               )}
@@ -1175,55 +1173,55 @@ export default function AtterbergLimitsModal({
 
           {/* Three Large KPI summary cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="p-3 bg-white rounded-xl border border-blue-100 shadow-xs">
+            <div className="p-3 bg-white dark:bg-card rounded-xl border border-blue-100 dark:border-blue-900/40 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-blue-900 uppercase">Liquid Limit (LL)</span>
-                <Badge className="bg-blue-100 text-blue-800 text-[10px] font-bold border-0">
+                <span className="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase">Liquid Limit (LL)</span>
+                <Badge className="bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 text-[10px] font-bold border-0">
                   {method === ATTERBERG_METHODS.CASAGRANDE ? '@ 25 blows' : '@ 20 mm'}
                 </Badge>
               </div>
-              <div className="mt-2 text-2xl font-bold font-mono text-blue-700">
+              <div className="mt-2 text-2xl font-bold font-mono text-blue-700 dark:text-blue-400">
                 {effectiveLL ? `${effectiveLL}%` : '-'}
               </div>
-              <p className="text-[10px] text-gray-400 mt-0.5">
+              <p className="text-[10px] text-gray-400 dark:text-muted-foreground mt-0.5">
                 {method === ATTERBERG_METHODS.CASAGRANDE ? 'Semi-log regression' : 'Linear regression'}
               </p>
             </div>
 
-            <div className="p-3 bg-white rounded-xl border border-emerald-100 shadow-xs">
+            <div className="p-3 bg-white dark:bg-card rounded-xl border border-emerald-100 dark:border-emerald-900/40 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-900 uppercase">Plastic Limit (PL)</span>
-                <Badge className="bg-emerald-100 text-emerald-800 text-[10px] font-bold border-0">
+                <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase">Plastic Limit (PL)</span>
+                <Badge className="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold border-0">
                   {method === ATTERBERG_METHODS.CASAGRANDE ? '2-Trial Avg' : 'Fixed'}
                 </Badge>
               </div>
-              <div className="mt-2 text-2xl font-bold font-mono text-emerald-700">
+              <div className="mt-2 text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-400">
                 {effectivePL ? (effectivePL === 'NP' ? 'NP' : `${effectivePL}%`) : '-'}
               </div>
-              <p className="text-[10px] text-gray-400 mt-0.5">
+              <p className="text-[10px] text-gray-400 dark:text-muted-foreground mt-0.5">
                 {method === ATTERBERG_METHODS.CASAGRANDE ? '3 mm soil thread' : 'Non-Plastic'}
               </p>
             </div>
 
-            <div className="p-3 bg-white rounded-xl border border-purple-100 shadow-xs">
+            <div className="p-3 bg-white dark:bg-card rounded-xl border border-purple-100 dark:border-purple-900/40 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-purple-900 uppercase">Plasticity Index (PI)</span>
-                <Badge className="bg-purple-100 text-purple-800 text-[10px] font-bold border-0">
+                <span className="text-xs font-bold text-purple-900 dark:text-purple-300 uppercase">Plasticity Index (PI)</span>
+                <Badge className="bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 text-[10px] font-bold border-0">
                   LL - PL
                 </Badge>
               </div>
-              <div className="mt-2 text-2xl font-bold font-mono text-purple-700">
+              <div className="mt-2 text-2xl font-bold font-mono text-purple-700 dark:text-purple-400">
                 {effectivePI}
               </div>
-              <p className="text-[10px] text-gray-400 mt-0.5">
+              <p className="text-[10px] text-gray-400 dark:text-muted-foreground mt-0.5">
                 Unitless
               </p>
             </div>
           </div>
         </div>
 
-        <DialogFooter className="pt-3 border-t border-gray-100 flex items-center justify-between sm:justify-between">
-          <Button type="button" variant="outline" onClick={onClose} className="h-9 text-xs">
+        <DialogFooter className="pt-3 border-t border-gray-100 dark:border-border flex items-center justify-between sm:justify-between">
+          <Button type="button" variant="outline" onClick={onClose} className="h-9 text-xs dark:border-border dark:hover:bg-muted/30">
             Cancel
           </Button>
 
