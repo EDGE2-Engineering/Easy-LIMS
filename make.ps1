@@ -37,6 +37,7 @@ function Show-Help {
     Write-Host "  ./make.ps1 format           - Format source files with Prettier"
     Write-Host "  ./make.ps1 format-check     - Check formatting without writing"
     Write-Host "  ./make.ps1 setup-hooks      - Install Git hooks"
+    Write-Host "  ./make.ps1 db-setup         - Apply setup.sql to PostgreSQL database"
     Write-Host "  ./make.ps1 db-dump          - Export PostgreSQL database schema/dump"
 }
 
@@ -218,6 +219,11 @@ function Invoke-DockerRun {
     docker run -p 8000:8000 -e DATABASE_URL="$env:DATABASE_URL" --env-file server/.env easy-lims:latest
 }
 
+function Invoke-DbSetup {
+    Write-Host "Applying setup.sql to PostgreSQL database..." -ForegroundColor Green
+    python scripts/apply_sql.py setup.sql
+}
+
 switch ($Target) {
     "help"             { Show-Help }
     "install"          { Invoke-Install }
@@ -236,6 +242,7 @@ switch ($Target) {
     "test"             { Invoke-Test -EnvFile $EnvFile }
     "test-e2e"         { Invoke-TestE2E -EnvFile $EnvFile }
     "test-ui"          { Invoke-TestUI -EnvFile $EnvFile }
+    "db-setup"         { Invoke-DbSetup }
     "db-dump"          { Invoke-DbDump }
     "format"           { Invoke-Format }
     "format-check"     { Invoke-FormatCheck }

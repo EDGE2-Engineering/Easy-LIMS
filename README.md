@@ -1,10 +1,17 @@
 ### EDGE2 Easy LIMS
 
-<!-- - Create a PostgreSQL project
-- Run `setup.sql` on PostgreSQL. Go to your PostgreSQL project -> SQL Editor -> Run SQL
-- Create a user in PostgreSQL with email and password. This would be used for admin login. Go to your PostgreSQL project -> Authentication -> Users -> Add User
-- Run `npm run dev` to start the development server
-- Login as admin using the credentials created in PostgreSQL -->
+#### Database Setup
+1. Configure your database connection in `.env` (or set `DATABASE_URL` / `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `DB_NAME`).
+2. Apply the database schema and default seeds:
+   - Via Makefile: `make db-setup`
+   - Via PowerShell: `.\make.ps1 db-setup`
+   - Or run `setup.sql` directly in your PostgreSQL / Supabase SQL Editor.
+
+#### Starting Development Server
+```bash
+make dev
+```
+
 <!-- 
 ### Install `pg_dump`
 

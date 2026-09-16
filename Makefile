@@ -8,7 +8,7 @@ else
     PIP ?= $(if $(wildcard .venv/bin/pip),$(CURDIR)/.venv/bin/pip,pip3)
 endif
 
-.PHONY: help install venv dev preview stop build build-production clean clean-build android android-install format format-check setup-hooks docker-build docker-run init-test test test-e2e test-ui
+.PHONY: help install venv dev preview stop build build-production clean clean-build android android-install format format-check setup-hooks docker-build docker-run init-test test test-e2e test-ui db-setup
 
 # Default target
 help:
@@ -27,6 +27,7 @@ help:
 	@echo "  make test-ui          - Run E2E tests (UI/trace mode) via Python Playwright"
 	@echo "  make docker-build     - Build Docker image (easy-lims:latest)"
 	@echo "  make docker-run       - Build & run Docker container"
+	@echo "  make db-setup         - Apply setup.sql to PostgreSQL database"
 	@echo "  make format           - Format source files with Prettier (writes in-place)"
 	@echo "  make format-check     - Check formatting without writing (CI-friendly)"
 	@echo "  make setup-hooks      - Install Git hooks (run once after cloning)"
@@ -125,6 +126,10 @@ test-e2e: init-test
 test-ui: init-test
 	@$(PYTHON) tests/run_tests.py --ui --env-file $(ENV_FILE)
 
+# Apply database setup SQL schema
+db-setup:
+	@echo "Applying setup.sql to PostgreSQL database..."
+	@$(PYTHON) scripts/apply_sql.py setup.sql
 
 db-dump:
 	@: $${DB_PASSWORD:?DB_PASSWORD environment variable is not set. Set it via \'export DB_PASSWORD=<your-password>\'}
