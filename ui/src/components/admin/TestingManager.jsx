@@ -63,7 +63,14 @@ const MANUAL_GEOTECH_FIELDS = [
   { key: 'silt_clay', label: 'Silt & Clay (%)', type: 'number' },
 ];
 
-const TestingManager = ({ initialJobId, onClose, onSave }) => {
+const TestingManager = ({
+  initialJobId,
+  initialJobDetails,
+  initialSamples,
+  onClose,
+  onSave,
+  onLoadingChange,
+}) => {
   const { materials, materialFormAssociations } = useMaterials();
   const { labTests } = useLabTests();
   const getMaterialAndForms = useCallback(
@@ -124,8 +131,36 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
   const { settings } = useSettings();
 
   useEffect(() => {
-    if (initialJobId) fetchData();
+    if (initialJobId) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
   }, [initialJobId]);
+
+  useEffect(() => {
+    if (onLoadingChange) {
+      onLoadingChange(loading);
+    }
+    return () => {
+      if (onLoadingChange) {
+        onLoadingChange(false);
+      }
+    };
+  }, [loading, onLoadingChange]);
+
+  // Sync initialJobDetails and initialSamples if updated from parent
+  useEffect(() => {
+    if (initialJobDetails) {
+      setJobDetails(initialJobDetails);
+    }
+  }, [initialJobDetails]);
+
+  useEffect(() => {
+    if (initialSamples && initialSamples.length > 0) {
+      setSamples(initialSamples);
+    }
+  }, [initialSamples]);
 
   // Restore saved entryMode and rlValuesNote from GeotechData when opening a geotech category dialog
   useEffect(() => {
@@ -140,44 +175,75 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
   const fetchData = async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
     try {
-      // Fetch Job
-      const { data: rawJob, error: jobError } = await apiClient
-        .from('jobs')
-        .select('*')
-        .eq('id', initialJobId)
-        .single();
-      if (jobError) throw jobError;
-
-      let job = rawJob;
-      if (job && job.client_id) {
-        const { data: cData } = await apiClient.from('clients').select('id, client_name').eq('id', job.client_id).maybeSingle();
-        if (cData) job = { ...job, clients: cData };
-      }
-      setJobDetails(job);
-
-      // Fetch Samples
-      const { data: inwards, error: inError } = await apiClient
-        .from('material_inward_register')
-        .select('*')
-        .eq('job_id', initialJobId);
-
-      let flatSamples = [];
-      if (inwards && inwards.length > 0) {
-        const inwardIds = inwards.map((i) => i.id);
-        const { data: sData } = await apiClient
-          .from('material_samples')
+      // 1. Job details (reuse initialJobDetails if available to avoid duplicate GET /api/jobs and /api/clients)
+      const jobPromise = (async () => {
+        if (initialJobDetails) return initialJobDetails;
+        const { data: rawJob, error: jobError } = await apiClient
+          .from('jobs')
           .select('*')
-          .in('inward_id', inwardIds);
-        flatSamples = sData || [];
-      }
-      setSamples(flatSamples);
-      if (inError) console.error('Inward fetch error:', inError);
+          .eq('id', initialJobId)
+          .single();
+        if (jobError) throw jobError;
 
-      // Fetch Existing Test Data
-      const { data: testData, error: tError } = await apiClient
+        let job = rawJob;
+        if (job && job.client_id) {
+          const { data: cData } = await apiClient
+            .from('clients')
+            .select('id, client_name')
+            .eq('id', job.client_id)
+            .maybeSingle();
+          if (cData) job = { ...job, clients: cData };
+        }
+        return job;
+      })();
+
+      // 2. Fetch Samples & Inwards in parallel with Job & Tests
+      const samplesPromise = (async () => {
+        if (initialSamples && initialSamples.length > 0) return initialSamples;
+        const { data: inwards, error: inError } = await apiClient
+          .from('material_inward_register')
+          .select('*')
+          .eq('job_id', initialJobId);
+
+        let flatSamples = [];
+        if (inwards && inwards.length > 0) {
+          const inwardIds = inwards.map((i) => i.id);
+          const { data: sData } = await apiClient
+            .from('material_samples')
+            .select('*')
+            .in('inward_id', inwardIds);
+          flatSamples = sData || [];
+        }
+        if (inError) console.error('Inward fetch error:', inError);
+        return flatSamples;
+      })();
+
+      // 3. Fetch Existing Test Data
+      const testDataPromise = apiClient
         .from('job_tests')
         .select('*')
         .eq('job_id', initialJobId);
+
+      // 4. Fetch Tech Capabilities
+      const capsPromise = (user && user.id)
+        ? apiClient
+            .from('technician_capabilities')
+            .select('category')
+            .eq('user_id', user.id)
+        : Promise.resolve({ data: [], error: null });
+
+      // Execute all four streams in parallel
+      const [job, flatSamples, testDataRes, capsRes] = await Promise.all([
+        jobPromise,
+        samplesPromise,
+        testDataPromise,
+        capsPromise,
+      ]);
+
+      setJobDetails(job);
+      setSamples(flatSamples);
+
+      const { data: testData, error: tError } = testDataRes;
       if (!tError) {
         const results = {};
         (testData || []).forEach((t) => {
@@ -196,12 +262,10 @@ const TestingManager = ({ initialJobId, onClose, onSave }) => {
         setTestResults(results);
       }
 
-      // Fetch Tech Capabilities
-      const { data: caps, error: capError } = await apiClient
-        .from('technician_capabilities')
-        .select('category')
-        .eq('user_id', user.id);
-      if (!capError) setTechCapabilities(caps.map((c) => c.category));
+      const { data: caps, error: capError } = capsRes;
+      if (!capError && caps) {
+        setTechCapabilities(caps.map((c) => c.category));
+      }
     } catch (error) {
       console.error(error);
       toast({ title: 'Error', description: 'Failed to load data', variant: 'destructive' });

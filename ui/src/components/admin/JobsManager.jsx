@@ -88,6 +88,8 @@ const JobsManager = ({ id }) => {
   const [loadingJobSamples, setLoadingJobSamples] = useState(false);
   const [loadingTechAssignments, setLoadingTechAssignments] = useState(false);
   const [loadingJobDocs, setLoadingJobDocs] = useState(false);
+  const [loadingJobDetails, setLoadingJobDetails] = useState(false);
+  const [loadingTestingData, setLoadingTestingData] = useState(false);
   const [sortField, setSortField] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
   const [showingAuditLogs, setShowingAuditLogs] = useState(false);
@@ -206,6 +208,27 @@ const JobsManager = ({ id }) => {
     jobCode: '',
   });
 
+  const hasTestingSection = useMemo(() => {
+    if (!editingRecord?.status) return false;
+    return (
+      Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >=
+      Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.UNDER_TESTING)
+    );
+  }, [editingRecord?.status]);
+
+  const isJobDataLoading = Boolean(
+    !isAddingNew &&
+    (id || editingRecord) &&
+    (loadingJobDetails ||
+      loadingJobSamples ||
+      loadingTechAssignments ||
+      loadingJobDocs ||
+      (hasTestingSection && loadingTestingData) ||
+      isStatusTransitioning)
+  );
+
+  const lastLoadedJobIdRef = useRef(null);
+
   useEffect(() => {
     const rawId = id;
     const activeId = decodeId(rawId);
@@ -219,15 +242,31 @@ const JobsManager = ({ id }) => {
         setIsAddingNew(false);
       }
       if (!authLoading && user?.id) {
-        fetchJobById(activeId);
+        if (lastLoadedJobIdRef.current !== String(activeId)) {
+          lastLoadedJobIdRef.current = String(activeId);
+          setLoadingJobDetails(true);
+          setLoadingJobSamples(true);
+          setLoadingTechAssignments(true);
+          setLoadingJobDocs(true);
+
+          Promise.allSettled([
+            fetchJobById(activeId),
+            fetchJobSamples(activeId),
+            fetchJobAssignments(activeId),
+            fetchJobDocs(activeId),
+          ]);
+        }
       }
     } else {
+      lastLoadedJobIdRef.current = null;
       setEditingRecord(null);
+      setLoadingJobDetails(false);
     }
   }, [id, authLoading, user?.id]);
 
   const fetchJobById = async (jobId) => {
     if (!user || !user.id) return;
+    setLoadingJobDetails(true);
     try {
       let userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
       if (isNaN(userId)) {
@@ -241,11 +280,31 @@ const JobsManager = ({ id }) => {
       }
       if (!userId || isNaN(userId)) return;
 
-      const { data: rawData, error } = await apiClient
+      const jobPromise = apiClient
         .from('jobs')
         .select('*')
         .eq('id', jobId)
         .maybeSingle();
+
+      const assignPromise = (async () => {
+        if (
+          !isAdmin() &&
+          (user?.role === ROLES.ANALYST.slug || user?.role === ROLES.TECHNICIAN.slug)
+        ) {
+          const { data: assignments, error: assignError } = await apiClient
+            .from('job_to_technicians')
+            .select('id')
+            .eq('job_id', jobId)
+            .eq('technician_id', userId);
+          return { assignments, assignError };
+        }
+        return { assignments: [], assignError: null };
+      })();
+
+      const [{ data: rawData, error }, assignRes] = await Promise.all([
+        jobPromise,
+        assignPromise,
+      ]);
       if (error) throw error;
 
       let data = rawData;
@@ -258,24 +317,17 @@ const JobsManager = ({ id }) => {
       }
 
       if (data) {
-        const actualJobId = data.id;
         // Security check for analysts and technicians
         if (
           !isAdmin() &&
           (user?.role === ROLES.ANALYST.slug || user?.role === ROLES.TECHNICIAN.slug)
         ) {
-          const { data: assignments, error: assignError } = await apiClient
-            .from('job_to_technicians')
-            .select('id')
-            .eq('job_id', actualJobId)
-            .eq('technician_id', userId);
-
-          if (assignError || !assignments || assignments.length === 0) {
+          if (assignRes.assignError || !assignRes.assignments || assignRes.assignments.length === 0) {
             console.error('Access Denied Check:', {
-              actualJobId,
+              actualJobId: data.id,
               userId,
               userRole: user?.role,
-              error: assignError,
+              error: assignRes.assignError,
             });
             toast({
               title: 'Access Denied',
@@ -283,15 +335,26 @@ const JobsManager = ({ id }) => {
               variant: 'destructive',
             });
             setEditingRecord(null);
+            navigate('/settings/jobs', { replace: true });
             return;
           }
         }
 
         setEditingRecord({ ...data });
         setIsAddingNew(false);
+      } else {
+        toast({
+          title: 'Not Found',
+          description: 'Job not found.',
+          variant: 'destructive',
+        });
+        setEditingRecord(null);
+        navigate('/settings/jobs', { replace: true });
       }
     } catch (err) {
       console.error('Failed to fetch job by ID:', err);
+    } finally {
+      setLoadingJobDetails(false);
     }
   };
 
@@ -371,11 +434,12 @@ const JobsManager = ({ id }) => {
   };
 
   useEffect(() => {
-    if (!authLoading) {
+    if (!authLoading && !id) {
       fetchRecords();
     }
   }, [
     authLoading,
+    id,
     user,
     currentPage,
     itemsPerPage,
@@ -419,12 +483,25 @@ const JobsManager = ({ id }) => {
 
   useEffect(() => {
     if (editingRecord?.id) {
-      setLoadingJobSamples(true);
-      setLoadingTechAssignments(true);
-      setLoadingJobDocs(true);
-      fetchJobSamples(editingRecord.id);
-      fetchJobAssignments(editingRecord.id);
-      fetchJobDocs(editingRecord.id);
+      const hasTesting =
+        Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >=
+        Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.UNDER_TESTING);
+      if (hasTesting) {
+        setLoadingTestingData(true);
+      } else {
+        setLoadingTestingData(false);
+      }
+      if (lastLoadedJobIdRef.current !== String(editingRecord.id)) {
+        lastLoadedJobIdRef.current = String(editingRecord.id);
+        setLoadingJobSamples(true);
+        setLoadingTechAssignments(true);
+        setLoadingJobDocs(true);
+        Promise.allSettled([
+          fetchJobSamples(editingRecord.id),
+          fetchJobAssignments(editingRecord.id),
+          fetchJobDocs(editingRecord.id),
+        ]);
+      }
     } else {
       setJobSamples([]);
       setTechAssignments([]);
@@ -432,6 +509,7 @@ const JobsManager = ({ id }) => {
       setLoadingJobSamples(false);
       setLoadingTechAssignments(false);
       setLoadingJobDocs(false);
+      setLoadingTestingData(false);
     }
   }, [editingRecord?.id]);
 
@@ -492,16 +570,23 @@ const JobsManager = ({ id }) => {
         const userIds = [...new Set(samples.map((s) => s.received_by).filter(Boolean))];
         const centerIds = [...new Set(samples.map((s) => s.collection_center_id).filter(Boolean))];
 
+        const [uDataRes, cDataRes] = await Promise.all([
+          userIds.length > 0
+            ? apiClient.from('users').select('id, full_name').in('id', userIds)
+            : Promise.resolve({ data: [] }),
+          centerIds.length > 0
+            ? apiClient.from('collection_centers').select('id, name').in('id', centerIds)
+            : Promise.resolve({ data: [] }),
+        ]);
+
         let uMap = new Map();
-        if (userIds.length > 0) {
-          const { data: uData } = await apiClient.from('users').select('id, full_name').in('id', userIds);
-          if (uData) uData.forEach((u) => { uMap.set(String(u.id), u); uMap.set(Number(u.id), u); });
+        if (uDataRes?.data) {
+          uDataRes.data.forEach((u) => { uMap.set(String(u.id), u); uMap.set(Number(u.id), u); });
         }
 
         let cMap = new Map();
-        if (centerIds.length > 0) {
-          const { data: cData } = await apiClient.from('collection_centers').select('id, name').in('id', centerIds);
-          if (cData) cData.forEach((c) => { cMap.set(String(c.id), c); cMap.set(Number(c.id), c); });
+        if (cDataRes?.data) {
+          cDataRes.data.forEach((c) => { cMap.set(String(c.id), c); cMap.set(Number(c.id), c); });
         }
 
         samples = samples.map((s) => ({
@@ -616,6 +701,12 @@ const JobsManager = ({ id }) => {
       }
       if (data) {
         setEditingRecord({ ...data });
+        const hasTesting =
+          Object.values(WORKFLOW_STATES).indexOf(data.status) >=
+          Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.UNDER_TESTING);
+        if (hasTesting) {
+          setLoadingTestingData(true);
+        }
       }
       // Explicitly refresh child data & list
       await Promise.all([
@@ -929,18 +1020,6 @@ const JobsManager = ({ id }) => {
       setLoadingLogs(false);
     }
   };
-
-  useEffect(() => {
-    if (editingRecord?.id) {
-      fetchJobDocs(editingRecord.id);
-      fetchJobSamples(editingRecord.id);
-      fetchJobAssignments(editingRecord.id);
-    } else {
-      setLinkedDocs([]);
-      setJobSamples([]);
-      setTechAssignments([]);
-    }
-  }, [editingRecord?.id]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -1275,9 +1354,24 @@ const JobsManager = ({ id }) => {
     setDatePreset('custom');
   };
 
+  if (id && !editingRecord) {
+    return (
+      <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm pointer-events-auto select-none cursor-wait">
+        <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
+        <p className="text-sm font-medium text-gray-500">Loading job…</p>
+      </div>
+    );
+  }
+
   if (editingRecord) {
     return (
-      <div className="space-y-6 bg-white p-2 rounded-xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-right-4 duration-500">
+      <div className="space-y-6 bg-white p-2 rounded-xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-right-4 duration-500 relative">
+        {isJobDataLoading && (
+          <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm pointer-events-auto select-none cursor-wait">
+            <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
+            <p className="text-sm font-medium text-gray-500">Loading job…</p>
+          </div>
+        )}
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-4">
             <Button
@@ -1441,6 +1535,8 @@ const JobsManager = ({ id }) => {
                 </DialogHeader>
                 <TestingManager
                   initialJobId={editingRecord.id}
+                  initialJobDetails={editingRecord}
+                  initialSamples={jobSamples}
                   onClose={() => {
                     setShowingTestingForm(false);
                     reloadEditingRecord();
@@ -1965,7 +2061,14 @@ const JobsManager = ({ id }) => {
                   <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                     <Package className="w-4 h-4" /> Testing Data
                   </h3>
-                  <TestingManager initialJobId={editingRecord.id} onSave={reloadEditingRecord} />
+                  <TestingManager
+                    key={`${editingRecord.id}-${jobDetailRefreshKey}`}
+                    initialJobId={editingRecord.id}
+                    initialJobDetails={editingRecord}
+                    initialSamples={jobSamples}
+                    onSave={reloadEditingRecord}
+                    onLoadingChange={setLoadingTestingData}
+                  />
                 </div>
               )}
             </>
