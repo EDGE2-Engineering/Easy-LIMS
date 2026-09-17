@@ -795,6 +795,12 @@ const TestingManager = ({
                                               <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
                                                 SG/FSI
                                               </th>
+                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                Shrinkage (SL/R)
+                                              </th>
+                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                Compaction (MDD/OMC)
+                                              </th>
                                             </tr>
                                           </thead>
                                           <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
@@ -871,6 +877,33 @@ const TestingManager = ({
                                                         (FSI: {d.freeSwellIndexTrials?.averageFsi}%{d.freeSwellIndexTrials?.expansiveness ? ` • ${d.freeSwellIndexTrials.expansiveness}` : ''})
                                                       </span>
                                                     )}
+                                                  </td>
+                                                  <td className="p-3 text-gray-600">
+                                                    <div>
+                                                      {d.shrinkageLimit ? (
+                                                        <span>
+                                                          {String(d.shrinkageLimit).endsWith('%') ? d.shrinkageLimit : `${d.shrinkageLimit}%`}
+                                                          {d.shrinkageRatio ? ` (R: ${d.shrinkageRatio})` : ''}
+                                                        </span>
+                                                      ) : (
+                                                        '-'
+                                                      )}
+                                                    </div>
+                                                  </td>
+                                                  <td className="p-3 text-gray-600 text-[11px]">
+                                                    <div className="space-y-0.5">
+                                                      {d.lightCompaction?.mdd && (
+                                                        <div className="text-amber-700 dark:text-amber-300">
+                                                          <span className="font-semibold">L:</span> {d.lightCompaction.mdd} g/cc, {d.lightCompaction.omc}%
+                                                        </div>
+                                                      )}
+                                                      {d.heavyCompaction?.mdd && (
+                                                        <div className="text-purple-700 dark:text-purple-300">
+                                                          <span className="font-semibold">H:</span> {d.heavyCompaction.mdd} g/cc, {d.heavyCompaction.omc}%
+                                                        </div>
+                                                      )}
+                                                      {!d.lightCompaction?.mdd && !d.heavyCompaction?.mdd && <span>-</span>}
+                                                    </div>
                                                   </td>
                                                 </tr>
                                               ))

@@ -43,6 +43,9 @@ import SpecificGravityModal from './SpecificGravityModal';
 import FreeSwellIndexModal from './FreeSwellIndexModal';
 import SieveAnalysisModal from './SieveAnalysisModal';
 import AtterbergLimitsModal from './AtterbergLimitsModal';
+import ShrinkageLimitModal from './ShrinkageLimitModal';
+import LightCompactionModal from './LightCompactionModal';
+import HeavyCompactionModal from './HeavyCompactionModal';
 
 /**
  * Look up the Correction Factor (CF) from the overburden correction table stored
@@ -328,6 +331,21 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     boreholeIndex: 0,
     depthIndex: 0,
   });
+  const [shrinkageModalState, setShrinkageModalState] = useState({
+    isOpen: false,
+    boreholeIndex: 0,
+    depthIndex: 0,
+  });
+  const [lightCompactionModalState, setLightCompactionModalState] = useState({
+    isOpen: false,
+    boreholeIndex: 0,
+    depthIndex: 0,
+  });
+  const [heavyCompactionModalState, setHeavyCompactionModalState] = useState({
+    isOpen: false,
+    boreholeIndex: 0,
+    depthIndex: 0,
+  });
   const [showMoistureInputsInline, setShowMoistureInputsInline] = useState(false);
 
   // Overburden correction table from Settings → System → Overburden
@@ -398,6 +416,11 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
             specificGravityTrials: entry.specificGravityTrials || null,
             freeSwellIndex: entry.freeSwellIndex ?? '',
             freeSwellIndexTrials: entry.freeSwellIndexTrials || null,
+            shrinkageLimit: entry.shrinkageLimit ?? '',
+            shrinkageRatio: entry.shrinkageRatio ?? '',
+            shrinkageData: entry.shrinkageData || null,
+            lightCompaction: entry.lightCompaction || null,
+            heavyCompaction: entry.heavyCompaction || null,
           }))
         )
       : [
@@ -425,6 +448,11 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               specificGravityTrials: null,
               freeSwellIndex: '',
               freeSwellIndexTrials: null,
+              shrinkageLimit: '',
+              shrinkageRatio: '',
+              shrinkageData: null,
+              lightCompaction: null,
+              heavyCompaction: null,
             },
           ],
         ],
@@ -643,6 +671,11 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
             specificGravityTrials: null,
             freeSwellIndex: '',
             freeSwellIndexTrials: null,
+            shrinkageLimit: '',
+            shrinkageRatio: '',
+            shrinkageData: null,
+            lightCompaction: null,
+            heavyCompaction: null,
           },
         ],
       ],
@@ -888,6 +921,49 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     });
   };
 
+  const handleApplyShrinkageModal = (boreholeIndex, depthIndex, appliedData) => {
+    const newResults = [...formData.labTestResults];
+    newResults[boreholeIndex][depthIndex] = {
+      ...newResults[boreholeIndex][depthIndex],
+      shrinkageLimit: appliedData.shrinkageLimit || '',
+      shrinkageRatio: appliedData.shrinkageRatio || '',
+      shrinkageData: appliedData.shrinkageData || null,
+    };
+    setFormData({ ...formData, labTestResults: newResults });
+    toast({
+      title: 'Shrinkage Limit Applied',
+      description: `SL: ${appliedData.shrinkageLimit || '-'}, R: ${appliedData.shrinkageRatio || '-'}`,
+    });
+  };
+
+  const handleApplyLightCompactionModal = (boreholeIndex, depthIndex, appliedData) => {
+    const newResults = [...formData.labTestResults];
+    const { lightCompaction } = appliedData;
+    newResults[boreholeIndex][depthIndex] = {
+      ...newResults[boreholeIndex][depthIndex],
+      lightCompaction: lightCompaction || null,
+    };
+    setFormData({ ...formData, labTestResults: newResults });
+    toast({
+      title: 'Light Compaction Applied',
+      description: `MDD: ${lightCompaction?.mddFormatted || '-'}, OMC: ${lightCompaction?.omcFormatted || '-'}`,
+    });
+  };
+
+  const handleApplyHeavyCompactionModal = (boreholeIndex, depthIndex, appliedData) => {
+    const newResults = [...formData.labTestResults];
+    const { heavyCompaction } = appliedData;
+    newResults[boreholeIndex][depthIndex] = {
+      ...newResults[boreholeIndex][depthIndex],
+      heavyCompaction: heavyCompaction || null,
+    };
+    setFormData({ ...formData, labTestResults: newResults });
+    toast({
+      title: 'Heavy Compaction Applied',
+      description: `MDD: ${heavyCompaction?.mddFormatted || '-'}, OMC: ${heavyCompaction?.omcFormatted || '-'}`,
+    });
+  };
+
   const addLabTestDepth = (boreholeIndex) => {
     const newResults = [...formData.labTestResults];
     newResults[boreholeIndex].push({
@@ -913,6 +989,11 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
       specificGravityTrials: null,
       freeSwellIndex: '',
       freeSwellIndexTrials: null,
+      shrinkageLimit: '',
+      shrinkageRatio: '',
+      shrinkageData: null,
+      lightCompaction: null,
+      heavyCompaction: null,
     });
 
     const newAnalysis = [...(formData.grainSizeAnalysis || [])];
@@ -1283,6 +1364,81 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
             handleApplyAtterbergModal(
               atterbergModalState.boreholeIndex,
               atterbergModalState.depthIndex,
+              appliedData
+            )
+          }
+        />
+      )}
+
+      {shrinkageModalState.isOpen && (
+        <ShrinkageLimitModal
+          isOpen={shrinkageModalState.isOpen}
+          onClose={() => setShrinkageModalState((prev) => ({ ...prev, isOpen: false }))}
+          boreholeNo={`BH-${shrinkageModalState.boreholeIndex + 1}`}
+          depth={
+            formData.labTestResults?.[shrinkageModalState.boreholeIndex]?.[
+              shrinkageModalState.depthIndex
+            ]?.depth || ''
+          }
+          initialData={
+            formData.labTestResults?.[shrinkageModalState.boreholeIndex]?.[
+              shrinkageModalState.depthIndex
+            ]?.shrinkageData || {}
+          }
+          onApply={(appliedData) =>
+            handleApplyShrinkageModal(
+              shrinkageModalState.boreholeIndex,
+              shrinkageModalState.depthIndex,
+              appliedData
+            )
+          }
+        />
+      )}
+
+      {lightCompactionModalState.isOpen && (
+        <LightCompactionModal
+          isOpen={lightCompactionModalState.isOpen}
+          onClose={() => setLightCompactionModalState((prev) => ({ ...prev, isOpen: false }))}
+          boreholeNo={`BH-${lightCompactionModalState.boreholeIndex + 1}`}
+          depth={
+            formData.labTestResults?.[lightCompactionModalState.boreholeIndex]?.[
+              lightCompactionModalState.depthIndex
+            ]?.depth || ''
+          }
+          initialData={
+            formData.labTestResults?.[lightCompactionModalState.boreholeIndex]?.[
+              lightCompactionModalState.depthIndex
+            ]?.lightCompaction || {}
+          }
+          onApply={(appliedData) =>
+            handleApplyLightCompactionModal(
+              lightCompactionModalState.boreholeIndex,
+              lightCompactionModalState.depthIndex,
+              appliedData
+            )
+          }
+        />
+      )}
+
+      {heavyCompactionModalState.isOpen && (
+        <HeavyCompactionModal
+          isOpen={heavyCompactionModalState.isOpen}
+          onClose={() => setHeavyCompactionModalState((prev) => ({ ...prev, isOpen: false }))}
+          boreholeNo={`BH-${heavyCompactionModalState.boreholeIndex + 1}`}
+          depth={
+            formData.labTestResults?.[heavyCompactionModalState.boreholeIndex]?.[
+              heavyCompactionModalState.depthIndex
+            ]?.depth || ''
+          }
+          initialData={
+            formData.labTestResults?.[heavyCompactionModalState.boreholeIndex]?.[
+              heavyCompactionModalState.depthIndex
+            ]?.heavyCompaction || {}
+          }
+          onApply={(appliedData) =>
+            handleApplyHeavyCompactionModal(
+              heavyCompactionModalState.boreholeIndex,
+              heavyCompactionModalState.depthIndex,
               appliedData
             )
           }
@@ -2098,6 +2254,9 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                           <th className="px-3 py-2 font-bold">Grain Size (G/S/SC)</th>
                           <th className="px-3 py-2 font-bold">Atterberg (LL/PL/PI)</th>
                           <th className="px-3 py-2 font-bold">SG/FSI</th>
+                          <th className="px-3 py-2 font-bold">Shrinkage (SL/R)</th>
+                          <th className="px-3 py-2 font-bold">Light Compaction</th>
+                          <th className="px-3 py-2 font-bold">Heavy Compaction</th>
                           <th className="px-3 py-2 w-[50px]"></th>
                         </tr>
                       </thead>
@@ -2424,6 +2583,155 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                 </button>
                               </div>
                             </td>
+
+                            {/* Shrinkage Limit (SL / R) */}
+                            <td className="px-2 py-2">
+                              <div className="flex gap-1 items-center">
+                                <div className="relative flex items-center flex-1">
+                                  <Input
+                                    value={
+                                      depthData.shrinkageLimit
+                                        ? String(depthData.shrinkageLimit).endsWith('%')
+                                          ? depthData.shrinkageLimit
+                                          : `${depthData.shrinkageLimit}%`
+                                        : ''
+                                    }
+                                    readOnly
+                                    onClick={() =>
+                                      setShrinkageModalState({
+                                        isOpen: true,
+                                        boreholeIndex,
+                                        depthIndex,
+                                      })
+                                    }
+                                    className={`h-8 pr-7 cursor-pointer bg-gray-50/70 dark:bg-background/80 hover:bg-gray-100/80 dark:hover:bg-muted/40 font-medium text-xs text-gray-800 dark:text-foreground transition-colors ${
+                                      depthData.shrinkageData && !depthData.shrinkageData.isCompliant
+                                        ? 'border-amber-400 bg-amber-50/30 dark:border-amber-600 dark:bg-amber-950/20'
+                                        : ''
+                                    }`}
+                                    placeholder="SL % (Auto)"
+                                    title={
+                                      depthData.shrinkageLimit
+                                        ? `Shrinkage Limit: ${depthData.shrinkageLimit}, Ratio: ${depthData.shrinkageRatio || '-'}. Click to edit.`
+                                        : 'Click to calculate Shrinkage Limit (IS 2720 Part 6)'
+                                    }
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setShrinkageModalState({
+                                        isOpen: true,
+                                        boreholeIndex,
+                                        depthIndex,
+                                      })
+                                    }
+                                    className="absolute right-1 text-primary hover:text-primary/80 p-1 rounded transition-colors"
+                                    title="Open Shrinkage Limit Calculator"
+                                  >
+                                    <Calculator className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <Input
+                                  value={depthData.shrinkageRatio || ''}
+                                  readOnly
+                                  onClick={() =>
+                                    setShrinkageModalState({
+                                      isOpen: true,
+                                      boreholeIndex,
+                                      depthIndex,
+                                    })
+                                  }
+                                  className="h-8 w-12 text-center cursor-pointer text-xs bg-gray-50/70 dark:bg-background/80 text-gray-700 dark:text-gray-300"
+                                  placeholder="R"
+                                  title="Shrinkage Ratio (W₀ / V₀)"
+                                />
+                              </div>
+                            </td>
+
+                            {/* Light Compaction (MDD / OMC) */}
+                            <td className="px-2 py-2">
+                              <div className="relative flex items-center">
+                                <Input
+                                  value={
+                                    depthData.lightCompaction?.mdd
+                                      ? `${depthData.lightCompaction.mdd} | ${depthData.lightCompaction.omc}%`
+                                      : ''
+                                  }
+                                  readOnly
+                                  onClick={() =>
+                                    setLightCompactionModalState({
+                                      isOpen: true,
+                                      boreholeIndex,
+                                      depthIndex,
+                                    })
+                                  }
+                                  className="h-8 pr-7 cursor-pointer bg-gray-50/70 dark:bg-background/80 hover:bg-gray-100/80 dark:hover:bg-muted/40 font-medium text-xs text-gray-800 dark:text-foreground transition-colors"
+                                  placeholder="Light (Auto)"
+                                  title={
+                                    depthData.lightCompaction?.mdd
+                                      ? `Light Compaction: MDD=${depthData.lightCompaction.mdd} g/cc, OMC=${depthData.lightCompaction.omc}%. Click to edit.`
+                                      : 'Click to calculate Light Compaction (IS 2720 Part 7)'
+                                  }
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setLightCompactionModalState({
+                                      isOpen: true,
+                                      boreholeIndex,
+                                      depthIndex,
+                                    })
+                                  }
+                                  className="absolute right-1 text-amber-600 hover:text-amber-700 p-1 rounded transition-colors"
+                                  title="Open Light Compaction Calculator"
+                                >
+                                  <Calculator className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+
+                            {/* Heavy Compaction (MDD / OMC) */}
+                            <td className="px-2 py-2">
+                              <div className="relative flex items-center">
+                                <Input
+                                  value={
+                                    depthData.heavyCompaction?.mdd
+                                      ? `${depthData.heavyCompaction.mdd} | ${depthData.heavyCompaction.omc}%`
+                                      : ''
+                                  }
+                                  readOnly
+                                  onClick={() =>
+                                    setHeavyCompactionModalState({
+                                      isOpen: true,
+                                      boreholeIndex,
+                                      depthIndex,
+                                    })
+                                  }
+                                  className="h-8 pr-7 cursor-pointer bg-gray-50/70 dark:bg-background/80 hover:bg-gray-100/80 dark:hover:bg-muted/40 font-medium text-xs text-gray-800 dark:text-foreground transition-colors"
+                                  placeholder="Heavy (Auto)"
+                                  title={
+                                    depthData.heavyCompaction?.mdd
+                                      ? `Heavy Compaction (${depthData.heavyCompaction.mouldType === 'HEAVY_BIG' ? 'Big Mould' : 'Small Mould'}): MDD=${depthData.heavyCompaction.mdd} g/cc, OMC=${depthData.heavyCompaction.omc}%. Click to edit.`
+                                      : 'Click to calculate Heavy Compaction (IS 2720 Part 8)'
+                                  }
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setHeavyCompactionModalState({
+                                      isOpen: true,
+                                      boreholeIndex,
+                                      depthIndex,
+                                    })
+                                  }
+                                  className="absolute right-1 text-purple-600 hover:text-purple-700 p-1 rounded transition-colors"
+                                  title="Open Heavy Compaction Calculator"
+                                >
+                                  <Calculator className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+
                             <td className="px-2 py-2">
                               {logs.length > 1 && (
                                 <Button
@@ -2441,7 +2749,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                           </tr>
                           {showMoistureInputsInline && (
                             <tr className="bg-blue-50/25 dark:bg-blue-950/20 border-b dark:border-border">
-                              <td colSpan={6} className="px-3 py-2.5 bg-gradient-to-r from-blue-50/40 via-emerald-50/20 to-transparent dark:from-blue-950/30 dark:via-emerald-950/20 dark:to-transparent">
+                              <td colSpan={9} className="px-3 py-2.5 bg-gradient-to-r from-blue-50/40 via-emerald-50/20 to-transparent dark:from-blue-950/30 dark:via-emerald-950/20 dark:to-transparent">
                                 <div className="flex flex-wrap items-center gap-3 text-xs">
                                   <span className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1 text-[11px] uppercase tracking-wider">
                                     <Calculator className="w-3.5 h-3.5 text-primary" /> Moisture Inputs:

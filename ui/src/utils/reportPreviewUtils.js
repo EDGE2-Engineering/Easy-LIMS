@@ -146,6 +146,9 @@ export const LAB_COLUMNS = [
   { key: 'atterberg', label: 'Atterberg (LL/PL/PI)' },
   { key: 'specificGravity', label: 'Sp. Gravity' },
   { key: 'freeSwellIndex', label: 'FSI' },
+  { key: 'shrinkage', label: 'Shrinkage (SL / R)' },
+  { key: 'lightCompaction', label: 'Light Compaction' },
+  { key: 'heavyCompaction', label: 'Heavy Compaction' },
 ];
 
 export const getLabCell = (row, col) => {
@@ -166,6 +169,20 @@ export const getLabCell = (row, col) => {
       ]
         .filter(Boolean)
         .join(' / ');
+    case 'shrinkage':
+      return row.shrinkageLimit
+        ? `${String(row.shrinkageLimit).endsWith('%') ? row.shrinkageLimit : `${row.shrinkageLimit}%`}${
+            row.shrinkageRatio ? ` (R: ${row.shrinkageRatio})` : ''
+          }`
+        : '-';
+    case 'lightCompaction':
+      return row.lightCompaction?.mdd
+        ? `${row.lightCompaction.mdd} g/cc • ${row.lightCompaction.omc}%`
+        : '-';
+    case 'heavyCompaction':
+      return row.heavyCompaction?.mdd
+        ? `${row.heavyCompaction.mdd} g/cc • ${row.heavyCompaction.omc}%`
+        : '-';
     default:
       return formatDisplayValue(row[col.key]);
   }
