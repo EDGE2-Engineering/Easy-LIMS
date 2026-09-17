@@ -963,7 +963,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     setFormData({ ...formData, labTestResults: newResults });
     toast({
       title: 'Light Compaction Applied',
-      description: `MDD: ${lightCompaction?.mddFormatted || '-'}, OMC: ${lightCompaction?.omcFormatted || '-'}`,
+      description: `MDD: ${lightCompaction?.mddFormatted || (lightCompaction?.mdd ? `${lightCompaction.mdd} g/cc` : '-')}, OMC: ${lightCompaction?.omcFormatted || (lightCompaction?.omc ? `${lightCompaction.omc}%` : '-')}`,
     });
   };
 
@@ -977,7 +977,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     setFormData({ ...formData, labTestResults: newResults });
     toast({
       title: 'Heavy Compaction Applied',
-      description: `MDD: ${heavyCompaction?.mddFormatted || '-'}, OMC: ${heavyCompaction?.omcFormatted || '-'}`,
+      description: `MDD: ${heavyCompaction?.mddFormatted || (heavyCompaction?.mdd ? `${heavyCompaction.mdd} g/cc` : '-')}, OMC: ${heavyCompaction?.omcFormatted || (heavyCompaction?.omc ? `${heavyCompaction.omc}%` : '-')}`,
     });
   };
 

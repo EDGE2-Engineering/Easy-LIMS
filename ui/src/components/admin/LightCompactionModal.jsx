@@ -111,20 +111,28 @@ export default function LightCompactionModal({
   const handleApply = () => {
     const finalMdd = calc.mdd || '';
     const finalOmc = calc.omc || '';
+    const hasAnyInput =
+      trials.some((t) =>
+        ['mouldPlusWetSoil', 'containerNo', 'containerWeight', 'containerPlusWetSoil', 'containerPlusDrySoil'].some(
+          (k) => t[k] !== '' && t[k] !== null && t[k] !== undefined
+        )
+      ) || Boolean(manualPeak.enabled && (manualPeak.mdd || manualPeak.omc));
 
     onApply({
-      lightCompaction: {
-        mdd: finalMdd,
-        omc: finalOmc,
-        mddFormatted: calc.mddFormatted,
-        omcFormatted: calc.omcFormatted,
-        rawMdd: calc.rawMdd,
-        rawOmc: calc.rawOmc,
-        mould: MOULD_PRESETS.LIGHT_STANDARD,
-        trials,
-        calculatedTrials: calc.trials,
-        manualPeak,
-      },
+      lightCompaction: hasAnyInput
+        ? {
+            mdd: finalMdd,
+            omc: finalOmc,
+            mddFormatted: calc.mddFormatted,
+            omcFormatted: calc.omcFormatted,
+            rawMdd: calc.rawMdd,
+            rawOmc: calc.rawOmc,
+            mould: MOULD_PRESETS.LIGHT_STANDARD,
+            trials,
+            calculatedTrials: calc.trials,
+            manualPeak,
+          }
+        : null,
     });
     onClose();
   };
@@ -516,7 +524,6 @@ export default function LightCompactionModal({
               type="button"
               size="sm"
               onClick={handleApply}
-              disabled={calc.validPoints.length === 0}
               className="text-xs bg-primary text-primary-foreground font-semibold"
             >
               <Check className="w-4 h-4 mr-1" /> Apply to Lab Test

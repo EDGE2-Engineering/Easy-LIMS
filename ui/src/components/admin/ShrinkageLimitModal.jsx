@@ -78,24 +78,33 @@ export default function ShrinkageLimitModal({
     return calculateShrinkageLimits(trials);
   }, [trials]);
 
+  const hasTrialErrors = useMemo(() => {
+    return calc.trials?.some((t) => t.errors && t.errors.length > 0);
+  }, [calc.trials]);
+
   const handleApply = () => {
     const finalSl = calc.averageSlFormatted || '';
     const finalRatio = calc.averageRatioFormatted || '';
+    const hasAnyInput = trials.some((t) =>
+      Object.values(t).some((v) => v !== '' && v !== null && v !== undefined)
+    );
 
     onApply({
       shrinkageLimit: finalSl ? `${finalSl}%` : '',
       shrinkageRatio: finalRatio,
-      shrinkageData: {
-        trials,
-        calculatedTrials: calc.trials,
-        averageSl: calc.averageSl,
-        averageSlFormatted: calc.averageSlFormatted,
-        averageRatio: calc.averageRatio,
-        averageRatioFormatted: calc.averageRatioFormatted,
-        isCompliant: calc.isCompliant,
-        lowerLimit: calc.lowerLimit,
-        upperLimit: calc.upperLimit,
-      },
+      shrinkageData: hasAnyInput
+        ? {
+            trials,
+            calculatedTrials: calc.trials,
+            averageSl: calc.averageSl,
+            averageSlFormatted: calc.averageSlFormatted,
+            averageRatio: calc.averageRatio,
+            averageRatioFormatted: calc.averageRatioFormatted,
+            isCompliant: calc.isCompliant,
+            lowerLimit: calc.lowerLimit,
+            upperLimit: calc.upperLimit,
+          }
+        : null,
     });
     onClose();
   };
@@ -610,7 +619,6 @@ export default function ShrinkageLimitModal({
               type="button"
               size="sm"
               onClick={handleApply}
-              disabled={calc.validCount === 0}
               className="text-xs bg-primary text-primary-foreground font-semibold"
             >
               <Check className="w-4 h-4 mr-1" /> Apply to Lab Test
