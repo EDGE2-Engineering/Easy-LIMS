@@ -183,7 +183,7 @@ export default function LightCompactionModal({
                 variant="outline"
                 size="sm"
                 onClick={handleFillSample}
-                className="text-xs h-8 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/5 flex items-center gap-1.5"
+                className="hidden text-xs h-8 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/5 flex items-center gap-1.5"
                 title="Autofill sample values from reference sheet"
               >
                 <Sparkles className="w-3.5 h-3.5" /> Fill Sample Data
