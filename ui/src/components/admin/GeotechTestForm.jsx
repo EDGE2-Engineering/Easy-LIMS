@@ -46,6 +46,9 @@ import AtterbergLimitsModal from './AtterbergLimitsModal';
 import ShrinkageLimitModal from './ShrinkageLimitModal';
 import LightCompactionModal from './LightCompactionModal';
 import HeavyCompactionModal from './HeavyCompactionModal';
+import LabCbrModal from './LabCbrModal';
+import PointLoadIndexModal from './PointLoadIndexModal';
+import RockUcsModal from './RockUcsModal';
 
 /**
  * Look up the Correction Factor (CF) from the overburden correction table stored
@@ -301,6 +304,8 @@ function SoilTypeSelect({ value, onChange }) {
 const SHOW_SUBSOIL_TAB = false;
 
 export default function GeotechTestForm({ value, onChange, materialCategory, enabledForms }) {
+  const categoryLower = materialCategory?.toLowerCase().trim();
+  const isRock = categoryLower === 'rock';
   const { toast } = useToast();
   const effectiveEnabledForms = enabledForms
     ? enabledForms.filter((f) => SHOW_SUBSOIL_TAB || f !== 'subsoil')
@@ -359,6 +364,21 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     depthIndex: 0,
   });
   const [heavyCompactionModalState, setHeavyCompactionModalState] = useState({
+    isOpen: false,
+    boreholeIndex: 0,
+    depthIndex: 0,
+  });
+  const [labCbrModalState, setLabCbrModalState] = useState({
+    isOpen: false,
+    boreholeIndex: 0,
+    depthIndex: 0,
+  });
+  const [pliModalState, setPliModalState] = useState({
+    isOpen: false,
+    boreholeIndex: 0,
+    depthIndex: 0,
+  });
+  const [ucsModalState, setUcsModalState] = useState({
     isOpen: false,
     boreholeIndex: 0,
     depthIndex: 0,
@@ -438,6 +458,9 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
             shrinkageData: entry.shrinkageData || null,
             lightCompaction: entry.lightCompaction || null,
             heavyCompaction: entry.heavyCompaction || null,
+            labCbr: entry.labCbr || null,
+            pointLoadIndex: entry.pointLoadIndex || null,
+            ucs: entry.ucs || null,
           }))
         )
       : [
@@ -470,6 +493,9 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               shrinkageData: null,
               lightCompaction: null,
               heavyCompaction: null,
+              labCbr: null,
+              pointLoadIndex: null,
+              ucs: null,
             },
           ],
         ],
@@ -693,6 +719,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
             shrinkageData: null,
             lightCompaction: null,
             heavyCompaction: null,
+            labCbr: null,
           },
         ],
       ],
@@ -981,6 +1008,56 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     });
   };
 
+  const handleApplyLabCbrModal = (boreholeIndex, depthIndex, appliedData) => {
+    const newResults = [...formData.labTestResults];
+    const { labCbr, reportedCbr } = appliedData;
+    newResults[boreholeIndex][depthIndex] = {
+      ...newResults[boreholeIndex][depthIndex],
+      labCbr: labCbr || null,
+    };
+    setFormData({ ...formData, labTestResults: newResults });
+    toast({
+      title: 'Lab CBR Applied',
+      description: `Reported CBR: ${reportedCbr ? `${reportedCbr}%` : '-'} (${labCbr?.condition || 'Soaked'})`,
+    });
+  };
+
+  const handleApplyPliModal = (boreholeIndex, depthIndex, appliedData) => {
+    const newResults = [...formData.labTestResults];
+    const { pointLoadIndex, reportedPli, density } = appliedData;
+    newResults[boreholeIndex][depthIndex] = {
+      ...newResults[boreholeIndex][depthIndex],
+      pointLoadIndex: pointLoadIndex || null,
+      bulkDensity:
+        !newResults[boreholeIndex][depthIndex].bulkDensity && density
+          ? density
+          : newResults[boreholeIndex][depthIndex].bulkDensity,
+    };
+    setFormData({ ...formData, labTestResults: newResults });
+    toast({
+      title: 'Point Load Index Applied',
+      description: `Reported PLI: ${reportedPli ? `${reportedPli} MPa` : '-'} (${pointLoadIndex?.testingType || 'Unsoaked'})`,
+    });
+  };
+
+  const handleApplyUcsModal = (boreholeIndex, depthIndex, appliedData) => {
+    const newResults = [...formData.labTestResults];
+    const { ucs, reportedUcs, density } = appliedData;
+    newResults[boreholeIndex][depthIndex] = {
+      ...newResults[boreholeIndex][depthIndex],
+      ucs: ucs || null,
+      bulkDensity:
+        !newResults[boreholeIndex][depthIndex].bulkDensity && density
+          ? density
+          : newResults[boreholeIndex][depthIndex].bulkDensity,
+    };
+    setFormData({ ...formData, labTestResults: newResults });
+    toast({
+      title: 'UCS of Rock Applied',
+      description: `Reported UCS: ${reportedUcs ? `${reportedUcs} MPa` : '-'} (${ucs?.testingType || 'Unsoaked'})`,
+    });
+  };
+
   const addLabTestDepth = (boreholeIndex) => {
     const newResults = [...formData.labTestResults];
     newResults[boreholeIndex].push({
@@ -1011,6 +1088,9 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
       shrinkageData: null,
       lightCompaction: null,
       heavyCompaction: null,
+      labCbr: null,
+      pointLoadIndex: null,
+      ucs: null,
     });
 
     const newAnalysis = [...(formData.grainSizeAnalysis || [])];
@@ -1456,6 +1536,81 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
             handleApplyHeavyCompactionModal(
               heavyCompactionModalState.boreholeIndex,
               heavyCompactionModalState.depthIndex,
+              appliedData
+            )
+          }
+        />
+      )}
+
+      {labCbrModalState.isOpen && (
+        <LabCbrModal
+          isOpen={labCbrModalState.isOpen}
+          onClose={() => setLabCbrModalState((prev) => ({ ...prev, isOpen: false }))}
+          boreholeNo={`BH-${labCbrModalState.boreholeIndex + 1}`}
+          depth={
+            formData.labTestResults?.[labCbrModalState.boreholeIndex]?.[
+              labCbrModalState.depthIndex
+            ]?.depth || ''
+          }
+          initialData={
+            formData.labTestResults?.[labCbrModalState.boreholeIndex]?.[
+              labCbrModalState.depthIndex
+            ]?.labCbr || {}
+          }
+          onApply={(appliedData) =>
+            handleApplyLabCbrModal(
+              labCbrModalState.boreholeIndex,
+              labCbrModalState.depthIndex,
+              appliedData
+            )
+          }
+        />
+      )}
+
+      {pliModalState.isOpen && (
+        <PointLoadIndexModal
+          isOpen={pliModalState.isOpen}
+          onClose={() => setPliModalState((prev) => ({ ...prev, isOpen: false }))}
+          boreholeNo={`BH-${pliModalState.boreholeIndex + 1}`}
+          depth={
+            formData.labTestResults?.[pliModalState.boreholeIndex]?.[
+              pliModalState.depthIndex
+            ]?.depth || ''
+          }
+          initialData={
+            formData.labTestResults?.[pliModalState.boreholeIndex]?.[
+              pliModalState.depthIndex
+            ]?.pointLoadIndex || {}
+          }
+          onApply={(appliedData) =>
+            handleApplyPliModal(
+              pliModalState.boreholeIndex,
+              pliModalState.depthIndex,
+              appliedData
+            )
+          }
+        />
+      )}
+
+      {ucsModalState.isOpen && (
+        <RockUcsModal
+          isOpen={ucsModalState.isOpen}
+          onClose={() => setUcsModalState((prev) => ({ ...prev, isOpen: false }))}
+          boreholeNo={`BH-${ucsModalState.boreholeIndex + 1}`}
+          depth={
+            formData.labTestResults?.[ucsModalState.boreholeIndex]?.[
+              ucsModalState.depthIndex
+            ]?.depth || ''
+          }
+          initialData={
+            formData.labTestResults?.[ucsModalState.boreholeIndex]?.[
+              ucsModalState.depthIndex
+            ]?.ucs || {}
+          }
+          onApply={(appliedData) =>
+            handleApplyUcsModal(
+              ucsModalState.boreholeIndex,
+              ucsModalState.depthIndex,
               appliedData
             )
           }
@@ -2274,6 +2429,9 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                           <th className="px-3 py-2 font-bold">Shrinkage (SL/R)</th>
                           <th className="px-3 py-2 font-bold">Light Compaction</th>
                           <th className="px-3 py-2 font-bold">Heavy Compaction</th>
+                          {!isRock && <th className="px-3 py-2 font-bold">Lab CBR (%)</th>}
+                          {isRock && <th className="px-3 py-2 font-bold">Point Load Index (MPa)</th>}
+                          {isRock && <th className="px-3 py-2 font-bold">UCS of Rock (MPa)</th>}
                           <th className="px-3 py-2 w-[50px]"></th>
                         </tr>
                       </thead>
@@ -2749,6 +2907,138 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                               </div>
                             </td>
 
+                            {/* Lab CBR (%) */}
+                            {!isRock && (
+                              <td className="px-2 py-2">
+                                <div className="relative flex items-center">
+                                  <Input
+                                    value={
+                                      depthData.labCbr?.reportedCbr
+                                        ? `${depthData.labCbr.reportedCbr}%${depthData.labCbr.condition ? ` (${depthData.labCbr.condition})` : ''}`
+                                        : ''
+                                    }
+                                    readOnly
+                                    onClick={() =>
+                                      setLabCbrModalState({
+                                        isOpen: true,
+                                        boreholeIndex,
+                                        depthIndex,
+                                      })
+                                    }
+                                    className="h-8 pr-7 cursor-pointer bg-gray-50/70 dark:bg-background/80 hover:bg-gray-100/80 dark:hover:bg-muted/40 font-medium text-xs text-gray-800 dark:text-foreground transition-colors"
+                                    placeholder="CBR % (Auto)"
+                                    title={
+                                      depthData.labCbr?.reportedCbr
+                                        ? `Lab CBR: ${depthData.labCbr.reportedCbr}% (${depthData.labCbr.condition || 'Soaked'}), 2.5mm: ${depthData.labCbr.cbr25 || '-'}%, 5.0mm: ${depthData.labCbr.cbr50 || '-'}%${depthData.labCbr.isCorrectionApplied ? ` (Zero Offset: ${depthData.labCbr.zeroOffset}mm)` : ''}. Click to edit.`
+                                        : 'Click to calculate Lab CBR (IS 2720 Part 16)'
+                                    }
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setLabCbrModalState({
+                                        isOpen: true,
+                                        boreholeIndex,
+                                        depthIndex,
+                                      })
+                                    }
+                                    className="absolute right-1 text-blue-600 hover:text-blue-700 p-1 rounded transition-colors"
+                                    title="Open Lab CBR Calculator"
+                                  >
+                                    <Calculator className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+
+                            {/* Point Load Index (MPa) - Rock Only */}
+                            {isRock && (
+                              <td className="px-2 py-2">
+                                <div className="relative flex items-center">
+                                  <Input
+                                    value={
+                                      depthData.pointLoadIndex?.reportedPli
+                                        ? `${depthData.pointLoadIndex.reportedPli} MPa${depthData.pointLoadIndex.testingType ? ` (${depthData.pointLoadIndex.testingType})` : ''}`
+                                        : ''
+                                    }
+                                    readOnly
+                                    onClick={() =>
+                                      setPliModalState({
+                                        isOpen: true,
+                                        boreholeIndex,
+                                        depthIndex,
+                                      })
+                                    }
+                                    className="h-8 pr-7 cursor-pointer bg-gray-50/70 dark:bg-background/80 hover:bg-gray-100/80 dark:hover:bg-muted/40 font-medium text-xs text-gray-800 dark:text-foreground transition-colors"
+                                    placeholder="PLI (Auto)"
+                                    title={
+                                      depthData.pointLoadIndex?.reportedPli
+                                        ? `Point Load Index: ${depthData.pointLoadIndex.reportedPli} MPa (${depthData.pointLoadIndex.testingType || 'Unsoaked'}, Avg: ${depthData.pointLoadIndex.avgPli || '-'} MPa, Cores: ${depthData.pointLoadIndex.observations?.length || 0}). Click to edit.`
+                                        : 'Click to calculate Point Load Index (IS 8764)'
+                                    }
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setPliModalState({
+                                        isOpen: true,
+                                        boreholeIndex,
+                                        depthIndex,
+                                      })
+                                    }
+                                    className="absolute right-1 text-emerald-600 hover:text-emerald-700 p-1 rounded transition-colors"
+                                    title="Open Point Load Index Calculator"
+                                  >
+                                    <Calculator className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+
+                            {/* UCS of Rock (MPa) - Rock Only */}
+                            {isRock && (
+                              <td className="px-2 py-2">
+                                <div className="relative flex items-center">
+                                  <Input
+                                    value={
+                                      depthData.ucs?.reportedUcs
+                                        ? `${depthData.ucs.reportedUcs} MPa${depthData.ucs.testingType ? ` (${depthData.ucs.testingType})` : ''}`
+                                        : ''
+                                    }
+                                    readOnly
+                                    onClick={() =>
+                                      setUcsModalState({
+                                        isOpen: true,
+                                        boreholeIndex,
+                                        depthIndex,
+                                      })
+                                    }
+                                    className="h-8 pr-7 cursor-pointer bg-gray-50/70 dark:bg-background/80 hover:bg-gray-100/80 dark:hover:bg-muted/40 font-medium text-xs text-gray-800 dark:text-foreground transition-colors"
+                                    placeholder="UCS (Auto)"
+                                    title={
+                                      depthData.ucs?.reportedUcs
+                                        ? `UCS: ${depthData.ucs.reportedUcs} MPa (${depthData.ucs.testingType || 'Unsoaked'}, Avg: ${depthData.ucs.avgUcs || '-'} MPa, Cores: ${depthData.ucs.observations?.length || 0}). Click to edit.`
+                                        : 'Click to calculate Unconfined Compressive Strength of Rock (IS 9143)'
+                                    }
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setUcsModalState({
+                                        isOpen: true,
+                                        boreholeIndex,
+                                        depthIndex,
+                                      })
+                                    }
+                                    className="absolute right-1 text-blue-600 hover:text-blue-700 p-1 rounded transition-colors"
+                                    title="Open Rock UCS Calculator"
+                                  >
+                                    <Calculator className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+
                             <td className="px-2 py-2">
                               {logs.length > 1 && (
                                 <Button
@@ -2766,7 +3056,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                           </tr>
                           {showMoistureInputsInline && (
                             <tr className="bg-blue-50/25 dark:bg-blue-950/20 border-b dark:border-border">
-                              <td colSpan={9} className="px-3 py-2.5 bg-gradient-to-r from-blue-50/40 via-emerald-50/20 to-transparent dark:from-blue-950/30 dark:via-emerald-950/20 dark:to-transparent">
+                              <td colSpan={isRock ? 11 : 10} className="px-3 py-2.5 bg-gradient-to-r from-blue-50/40 via-emerald-50/20 to-transparent dark:from-blue-950/30 dark:via-emerald-950/20 dark:to-transparent">
                                 <div className="flex flex-wrap items-center gap-3 text-xs">
                                   <span className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1 text-[11px] uppercase tracking-wider">
                                     <Calculator className="w-3.5 h-3.5 text-primary" /> Moisture Inputs:

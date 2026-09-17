@@ -149,6 +149,7 @@ export const LAB_COLUMNS = [
   { key: 'shrinkage', label: 'Shrinkage (SL / R)' },
   { key: 'lightCompaction', label: 'Light Compaction' },
   { key: 'heavyCompaction', label: 'Heavy Compaction' },
+  { key: 'labCbr', label: 'Lab CBR' },
 ];
 
 export const getLabCell = (row, col) => {
@@ -182,6 +183,10 @@ export const getLabCell = (row, col) => {
     case 'heavyCompaction':
       return row.heavyCompaction?.mdd
         ? `${row.heavyCompaction.mdd} g/cc • ${row.heavyCompaction.omc}%`
+        : '-';
+    case 'labCbr':
+      return row.labCbr?.reportedCbr
+        ? `${row.labCbr.reportedCbr}% (${row.labCbr.condition || 'Soaked'})`
         : '-';
     default:
       return formatDisplayValue(row[col.key]);

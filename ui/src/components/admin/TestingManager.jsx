@@ -656,6 +656,8 @@ const TestingManager = ({
                           <div className="space-y-8 mt-4">
                             {(() => {
                               const geotechData = testResults[cat]?.['GeotechData'] || {};
+                              const categoryName = materials.find((m) => String(m.id) === String(cat))?.name || cat;
+                              const isRockCategory = categoryName?.toLowerCase().trim() === 'rock';
                               const {
                                 boreholeLogs = [],
                                 maxDepths = [],
@@ -801,6 +803,20 @@ const TestingManager = ({
                                               <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
                                                 Compaction (MDD/OMC)
                                               </th>
+                                              {!isRockCategory ? (
+                                                <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                  Lab CBR (%)
+                                                </th>
+                                              ) : (
+                                                <>
+                                                  <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                    Point Load (MPa)
+                                                  </th>
+                                                  <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                    UCS (MPa)
+                                                  </th>
+                                                </>
+                                              )}
                                             </tr>
                                           </thead>
                                           <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
@@ -905,6 +921,59 @@ const TestingManager = ({
                                                       {!d.lightCompaction?.mdd && !d.heavyCompaction?.mdd && <span>-</span>}
                                                     </div>
                                                   </td>
+                                                  {!isRockCategory ? (
+                                                    <td className="p-3 text-gray-600 text-[11px]">
+                                                      {d.labCbr?.reportedCbr ? (
+                                                        <div className="text-blue-700 dark:text-blue-300 font-medium">
+                                                          <span>{d.labCbr.reportedCbr}%</span>
+                                                          {d.labCbr.condition && (
+                                                            <span className="text-[10px] text-gray-400 block">
+                                                              ({d.labCbr.condition})
+                                                            </span>
+                                                          )}
+                                                        </div>
+                                                      ) : (
+                                                        '-'
+                                                      )}
+                                                    </td>
+                                                  ) : (
+                                                    <>
+                                                      <td className="p-3 text-gray-600 text-[11px]">
+                                                        {d.pointLoadIndex?.reportedPli ? (
+                                                          <div className="text-emerald-700 dark:text-emerald-300 font-medium">
+                                                            <span>{d.pointLoadIndex.reportedPli} MPa</span>
+                                                            {d.pointLoadIndex.testingType && (
+                                                              <span
+                                                                className="text-[10px] text-gray-400 block cursor-help"
+                                                                title={`Point Load Index: ${d.pointLoadIndex.reportedPli} MPa (${d.pointLoadIndex.testingType}, Avg: ${d.pointLoadIndex.avgPli || '-'} MPa, Specimens: ${d.pointLoadIndex.observations?.length || 0})`}
+                                                              >
+                                                                ({d.pointLoadIndex.testingType})
+                                                              </span>
+                                                            )}
+                                                          </div>
+                                                        ) : (
+                                                          '-'
+                                                        )}
+                                                      </td>
+                                                      <td className="p-3 text-gray-600 text-[11px]">
+                                                        {d.ucs?.reportedUcs ? (
+                                                          <div className="text-blue-700 dark:text-blue-300 font-medium">
+                                                            <span>{d.ucs.reportedUcs} MPa</span>
+                                                            {d.ucs.testingType && (
+                                                              <span
+                                                                className="text-[10px] text-gray-400 block cursor-help"
+                                                                title={`UCS: ${d.ucs.reportedUcs} MPa (${d.ucs.testingType}, Avg: ${d.ucs.avgUcs || '-'} MPa, Specimens: ${d.ucs.observations?.length || 0})`}
+                                                              >
+                                                                ({d.ucs.testingType})
+                                                              </span>
+                                                            )}
+                                                          </div>
+                                                        ) : (
+                                                          '-'
+                                                        )}
+                                                      </td>
+                                                    </>
+                                                  )}
                                                 </tr>
                                               ))
                                             )}
