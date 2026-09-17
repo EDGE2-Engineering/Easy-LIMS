@@ -297,14 +297,31 @@ function SoilTypeSelect({ value, onChange }) {
   );
 }
 
+// Toggle to control Sub-Soil Profile tab visibility (set to true to unhide)
+const SHOW_SUBSOIL_TAB = false;
+
 export default function GeotechTestForm({ value, onChange, materialCategory, enabledForms }) {
   const { toast } = useToast();
-  const defaultTab = enabledForms?.length > 0 ? (enabledForms[0] === 'sieve' ? 'borehole' : enabledForms[0]) : 'borehole';
+  const effectiveEnabledForms = enabledForms
+    ? enabledForms.filter((f) => SHOW_SUBSOIL_TAB || f !== 'subsoil')
+    : null;
+  const defaultTab =
+    effectiveEnabledForms?.length > 0
+      ? effectiveEnabledForms[0] === 'sieve'
+        ? 'borehole'
+        : effectiveEnabledForms[0]
+      : 'borehole';
   const [activeTab, setActiveTab] = useState(defaultTab);
 
   useEffect(() => {
     setActiveTab(defaultTab);
   }, [defaultTab]);
+
+  useEffect(() => {
+    if (!SHOW_SUBSOIL_TAB && activeTab === 'subsoil') {
+      setActiveTab('borehole');
+    }
+  }, [activeTab]);
   const [sieveError, setSieveError] = useState(null); // { boreholeIndex, depthIndex, message }
   const [moistureModalState, setMoistureModalState] = useState({
     isOpen: false,
@@ -1472,7 +1489,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
             </TabsTrigger>
           )}
 
-          {(!enabledForms || enabledForms.includes('subsoil')) && (
+          {SHOW_SUBSOIL_TAB && (!enabledForms || enabledForms.includes('subsoil')) && (
             <TabsTrigger
               value="subsoil"
               className="px-3 py-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white flex items-center gap-2"
@@ -2869,7 +2886,8 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
         </TabsContent>
 
         {/* SUB-SOIL PROFILE TAB */}
-        <TabsContent value="subsoil" className="mt-0 space-y-4">
+        {SHOW_SUBSOIL_TAB && (
+          <TabsContent value="subsoil" className="mt-0 space-y-4">
           <div className="bg-gray-50/30 p-4 rounded-xl border border-gray-100">
             <h3 className="text-md font-bold text-gray-800 mb-1 pb-1 flex items-center gap-2">
               <ArrowDownFromLine className="w-4 h-4 text-primary" />
@@ -2976,7 +2994,8 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               )}
             </div>
           </div>
-        </TabsContent>
+          </TabsContent>
+        )}
 
         {/* DIRECT SHEAR TAB */}
         <TabsContent value="directshear" className="mt-0 space-y-4">

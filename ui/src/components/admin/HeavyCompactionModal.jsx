@@ -200,7 +200,7 @@ export default function HeavyCompactionModal({
                 variant="outline"
                 size="sm"
                 onClick={handleFillSample}
-                className="hidden text-xs h-8 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/5 flex items-center gap-1.5"
+                className="hidden text-xs h-8 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/5 items-center gap-1.5"
                 title="Autofill sample values from reference sheet"
               >
                 <Sparkles className="w-3.5 h-3.5" /> Fill Sample Data

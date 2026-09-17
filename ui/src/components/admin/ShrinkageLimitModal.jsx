@@ -151,7 +151,7 @@ export default function ShrinkageLimitModal({
               variant="outline"
               size="sm"
               onClick={handleFillSample}
-              className="hidden text-xs h-8 border-primary/30 text-primary hover:bg-primary/5 flex items-center gap-1.5"
+              className="hidden text-xs h-8 border-primary/30 text-primary hover:bg-primary/5 items-center gap-1.5"
               title="Autofill sample values from test sheet"
             >
               <Sparkles className="w-3.5 h-3.5" /> Fill Sample Data
