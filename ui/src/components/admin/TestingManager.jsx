@@ -657,7 +657,11 @@ const TestingManager = ({
                             {(() => {
                               const geotechData = testResults[cat]?.['GeotechData'] || {};
                               const categoryName = materials.find((m) => String(m.id) === String(cat))?.name || cat;
-                              const isRockCategory = categoryName?.toLowerCase().trim() === 'rock';
+                              const catLower = categoryName?.toLowerCase().trim();
+                              const isRockCategory = catLower === 'rock';
+                              const isSoilAndRockCategory = catLower === 'soil and rock' || catLower === 'soil & rock';
+                              const showRockTests = isRockCategory || isSoilAndRockCategory;
+                              const showSoilCbr = !isRockCategory;
                               const {
                                 boreholeLogs = [],
                                 maxDepths = [],
@@ -803,11 +807,12 @@ const TestingManager = ({
                                               <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
                                                 Compaction (MDD/OMC)
                                               </th>
-                                              {!isRockCategory ? (
+                                              {showSoilCbr && (
                                                 <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
                                                   Lab CBR (%)
                                                 </th>
-                                              ) : (
+                                              )}
+                                              {showRockTests && (
                                                 <>
                                                   <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
                                                     Point Load (MPa)
@@ -921,7 +926,7 @@ const TestingManager = ({
                                                       {!d.lightCompaction?.mdd && !d.heavyCompaction?.mdd && <span>-</span>}
                                                     </div>
                                                   </td>
-                                                  {!isRockCategory ? (
+                                                  {showSoilCbr && (
                                                     <td className="p-3 text-gray-600 text-[11px]">
                                                       {d.labCbr?.reportedCbr ? (
                                                         <div className="text-blue-700 dark:text-blue-300 font-medium">
@@ -936,7 +941,8 @@ const TestingManager = ({
                                                         '-'
                                                       )}
                                                     </td>
-                                                  ) : (
+                                                  )}
+                                                  {showRockTests && (
                                                     <>
                                                       <td className="p-3 text-gray-600 text-[11px]">
                                                         {d.pointLoadIndex?.reportedPli ? (

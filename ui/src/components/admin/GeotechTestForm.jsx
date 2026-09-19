@@ -306,6 +306,8 @@ const SHOW_SUBSOIL_TAB = false;
 export default function GeotechTestForm({ value, onChange, materialCategory, enabledForms }) {
   const categoryLower = materialCategory?.toLowerCase().trim();
   const isRock = categoryLower === 'rock';
+  const isSoilAndRock = categoryLower === 'soil and rock' || categoryLower === 'soil & rock';
+  const showRockTests = isRock || isSoilAndRock;
   const { toast } = useToast();
   const effectiveEnabledForms = enabledForms
     ? enabledForms.filter((f) => SHOW_SUBSOIL_TAB || f !== 'subsoil')
@@ -2430,8 +2432,8 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                           <th className="px-3 py-2 font-bold">Light Compaction</th>
                           <th className="px-3 py-2 font-bold">Heavy Compaction</th>
                           {!isRock && <th className="px-3 py-2 font-bold">Lab CBR (%)</th>}
-                          {isRock && <th className="px-3 py-2 font-bold">Point Load Index (MPa)</th>}
-                          {isRock && <th className="px-3 py-2 font-bold">UCS of Rock (MPa)</th>}
+                          {showRockTests && <th className="px-3 py-2 font-bold">Point Load Index (MPa)</th>}
+                          {showRockTests && <th className="px-3 py-2 font-bold">UCS of Rock (MPa)</th>}
                           <th className="px-3 py-2 w-[50px]"></th>
                         </tr>
                       </thead>
@@ -2951,8 +2953,8 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                               </td>
                             )}
 
-                            {/* Point Load Index (MPa) - Rock Only */}
-                            {isRock && (
+                            {/* Point Load Index (MPa) - Rock or Soil and Rock */}
+                            {showRockTests && (
                               <td className="px-2 py-2">
                                 <div className="relative flex items-center">
                                   <Input
@@ -2995,8 +2997,8 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                               </td>
                             )}
 
-                            {/* UCS of Rock (MPa) - Rock Only */}
-                            {isRock && (
+                            {/* UCS of Rock (MPa) - Rock or Soil and Rock */}
+                            {showRockTests && (
                               <td className="px-2 py-2">
                                 <div className="relative flex items-center">
                                   <Input
@@ -3056,7 +3058,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                           </tr>
                           {showMoistureInputsInline && (
                             <tr className="bg-blue-50/25 dark:bg-blue-950/20 border-b dark:border-border">
-                              <td colSpan={isRock ? 11 : 10} className="px-3 py-2.5 bg-gradient-to-r from-blue-50/40 via-emerald-50/20 to-transparent dark:from-blue-950/30 dark:via-emerald-950/20 dark:to-transparent">
+                              <td colSpan={8 + (!isRock ? 1 : 0) + (showRockTests ? 2 : 0) + 1} className="px-3 py-2.5 bg-gradient-to-r from-blue-50/40 via-emerald-50/20 to-transparent dark:from-blue-950/30 dark:via-emerald-950/20 dark:to-transparent">
                                 <div className="flex flex-wrap items-center gap-3 text-xs">
                                   <span className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1 text-[11px] uppercase tracking-wider">
                                     <Calculator className="w-3.5 h-3.5 text-primary" /> Moisture Inputs:
