@@ -1361,20 +1361,20 @@ const JobsManager = ({ id }) => {
 
   if (id && !editingRecord) {
     return (
-      <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm pointer-events-auto select-none cursor-wait">
+      <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm pointer-events-auto select-none cursor-wait transition-colors">
         <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
-        <p className="text-sm font-medium text-gray-500">Loading job…</p>
+        <p className="text-sm font-medium text-muted-foreground">Loading job…</p>
       </div>
     );
   }
 
   if (editingRecord) {
     return (
-      <div className="space-y-6 bg-white p-2 rounded-xl border border-gray-100 shadow-sm animate-in fade-in slide-in-from-right-4 duration-500 relative">
+      <div className="space-y-6 bg-white dark:bg-card p-2 rounded-xl border border-gray-100 dark:border-border shadow-sm animate-in fade-in slide-in-from-right-4 duration-500 relative">
         {isJobDataLoading && (
-          <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm pointer-events-auto select-none cursor-wait">
+          <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm pointer-events-auto select-none cursor-wait transition-colors">
             <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
-            <p className="text-sm font-medium text-gray-500">Loading job…</p>
+            <p className="text-sm font-medium text-muted-foreground">Loading job…</p>
           </div>
         )}
         <div className="flex justify-between items-center mb-2">
@@ -1388,15 +1388,15 @@ const JobsManager = ({ id }) => {
                 setIsAddingNew(false);
                 navigate('/settings/jobs');
               }}
-              className="rounded-full bg-gray-50 hover:bg-primary/10 hover:text-primary transition-all"
+              className="rounded-full bg-gray-50 dark:bg-muted hover:bg-primary/10 hover:text-primary transition-all"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h2 className="text-sm font-bold text-gray-900">
+              <h2 className="text-sm font-bold text-gray-900 dark:text-foreground">
                 {isAddingNew ? 'Create New Job' : `Job ID: ${editingRecord.job_code}`}
               </h2>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-muted-foreground">
                 Manage job details and track its progress in the laboratory workflow.
               </p>
             </div>
@@ -2126,7 +2126,7 @@ const JobsManager = ({ id }) => {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-        <p className="text-gray-500">Loading jobs...</p>
+        <p className="text-muted-foreground">Loading jobs...</p>
       </div>
     );
   }
@@ -2496,13 +2496,13 @@ const JobsManager = ({ id }) => {
                   <td colSpan={7} className="py-20 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-                      <p className="text-gray-500">Loading jobs...</p>
+                      <p className="text-muted-foreground">Loading jobs...</p>
                     </div>
                   </td>
                 </tr>
               ) : paginatedRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-gray-500">
+                  <td colSpan={7} className="py-10 text-center text-muted-foreground">
                     No jobs found.
                   </td>
                 </tr>

@@ -756,13 +756,13 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
       <div className="relative bg-white p-6 rounded-lg shadow-sm animate-in slide-in-from-right-4 duration-300 min-h-[450px]">
         {/* Loading / Saving Blocking Overlay */}
         {(loading || isSaving) && (
-          <div className="absolute inset-0 z-50 bg-white/75 backdrop-blur-[2px] rounded-lg flex flex-col items-center justify-center transition-all duration-200">
-            <div className="flex flex-col items-center p-6 bg-white/95 border border-gray-100 shadow-xl rounded-2xl max-w-sm text-center">
+          <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-[2px] rounded-lg flex flex-col items-center justify-center transition-all duration-200">
+            <div className="flex flex-col items-center p-6 bg-card/95 border border-border shadow-xl rounded-2xl max-w-sm text-center">
               <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
-              <p className="text-base font-semibold text-gray-800">
+              <p className="text-base font-semibold text-foreground">
                 {isSaving ? 'Saving Material Inward Entry...' : 'Loading Material Samples...'}
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {isSaving
                   ? 'Updating records and workflow state...'
                   : 'Retrieving sample details and specifications...'}

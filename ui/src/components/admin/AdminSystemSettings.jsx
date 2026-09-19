@@ -538,29 +538,29 @@ const AdminSystemSettings = ({ id }) => {
                           <Button
                             variant="secondary"
                             size="icon"
-                            className="w-10 h-10 rounded-xl bg-white/80 backdrop-blur shadow-sm border border-gray-200 hover:bg-white"
+                            className="w-10 h-10 rounded-xl bg-background/80 dark:bg-card/80 backdrop-blur shadow-sm border border-border hover:bg-background dark:hover:bg-card"
                             onClick={() => zoomIn()}
                             title="Zoom In"
                           >
-                            <ZoomIn className="w-5 h-5 text-gray-600" />
+                            <ZoomIn className="w-5 h-5 text-muted-foreground" />
                           </Button>
                           <Button
                             variant="secondary"
                             size="icon"
-                            className="w-10 h-10 rounded-xl bg-white/80 backdrop-blur shadow-sm border border-gray-200 hover:bg-white"
+                            className="w-10 h-10 rounded-xl bg-background/80 dark:bg-card/80 backdrop-blur shadow-sm border border-border hover:bg-background dark:hover:bg-card"
                             onClick={() => zoomOut()}
                             title="Zoom Out"
                           >
-                            <ZoomOut className="w-5 h-5 text-gray-600" />
+                            <ZoomOut className="w-5 h-5 text-muted-foreground" />
                           </Button>
                           <Button
                             variant="secondary"
                             size="icon"
-                            className="w-10 h-10 rounded-xl bg-white/80 backdrop-blur shadow-sm border border-gray-200 hover:bg-white"
+                            className="w-10 h-10 rounded-xl bg-background/80 dark:bg-card/80 backdrop-blur shadow-sm border border-border hover:bg-background dark:hover:bg-card"
                             onClick={() => resetTransform()}
                             title="Reset View"
                           >
-                            <RotateCcw className="w-5 h-5 text-gray-600" />
+                            <RotateCcw className="w-5 h-5 text-muted-foreground" />
                           </Button>
                         </div>
                       )}

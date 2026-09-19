@@ -677,21 +677,21 @@ const LeavesManager = () => {
 
         {/* Mark Leave Selection Controls */}
         {rangeStart && (
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-primary/20 flex items-center gap-6 z-50 animate-in slide-in-from-bottom-8 duration-500">
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-background/90 dark:bg-card/95 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-primary/20 flex items-center gap-6 z-50 animate-in slide-in-from-bottom-8 duration-500">
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                 Selected Period
               </span>
               <span className="text-sm font-black text-primary">
                 {selectedDates.length} Day{selectedDates.length > 1 ? 's' : ''}
               </span>
             </div>
-            <div className="h-8 w-px bg-gray-100" />
+            <div className="h-8 w-px bg-border" />
             <Input
               placeholder="Add leave comments..."
               value={leaveComment}
               onChange={(e) => setLeaveComment(e.target.value)}
-              className="w-64 h-10 rounded-xl border-transparent bg-gray-100/50 focus:bg-white transition-all text-sm font-medium"
+              className="w-64 h-10 rounded-xl border-border bg-muted/50 focus:bg-background transition-all text-sm font-medium"
             />
             <div className="flex items-center gap-2">
               <Button
@@ -701,7 +701,7 @@ const LeavesManager = () => {
                   setLeaveComment('');
                 }}
                 variant="ghost"
-                className="rounded-xl h-10 px-4 font-bold text-xs text-gray-500"
+                className="rounded-xl h-10 px-4 font-bold text-xs text-muted-foreground"
               >
                 Cancel
               </Button>

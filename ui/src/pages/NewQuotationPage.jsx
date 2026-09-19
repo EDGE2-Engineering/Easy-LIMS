@@ -2218,9 +2218,9 @@ const NewQuotationPage = () => {
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
       {isLoadingDoc && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm transition-colors">
           <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
-          <p className="text-sm font-medium text-gray-500">
+          <p className="text-sm font-medium text-muted-foreground">
             {searchParams.get('jobId') && !savedRecordId ? 'Loading job details…' : 'Loading document…'}
           </p>
         </div>
