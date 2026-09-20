@@ -647,7 +647,7 @@ const TestingManager = ({
                       testResults[cat]?.CubeData?.observations.length === 0 ? (
                         <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending concrete cube test input</p>
                       ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-8 mt-4">
                           <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
                             <table className="w-full text-left text-xs">
                               <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
