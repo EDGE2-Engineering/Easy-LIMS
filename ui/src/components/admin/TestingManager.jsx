@@ -49,6 +49,7 @@ import BrickTestModal from './BrickTestModal';
 import SteelTestModal from './SteelTestModal';
 import FineAggregateTestModal from './FineAggregateTestModal';
 import SolidHollowBlockTestModal from './SolidHollowBlockTestModal';
+import PaverBlockModal from './PaverBlockModal';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { camelCaseToTitleCase } from '@/lib/utils';
@@ -96,7 +97,7 @@ const TestingManager = ({
           material,
           forms: ['borehole', 'lab', 'subsoil', 'directshear'],
           isGeotech: true,
-          isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
+          isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false,
           isRegular: false,
         };
       }
@@ -117,7 +118,7 @@ const TestingManager = ({
       ) {
         return {
           material, forms: ['actcube'],
-          isGeotech: false, isCube: false, isActCube: true, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
+          isGeotech: false, isCube: false, isActCube: true, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false,
           isRegular: false,
         };
       }
@@ -136,7 +137,7 @@ const TestingManager = ({
       ) {
         return {
           material, forms: ['concretecore'],
-          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: true, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: true, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false,
           isRegular: false,
         };
       }
@@ -144,7 +145,7 @@ const TestingManager = ({
       if (lowerName === 'cube' || lowerName.includes('cube') || lowerName === 'concrete cube') {
         return {
           material, forms: ['cube'],
-          isGeotech: false, isCube: true, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
+          isGeotech: false, isCube: true, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false,
           isRegular: false,
         };
       }
@@ -152,7 +153,7 @@ const TestingManager = ({
       if (lowerName === 'brick' || lowerName === 'bricks' || lowerName.includes('brick')) {
         return {
           material, forms: ['brick'],
-          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: true, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: true, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false,
           isRegular: false,
         };
       }
@@ -160,7 +161,7 @@ const TestingManager = ({
       if (lowerName === 'steel' || lowerName.includes('steel') || lowerName.includes('tmt') || lowerName.includes('rebar')) {
         return {
           material, forms: ['steel'],
-          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: true, isFineAggregate: false, isSolidHollowBlocks: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: true, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false,
           isRegular: false,
         };
       }
@@ -177,7 +178,7 @@ const TestingManager = ({
       ) {
         return {
           material, forms: ['fineaggregate'],
-          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: true, isSolidHollowBlocks: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: true, isSolidHollowBlocks: false, isPaverBlock: false,
           isRegular: false,
         };
       }
@@ -190,7 +191,16 @@ const TestingManager = ({
       if (hasBlockWord && (hasSolidWord || hasHollowWord)) {
         return {
           material, forms: ['solidhollowblocks', 'blocks'],
-          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: true,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: true, isPaverBlock: false,
+          isRegular: false,
+        };
+      }
+
+      // Hardcoded bypass: Paver Block — matches any name containing 'paver'
+      if (lowerName.includes('paver')) {
+        return {
+          material, forms: ['paverblock', 'paver'],
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: true,
           isRegular: false,
         };
       }
@@ -198,7 +208,7 @@ const TestingManager = ({
       if (!material) {
         return {
           material: null, forms: ['regular'],
-          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false,
           isRegular: true,
         };
       }
@@ -215,10 +225,11 @@ const TestingManager = ({
       const hasSteel = forms.includes('steel');
       const hasFineAggregate = forms.includes('fineaggregate');
       const hasSolidHollowBlocks = forms.includes('solidhollowblocks') || forms.includes('solid_hollow_blocks') || forms.includes('blocks');
+      const hasPaverBlock = forms.includes('paverblock') || forms.includes('paver_block') || forms.includes('paver');
       const hasRegular = forms.includes('regular');
       return {
         material,
-        forms: forms.length > 0 ? forms : (hasConcreteCore ? ['concretecore'] : (hasActCube ? ['actcube'] : (hasCube ? ['cube'] : ['regular']))),
+        forms: forms.length > 0 ? forms : (hasPaverBlock ? ['paverblock'] : (hasConcreteCore ? ['concretecore'] : (hasActCube ? ['actcube'] : (hasCube ? ['cube'] : ['regular'])))),
         isGeotech: hasGeotech,
         isCube: hasCube,
         isActCube: hasActCube,
@@ -227,7 +238,8 @@ const TestingManager = ({
         isSteel: hasSteel,
         isFineAggregate: hasFineAggregate,
         isSolidHollowBlocks: hasSolidHollowBlocks,
-        isRegular: !hasCube && !hasActCube && !hasConcreteCore && !hasBrick && !hasSteel && !hasFineAggregate && !hasSolidHollowBlocks && (hasRegular || forms.length === 0),
+        isPaverBlock: hasPaverBlock,
+        isRegular: !hasCube && !hasActCube && !hasConcreteCore && !hasBrick && !hasSteel && !hasFineAggregate && !hasSolidHollowBlocks && !hasPaverBlock && (hasRegular || forms.length === 0),
       };
     },
     [materials, materialFormAssociations]
@@ -242,6 +254,7 @@ const TestingManager = ({
   const [cubeModalCategory, setCubeModalCategory] = useState(null);
   const [actCubeModalCategory, setActCubeModalCategory] = useState(null);
   const [concreteCoreModalCategory, setConcreteCoreModalCategory] = useState(null);
+  const [paverBlockModalCategory, setPaverBlockModalCategory] = useState(null);
   const [brickModalCategory, setBrickModalCategory] = useState(null);
   const [steelModalCategory, setSteelModalCategory] = useState(null);
   const [fineAggModalCategory, setFineAggModalCategory] = useState(null);
@@ -716,10 +729,10 @@ const TestingManager = ({
               (materialName ? (jobDetails.test_types || {})[materialName] : []) ||
               [];
             const dataTestTypes = Object.keys(testResults[cat] || {}).filter(
-              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData' && k !== 'ActCubeData' && k !== 'ConcreteCoreData' && k !== 'BrickData' && k !== 'SteelData' && k !== 'FineAggData' && k !== 'SolidHollowBlocksData' && k !== 'BlocksData'
+              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData' && k !== 'ActCubeData' && k !== 'ConcreteCoreData' && k !== 'BrickData' && k !== 'SteelData' && k !== 'FineAggData' && k !== 'SolidHollowBlocksData' && k !== 'BlocksData' && k !== 'PaverBlockData'
             );
             const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
-            const { isGeotech, isCube, isActCube, isConcreteCore, isBrick, isSteel, isFineAggregate, isSolidHollowBlocks, isRegular, forms } = getMaterialAndForms(cat);
+            const { isGeotech, isCube, isActCube, isConcreteCore, isBrick, isSteel, isFineAggregate, isSolidHollowBlocks, isPaverBlock, isRegular, forms } = getMaterialAndForms(cat);
             return (
               <TabsContent key={cat} value={cat} className="space-y-6 outline-none mt-0">
                 {isConcreteCore && (
@@ -1603,6 +1616,186 @@ const TestingManager = ({
                                         <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.area || '-'}</td>
                                         <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.load || '-'}</td>
                                         <td className="p-2.5 text-right font-mono font-bold text-red-900 dark:text-red-300 bg-red-50/40 dark:bg-red-950/20">{obs.strength || '-'}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+                {isPaverBlock && (() => {
+                  const paverData = testResults[cat]?.PaverBlockData;
+                  return (
+                    <div className="bg-white dark:bg-card p-6 rounded-none border border-gray-100 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full">
+                      <div>
+                        <div className="flex items-center justify-between mb-0">
+                          <h4 className="text-sm font-bold text-gray-800 dark:text-foreground flex items-center gap-2">
+                            {/* Paver Block Test Data */}
+                          </h4>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPaverBlockModalCategory(cat)}
+                                className="h-8 text-xs"
+                              >
+                                <Edit className="w-3 h-3 mr-1" />
+                                {paverData ? 'Edit Paver Block Test Data' : 'Enter Paver Block Test Data'}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                              <p className="text-xs">Open Paver Block Test Input Modal per IS 15658 : 2021</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+
+                        {!paverData ? (
+                          <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending paver block test input</p>
+                        ) : (
+                          <div className="space-y-4 mt-3">
+                            {/* Summary row */}
+                            <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-stone-50/40 dark:bg-stone-900/20 border border-stone-200 dark:border-stone-700/40">
+                              {paverData.shapeOfPaver && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">Shape</span>
+                                  <div className="text-sm font-semibold text-gray-800 dark:text-foreground font-mono">
+                                    {paverData.shapeOfPaver}
+                                  </div>
+                                </div>
+                              )}
+                              {paverData.blockType && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">Edge / Type</span>
+                                  <div className="text-sm font-semibold text-gray-800 dark:text-foreground capitalize">
+                                    {paverData.blockType === 'chamfered' ? 'Arris / Chamfered' : 'Plain block'}
+                                  </div>
+                                </div>
+                              )}
+                              {paverData.avgCorrectedStrength && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-400">Mean Corrected Strength</span>
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="text-xl font-black text-emerald-900 dark:text-emerald-300 font-mono">
+                                      {paverData.avgCorrectedStrength}
+                                    </span>
+                                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">N/mm² (MPa)</span>
+                                  </div>
+                                </div>
+                              )}
+                              {paverData.avgCompStrength && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">Uncorrected Avg</span>
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">
+                                      {paverData.avgCompStrength}
+                                    </span>
+                                    <span className="text-xs text-gray-500">N/mm²</span>
+                                  </div>
+                                </div>
+                              )}
+                              {paverData.avgWaterAbsorption && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-blue-800 dark:text-blue-400">Mean Water Absorption</span>
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="text-xl font-black text-blue-900 dark:text-blue-300 font-mono">
+                                      {paverData.avgWaterAbsorption}
+                                    </span>
+                                    <span className="text-xs font-bold text-blue-700 dark:text-blue-400">%</span>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground self-end ml-auto font-mono">
+                                {paverData.standard || 'IS 15658 : 2021'}
+                              </div>
+                            </div>
+
+                            {/* Compressive Strength Table */}
+                            {paverData.compressive?.rows?.length > 0 && (
+                              <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                                <div className="p-2.5 px-3 bg-stone-50/70 dark:bg-muted/30 border-b flex items-center justify-between text-xs">
+                                  <span className="font-bold text-gray-800 dark:text-foreground">
+                                    Compressive Strength Test (IS 15658 Table 5)
+                                  </span>
+                                  <span className="text-emerald-700 dark:text-emerald-400 font-mono font-bold">
+                                    Avg: {paverData.avgCorrectedStrength} N/mm²
+                                  </span>
+                                </div>
+                                <table className="w-full text-left text-xs">
+                                  <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                    <tr>
+                                      <th className="p-2 text-center w-8">#</th>
+                                      <th className="p-2 font-bold">ID</th>
+                                      <th className="p-2 text-right">L (mm)</th>
+                                      <th className="p-2 text-right">B (mm)</th>
+                                      <th className="p-2 text-right">W (mm)</th>
+                                      <th className="p-2 text-right">Area (mm²)</th>
+                                      <th className="p-2 text-right">Load (kN)</th>
+                                      <th className="p-2 text-right">Str (N/mm²)</th>
+                                      <th className="p-2 text-right">Factor</th>
+                                      <th className="p-2 text-right bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300 font-bold">Corr Str (N/mm²)</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                    {paverData.compressive.rows.map((obs, idx) => (
+                                      <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                        <td className="p-2 text-center font-bold text-gray-400 dark:text-muted-foreground">{idx + 1}</td>
+                                        <td className="p-2 font-mono font-medium text-gray-800 dark:text-foreground">{obs.sampleId || `R${idx + 1}`}</td>
+                                        <td className="p-2 text-right font-mono text-gray-600 dark:text-muted-foreground">{obs.length || '-'}</td>
+                                        <td className="p-2 text-right font-mono text-gray-600 dark:text-muted-foreground">{obs.breadth || '-'}</td>
+                                        <td className="p-2 text-right font-mono text-gray-600 dark:text-muted-foreground">{obs.thickness || '-'}</td>
+                                        <td className="p-2 text-right font-mono text-gray-700 dark:text-foreground">{obs.areaFormatted || obs.area || '-'}</td>
+                                        <td className="p-2 text-right font-mono text-gray-700 dark:text-foreground">{obs.failureLoadKn || '-'}</td>
+                                        <td className="p-2 text-right font-mono text-gray-700 dark:text-foreground">{obs.compStrengthFormatted || '-'}</td>
+                                        <td className="p-2 text-right font-mono text-indigo-700 dark:text-indigo-300">{obs.correctionFactor ? obs.correctionFactor.toFixed(2) : '-'}</td>
+                                        <td className="p-2 text-right font-mono font-bold text-emerald-900 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20">{obs.correctedStrengthFormatted || '-'}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+
+                            {/* Water Absorption Table */}
+                            {paverData.waterAbsorption?.rows?.length > 0 && (
+                              <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                                <div className="p-2.5 px-3 bg-stone-50/70 dark:bg-muted/30 border-b flex items-center justify-between text-xs">
+                                  <span className="font-bold text-gray-800 dark:text-foreground">
+                                    Water Absorption Test (IS 15658 Annex D)
+                                  </span>
+                                  <span className="text-blue-700 dark:text-blue-400 font-mono font-bold">
+                                    Avg: {paverData.avgWaterAbsorption}%
+                                  </span>
+                                </div>
+                                <table className="w-full text-left text-xs">
+                                  <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                    <tr>
+                                      <th className="p-2 text-center w-8">#</th>
+                                      <th className="p-2 font-bold">ID</th>
+                                      <th className="p-2 text-right">L (mm)</th>
+                                      <th className="p-2 text-right">B (mm)</th>
+                                      <th className="p-2 text-right">W (mm)</th>
+                                      <th className="p-2 text-right">Wet Mass (kg)</th>
+                                      <th className="p-2 text-right">Dry Mass (kg)</th>
+                                      <th className="p-2 text-right bg-blue-50 dark:bg-blue-950/30 text-blue-900 dark:text-blue-300 font-bold">Water Absorption (%)</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                    {paverData.waterAbsorption.rows.map((obs, idx) => (
+                                      <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                        <td className="p-2 text-center font-bold text-gray-400 dark:text-muted-foreground">{idx + 1}</td>
+                                        <td className="p-2 font-mono font-medium text-gray-800 dark:text-foreground">{obs.sampleId || `R${idx + 1}`}</td>
+                                        <td className="p-2 text-right font-mono text-gray-600 dark:text-muted-foreground">{obs.length || '-'}</td>
+                                        <td className="p-2 text-right font-mono text-gray-600 dark:text-muted-foreground">{obs.breadth || '-'}</td>
+                                        <td className="p-2 text-right font-mono text-gray-600 dark:text-muted-foreground">{obs.thickness || '-'}</td>
+                                        <td className="p-2 text-right font-mono text-gray-700 dark:text-foreground">{obs.wetMassKg || '-'}</td>
+                                        <td className="p-2 text-right font-mono text-gray-700 dark:text-foreground">{obs.dryMassKg || '-'}</td>
+                                        <td className="p-2 text-right font-mono font-bold text-blue-900 dark:text-blue-300 bg-blue-50/40 dark:bg-blue-950/20">{obs.waterAbsorptionFormatted ? `${obs.waterAbsorptionFormatted}%` : '-'}</td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -3024,6 +3217,37 @@ const TestingManager = ({
             };
             setTestResults(updatedResults);
             setSolidHollowBlocksModalCategory(null);
+            await handleSaveResults(categoryToSave, updatedResults);
+          }}
+        />
+      )}
+
+      {/* Paver Block Test Input Modal */}
+      {paverBlockModalCategory && (
+        <PaverBlockModal
+          isOpen={!!paverBlockModalCategory}
+          onClose={() => setPaverBlockModalCategory(null)}
+          jobCode={jobDetails?.job_code}
+          sampleCode={
+            samples.find(
+              (s) =>
+                String(s.material_type) === String(paverBlockModalCategory) ||
+                materials.find((m) => String(m.id) === String(s.material_type))?.name ===
+                  paverBlockModalCategory
+            )?.sample_code || ''
+          }
+          initialData={testResults[paverBlockModalCategory]?.PaverBlockData || {}}
+          onApply={async (paverBlockData) => {
+            const categoryToSave = paverBlockModalCategory;
+            const updatedResults = {
+              ...testResults,
+              [categoryToSave]: {
+                ...(testResults[categoryToSave] || {}),
+                PaverBlockData: paverBlockData,
+              },
+            };
+            setTestResults(updatedResults);
+            setPaverBlockModalCategory(null);
             await handleSaveResults(categoryToSave, updatedResults);
           }}
         />

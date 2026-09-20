@@ -17,15 +17,18 @@ import {
   Search,
   Box,
   Calculator,
+  Building2,
 } from 'lucide-react';
 
 import GeotechTestForm from './GeotechTestForm';
 import ConcreteCubeModal from './ConcreteCubeModal';
 import ActCubeModal from './ActCubeModal';
 import ConcreteCoreModal from './ConcreteCoreModal';
+import PaverBlockModal from './PaverBlockModal';
 import { SAMPLE_CUBE_TEST_DATA } from '@/utils/cubeTestCalculation';
 import { SAMPLE_ACT_CUBE_TEST_DATA } from '@/utils/actCubeTestCalculation';
 import { SAMPLE_CONCRETE_CORE_TEST_DATA } from '@/utils/concreteCoreTestCalculation';
+import { SAMPLE_PAVER_BLOCK_TEST_DATA } from '@/utils/paverBlockTestCalculation';
 
 const FORM_TYPES = [
   {
@@ -57,6 +60,12 @@ const FORM_TYPES = [
     name: 'Concrete Core Inputs',
     description:
       'Applicable for material inward type "Concrete core" / "Core". Includes IS 516 (part 4) : 2018 cylinder strength, L/D and diameter shape corrections, and equivalent cube strength.',
+  },
+  {
+    id: 'paverblock',
+    name: 'Paver Block Inputs',
+    description:
+      'Applicable for material inward type "Paver block" / "Paver". Includes IS 15658 : 2021 Compressive Strength with Table 5 thickness & chamfer correction factors, and Water Absorption.',
   },
 ];
 
@@ -374,6 +383,7 @@ const AdminMaterialFormsManager = () => {
   const [previewCubeModalOpen, setPreviewCubeModalOpen] = useState(false);
   const [previewActCubeModalOpen, setPreviewActCubeModalOpen] = useState(false);
   const [previewConcreteCoreModalOpen, setPreviewConcreteCoreModalOpen] = useState(false);
+  const [previewPaverBlockModalOpen, setPreviewPaverBlockModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [materialSearch, setMaterialSearch] = useState('');
 
@@ -904,6 +914,93 @@ const AdminMaterialFormsManager = () => {
                       </div>
                     </div>
                   )}
+
+                  {activePreviewTab === 'paverblock' && (
+                    <div className="space-y-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-indigo-50/70 p-4 rounded-xl border border-indigo-200">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 bg-indigo-600 rounded-lg text-white shadow-sm">
+                            <Building2 className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-indigo-950">
+                              Paver Block Testing Form [IS 15658 : 2021]
+                            </h4>
+                            <p className="text-xs text-indigo-700 mt-0.5">
+                              Compressive strength with Table 5 correction factor & Water absorption.
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => setPreviewPaverBlockModalOpen(true)}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold gap-1.5 shadow-sm"
+                        >
+                          <Calculator className="w-4 h-4" />
+                          Open Live Modal Preview
+                        </Button>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between border-b pb-3">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Sample Data Preview (IS 15658 Plain 80mm Batch)
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                              Mean Corr. Strength: 41.2 N/mm²
+                            </span>
+                            <span className="text-xs font-mono font-bold text-blue-800 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
+                              Mean WA: 4.1%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left">
+                            <thead className="bg-gray-50 text-gray-600 border-b">
+                              <tr>
+                                <th className="p-2 text-center">Trial</th>
+                                <th className="p-2 text-right">L (mm)</th>
+                                <th className="p-2 text-right">B (mm)</th>
+                                <th className="p-2 text-right">W (mm)</th>
+                                <th className="p-2 text-right">Area (mm²)</th>
+                                <th className="p-2 text-right">Load (kN)</th>
+                                <th className="p-2 text-right">Str (N/mm²)</th>
+                                <th className="p-2 text-right">Table 5 Factor</th>
+                                <th className="p-2 text-right font-bold text-emerald-900 bg-emerald-50/70">
+                                  Corr. Str (N/mm²)
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 font-mono">
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400">1</td>
+                                <td className="p-2 text-right">270</td>
+                                <td className="p-2 text-right">200</td>
+                                <td className="p-2 text-right">80</td>
+                                <td className="p-2 text-right">54000</td>
+                                <td className="p-2 text-right">1950.485</td>
+                                <td className="p-2 text-right">36.12</td>
+                                <td className="p-2 text-right text-indigo-700">1.12</td>
+                                <td className="p-2 text-right font-bold text-emerald-900 bg-emerald-50/50">40.5</td>
+                              </tr>
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400">2</td>
+                                <td className="p-2 text-right">272</td>
+                                <td className="p-2 text-right">192</td>
+                                <td className="p-2 text-right">80</td>
+                                <td className="p-2 text-right">52224</td>
+                                <td className="p-2 text-right">1975.265</td>
+                                <td className="p-2 text-right">37.82</td>
+                                <td className="p-2 text-right text-indigo-700">1.12</td>
+                                <td className="p-2 text-right font-bold text-emerald-900 bg-emerald-50/50">42.4</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Tabs>
             </div>
@@ -945,6 +1042,17 @@ const AdminMaterialFormsManager = () => {
           jobCode="JOB-DEMO-2026"
           initialData={SAMPLE_CONCRETE_CORE_TEST_DATA}
           onApply={() => setPreviewConcreteCoreModalOpen(false)}
+        />
+      )}
+
+      {previewPaverBlockModalOpen && (
+        <PaverBlockModal
+          isOpen={previewPaverBlockModalOpen}
+          onClose={() => setPreviewPaverBlockModalOpen(false)}
+          sampleCode="DEMO-PAVER-01"
+          jobCode="JOB-DEMO-2026"
+          initialData={SAMPLE_PAVER_BLOCK_TEST_DATA}
+          onApply={() => setPreviewPaverBlockModalOpen(false)}
         />
       )}
     </div>
