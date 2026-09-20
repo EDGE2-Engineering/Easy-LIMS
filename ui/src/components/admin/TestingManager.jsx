@@ -44,6 +44,7 @@ import { useLabTests } from '@/contexts/LabTestsContext';
 import GeotechTestForm from './GeotechTestForm';
 import ConcreteCubeModal from './ConcreteCubeModal';
 import BrickTestModal from './BrickTestModal';
+import SteelTestModal from './SteelTestModal';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { camelCaseToTitleCase } from '@/lib/utils';
@@ -93,6 +94,7 @@ const TestingManager = ({
           isGeotech: true,
           isCube: false,
           isBrick: false,
+          isSteel: false,
           isRegular: false,
         };
       }
@@ -105,6 +107,7 @@ const TestingManager = ({
           isGeotech: false,
           isCube: true,
           isBrick: false,
+          isSteel: false,
           isRegular: false,
         };
       }
@@ -117,6 +120,20 @@ const TestingManager = ({
           isGeotech: false,
           isCube: false,
           isBrick: true,
+          isSteel: false,
+          isRegular: false,
+        };
+      }
+
+      // Hardcoded bypass: Steel uses the Steel test input modal per IS 1786 / IS 1608
+      if (lowerName === 'steel' || lowerName.includes('steel') || lowerName.includes('tmt') || lowerName.includes('rebar')) {
+        return {
+          material,
+          forms: ['steel'],
+          isGeotech: false,
+          isCube: false,
+          isBrick: false,
+          isSteel: true,
           isRegular: false,
         };
       }
@@ -128,6 +145,7 @@ const TestingManager = ({
           isGeotech: false,
           isCube: false,
           isBrick: false,
+          isSteel: false,
           isRegular: true,
         };
       }
@@ -139,6 +157,7 @@ const TestingManager = ({
       );
       const hasCube = forms.includes('cube');
       const hasBrick = forms.includes('brick');
+      const hasSteel = forms.includes('steel');
       const hasRegular = forms.includes('regular');
       return {
         material,
@@ -146,7 +165,8 @@ const TestingManager = ({
         isGeotech: hasGeotech,
         isCube: hasCube,
         isBrick: hasBrick,
-        isRegular: !hasCube && !hasBrick && (hasRegular || forms.length === 0),
+        isSteel: hasSteel,
+        isRegular: !hasCube && !hasBrick && !hasSteel && (hasRegular || forms.length === 0),
       };
     },
     [materials, materialFormAssociations]
@@ -160,6 +180,7 @@ const TestingManager = ({
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [cubeModalCategory, setCubeModalCategory] = useState(null);
   const [brickModalCategory, setBrickModalCategory] = useState(null);
+  const [steelModalCategory, setSteelModalCategory] = useState(null);
   const [entryMode, setEntryMode] = useState('Drilling'); // 'Manual' or 'Drilling'
   const [rlValuesNote, setRlValuesNote] = useState('R.L. Values are assumed.');
   const { toast } = useToast();
@@ -630,10 +651,10 @@ const TestingManager = ({
               (materialName ? (jobDetails.test_types || {})[materialName] : []) ||
               [];
             const dataTestTypes = Object.keys(testResults[cat] || {}).filter(
-              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData' && k !== 'BrickData'
+              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData' && k !== 'BrickData' && k !== 'SteelData'
             );
             const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
-            const { isGeotech, isCube, isBrick, isRegular, forms } = getMaterialAndForms(cat);
+            const { isGeotech, isCube, isBrick, isSteel, isRegular, forms } = getMaterialAndForms(cat);
             return (
               <TabsContent key={cat} value={cat} className="space-y-6 outline-none mt-0">
                 {isCube && (
@@ -858,6 +879,123 @@ const TestingManager = ({
                                       <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.area || '-'}</td>
                                       <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.failureLoadKn || '-'}</td>
                                       <td className="p-2.5 text-right font-mono font-bold text-red-900 dark:text-red-300 bg-red-50/40 dark:bg-red-950/30">{obs.strength || '-'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {isSteel && (
+                  <div className="bg-white dark:bg-card p-6 rounded-none border border-gray-100 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full">
+                    <div>
+                      <div className="flex items-center justify-between mb-0">
+                        <h4 className="text-sm font-bold text-gray-800 dark:text-foreground flex items-center gap-2">
+                          {/* Steel Test Data */}
+                        </h4>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSteelModalCategory(cat)}
+                              className="h-8 text-xs"
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              {testResults[cat]?.SteelData ? 'Edit Steel Test Data' : 'Enter Steel Test Data'}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Open Steel Test Input Modal per IS 1786 / IS 1608</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+
+                      {!testResults[cat]?.SteelData ? (
+                        <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending steel test input</p>
+                      ) : (
+                        <div className="space-y-4 mt-3">
+                          {/* Summary row */}
+                          <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-slate-50/40 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-700/40">
+                            {testResults[cat].SteelData.avgYieldStress && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-400">Avg Yield Stress</span>
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-xl font-black text-amber-900 dark:text-amber-300 font-mono">
+                                    {testResults[cat].SteelData.avgYieldStress}
+                                  </span>
+                                  <span className="text-xs font-bold text-amber-700 dark:text-amber-400">N/mm²</span>
+                                </div>
+                              </div>
+                            )}
+                            {testResults[cat].SteelData.avgTensileStrength && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-orange-800 dark:text-orange-400">Avg Tensile Strength</span>
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-xl font-black text-orange-900 dark:text-orange-300 font-mono">
+                                    {testResults[cat].SteelData.avgTensileStrength}
+                                  </span>
+                                  <span className="text-xs font-bold text-orange-700 dark:text-orange-400">N/mm²</span>
+                                </div>
+                              </div>
+                            )}
+                            {testResults[cat].SteelData.avgElongation && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-400">Avg Elongation</span>
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-xl font-black text-emerald-900 dark:text-emerald-300 font-mono">
+                                    {testResults[cat].SteelData.avgElongation}
+                                  </span>
+                                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">%</span>
+                                </div>
+                              </div>
+                            )}
+                            <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground self-end ml-auto">
+                              IS 1786: 2008 / IS 1608-1: 2022
+                            </div>
+                          </div>
+
+                          {/* Observations table */}
+                          {testResults[cat].SteelData.observations?.length > 0 && (
+                            <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                              <table className="w-full text-left text-xs">
+                                <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                  <tr>
+                                    <th className="p-2.5 font-bold text-center w-8">#</th>
+                                    <th className="p-2.5 font-bold">Bar ID</th>
+                                    <th className="p-2.5 font-bold text-center">Dia (mm)</th>
+                                    <th className="p-2.5 font-bold text-right">Area (mm²)</th>
+                                    <th className="p-2.5 font-bold text-right bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">Yield Stress (N/mm²)</th>
+                                    <th className="p-2.5 font-bold text-right bg-orange-50 dark:bg-orange-950/30 text-orange-900 dark:text-orange-300">Tensile Str. (N/mm²)</th>
+                                    <th className="p-2.5 font-bold text-right bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300">Elongation (%)</th>
+                                    <th className="p-2.5 font-bold text-center">Bend</th>
+                                    <th className="p-2.5 font-bold text-center">Rebend</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                  {testResults[cat].SteelData.observations.map((obs, idx) => (
+                                    <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                      <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground">{obs.slNo || idx + 1}</td>
+                                      <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.barId || '-'}</td>
+                                      <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.nominalDia || '-'}</td>
+                                      <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.area || '-'}</td>
+                                      <td className="p-2.5 text-right font-mono font-bold text-amber-900 dark:text-amber-300 bg-amber-50/40 dark:bg-amber-950/20">{obs.yieldStress || '-'}</td>
+                                      <td className="p-2.5 text-right font-mono font-bold text-orange-900 dark:text-orange-300 bg-orange-50/40 dark:bg-orange-950/20">{obs.tensileStrength || '-'}</td>
+                                      <td className="p-2.5 text-right font-mono font-bold text-emerald-900 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20">{obs.elongation || '-'}</td>
+                                      <td className="p-2.5 text-center">
+                                        <Badge variant="outline" className={`text-[10px] ${obs.bendTest === 'NCO' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800'}`}>
+                                          {obs.bendTest || 'NCO'}
+                                        </Badge>
+                                      </td>
+                                      <td className="p-2.5 text-center">
+                                        <Badge variant="outline" className={`text-[10px] ${obs.rebendTest === 'NCO' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800'}`}>
+                                          {obs.rebendTest || 'NCO'}
+                                        </Badge>
+                                      </td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -2118,6 +2256,37 @@ const TestingManager = ({
             };
             setTestResults(updatedResults);
             setBrickModalCategory(null);
+            await handleSaveResults(categoryToSave, updatedResults);
+          }}
+        />
+      )}
+
+      {/* Steel Test Input Modal */}
+      {steelModalCategory && (
+        <SteelTestModal
+          isOpen={!!steelModalCategory}
+          onClose={() => setSteelModalCategory(null)}
+          jobCode={jobDetails?.job_code}
+          sampleCode={
+            samples.find(
+              (s) =>
+                String(s.material_type) === String(steelModalCategory) ||
+                materials.find((m) => String(m.id) === String(s.material_type))?.name ===
+                  steelModalCategory
+            )?.sample_code || ''
+          }
+          initialData={testResults[steelModalCategory]?.SteelData || {}}
+          onApply={async (steelData) => {
+            const categoryToSave = steelModalCategory;
+            const updatedResults = {
+              ...testResults,
+              [categoryToSave]: {
+                ...(testResults[categoryToSave] || {}),
+                SteelData: steelData,
+              },
+            };
+            setTestResults(updatedResults);
+            setSteelModalCategory(null);
             await handleSaveResults(categoryToSave, updatedResults);
           }}
         />
