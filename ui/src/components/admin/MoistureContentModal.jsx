@@ -73,6 +73,7 @@ export default function MoistureContentModal({
   };
 
   const handleClear = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setContainerNo('');
     setW1('');
     setW2('');

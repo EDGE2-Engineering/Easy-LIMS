@@ -194,6 +194,7 @@ export default function PaverBlockModal({
 
   // Reset to default
   const handleReset = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setMetadata(DEFAULT_PAVER_BLOCK_METADATA);
     setCompObs(
       deepClone(DEFAULT_PAVER_COMP_OBSERVATIONS).map((obs, idx) => ({
@@ -290,19 +291,10 @@ export default function PaverBlockModal({
                 variant="outline"
                 size="sm"
                 onClick={handleFillSampleData}
-                className="h-8 text-xs gap-1 border-amber-300 text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 hover:bg-amber-100"
+                className="hidden h-8 text-xs gap-1 border-amber-300 text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 hover:bg-amber-100"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                 Fill Sample Data
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleReset}
-                className="h-8 text-xs gap-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                Reset
               </Button>
             </div>
           </div>
@@ -838,6 +830,16 @@ export default function PaverBlockModal({
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="h-9 px-3 text-xs gap-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset
+            </Button>
             <Button variant="outline" size="sm" onClick={onClose} className="h-9 px-4 text-xs">
               Cancel
             </Button>

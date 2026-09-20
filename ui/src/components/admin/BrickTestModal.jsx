@@ -196,6 +196,7 @@ export default function BrickTestModal({
 
   // ── Reset ───────────────────────────────────────────────────────────────
   const handleReset = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setCompObs(cloneObs(DEFAULT_COMPRESSIVE_OBSERVATIONS));
     setWaObs(cloneObs(DEFAULT_WATER_ABS_OBSERVATIONS));
     setEffObs(cloneObs(DEFAULT_EFFLORESCENCE_OBSERVATIONS));
@@ -303,12 +304,8 @@ export default function BrickTestModal({
 
             <div className="flex items-center gap-2">
               <Button type="button" variant="outline" size="sm" onClick={handleFillSample}
-                className="h-8 text-xs gap-1.5 border-red-200 text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/50">
+                className="hidden h-8 text-xs gap-1.5 border-red-200 text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/50">
                 <Sparkles className="w-3.5 h-3.5" /> Fill Sample Data
-              </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={handleReset}
-                className="h-8 text-xs gap-1.5 text-gray-500 hover:text-gray-700">
-                <RotateCcw className="w-3.5 h-3.5" /> Reset
               </Button>
             </div>
           </div>
@@ -817,6 +814,16 @@ export default function BrickTestModal({
             All four test results will be saved together.
           </p>
           <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="h-9 px-3 text-xs gap-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset
+            </Button>
             <Button type="button" variant="outline" size="sm" onClick={onClose}
               className="h-9 text-xs">
               Cancel

@@ -166,6 +166,7 @@ export default function ActCubeModal({
 
   // Reset to default
   const handleReset = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setObservations([
       { ...DEFAULT_ACT_CUBE_OBSERVATION, cubeId: 'ACT-1' },
       { ...DEFAULT_ACT_CUBE_OBSERVATION, cubeId: 'ACT-2' },
@@ -263,20 +264,10 @@ export default function ActCubeModal({
                 variant="outline"
                 size="sm"
                 onClick={handleFillSample}
-                className="h-8 text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800"
+                className="hidden h-8 text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800"
               >
                 <Sparkles className="w-3.5 h-3.5 mr-1 text-teal-600 dark:text-teal-400" />
                 Fill Sample Data
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleReset}
-                className="h-8 text-xs text-gray-500 hover:text-gray-900 dark:hover:text-foreground"
-              >
-                <RotateCcw className="w-3.5 h-3.5 mr-1" />
-                Reset
               </Button>
             </div>
           </div>
@@ -752,19 +743,36 @@ export default function ActCubeModal({
 
         {/* Footer */}
         <DialogFooter className="p-4 border-t dark:border-border bg-gray-50/50 dark:bg-muted/20 flex flex-row items-center justify-between sm:justify-between">
-          <Button type="button" variant="outline" size="sm" onClick={onClose} className="text-xs">
-            Cancel
-          </Button>
+          <div className="text-xs text-gray-500 dark:text-muted-foreground hidden sm:block">
+            {calcResult.validTrialCount > 0
+              ? `${calcResult.validTrialCount} of ${calcResult.count} trials computed`
+              : 'Enter dimensions and failure load to compute'}
+          </div>
 
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleApply}
-            className="text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-sm"
-          >
-            <Check className="w-4 h-4 mr-1.5" />
-            Apply & Save ACT Cube Data
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="h-9 px-3 text-xs gap-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={onClose} className="h-9 px-4 text-xs">
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleApply}
+              className="h-9 px-5 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-sm gap-1.5"
+            >
+              <Check className="w-4 h-4" />
+              Apply & Save ACT Cube Data
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -104,8 +104,10 @@ export default function SteelTestModal({
     setObservations((p) => (p.length > 1 ? p.filter((_, idx) => idx !== i) : p));
 
   // ── Reset ───────────────────────────────────────────────────────────────
-  const handleReset = () =>
+  const handleReset = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setObservations(DEFAULT_STEEL_OBSERVATIONS.map((o) => ({ ...o })));
+  };
 
   // ── Fill sample ─────────────────────────────────────────────────────────
   const handleFillSample = () =>
@@ -179,12 +181,8 @@ export default function SteelTestModal({
 
             <div className="flex items-center gap-2">
               <Button type="button" variant="outline" size="sm" onClick={handleFillSample}
-                className="h-8 text-xs gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-950/50">
+                className="hidden h-8 text-xs gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-950/50">
                 <Sparkles className="w-3.5 h-3.5" /> Fill Sample Data
-              </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={handleReset}
-                className="h-8 text-xs gap-1.5 text-gray-500 hover:text-gray-700">
-                <RotateCcw className="w-3.5 h-3.5" /> Reset
               </Button>
             </div>
           </div>
@@ -537,6 +535,16 @@ export default function SteelTestModal({
             Shaded columns (C4, C5, C7, C9, C10, C12) are auto-calculated from inputs.
           </p>
           <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="h-9 px-3 text-xs gap-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset
+            </Button>
             <Button type="button" variant="outline" size="sm" onClick={onClose} className="h-9 text-xs">
               Cancel
             </Button>

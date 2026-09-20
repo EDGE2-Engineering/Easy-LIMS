@@ -183,6 +183,7 @@ export default function LabCbrModal({
   };
 
   const handleReset = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setObservations(DEFAULT_CBR_OBSERVATIONS);
     setCorrectionMode('auto');
     setCustomOffset('');

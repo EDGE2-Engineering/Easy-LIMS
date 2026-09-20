@@ -81,6 +81,7 @@ export default function SpecificGravityModal({
   };
 
   const handleClear = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setT1M1('');
     setT1M2('');
     setT1M3('');

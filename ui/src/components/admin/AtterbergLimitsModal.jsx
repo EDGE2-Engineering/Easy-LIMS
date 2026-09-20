@@ -654,6 +654,7 @@ export default function AtterbergLimitsModal({
   };
 
   const handleClear = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setCasagrandeLLTrials(DEFAULT_CASAGRANDE_LL_TRIALS);
     setCasagrandePLTrials(DEFAULT_CASAGRANDE_PL_TRIALS);
     setConeTrials(DEFAULT_CONE_LL_TRIALS);
@@ -752,17 +753,6 @@ export default function AtterbergLimitsModal({
             >
               <Sparkles className="w-3.5 h-3.5 mr-1 text-primary" />
               Fill Sample Data
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleClear}
-              className="h-8 text-xs text-gray-500 dark:text-muted-foreground hover:text-gray-700 dark:hover:text-foreground"
-              title="Reset all inputs"
-            >
-              <RotateCcw className="w-3.5 h-3.5 mr-1" />
-              Clear
             </Button>
           </div>
         </div>
@@ -1220,7 +1210,17 @@ export default function AtterbergLimitsModal({
           </div>
         </div>
 
-        <DialogFooter className="pt-3 border-t border-gray-100 dark:border-border flex items-center justify-between sm:justify-between">
+        <DialogFooter className="pt-3 border-t border-gray-100 dark:border-border flex items-center justify-end sm:justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClear}
+            className="h-9 text-xs dark:border-border dark:hover:bg-muted/30 text-gray-600 dark:text-gray-400 gap-1.5"
+            title="Reset all inputs"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Clear
+          </Button>
           <Button type="button" variant="outline" onClick={onClose} className="h-9 text-xs dark:border-border dark:hover:bg-muted/30">
             Cancel
           </Button>

@@ -102,6 +102,7 @@ export default function SieveAnalysisModal({
   };
 
   const handleClear = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setTotalWeight('');
     const cleared = {};
     SIEVES_CONFIG.forEach((s) => {

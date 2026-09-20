@@ -70,26 +70,63 @@ export default function FineAggregateTestModal({
   useEffect(() => {
     if (!isOpen) return;
 
-    setSieveData(
-      initialData?.sieveAnalysis
-        ? deepClone(initialData.sieveAnalysis)
-        : deepClone(DEFAULT_SIEVE_ANALYSIS)
-    );
-    setFiner75Data(
-      initialData?.finer75
-        ? deepClone(initialData.finer75)
-        : deepClone(DEFAULT_FINER75)
-    );
+    if (initialData?.sieveAnalysis) {
+      const loaded = deepClone(initialData.sieveAnalysis);
+      const reconstructedRetained = { ...DEFAULT_SIEVE_ANALYSIS.retained };
+      if (loaded.retained) {
+        Object.assign(reconstructedRetained, loaded.retained);
+      } else if (Array.isArray(loaded.rows)) {
+        loaded.rows.forEach((r, idx) => {
+          const sieveDef =
+            FINE_AGG_SIEVES.find((s) => s.key === r.key || s.label === r.sieve) ||
+            FINE_AGG_SIEVES[idx];
+          if (sieveDef) {
+            reconstructedRetained[sieveDef.key] = String(r.weightRetained ?? r.weightRetainedFmt ?? '0');
+          }
+        });
+      }
+      setSieveData({
+        sampleWeight:
+          loaded.sampleWeight !== undefined && loaded.sampleWeight !== null
+            ? String(loaded.sampleWeight)
+            : DEFAULT_SIEVE_ANALYSIS.sampleWeight,
+        retained: reconstructedRetained,
+      });
+    } else {
+      setSieveData(deepClone(DEFAULT_SIEVE_ANALYSIS));
+    }
+
+    setFiner75Data({
+      w1: initialData?.finer75?.w1 !== undefined ? String(initialData.finer75.w1) : DEFAULT_FINER75.w1,
+      w2: initialData?.finer75?.w2 !== undefined ? String(initialData.finer75.w2) : DEFAULT_FINER75.w2,
+    });
+
     setSgWaData(
       initialData?.sgWa?.trials?.length > 0
-        ? deepClone(initialData.sgWa)
+        ? {
+            trials: initialData.sgWa.trials.map((t) => ({
+              a: t.a !== undefined ? String(t.a) : '',
+              b: t.b !== undefined ? String(t.b) : '',
+              c: t.c !== undefined ? String(t.c) : '',
+              d: t.d !== undefined ? String(t.d) : '',
+            })),
+          }
         : deepClone(DEFAULT_SG_WA)
     );
+
     setBulkData(
       initialData?.bulkDensity?.trials?.length > 0
-        ? deepClone(initialData.bulkDensity)
+        ? {
+            trials: initialData.bulkDensity.trials.map((t) => ({
+              volume: t.volume !== undefined ? String(t.volume) : '',
+              mouldWeight: t.mouldWeight !== undefined ? String(t.mouldWeight) : '',
+              compactedWeight: t.compactedWeight !== undefined ? String(t.compactedWeight) : '',
+              looseWeight: t.looseWeight !== undefined ? String(t.looseWeight) : '',
+            })),
+          }
         : deepClone(DEFAULT_BULK_DENSITY)
     );
+
     setActiveTab('sieve');
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -101,7 +138,13 @@ export default function FineAggregateTestModal({
 
   // ── Sieve handlers ─────────────────────────────────────────────────────
   const setSieveWeight = (key, val) =>
-    setSieveData((prev) => ({ ...prev, retained: { ...prev.retained, [key]: val } }));
+    setSieveData((prev) => ({
+      ...prev,
+      retained: {
+        ...(prev?.retained || DEFAULT_SIEVE_ANALYSIS.retained),
+        [key]: val,
+      },
+    }));
 
   // ── SG/WA handlers ────────────────────────────────────────────────────
   const setSgTrial = (i, field, val) =>
@@ -133,6 +176,7 @@ export default function FineAggregateTestModal({
 
   // ── Reset ──────────────────────────────────────────────────────────────
   const handleReset = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setSieveData(deepClone(DEFAULT_SIEVE_ANALYSIS));
     setFiner75Data(deepClone(DEFAULT_FINER75));
     setSgWaData(deepClone(DEFAULT_SG_WA));
@@ -152,7 +196,9 @@ export default function FineAggregateTestModal({
     const payload = {
       sieveAnalysis: {
         sampleWeight: sieveData.sampleWeight,
+        retained: sieveData.retained,
         rows: sieveResult.rows.map((r) => ({
+          key:                      r.key,
           sieve:                    r.sieve,
           weightRetained:           r.weightRetainedFmt,
           cumulativeRetained:       r.cumulativeRetainedFmt,
@@ -237,12 +283,8 @@ export default function FineAggregateTestModal({
             </div>
             <div className="flex items-center gap-2">
               <Button type="button" variant="outline" size="sm" onClick={handleFillSample}
-                className="h-8 text-xs gap-1.5 border-teal-200 text-teal-700 hover:bg-teal-50 dark:border-teal-900 dark:text-teal-300 dark:hover:bg-teal-950/50">
+                className="hidden h-8 text-xs gap-1.5 border-teal-200 text-teal-700 hover:bg-teal-50 dark:border-teal-900 dark:text-teal-300 dark:hover:bg-teal-950/50">
                 <Sparkles className="w-3.5 h-3.5" /> Fill Sample Data
-              </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={handleReset}
-                className="h-8 text-xs gap-1.5 text-gray-500 hover:text-gray-700">
-                <RotateCcw className="w-3.5 h-3.5" /> Reset
               </Button>
             </div>
           </div>
@@ -334,7 +376,7 @@ export default function FineAggregateTestModal({
                             <Input
                               type="number"
                               step="0.1"
-                              value={sieveData.retained[key] ?? ''}
+                              value={sieveData?.retained?.[key] ?? ''}
                               onChange={(e) => setSieveWeight(key, e.target.value)}
                               placeholder="0.0"
                               className="h-8 text-xs text-right font-mono w-full"
@@ -730,6 +772,16 @@ export default function FineAggregateTestModal({
             All four test results will be saved together.
           </p>
           <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="h-9 px-3 text-xs gap-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset
+            </Button>
             <Button type="button" variant="outline" size="sm" onClick={onClose} className="h-9 text-xs">
               Cancel
             </Button>

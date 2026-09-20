@@ -76,6 +76,7 @@ export default function FreeSwellIndexModal({
   };
 
   const handleClear = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setT1SoilMass('10.000');
     setT1Vd('');
     setT1Vk('');

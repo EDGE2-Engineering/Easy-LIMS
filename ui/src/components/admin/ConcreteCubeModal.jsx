@@ -162,6 +162,7 @@ export default function ConcreteCubeModal({
 
   // Reset to default
   const handleReset = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setObservations([
       { ...DEFAULT_CUBE_OBSERVATION, cubeId: 'Cube 1' },
       { ...DEFAULT_CUBE_OBSERVATION, cubeId: 'Cube 2' },
@@ -250,20 +251,10 @@ export default function ConcreteCubeModal({
                 variant="outline"
                 size="sm"
                 onClick={handleFillSample}
-                className="h-8 text-xs gap-1.5 border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-900 dark:text-amber-300 dark:hover:bg-amber-950/50"
+                className="hidden h-8 text-xs gap-1.5 border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-900 dark:text-amber-300 dark:hover:bg-amber-950/50"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 Fill PDF Sample Data
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleReset}
-                className="h-8 text-xs gap-1.5 text-gray-500 hover:text-gray-700"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                Reset
               </Button>
             </div>
           </div>
@@ -705,13 +696,24 @@ export default function ConcreteCubeModal({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={onClose} className="h-9 px-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="h-9 px-3 text-xs gap-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={onClose} className="h-9 px-4 text-xs">
               Cancel
             </Button>
             <Button
+              type="button"
               onClick={handleApply}
               disabled={calcResult.validStrengthCount === 0}
-              className="h-9 px-5 bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5 shadow-md shadow-amber-600/20"
+              className="h-9 px-5 bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5 shadow-md shadow-amber-600/20 text-xs"
             >
               <Check className="w-4 h-4" />
               Apply & Save Results

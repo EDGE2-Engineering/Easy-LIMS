@@ -110,6 +110,7 @@ export default function ShrinkageLimitModal({
   };
 
   const handleClear = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setTrials([
       { ...DEFAULT_SHRINKAGE_TRIAL },
       { ...DEFAULT_SHRINKAGE_TRIAL },

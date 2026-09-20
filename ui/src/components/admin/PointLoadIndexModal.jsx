@@ -147,6 +147,7 @@ export default function PointLoadIndexModal({
 
   // Reset to default
   const handleReset = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setObservations([
       {
         coreNo: '1',
@@ -260,17 +261,6 @@ export default function PointLoadIndexModal({
               >
                 <Sparkles className="w-3.5 h-3.5 mr-1 text-emerald-500" />
                 Fill Sample Data
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleReset}
-                className="h-8 text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-                title="Reset all inputs"
-              >
-                <RotateCcw className="w-3.5 h-3.5 mr-1" />
-                Reset
               </Button>
             </div>
           </div>
@@ -564,6 +554,17 @@ export default function PointLoadIndexModal({
             )}
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="h-8 text-xs text-gray-600 dark:text-gray-400"
+              title="Reset all inputs"
+            >
+              <RotateCcw className="w-3.5 h-3.5 mr-1" />
+              Reset
+            </Button>
             <Button
               type="button"
               variant="outline"

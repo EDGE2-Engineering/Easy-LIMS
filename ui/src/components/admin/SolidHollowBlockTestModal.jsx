@@ -135,6 +135,7 @@ export default function SolidHollowBlockTestModal({
 
   // ── Reset / fill ──────────────────────────────────────────────────────────
   const handleReset = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setGrade('C5.0'); setSampleName('');
     setCompObs(deepClone(DEFAULT_COMP_OBSERVATIONS));
     setWaObs(deepClone(DEFAULT_WA_OBSERVATIONS));
@@ -224,12 +225,8 @@ export default function SolidHollowBlockTestModal({
             </div>
             <div className="flex items-center gap-2">
               <Button type="button" variant="outline" size="sm" onClick={handleFillSample}
-                className="h-8 text-xs gap-1.5 border-stone-200 text-stone-700 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-950/50">
+                className="hidden h-8 text-xs gap-1.5 border-stone-200 text-stone-700 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-950/50">
                 <Sparkles className="w-3.5 h-3.5" /> Fill Sample Data
-              </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={handleReset}
-                className="h-8 text-xs gap-1.5 text-gray-500 hover:text-gray-700">
-                <RotateCcw className="w-3.5 h-3.5" /> Reset
               </Button>
             </div>
           </div>
@@ -669,6 +666,16 @@ export default function SolidHollowBlockTestModal({
             All three test results will be saved together.
           </p>
           <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="h-9 px-3 text-xs gap-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset
+            </Button>
             <Button type="button" variant="outline" size="sm" onClick={onClose} className="h-9 text-xs">
               Cancel
             </Button>

@@ -138,6 +138,7 @@ export default function LightCompactionModal({
   };
 
   const handleClear = () => {
+    if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setTrials([
       { ...DEFAULT_COMPACTION_ROW },
       { ...DEFAULT_COMPACTION_ROW },
@@ -506,29 +507,27 @@ export default function LightCompactionModal({
           </div>
         </div>
 
-        <DialogFooter className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-border">
+        <DialogFooter className="flex items-center justify-end pt-3 border-t border-gray-100 dark:border-border gap-2">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={handleClear}
-            className="text-xs text-gray-500 hover:text-gray-700"
+            className="text-xs text-gray-600 dark:text-gray-400 gap-1"
           >
-            <RotateCcw className="w-3.5 h-3.5 mr-1" /> Clear All
+            <RotateCcw className="w-3.5 h-3.5" /> Clear All
           </Button>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={onClose} className="text-xs">
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleApply}
-              className="text-xs bg-primary text-primary-foreground font-semibold"
-            >
-              <Check className="w-4 h-4 mr-1" /> Apply to Lab Test
-            </Button>
-          </div>
+          <Button type="button" variant="outline" size="sm" onClick={onClose} className="text-xs">
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleApply}
+            className="text-xs bg-primary text-primary-foreground font-semibold"
+          >
+            <Check className="w-4 h-4 mr-1" /> Apply to Lab Test
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

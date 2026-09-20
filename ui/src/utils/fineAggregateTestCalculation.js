@@ -132,7 +132,17 @@ function avg(arr) {
  */
 export function calculateSieveAnalysis(data) {
   const sampleWeight = parseFloat(data?.sampleWeight);
-  const retained = data?.retained || {};
+  let retained = data?.retained;
+  if (!retained && Array.isArray(data?.rows)) {
+    retained = {};
+    data.rows.forEach((r, idx) => {
+      const sieveDef = FINE_AGG_SIEVES.find((s) => s.key === r.key || s.label === r.sieve) || FINE_AGG_SIEVES[idx];
+      if (sieveDef) {
+        retained[sieveDef.key] = String(r.weightRetained ?? r.weightRetainedFmt ?? '0');
+      }
+    });
+  }
+  retained = retained || {};
   const errors = [];
   const rows = [];
 
