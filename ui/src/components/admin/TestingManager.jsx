@@ -42,6 +42,7 @@ import { ROLES, DEPARTMENTS } from '@/data/config';
 import { useMaterials } from '@/contexts/MaterialsContext';
 import { useLabTests } from '@/contexts/LabTestsContext';
 import GeotechTestForm from './GeotechTestForm';
+import ConcreteCubeModal from './ConcreteCubeModal';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { camelCaseToTitleCase } from '@/lib/utils';
@@ -89,6 +90,18 @@ const TestingManager = ({
           material,
           forms: ['borehole', 'lab', 'subsoil', 'directshear'],
           isGeotech: true,
+          isCube: false,
+          isRegular: false,
+        };
+      }
+
+      // Hardcoded bypass: Cube / Concrete Cube uses Concrete Cube test input modal per IS 516
+      if (lowerName === 'cube' || lowerName.includes('cube') || lowerName === 'concrete cube') {
+        return {
+          material,
+          forms: ['cube'],
+          isGeotech: false,
+          isCube: true,
           isRegular: false,
         };
       }
@@ -98,6 +111,7 @@ const TestingManager = ({
           material: null,
           forms: ['regular'],
           isGeotech: false,
+          isCube: false,
           isRegular: true,
         };
       }
@@ -107,12 +121,14 @@ const TestingManager = ({
       const hasGeotech = forms.some((f) =>
         ['borehole', 'sieve', 'lab', 'subsoil', 'directshear'].includes(f)
       );
+      const hasCube = forms.includes('cube');
       const hasRegular = forms.includes('regular');
       return {
         material,
-        forms: forms.length > 0 ? forms : ['regular'],
+        forms: forms.length > 0 ? forms : (hasCube ? ['cube'] : ['regular']),
         isGeotech: hasGeotech,
-        isRegular: hasRegular || forms.length === 0,
+        isCube: hasCube,
+        isRegular: !hasCube && (hasRegular || forms.length === 0),
       };
     },
     [materials, materialFormAssociations]
@@ -124,6 +140,7 @@ const TestingManager = ({
   const [isSaving, setIsSaving] = useState(false);
   const [techCapabilities, setTechCapabilities] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [cubeModalCategory, setCubeModalCategory] = useState(null);
   const [entryMode, setEntryMode] = useState('Drilling'); // 'Manual' or 'Drilling'
   const [rlValuesNote, setRlValuesNote] = useState('R.L. Values are assumed.');
   const { toast } = useToast();
@@ -274,7 +291,7 @@ const TestingManager = ({
     }
   };
 
-  const handleSaveResults = async (category) => {
+  const handleSaveResults = async (category, resultsOverride) => {
     setIsSaving(true);
     try {
       // Validate Geotechnical borehole depth matches maximum depth of exploration
@@ -386,15 +403,16 @@ const TestingManager = ({
         .eq('category', category)
         .maybeSingle();
 
+      const effectiveResults = resultsOverride ?? testResults;
       const recordData = {
         job_id: initialJobId,
         category,
         results: {
-          ...(testResults[category] || {}),
+          ...(effectiveResults[category] || {}),
           // Stamp the entry mode so the report knows the method of boring
-          ...(testResults[category]?.GeotechData !== undefined && {
+          ...(effectiveResults[category]?.GeotechData !== undefined && {
             GeotechData: {
-              ...testResults[category].GeotechData,
+              ...effectiveResults[category].GeotechData,
               methodOfBoring: entryMode,
               ...(entryMode === 'Manual Augering' && { rlValuesNote }),
             },
@@ -593,12 +611,128 @@ const TestingManager = ({
               (materialName ? (jobDetails.test_types || {})[materialName] : []) ||
               [];
             const dataTestTypes = Object.keys(testResults[cat] || {}).filter(
-              (k) => k !== 'GeotechData' && k !== 'ManualData'
+              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData'
             );
             const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
-            const { isGeotech, isRegular, forms } = getMaterialAndForms(cat);
+            const { isGeotech, isCube, isRegular, forms } = getMaterialAndForms(cat);
             return (
               <TabsContent key={cat} value={cat} className="space-y-6 outline-none mt-0">
+                {isCube && (
+                  <div className="bg-white dark:bg-card p-6 rounded-none border border-gray-100 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full">
+                    <div>
+                      <div className="flex items-center justify-between mb-0">
+                        <h4 className="text-sm font-bold text-gray-800 dark:text-foreground flex items-center gap-2">
+                          {/* Concrete Cube Test Data */}
+                        </h4>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCubeModalCategory(cat)}
+                              className="h-8 text-xs"
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              {testResults[cat]?.CubeData ? 'Edit Concrete cube Test Data' : 'Enter Concrete cube Test Data'}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Open Concrete Cube Test Input Modal per IS 516</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+
+                      {!testResults[cat]?.CubeData ||
+                      !testResults[cat]?.CubeData?.observations ||
+                      testResults[cat]?.CubeData?.observations.length === 0 ? (
+                        <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending concrete cube test input</p>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                            <table className="w-full text-left text-xs">
+                              <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                <tr>
+                                  <th className="p-2.5 font-bold text-center w-10">#</th>
+                                  <th className="p-2.5 font-bold">Identification</th>
+                                  <th className="p-2.5 font-bold text-center">Dimensions (mm)</th>
+                                  <th className="p-2.5 font-bold text-center">Area (mm²)</th>
+                                  <th className="p-2.5 font-bold text-center">Casting Date</th>
+                                  <th className="p-2.5 font-bold text-center">Testing Date</th>
+                                  <th className="p-2.5 font-bold text-center">Age</th>
+                                  <th className="p-2.5 font-bold text-right">Weight (kg)</th>
+                                  <th className="p-2.5 font-bold text-right">Load (kN)</th>
+                                  <th className="p-2.5 font-bold text-right bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300">
+                                    Strength (N/mm²)
+                                  </th>
+                                  <th className="p-2.5 font-bold text-center">Failure Type</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                {testResults[cat]?.CubeData?.observations?.map((obs, idx) => (
+                                  <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                    <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground">{obs.trialNo || idx + 1}</td>
+                                    <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.cubeId || '-'}</td>
+                                    <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{`${obs.length || 150}×${obs.breadth || 150}×${obs.height || 150}`}</td>
+                                    <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.area || '22500'}</td>
+                                    <td className="p-2.5 text-center text-gray-600 dark:text-muted-foreground">{obs.dateOfCasting || '-'}</td>
+                                    <td className="p-2.5 text-center text-gray-600 dark:text-muted-foreground">{obs.dateOfTesting || '-'}</td>
+                                    <td className="p-2.5 text-center font-mono">{obs.ageDays ? `${obs.ageDays}d` : '-'}</td>
+                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.weightKg || '-'}</td>
+                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.failureLoadKn || '-'}</td>
+                                    <td className="p-2.5 text-right font-mono font-bold text-amber-900 dark:text-amber-300 bg-amber-50/40 dark:bg-amber-950/30">
+                                      {obs.compressiveStrength || '-'}
+                                    </td>
+                                    <td className="p-2.5 text-center">
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-[10px] ${
+                                          obs.failureType === 'Satisfactory'
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                                            : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800'
+                                        }`}
+                                      >
+                                        {obs.failureType || 'Satisfactory'}
+                                      </Badge>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40">
+                            <div className="flex items-center gap-6">
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-400">
+                                  Average Compressive Strength
+                                </span>
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-xl font-black text-amber-900 dark:text-amber-300 font-mono">
+                                    {testResults[cat]?.CubeData?.avgCompressiveStrength || '-'}
+                                  </span>
+                                  <span className="text-xs font-bold text-amber-800 dark:text-amber-400">N/mm²</span>
+                                </div>
+                              </div>
+                              {testResults[cat]?.CubeData?.avgWeight && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
+                                    Average Weight
+                                  </span>
+                                  <div className="text-sm font-bold text-gray-800 dark:text-foreground font-mono">
+                                    {testResults[cat]?.CubeData?.avgWeight} kg
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground">
+                              IS 516: Round up nearest 0.5 value applied
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {isRegular && (
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-bold text-gray-800">
@@ -1790,6 +1924,37 @@ const TestingManager = ({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Concrete Cube Test Input Modal */}
+      {cubeModalCategory && (
+        <ConcreteCubeModal
+          isOpen={!!cubeModalCategory}
+          onClose={() => setCubeModalCategory(null)}
+          jobCode={jobDetails?.job_code}
+          sampleCode={
+            samples.find(
+              (s) =>
+                String(s.material_type) === String(cubeModalCategory) ||
+                materials.find((m) => String(m.id) === String(s.material_type))?.name ===
+                  cubeModalCategory
+            )?.sample_code || ''
+          }
+          initialData={testResults[cubeModalCategory]?.CubeData || {}}
+          onApply={async (cubeData) => {
+            const categoryToSave = cubeModalCategory;
+            const updatedResults = {
+              ...testResults,
+              [categoryToSave]: {
+                ...(testResults[categoryToSave] || {}),
+                CubeData: cubeData,
+              },
+            };
+            setTestResults(updatedResults);
+            setCubeModalCategory(null);
+            await handleSaveResults(categoryToSave, updatedResults);
+          }}
+        />
+      )}
     </div>
   );
 };

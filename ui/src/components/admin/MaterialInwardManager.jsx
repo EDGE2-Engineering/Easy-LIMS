@@ -32,6 +32,7 @@ import { format } from 'date-fns';
 import { safeFormatDate } from '@/lib/utils';
 import { WORKFLOW_STATES, ROLES } from '@/data/config';
 import { useMaterials } from '@/contexts/MaterialsContext';
+import ConcreteCubeModal from './ConcreteCubeModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,6 +70,13 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [appUsers, setAppUsers] = useState([]);
   const [collectionCenters, setCollectionCenters] = useState([]);
+  const [cubeModalState, setCubeModalState] = useState({
+    isOpen: false,
+    sampleIndex: null,
+    sampleCode: '',
+    jobCode: '',
+    initialData: {},
+  });
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, isStandard } = useAuth();
@@ -598,6 +606,43 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
             remarks: `Material Received: ${editingRecord.job_order_no || inwardId}`,
           });
         }
+
+        // Sync any recorded cube test data to job_tests
+        for (const s of editingRecord.samples || []) {
+          if (s.cube_test_data) {
+            const matObj = materials.find((m) => String(m.id) === String(s.material_type));
+            const catName = matObj?.name || 'Cube';
+            const { data: existingTest } = await apiClient
+              .from('job_tests')
+              .select('id, results')
+              .eq('job_id', editingRecord.job_id)
+              .eq('category', catName)
+              .maybeSingle();
+
+            const updatedResults = {
+              ...(existingTest?.results || {}),
+              CubeData: s.cube_test_data,
+            };
+
+            if (existingTest && existingTest.id) {
+              await apiClient
+                .from('job_tests')
+                .update({ results: updatedResults, updated_at: new Date().toISOString() })
+                .eq('id', existingTest.id);
+            } else {
+              await apiClient.from('job_tests').insert([
+                {
+                  job_id: editingRecord.job_id,
+                  category: catName,
+                  results: updatedResults,
+                  status: 'IN_PROGRESS',
+                  assigned_technician_id: userId || null,
+                  updated_at: new Date().toISOString(),
+                },
+              ]);
+            }
+          }
+        }
       }
 
       // Refresh the list immediately if not in modal mode
@@ -996,6 +1041,7 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
                       />
                     </div>
                   </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="space-y-1">
                       <Label className="text-xs">Quantity</Label>
@@ -1081,6 +1127,48 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
               ))}
             </div>
           </div>
+        )}
+
+        {cubeModalState.isOpen && (
+          <ConcreteCubeModal
+            isOpen={cubeModalState.isOpen}
+            onClose={() =>
+              setCubeModalState({
+                isOpen: false,
+                sampleIndex: null,
+                sampleCode: '',
+                jobCode: '',
+                initialData: {},
+              })
+            }
+            sampleCode={cubeModalState.sampleCode}
+            jobCode={cubeModalState.jobCode}
+            initialData={cubeModalState.initialData}
+            onApply={(cubeData) => {
+              if (cubeModalState.sampleIndex !== null) {
+                const updated = [...editingRecord.samples];
+                updated[cubeModalState.sampleIndex] = {
+                  ...updated[cubeModalState.sampleIndex],
+                  cube_test_data: cubeData,
+                  sample_description:
+                    updated[cubeModalState.sampleIndex].sample_description ||
+                    `${cubeData.gradeOfConcrete || 'M20'} Grade Concrete (${cubeData.avgCompressiveStrength || ''} N/mm²)`,
+                };
+                setEditingRecord((prev) => ({ ...prev, samples: updated }));
+                toast({
+                  title: 'Cube Test Applied',
+                  description: `Average compressive strength: ${cubeData.avgCompressiveStrength} N/mm² recorded for sample.`,
+                });
+              }
+              setCubeModalState({
+                isOpen: false,
+                sampleIndex: null,
+                sampleCode: '',
+                jobCode: '',
+                initialData: {},
+              });
+            }}
+          />
         )}
         </div>
       </div>
