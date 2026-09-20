@@ -46,6 +46,7 @@ import ConcreteCubeModal from './ConcreteCubeModal';
 import BrickTestModal from './BrickTestModal';
 import SteelTestModal from './SteelTestModal';
 import FineAggregateTestModal from './FineAggregateTestModal';
+import BlocksTestModal from './BlocksTestModal';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { camelCaseToTitleCase } from '@/lib/utils';
@@ -93,58 +94,35 @@ const TestingManager = ({
           material,
           forms: ['borehole', 'lab', 'subsoil', 'directshear'],
           isGeotech: true,
-          isCube: false,
-          isBrick: false,
-          isSteel: false,
-          isFineAggregate: false,
+          isCube: false, isBrick: false, isSteel: false, isFineAggregate: false, isBlocks: false,
           isRegular: false,
         };
       }
 
-      // Hardcoded bypass: Cube / Concrete Cube uses Concrete Cube test input modal per IS 516
       if (lowerName === 'cube' || lowerName.includes('cube') || lowerName === 'concrete cube') {
         return {
-          material,
-          forms: ['cube'],
-          isGeotech: false,
-          isCube: true,
-          isBrick: false,
-          isSteel: false,
-          isFineAggregate: false,
+          material, forms: ['cube'],
+          isGeotech: false, isCube: true, isBrick: false, isSteel: false, isFineAggregate: false, isBlocks: false,
           isRegular: false,
         };
       }
 
-      // Hardcoded bypass: Bricks use the Brick test input modal per IS 3495 / IS 1077
       if (lowerName === 'brick' || lowerName === 'bricks' || lowerName.includes('brick')) {
         return {
-          material,
-          forms: ['brick'],
-          isGeotech: false,
-          isCube: false,
-          isBrick: true,
-          isSteel: false,
-          isFineAggregate: false,
+          material, forms: ['brick'],
+          isGeotech: false, isCube: false, isBrick: true, isSteel: false, isFineAggregate: false, isBlocks: false,
           isRegular: false,
         };
       }
 
-      // Hardcoded bypass: Steel uses the Steel test input modal per IS 1786 / IS 1608
       if (lowerName === 'steel' || lowerName.includes('steel') || lowerName.includes('tmt') || lowerName.includes('rebar')) {
         return {
-          material,
-          forms: ['steel'],
-          isGeotech: false,
-          isCube: false,
-          isBrick: false,
-          isSteel: true,
-          isFineAggregate: false,
+          material, forms: ['steel'],
+          isGeotech: false, isCube: false, isBrick: false, isSteel: true, isFineAggregate: false, isBlocks: false,
           isRegular: false,
         };
       }
 
-      // Hardcoded bypass: Fine Aggregate uses the Fine Aggregate test input modal per IS 2386
-      // Matches: "Fine Aggregate", "Aggregate (Fine)", "Fine Agg", "M Sand", "River Sand", "Sand", etc.
       const hasFineWord = lowerName.includes('fine');
       const hasAggWord  = lowerName.includes('aggregate') || lowerName.includes('agg');
       if (
@@ -156,26 +134,29 @@ const TestingManager = ({
         lowerName === 'sand'
       ) {
         return {
-          material,
-          forms: ['fineaggregate'],
-          isGeotech: false,
-          isCube: false,
-          isBrick: false,
-          isSteel: false,
-          isFineAggregate: true,
+          material, forms: ['fineaggregate'],
+          isGeotech: false, isCube: false, isBrick: false, isSteel: false, isFineAggregate: true, isBlocks: false,
+          isRegular: false,
+        };
+      }
+
+      // Hardcoded bypass: Solid/Hollow Blocks — matches any name containing both 'block'
+      // and at least one of 'solid' or 'hollow' (order-independent)
+      const hasBlockWord  = lowerName.includes('block');
+      const hasSolidWord  = lowerName.includes('solid');
+      const hasHollowWord = lowerName.includes('hollow');
+      if (hasBlockWord && (hasSolidWord || hasHollowWord)) {
+        return {
+          material, forms: ['blocks'],
+          isGeotech: false, isCube: false, isBrick: false, isSteel: false, isFineAggregate: false, isBlocks: true,
           isRegular: false,
         };
       }
 
       if (!material) {
         return {
-          material: null,
-          forms: ['regular'],
-          isGeotech: false,
-          isCube: false,
-          isBrick: false,
-          isSteel: false,
-          isFineAggregate: false,
+          material: null, forms: ['regular'],
+          isGeotech: false, isCube: false, isBrick: false, isSteel: false, isFineAggregate: false, isBlocks: false,
           isRegular: true,
         };
       }
@@ -189,6 +170,7 @@ const TestingManager = ({
       const hasBrick = forms.includes('brick');
       const hasSteel = forms.includes('steel');
       const hasFineAggregate = forms.includes('fineaggregate');
+      const hasBlocks = forms.includes('blocks');
       const hasRegular = forms.includes('regular');
       return {
         material,
@@ -198,7 +180,8 @@ const TestingManager = ({
         isBrick: hasBrick,
         isSteel: hasSteel,
         isFineAggregate: hasFineAggregate,
-        isRegular: !hasCube && !hasBrick && !hasSteel && !hasFineAggregate && (hasRegular || forms.length === 0),
+        isBlocks: hasBlocks,
+        isRegular: !hasCube && !hasBrick && !hasSteel && !hasFineAggregate && !hasBlocks && (hasRegular || forms.length === 0),
       };
     },
     [materials, materialFormAssociations]
@@ -214,6 +197,7 @@ const TestingManager = ({
   const [brickModalCategory, setBrickModalCategory] = useState(null);
   const [steelModalCategory, setSteelModalCategory] = useState(null);
   const [fineAggModalCategory, setFineAggModalCategory] = useState(null);
+  const [blocksModalCategory, setBlocksModalCategory] = useState(null);
   const [entryMode, setEntryMode] = useState('Drilling'); // 'Manual' or 'Drilling'
   const [rlValuesNote, setRlValuesNote] = useState('R.L. Values are assumed.');
   const { toast } = useToast();
@@ -684,10 +668,10 @@ const TestingManager = ({
               (materialName ? (jobDetails.test_types || {})[materialName] : []) ||
               [];
             const dataTestTypes = Object.keys(testResults[cat] || {}).filter(
-              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData' && k !== 'BrickData' && k !== 'SteelData' && k !== 'FineAggData'
+              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData' && k !== 'BrickData' && k !== 'SteelData' && k !== 'FineAggData' && k !== 'BlocksData'
             );
             const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
-            const { isGeotech, isCube, isBrick, isSteel, isFineAggregate, isRegular, forms } = getMaterialAndForms(cat);
+            const { isGeotech, isCube, isBrick, isSteel, isFineAggregate, isBlocks, isRegular, forms } = getMaterialAndForms(cat);
             return (
               <TabsContent key={cat} value={cat} className="space-y-6 outline-none mt-0">
                 {isCube && (
@@ -1159,6 +1143,124 @@ const TestingManager = ({
                                       <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground">{row.cumulativeRetained}</td>
                                       <td className="p-2.5 text-right font-mono text-teal-800 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-950/20">{row.cumulativePctRetained}</td>
                                       <td className="p-2.5 text-right font-mono font-bold text-teal-900 dark:text-teal-200 bg-teal-100/40 dark:bg-teal-900/20">{row.pctPassing}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {isBlocks && (
+                  <div className="bg-white dark:bg-card p-6 rounded-none border border-gray-100 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full">
+                    <div>
+                      <div className="flex items-center justify-between mb-0">
+                        <h4 className="text-sm font-bold text-gray-800 dark:text-foreground flex items-center gap-2">
+                          {/* Blocks Test Data */}
+                        </h4>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => setBlocksModalCategory(cat)} className="h-8 text-xs">
+                              <Edit className="w-3 h-3 mr-1" />
+                              {testResults[cat]?.BlocksData ? 'Edit Blocks Test Data' : 'Enter Blocks Test Data'}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Open Blocks Test Input Modal per IS 2185 (Part 1)</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+
+                      {!testResults[cat]?.BlocksData ? (
+                        <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending blocks test input</p>
+                      ) : (
+                        <div className="space-y-4 mt-3">
+                          {/* Summary row */}
+                          <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-stone-50/40 dark:bg-stone-900/20 border border-stone-200 dark:border-stone-700/40">
+                            {testResults[cat].BlocksData.sampleName && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">Sample</span>
+                                <div className="text-sm font-semibold text-gray-800 dark:text-foreground">
+                                  {testResults[cat].BlocksData.sampleName}
+                                </div>
+                              </div>
+                            )}
+                            {testResults[cat].BlocksData.grade && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">Grade</span>
+                                <div className="text-sm font-semibold text-gray-800 dark:text-foreground">
+                                  {testResults[cat].BlocksData.grade}
+                                </div>
+                              </div>
+                            )}
+                            {testResults[cat].BlocksData.compressiveStrength?.avgCompressiveStrength && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-red-800 dark:text-red-400">Avg Comp. Strength</span>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-xl font-black text-red-900 dark:text-red-300 font-mono">
+                                    {testResults[cat].BlocksData.compressiveStrength.avgCompressiveStrength}
+                                  </span>
+                                  <span className="text-xs font-bold text-red-700 dark:text-red-400">N/mm²</span>
+                                </div>
+                              </div>
+                            )}
+                            {testResults[cat].BlocksData.waterAbsorption?.avgWaterAbsorption && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-blue-800 dark:text-blue-400">Avg Water Absorption</span>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-xl font-black text-blue-900 dark:text-blue-300 font-mono">
+                                    {testResults[cat].BlocksData.waterAbsorption.avgWaterAbsorption}
+                                  </span>
+                                  <span className="text-xs font-bold text-blue-700 dark:text-blue-400">%</span>
+                                </div>
+                              </div>
+                            )}
+                            {testResults[cat].BlocksData.blockDensity?.avgBlockDensity && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-orange-800 dark:text-orange-400">Avg Block Density</span>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-xl font-black text-orange-900 dark:text-orange-300 font-mono">
+                                    {testResults[cat].BlocksData.blockDensity.avgBlockDensity}
+                                  </span>
+                                  <span className="text-xs font-bold text-orange-700 dark:text-orange-400">kg/m³</span>
+                                </div>
+                              </div>
+                            )}
+                            <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground self-end ml-auto">
+                              IS 2185 (Part 1): 2005 RA 2020
+                            </div>
+                          </div>
+
+                          {/* Compressive strength table */}
+                          {testResults[cat].BlocksData.compressiveStrength?.observations?.length > 0 && (
+                            <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                              <table className="w-full text-left text-xs">
+                                <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                  <tr>
+                                    <th className="p-2.5 font-bold text-center w-8">#</th>
+                                    <th className="p-2.5 font-bold">Block ID</th>
+                                    <th className="p-2.5 font-bold text-center">L (mm)</th>
+                                    <th className="p-2.5 font-bold text-center">B (mm)</th>
+                                    <th className="p-2.5 font-bold text-center">H (mm)</th>
+                                    <th className="p-2.5 font-bold text-right">Area (mm²)</th>
+                                    <th className="p-2.5 font-bold text-right">Load (kN)</th>
+                                    <th className="p-2.5 font-bold text-right bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-300">σ (N/mm²)</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                  {testResults[cat].BlocksData.compressiveStrength.observations.map((obs, idx) => (
+                                    <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                      <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground">{obs.slNo || idx + 1}</td>
+                                      <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.blockId || '-'}</td>
+                                      <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.length || '-'}</td>
+                                      <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.width || '-'}</td>
+                                      <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.height || '-'}</td>
+                                      <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.area || '-'}</td>
+                                      <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.load || '-'}</td>
+                                      <td className="p-2.5 text-right font-mono font-bold text-red-900 dark:text-red-300 bg-red-50/40 dark:bg-red-950/20">{obs.strength || '-'}</td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -2481,6 +2583,37 @@ const TestingManager = ({
             };
             setTestResults(updatedResults);
             setFineAggModalCategory(null);
+            await handleSaveResults(categoryToSave, updatedResults);
+          }}
+        />
+      )}
+
+      {/* Blocks Test Input Modal */}
+      {blocksModalCategory && (
+        <BlocksTestModal
+          isOpen={!!blocksModalCategory}
+          onClose={() => setBlocksModalCategory(null)}
+          jobCode={jobDetails?.job_code}
+          sampleCode={
+            samples.find(
+              (s) =>
+                String(s.material_type) === String(blocksModalCategory) ||
+                materials.find((m) => String(m.id) === String(s.material_type))?.name ===
+                  blocksModalCategory
+            )?.sample_code || ''
+          }
+          initialData={testResults[blocksModalCategory]?.BlocksData || {}}
+          onApply={async (blocksData) => {
+            const categoryToSave = blocksModalCategory;
+            const updatedResults = {
+              ...testResults,
+              [categoryToSave]: {
+                ...(testResults[categoryToSave] || {}),
+                BlocksData: blocksData,
+              },
+            };
+            setTestResults(updatedResults);
+            setBlocksModalCategory(null);
             await handleSaveResults(categoryToSave, updatedResults);
           }}
         />
