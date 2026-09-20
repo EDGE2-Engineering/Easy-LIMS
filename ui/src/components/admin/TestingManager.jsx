@@ -43,6 +43,8 @@ import { useMaterials } from '@/contexts/MaterialsContext';
 import { useLabTests } from '@/contexts/LabTestsContext';
 import GeotechTestForm from './GeotechTestForm';
 import ConcreteCubeModal from './ConcreteCubeModal';
+import ActCubeModal from './ActCubeModal';
+import ConcreteCoreModal from './ConcreteCoreModal';
 import BrickTestModal from './BrickTestModal';
 import SteelTestModal from './SteelTestModal';
 import FineAggregateTestModal from './FineAggregateTestModal';
@@ -94,7 +96,47 @@ const TestingManager = ({
           material,
           forms: ['borehole', 'lab', 'subsoil', 'directshear'],
           isGeotech: true,
-          isCube: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
+          isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
+          isRegular: false,
+        };
+      }
+
+      // Hardcoded bypass: ACT (Accelerated Curing Test) Cube
+      // Matches ('ACT' and 'Cube') or ('Accelerated', 'Curing', 'Cube' / 'CUube') or other ACT Cube variations.
+      // Must be evaluated BEFORE generic cube check to avoid misidentifying ACT Cube as generic concrete cube.
+      const hasActWord = lowerName.includes('act');
+      const hasCubeWord = lowerName.includes('cube') || lowerName.includes('cuube');
+      const hasAcceleratedWord = lowerName.includes('accelerated') || lowerName.includes('accelerat');
+      const hasCuringWord = lowerName.includes('curing') || lowerName.includes('cure');
+      if (
+        (hasActWord && hasCubeWord) ||
+        (hasAcceleratedWord && hasCuringWord && hasCubeWord) ||
+        (hasAcceleratedWord && hasCuringWord) ||
+        lowerName.includes('act cube') ||
+        lowerName.includes('accelerated curing')
+      ) {
+        return {
+          material, forms: ['actcube'],
+          isGeotech: false, isCube: false, isActCube: true, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
+          isRegular: false,
+        };
+      }
+
+      // Hardcoded bypass: Concrete Core
+      // Matches 'concrete core', 'core', 'concrete cores', etc.
+      const hasCoreWord = lowerName.includes('core');
+      const hasConcreteWord = lowerName.includes('concrete');
+      if (
+        (hasCoreWord && hasConcreteWord) ||
+        lowerName === 'concrete core' ||
+        lowerName === 'concrete cores' ||
+        lowerName === 'core' ||
+        lowerName === 'core test' ||
+        lowerName.includes('concrete core')
+      ) {
+        return {
+          material, forms: ['concretecore'],
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: true, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
           isRegular: false,
         };
       }
@@ -102,7 +144,7 @@ const TestingManager = ({
       if (lowerName === 'cube' || lowerName.includes('cube') || lowerName === 'concrete cube') {
         return {
           material, forms: ['cube'],
-          isGeotech: false, isCube: true, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
+          isGeotech: false, isCube: true, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
           isRegular: false,
         };
       }
@@ -110,7 +152,7 @@ const TestingManager = ({
       if (lowerName === 'brick' || lowerName === 'bricks' || lowerName.includes('brick')) {
         return {
           material, forms: ['brick'],
-          isGeotech: false, isCube: false, isBrick: true, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: true, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
           isRegular: false,
         };
       }
@@ -118,7 +160,7 @@ const TestingManager = ({
       if (lowerName === 'steel' || lowerName.includes('steel') || lowerName.includes('tmt') || lowerName.includes('rebar')) {
         return {
           material, forms: ['steel'],
-          isGeotech: false, isCube: false, isBrick: false, isSteel: true, isFineAggregate: false, isSolidHollowBlocks: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: true, isFineAggregate: false, isSolidHollowBlocks: false,
           isRegular: false,
         };
       }
@@ -135,7 +177,7 @@ const TestingManager = ({
       ) {
         return {
           material, forms: ['fineaggregate'],
-          isGeotech: false, isCube: false, isBrick: false, isSteel: false, isFineAggregate: true, isSolidHollowBlocks: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: true, isSolidHollowBlocks: false,
           isRegular: false,
         };
       }
@@ -148,7 +190,7 @@ const TestingManager = ({
       if (hasBlockWord && (hasSolidWord || hasHollowWord)) {
         return {
           material, forms: ['solidhollowblocks', 'blocks'],
-          isGeotech: false, isCube: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: true,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: true,
           isRegular: false,
         };
       }
@@ -156,7 +198,7 @@ const TestingManager = ({
       if (!material) {
         return {
           material: null, forms: ['regular'],
-          isGeotech: false, isCube: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false,
           isRegular: true,
         };
       }
@@ -167,6 +209,8 @@ const TestingManager = ({
         ['borehole', 'sieve', 'lab', 'subsoil', 'directshear'].includes(f)
       );
       const hasCube = forms.includes('cube');
+      const hasActCube = forms.includes('actcube') || forms.includes('act_cube') || forms.includes('act');
+      const hasConcreteCore = forms.includes('concretecore') || forms.includes('concrete_core') || forms.includes('core');
       const hasBrick = forms.includes('brick');
       const hasSteel = forms.includes('steel');
       const hasFineAggregate = forms.includes('fineaggregate');
@@ -174,14 +218,16 @@ const TestingManager = ({
       const hasRegular = forms.includes('regular');
       return {
         material,
-        forms: forms.length > 0 ? forms : (hasCube ? ['cube'] : ['regular']),
+        forms: forms.length > 0 ? forms : (hasConcreteCore ? ['concretecore'] : (hasActCube ? ['actcube'] : (hasCube ? ['cube'] : ['regular']))),
         isGeotech: hasGeotech,
         isCube: hasCube,
+        isActCube: hasActCube,
+        isConcreteCore: hasConcreteCore,
         isBrick: hasBrick,
         isSteel: hasSteel,
         isFineAggregate: hasFineAggregate,
         isSolidHollowBlocks: hasSolidHollowBlocks,
-        isRegular: !hasCube && !hasBrick && !hasSteel && !hasFineAggregate && !hasSolidHollowBlocks && (hasRegular || forms.length === 0),
+        isRegular: !hasCube && !hasActCube && !hasConcreteCore && !hasBrick && !hasSteel && !hasFineAggregate && !hasSolidHollowBlocks && (hasRegular || forms.length === 0),
       };
     },
     [materials, materialFormAssociations]
@@ -194,6 +240,8 @@ const TestingManager = ({
   const [techCapabilities, setTechCapabilities] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [cubeModalCategory, setCubeModalCategory] = useState(null);
+  const [actCubeModalCategory, setActCubeModalCategory] = useState(null);
+  const [concreteCoreModalCategory, setConcreteCoreModalCategory] = useState(null);
   const [brickModalCategory, setBrickModalCategory] = useState(null);
   const [steelModalCategory, setSteelModalCategory] = useState(null);
   const [fineAggModalCategory, setFineAggModalCategory] = useState(null);
@@ -668,12 +716,304 @@ const TestingManager = ({
               (materialName ? (jobDetails.test_types || {})[materialName] : []) ||
               [];
             const dataTestTypes = Object.keys(testResults[cat] || {}).filter(
-              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData' && k !== 'BrickData' && k !== 'SteelData' && k !== 'FineAggData' && k !== 'SolidHollowBlocksData' && k !== 'BlocksData'
+              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData' && k !== 'ActCubeData' && k !== 'ConcreteCoreData' && k !== 'BrickData' && k !== 'SteelData' && k !== 'FineAggData' && k !== 'SolidHollowBlocksData' && k !== 'BlocksData'
             );
             const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
-            const { isGeotech, isCube, isBrick, isSteel, isFineAggregate, isSolidHollowBlocks, isRegular, forms } = getMaterialAndForms(cat);
+            const { isGeotech, isCube, isActCube, isConcreteCore, isBrick, isSteel, isFineAggregate, isSolidHollowBlocks, isRegular, forms } = getMaterialAndForms(cat);
             return (
               <TabsContent key={cat} value={cat} className="space-y-6 outline-none mt-0">
+                {isConcreteCore && (
+                  <div className="bg-white dark:bg-card p-6 rounded-none border border-gray-100 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full">
+                    <div>
+                      <div className="flex items-center justify-between mb-0">
+                        <h4 className="text-sm font-bold text-gray-800 dark:text-foreground flex items-center gap-2">
+                          {/* Concrete Core Test Data */}
+                        </h4>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setConcreteCoreModalCategory(cat)}
+                              className="h-8 text-xs"
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              {testResults[cat]?.ConcreteCoreData ? 'Edit Concrete Core Test Data' : 'Enter Concrete Core Test Data'}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Open Concrete Core Test Input Modal per IS 516 (Part 4)</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+
+                      {!testResults[cat]?.ConcreteCoreData ||
+                      !testResults[cat]?.ConcreteCoreData?.observations ||
+                      testResults[cat]?.ConcreteCoreData?.observations.length === 0 ? (
+                        <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending concrete core test input</p>
+                      ) : (
+                        <div className="space-y-8 mt-4">
+                          <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                            <table className="w-full text-left text-xs">
+                              <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                <tr>
+                                  <th className="p-2.5 font-bold text-center w-10">#</th>
+                                  <th className="p-2.5 font-bold">Identification</th>
+                                  <th className="p-2.5 font-bold">Extraction Date</th>
+                                  <th className="p-2.5 font-bold text-right">Length (mm)</th>
+                                  <th className="p-2.5 font-bold text-right">Dia (mm)</th>
+                                  <th className="p-2.5 font-bold text-right">Weight (kg)</th>
+                                  <th className="p-2.5 font-bold text-right">Load (kN)</th>
+                                  <th className="p-2.5 font-bold text-right">Cyl. Str. (N/mm²)</th>
+                                  <th className="p-2.5 font-bold text-right">L/D</th>
+                                  <th className="p-2.5 font-bold text-right">H/D CF</th>
+                                  <th className="p-2.5 font-bold text-right bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300">
+                                    Corr. Cyl. (N/mm²)
+                                  </th>
+                                  <th className="p-2.5 font-bold text-right bg-indigo-50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-300">
+                                    Eq. Cube (N/mm²)
+                                  </th>
+                                  <th className="p-2.5 font-bold text-center">Failure Type</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                {testResults[cat]?.ConcreteCoreData?.observations?.map((obs, idx) => (
+                                  <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                    <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground">{obs.trialNo || idx + 1}</td>
+                                    <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.identification || '-'}</td>
+                                    <td className="p-2.5 text-gray-600 dark:text-muted-foreground">{obs.extractionDate || '-'}</td>
+                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.length || '-'}</td>
+                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.dia || '-'}</td>
+                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.weightKg || '-'}</td>
+                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.failureLoadKn || '-'}</td>
+                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.cylStrength || '-'}</td>
+                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.ldRatio || '-'}</td>
+                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.correctionFactor || '-'}</td>
+                                    <td className="p-2.5 text-right font-mono font-bold text-blue-900 dark:text-blue-300 bg-blue-50/40 dark:bg-blue-950/30">
+                                      {obs.corrCylStrength || '-'}
+                                    </td>
+                                    <td className="p-2.5 text-right font-mono font-black text-indigo-900 dark:text-indigo-300 bg-indigo-50/40 dark:bg-indigo-950/30">
+                                      {obs.cubeStrength || '-'}
+                                    </td>
+                                    <td className="p-2.5 text-center">
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-[10px] ${
+                                          obs.failureType === 'Satisfactory'
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                                            : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800'
+                                        }`}
+                                      >
+                                        {obs.failureType || 'Satisfactory'}
+                                      </Badge>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40">
+                            <div className="flex flex-wrap items-center gap-6">
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-indigo-800 dark:text-indigo-400">
+                                  Avg Equivalent Cube Strength
+                                </span>
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-xl font-black text-indigo-900 dark:text-indigo-300 font-mono">
+                                    {testResults[cat]?.ConcreteCoreData?.avgCubeStrength || testResults[cat]?.ConcreteCoreData?.reportedStrength || '-'}
+                                  </span>
+                                  <span className="text-xs font-bold text-indigo-800 dark:text-indigo-400">N/mm²</span>
+                                </div>
+                              </div>
+                              {testResults[cat]?.ConcreteCoreData?.avgCorrCylStrength && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-blue-800 dark:text-blue-400">
+                                    Avg Corr. Cylinder Strength
+                                  </span>
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-lg font-bold text-blue-900 dark:text-blue-300 font-mono">
+                                      {testResults[cat]?.ConcreteCoreData?.avgCorrCylStrength}
+                                    </span>
+                                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">N/mm²</span>
+                                  </div>
+                                </div>
+                              )}
+                              {testResults[cat]?.ConcreteCoreData?.avgWeight && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
+                                    Average Weight
+                                  </span>
+                                  <div className="text-sm font-bold text-gray-800 dark:text-foreground font-mono">
+                                    {testResults[cat]?.ConcreteCoreData?.avgWeight} kg
+                                  </div>
+                                </div>
+                              )}
+                              {testResults[cat]?.ConcreteCoreData?.cappingMaterial && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
+                                    Capping Material
+                                  </span>
+                                  <div className="text-sm font-medium text-gray-700 dark:text-foreground">
+                                    {testResults[cat]?.ConcreteCoreData?.cappingMaterial}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground">
+                              IS 516 (Part 4) : 2018 (Round up nearest 0.5)
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {isActCube && (
+                  <div className="bg-white dark:bg-card p-6 rounded-none border border-gray-100 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full">
+                    <div>
+                      <div className="flex items-center justify-between mb-0">
+                        <h4 className="text-sm font-bold text-gray-800 dark:text-foreground flex items-center gap-2">
+                          {/* ACT (Accelerated Curing Test) Cube Test Data */}
+                        </h4>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setActCubeModalCategory(cat)}
+                              className="h-8 text-xs"
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              {testResults[cat]?.ActCubeData ? 'Edit ACT Cube Test Data' : 'Enter ACT Cube Test Data'}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Open ACT Cube Test Input Modal per IS 9013 / IS 516</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+
+                      {!testResults[cat]?.ActCubeData ||
+                      !testResults[cat]?.ActCubeData?.observations ||
+                      testResults[cat]?.ActCubeData?.observations.length === 0 ? (
+                        <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending ACT cube test input</p>
+                      ) : (
+                        <div className="space-y-8 mt-4">
+                          <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                            <table className="w-full text-left text-xs">
+                              <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                <tr>
+                                  <th className="p-2.5 font-bold text-center w-10">#</th>
+                                  <th className="p-2.5 font-bold">Identification</th>
+                                  <th className="p-2.5 font-bold text-center">Dimensions (mm)</th>
+                                  <th className="p-2.5 font-bold text-center">Area (mm²)</th>
+                                  <th className="p-2.5 font-bold text-center">Casting Date</th>
+                                  <th className="p-2.5 font-bold text-center">Testing Date</th>
+                                  <th className="p-2.5 font-bold text-center">Age</th>
+                                  <th className="p-2.5 font-bold text-right">Weight (kg)</th>
+                                  <th className="p-2.5 font-bold text-right">Load (kN)</th>
+                                  <th className="p-2.5 font-bold text-right bg-teal-50 dark:bg-teal-950/40 text-teal-900 dark:text-teal-300">
+                                    ACT Strength (N/mm²)
+                                  </th>
+                                  <th className="p-2.5 font-bold text-right bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300">
+                                    Predicted 28d (N/mm²)
+                                  </th>
+                                  <th className="p-2.5 font-bold text-center">Failure Type</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                {testResults[cat]?.ActCubeData?.observations?.map((obs, idx) => (
+                                  <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                    <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground">{obs.trialNo || idx + 1}</td>
+                                    <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.cubeId || '-'}</td>
+                                    <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{`${obs.length || 150}×${obs.breadth || 150}×${obs.height || 150}`}</td>
+                                    <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.area || '22500'}</td>
+                                    <td className="p-2.5 text-center text-gray-600 dark:text-muted-foreground">{obs.dateOfCasting || '-'}</td>
+                                    <td className="p-2.5 text-center text-gray-600 dark:text-muted-foreground">{obs.dateOfTesting || '-'}</td>
+                                    <td className="p-2.5 text-center font-mono">{obs.ageDays ? `${obs.ageDays}d` : '-'}</td>
+                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.weightKg || '-'}</td>
+                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.failureLoadKn || '-'}</td>
+                                    <td className="p-2.5 text-right font-mono font-bold text-teal-900 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-950/30">
+                                      {obs.compressiveStrength || '-'}
+                                    </td>
+                                    <td className="p-2.5 text-right font-mono font-black text-emerald-900 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/30">
+                                      {obs.predicted28DayStrength || '-'}
+                                    </td>
+                                    <td className="p-2.5 text-center">
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-[10px] ${
+                                          obs.failureType === 'Satisfactory'
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                                            : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800'
+                                        }`}
+                                      >
+                                        {obs.failureType || 'Satisfactory'}
+                                      </Badge>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-teal-50/40 dark:bg-teal-950/20 border border-teal-200 dark:border-teal-800/40">
+                            <div className="flex flex-wrap items-center gap-6">
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-400">
+                                  Predicted 28-day ACT Strength (CR)
+                                </span>
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-xl font-black text-emerald-900 dark:text-emerald-300 font-mono">
+                                    {testResults[cat]?.ActCubeData?.avgPredicted28DayStrength || testResults[cat]?.ActCubeData?.reportedStrength || '-'}
+                                  </span>
+                                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-400">N/mm²</span>
+                                </div>
+                              </div>
+                              {testResults[cat]?.ActCubeData?.avgCompressiveStrength && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-teal-800 dark:text-teal-400">
+                                    Avg ACT Strength (Ra)
+                                  </span>
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-lg font-bold text-teal-900 dark:text-teal-300 font-mono">
+                                      {testResults[cat]?.ActCubeData?.avgCompressiveStrength}
+                                    </span>
+                                    <span className="text-xs font-semibold text-teal-700 dark:text-teal-400">N/mm²</span>
+                                  </div>
+                                </div>
+                              )}
+                              {testResults[cat]?.ActCubeData?.avgWeight && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
+                                    Average Weight
+                                  </span>
+                                  <div className="text-sm font-bold text-gray-800 dark:text-foreground font-mono">
+                                    {testResults[cat]?.ActCubeData?.avgWeight} kg
+                                  </div>
+                                </div>
+                              )}
+                              {testResults[cat]?.ActCubeData?.waterAdditionDateTime && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
+                                    Water Addition
+                                  </span>
+                                  <div className="text-sm font-medium text-gray-700 dark:text-foreground font-mono">
+                                    {testResults[cat]?.ActCubeData?.waterAdditionDateTime}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground">
+                              IS 9013 Clause 9: R₂₈ = 1.64 × Rₐ + 8.09 (Round up nearest 0.5)
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {isCube && (
                   <div className="bg-white dark:bg-card p-6 rounded-none border border-gray-100 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full">
                     <div>
@@ -2493,6 +2833,68 @@ const TestingManager = ({
             };
             setTestResults(updatedResults);
             setCubeModalCategory(null);
+            await handleSaveResults(categoryToSave, updatedResults);
+          }}
+        />
+      )}
+
+      {/* ACT Cube Test Input Modal */}
+      {actCubeModalCategory && (
+        <ActCubeModal
+          isOpen={!!actCubeModalCategory}
+          onClose={() => setActCubeModalCategory(null)}
+          jobCode={jobDetails?.job_code}
+          sampleCode={
+            samples.find(
+              (s) =>
+                String(s.material_type) === String(actCubeModalCategory) ||
+                materials.find((m) => String(m.id) === String(s.material_type))?.name ===
+                  actCubeModalCategory
+            )?.sample_code || ''
+          }
+          initialData={testResults[actCubeModalCategory]?.ActCubeData || {}}
+          onApply={async (actCubeData) => {
+            const categoryToSave = actCubeModalCategory;
+            const updatedResults = {
+              ...testResults,
+              [categoryToSave]: {
+                ...(testResults[categoryToSave] || {}),
+                ActCubeData: actCubeData,
+              },
+            };
+            setTestResults(updatedResults);
+            setActCubeModalCategory(null);
+            await handleSaveResults(categoryToSave, updatedResults);
+          }}
+        />
+      )}
+
+      {/* Concrete Core Test Input Modal */}
+      {concreteCoreModalCategory && (
+        <ConcreteCoreModal
+          isOpen={!!concreteCoreModalCategory}
+          onClose={() => setConcreteCoreModalCategory(null)}
+          jobCode={jobDetails?.job_code}
+          sampleCode={
+            samples.find(
+              (s) =>
+                String(s.material_type) === String(concreteCoreModalCategory) ||
+                materials.find((m) => String(m.id) === String(s.material_type))?.name ===
+                  concreteCoreModalCategory
+            )?.sample_code || ''
+          }
+          initialData={testResults[concreteCoreModalCategory]?.ConcreteCoreData || {}}
+          onApply={async (concreteCoreData) => {
+            const categoryToSave = concreteCoreModalCategory;
+            const updatedResults = {
+              ...testResults,
+              [categoryToSave]: {
+                ...(testResults[categoryToSave] || {}),
+                ConcreteCoreData: concreteCoreData,
+              },
+            };
+            setTestResults(updatedResults);
+            setConcreteCoreModalCategory(null);
             await handleSaveResults(categoryToSave, updatedResults);
           }}
         />

@@ -21,7 +21,11 @@ import {
 
 import GeotechTestForm from './GeotechTestForm';
 import ConcreteCubeModal from './ConcreteCubeModal';
+import ActCubeModal from './ActCubeModal';
+import ConcreteCoreModal from './ConcreteCoreModal';
 import { SAMPLE_CUBE_TEST_DATA } from '@/utils/cubeTestCalculation';
+import { SAMPLE_ACT_CUBE_TEST_DATA } from '@/utils/actCubeTestCalculation';
+import { SAMPLE_CONCRETE_CORE_TEST_DATA } from '@/utils/concreteCoreTestCalculation';
 
 const FORM_TYPES = [
   {
@@ -41,6 +45,18 @@ const FORM_TYPES = [
     name: 'Concrete Cube Inputs',
     description:
       'Applicable for material inward type "Cube" / "Concrete Cube". Includes 150mm specimen dimensions, casting & testing dates, failure load, compressive strength with nearest 0.5 rounding per IS 516 (part 1/Sec 1): 2021.',
+  },
+  {
+    id: 'actcube',
+    name: 'ACT Cube Inputs',
+    description:
+      'Applicable for material inward type "ACT Cube" / "Accelerated Curing Test Cube". Includes IS 9013 accelerated curing correlation and IS 516 compressive strength prediction.',
+  },
+  {
+    id: 'concretecore',
+    name: 'Concrete Core Inputs',
+    description:
+      'Applicable for material inward type "Concrete core" / "Core". Includes IS 516 (part 4) : 2018 cylinder strength, L/D and diameter shape corrections, and equivalent cube strength.',
   },
 ];
 
@@ -356,6 +372,8 @@ const AdminMaterialFormsManager = () => {
   const [selectedForms, setSelectedForms] = useState([]);
   const [activePreviewTab, setActivePreviewTab] = useState('geotech');
   const [previewCubeModalOpen, setPreviewCubeModalOpen] = useState(false);
+  const [previewActCubeModalOpen, setPreviewActCubeModalOpen] = useState(false);
+  const [previewConcreteCoreModalOpen, setPreviewConcreteCoreModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [materialSearch, setMaterialSearch] = useState('');
 
@@ -686,6 +704,206 @@ const AdminMaterialFormsManager = () => {
                       </div>
                     </div>
                   )}
+
+                  {activePreviewTab === 'actcube' && (
+                    <div className="space-y-5">
+                      <div className="flex items-center justify-between gap-4 p-4 bg-teal-50 border border-teal-200 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-teal-600 text-white">
+                            <Box className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-teal-900">
+                              ACT (Accelerated Curing Test) Cube Compressive Strength [IS 9013 & IS 516]
+                            </h4>
+                            <p className="text-xs text-teal-700 mt-0.5">
+                              Accelerated curing testing, IS 516 nearest 0.5 rounding, and IS 9013 28-day predicted strength (R₂₈ = 1.64 × Rₐ + 8.09).
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => setPreviewActCubeModalOpen(true)}
+                          className="bg-teal-600 hover:bg-teal-700 text-white font-bold gap-1.5 shadow-sm"
+                        >
+                          <Calculator className="w-4 h-4" />
+                          Open Live Modal Preview
+                        </Button>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between border-b pb-3">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Sample Data Preview (IS 9013 Specimen Batch)
+                          </span>
+                          <span className="text-xs font-mono font-bold text-teal-800 bg-teal-50 px-2.5 py-1 rounded-md border border-teal-200">
+                            Predicted 28d Strength: 34.0 N/mm² (Grade: M25)
+                          </span>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left">
+                            <thead className="bg-gray-50 text-gray-600 border-b">
+                              <tr>
+                                <th className="p-2 text-center">Trial</th>
+                                <th className="p-2">ID</th>
+                                <th className="p-2 text-center">Dimensions</th>
+                                <th className="p-2 text-center">Age</th>
+                                <th className="p-2 text-right">Weight (kg)</th>
+                                <th className="p-2 text-right">Load (kN)</th>
+                                <th className="p-2 text-right">Strength (N/mm²)</th>
+                                <th className="p-2 text-right font-bold text-teal-900">Predicted 28d (N/mm²)</th>
+                                <th className="p-2 text-center">Type of Failure</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y font-mono">
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400">1</td>
+                                <td className="p-2 font-sans font-medium">M25, Tm-06, Cement - 80%</td>
+                                <td className="p-2 text-center">150×150×150</td>
+                                <td className="p-2 text-center">1 day</td>
+                                <td className="p-2 text-right">8.259</td>
+                                <td className="p-2 text-right">365.250</td>
+                                <td className="p-2 text-right">16.0</td>
+                                <td className="p-2 text-right font-bold text-teal-900 bg-teal-50/50">34.33</td>
+                                <td className="p-2 text-center font-sans">
+                                  <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
+                                    Satisfactory
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400">2</td>
+                                <td className="p-2 font-sans font-medium">M25, Tm-06, Cement - 80%</td>
+                                <td className="p-2 text-center">150×150×150</td>
+                                <td className="p-2 text-center">1 day</td>
+                                <td className="p-2 text-right">8.274</td>
+                                <td className="p-2 text-right">341.800</td>
+                                <td className="p-2 text-right">15.0</td>
+                                <td className="p-2 text-right font-bold text-teal-900 bg-teal-50/50">32.69</td>
+                                <td className="p-2 text-center font-sans">
+                                  <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
+                                    Satisfactory
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400">3</td>
+                                <td className="p-2 font-sans font-medium">M25, Tm-06, Cement - 80%</td>
+                                <td className="p-2 text-center">150×150×150</td>
+                                <td className="p-2 text-center">1 day</td>
+                                <td className="p-2 text-right">8.296</td>
+                                <td className="p-2 text-right">359.605</td>
+                                <td className="p-2 text-right">16.0</td>
+                                <td className="p-2 text-right font-bold text-teal-900 bg-teal-50/50">34.33</td>
+                                <td className="p-2 text-center font-sans">
+                                  <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
+                                    Satisfactory
+                                  </span>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activePreviewTab === 'concretecore' && (
+                    <div className="space-y-5">
+                      <div className="flex items-center justify-between gap-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-blue-600 text-white">
+                            <Box className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-blue-900">
+                              Concrete Core Compressive Strength Test [IS 516 (part 4) : 2018]
+                            </h4>
+                            <p className="text-xs text-blue-700 mt-0.5">
+                              Core cylinder strength, H/D shape correction factor, and equivalent cube compressive strength.
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => setPreviewConcreteCoreModalOpen(true)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-bold gap-1.5 shadow-sm"
+                        >
+                          <Calculator className="w-4 h-4" />
+                          Open Live Modal Preview
+                        </Button>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between border-b pb-3">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Sample Data Preview (IS 516 Core Batch)
+                          </span>
+                          <span className="text-xs font-mono font-bold text-indigo-800 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200">
+                            Avg Eq. Cube Strength: 36.0 N/mm² (Grade: M35)
+                          </span>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left">
+                            <thead className="bg-gray-50 text-gray-600 border-b">
+                              <tr>
+                                <th className="p-2 text-center">Trial</th>
+                                <th className="p-2">ID</th>
+                                <th className="p-2 text-right">L (mm)</th>
+                                <th className="p-2 text-right">Dia (mm)</th>
+                                <th className="p-2 text-right">Weight (kg)</th>
+                                <th className="p-2 text-right">Load (kN)</th>
+                                <th className="p-2 text-right">Cyl. Str.</th>
+                                <th className="p-2 text-right">L/D</th>
+                                <th className="p-2 text-right">CF</th>
+                                <th className="p-2 text-right font-bold text-blue-900">Corr. Cyl.</th>
+                                <th className="p-2 text-right font-bold text-indigo-900">Eq. Cube</th>
+                                <th className="p-2 text-center">Failure Type</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y font-mono">
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400">1</td>
+                                <td className="p-2 font-sans font-medium">Not furnished</td>
+                                <td className="p-2 text-right">198.00</td>
+                                <td className="p-2 text-right">145.00</td>
+                                <td className="p-2 text-right">7.965</td>
+                                <td className="p-2 text-right">512.910</td>
+                                <td className="p-2 text-right">31.05</td>
+                                <td className="p-2 text-right">1.37</td>
+                                <td className="p-2 text-right">0.93</td>
+                                <td className="p-2 text-right font-bold text-blue-900 bg-blue-50/40">29.75</td>
+                                <td className="p-2 text-right font-bold text-indigo-900 bg-indigo-50/50">37.0</td>
+                                <td className="p-2 text-center font-sans">
+                                  <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
+                                    Satisfactory
+                                  </span>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400">2</td>
+                                <td className="p-2 font-sans font-medium">Not furnished</td>
+                                <td className="p-2 text-right">198.50</td>
+                                <td className="p-2 text-right">141.92</td>
+                                <td className="p-2 text-right">7.698</td>
+                                <td className="p-2 text-right">462.322</td>
+                                <td className="p-2 text-right">29.13</td>
+                                <td className="p-2 text-right">1.40</td>
+                                <td className="p-2 text-right">0.93</td>
+                                <td className="p-2 text-right font-bold text-blue-900 bg-blue-50/40">28.02</td>
+                                <td className="p-2 text-right font-bold text-indigo-900 bg-indigo-50/50">35.0</td>
+                                <td className="p-2 text-center font-sans">
+                                  <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
+                                    Satisfactory
+                                  </span>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Tabs>
             </div>
@@ -705,6 +923,28 @@ const AdminMaterialFormsManager = () => {
           jobCode="JOB-DEMO-2026"
           initialData={SAMPLE_CUBE_TEST_DATA}
           onApply={() => setPreviewCubeModalOpen(false)}
+        />
+      )}
+
+      {previewActCubeModalOpen && (
+        <ActCubeModal
+          isOpen={previewActCubeModalOpen}
+          onClose={() => setPreviewActCubeModalOpen(false)}
+          sampleCode="DEMO-ACT-01"
+          jobCode="JOB-DEMO-2026"
+          initialData={SAMPLE_ACT_CUBE_TEST_DATA}
+          onApply={() => setPreviewActCubeModalOpen(false)}
+        />
+      )}
+
+      {previewConcreteCoreModalOpen && (
+        <ConcreteCoreModal
+          isOpen={previewConcreteCoreModalOpen}
+          onClose={() => setPreviewConcreteCoreModalOpen(false)}
+          sampleCode="DEMO-CORE-01"
+          jobCode="JOB-DEMO-2026"
+          initialData={SAMPLE_CONCRETE_CORE_TEST_DATA}
+          onApply={() => setPreviewConcreteCoreModalOpen(false)}
         />
       )}
     </div>
