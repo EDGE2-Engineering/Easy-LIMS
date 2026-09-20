@@ -102,14 +102,14 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick, isRe
                     disabled={isBusy}
                     size="sm"
                     variant="outline"
-                    className="transition-all hover:scale-105 border-primary/20 hover:bg-primary/5 text-primary bg-red-700 hover:bg-red-600 text-xs px-2"
+                    className="transition-all hover:scale-105 border-primary/20 hover:bg-primary/5 text-primary bg-red-700 hover:bg-red-600 text-sm font-medium px-3 dark:text-white"
                   >
                     {isBusy ? (
-                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin text-white" />
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin text-white" />
                     ) : (
                       <ChevronLeft className="mr-1 h-4 w-4 text-white" />
                     )}
-                    <p className="text-white"> Revert to {previousStateLabel}</p>
+                    <span className="text-white"> Revert to {previousStateLabel}</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -124,10 +124,10 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick, isRe
                     onClick={() => handleAction(action.id, action)}
                     disabled={isBusy}
                     size="sm"
-                    className="transition-all hover:scale-105 text-xs px-2 dark:text-white"
+                    className="transition-all hover:scale-105 text-sm font-medium px-3 dark:text-white"
                   >
                     {isBusy ? (
-                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                     ) : null}
                     {action.label}
                     {!isBusy ? <ChevronRight className="ml-1 h-4 w-4" /> : null}
@@ -164,7 +164,7 @@ const WorkflowPanel = ({ jobId, currentStatus, onTransition, onActionClick, isRe
                       )}
                     </div>
                     <span
-                      className={`text-[10px] mt-1 font-semibold ${isCurrent ? 'text-primary' : ''}`}
+                      className={`text-xs mt-1 font-semibold ${isCurrent ? 'text-primary' : ''}`}
                     >
                       {state.label}
                     </span>

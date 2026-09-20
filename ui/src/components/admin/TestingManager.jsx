@@ -766,33 +766,33 @@ const TestingManager = ({
                         <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending concrete core test input</p>
                       ) : (
                         <div className="space-y-8 mt-4">
-                          <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
-                            <table className="w-full text-left text-xs">
+                          <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                            <table className="w-full min-w-full text-left text-sm">
                               <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                 <tr>
-                                  <th className="p-2.5 font-bold text-center w-10">#</th>
-                                  <th className="p-2.5 font-bold">Identification</th>
-                                  <th className="p-2.5 font-bold">Extraction Date</th>
-                                  <th className="p-2.5 font-bold text-right">Length (mm)</th>
-                                  <th className="p-2.5 font-bold text-right">Dia (mm)</th>
-                                  <th className="p-2.5 font-bold text-right">Weight (kg)</th>
-                                  <th className="p-2.5 font-bold text-right">Load (kN)</th>
-                                  <th className="p-2.5 font-bold text-right">Cyl. Str. (N/mm²)</th>
-                                  <th className="p-2.5 font-bold text-right">L/D</th>
-                                  <th className="p-2.5 font-bold text-right">H/D CF</th>
-                                  <th className="p-2.5 font-bold text-right bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300">
+                                  <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                  <th className="p-2.5 font-bold whitespace-nowrap">Identification</th>
+                                  <th className="p-2.5 font-bold whitespace-nowrap">Extraction Date</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">Length (mm)</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">Dia (mm)</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">Weight (kg)</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">Load (kN)</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">Cyl. Str. (N/mm²)</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">L/D</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">H/D CF</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300">
                                     Corr. Cyl. (N/mm²)
                                   </th>
-                                  <th className="p-2.5 font-bold text-right bg-indigo-50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-300">
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap bg-indigo-50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-300">
                                     Eq. Cube (N/mm²)
                                   </th>
-                                  <th className="p-2.5 font-bold text-center">Failure Type</th>
+                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Failure Type</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-100 dark:divide-border">
                                 {testResults[cat]?.ConcreteCoreData?.observations?.map((obs, idx) => (
                                   <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
-                                    <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground">{obs.trialNo || idx + 1}</td>
+                                    <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{obs.trialNo || idx + 1}</td>
                                     <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.identification || '-'}</td>
                                     <td className="p-2.5 text-gray-600 dark:text-muted-foreground">{obs.extractionDate || '-'}</td>
                                     <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.length || '-'}</td>
@@ -913,32 +913,32 @@ const TestingManager = ({
                         <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending ACT cube test input</p>
                       ) : (
                         <div className="space-y-8 mt-4">
-                          <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
-                            <table className="w-full text-left text-xs">
+                          <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                            <table className="w-full min-w-full text-left text-sm">
                               <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                 <tr>
-                                  <th className="p-2.5 font-bold text-center w-10">#</th>
-                                  <th className="p-2.5 font-bold">Identification</th>
-                                  <th className="p-2.5 font-bold text-center">Dimensions (mm)</th>
-                                  <th className="p-2.5 font-bold text-center">Area (mm²)</th>
-                                  <th className="p-2.5 font-bold text-center">Casting Date</th>
-                                  <th className="p-2.5 font-bold text-center">Testing Date</th>
-                                  <th className="p-2.5 font-bold text-center">Age</th>
-                                  <th className="p-2.5 font-bold text-right">Weight (kg)</th>
-                                  <th className="p-2.5 font-bold text-right">Load (kN)</th>
-                                  <th className="p-2.5 font-bold text-right bg-teal-50 dark:bg-teal-950/40 text-teal-900 dark:text-teal-300">
+                                  <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                  <th className="p-2.5 font-bold whitespace-nowrap">Identification</th>
+                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Dimensions (mm)</th>
+                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Area (mm²)</th>
+                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Casting Date</th>
+                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Testing Date</th>
+                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Age</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">Weight (kg)</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">Load (kN)</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap bg-teal-50 dark:bg-teal-950/40 text-teal-900 dark:text-teal-300">
                                     ACT Strength (N/mm²)
                                   </th>
-                                  <th className="p-2.5 font-bold text-right bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300">
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300">
                                     Predicted 28d (N/mm²)
                                   </th>
-                                  <th className="p-2.5 font-bold text-center">Failure Type</th>
+                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Failure Type</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-100 dark:divide-border">
                                 {testResults[cat]?.ActCubeData?.observations?.map((obs, idx) => (
                                   <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
-                                    <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground">{obs.trialNo || idx + 1}</td>
+                                    <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{obs.trialNo || idx + 1}</td>
                                     <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.cubeId || '-'}</td>
                                     <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{`${obs.length || 150}×${obs.breadth || 150}×${obs.height || 150}`}</td>
                                     <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.area || '22500'}</td>
@@ -1058,29 +1058,29 @@ const TestingManager = ({
                         <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending concrete cube test input</p>
                       ) : (
                         <div className="space-y-8 mt-4">
-                          <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
-                            <table className="w-full text-left text-xs">
+                          <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                            <table className="w-full min-w-full text-left text-sm">
                               <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                 <tr>
-                                  <th className="p-2.5 font-bold text-center w-10">#</th>
-                                  <th className="p-2.5 font-bold">Identification</th>
-                                  <th className="p-2.5 font-bold text-center">Dimensions (mm)</th>
-                                  <th className="p-2.5 font-bold text-center">Area (mm²)</th>
-                                  <th className="p-2.5 font-bold text-center">Casting Date</th>
-                                  <th className="p-2.5 font-bold text-center">Testing Date</th>
-                                  <th className="p-2.5 font-bold text-center">Age</th>
-                                  <th className="p-2.5 font-bold text-right">Weight (kg)</th>
-                                  <th className="p-2.5 font-bold text-right">Load (kN)</th>
-                                  <th className="p-2.5 font-bold text-right bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300">
+                                  <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                  <th className="p-2.5 font-bold whitespace-nowrap">Identification</th>
+                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Dimensions (mm)</th>
+                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Area (mm²)</th>
+                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Casting Date</th>
+                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Testing Date</th>
+                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Age</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">Weight (kg)</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">Load (kN)</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300">
                                     Strength (N/mm²)
                                   </th>
-                                  <th className="p-2.5 font-bold text-center">Failure Type</th>
+                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Failure Type</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-100 dark:divide-border">
                                 {testResults[cat]?.CubeData?.observations?.map((obs, idx) => (
                                   <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
-                                    <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground">{obs.trialNo || idx + 1}</td>
+                                    <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{obs.trialNo || idx + 1}</td>
                                     <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.cubeId || '-'}</td>
                                     <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{`${obs.length || 150}×${obs.breadth || 150}×${obs.height || 150}`}</td>
                                     <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.area || '22500'}</td>
@@ -1224,24 +1224,24 @@ const TestingManager = ({
 
                           {/* Compressive strength observations table */}
                           {testResults[cat].BrickData.compressiveStrength?.observations?.length > 0 && (
-                            <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
-                              <table className="w-full text-left text-xs">
+                            <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                              <table className="w-full min-w-full text-left text-sm">
                                 <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                   <tr>
-                                    <th className="p-2.5 font-bold text-center w-10">#</th>
-                                    <th className="p-2.5 font-bold">Brick ID</th>
-                                    <th className="p-2.5 font-bold text-center">L (mm)</th>
-                                    <th className="p-2.5 font-bold text-center">W (mm)</th>
-                                    <th className="p-2.5 font-bold text-center">H (mm)</th>
-                                    <th className="p-2.5 font-bold text-center">Area (mm²)</th>
-                                    <th className="p-2.5 font-bold text-right">Load (kN)</th>
-                                    <th className="p-2.5 font-bold text-right bg-red-50 dark:bg-red-950/40 text-red-900 dark:text-red-300">Strength (N/mm²)</th>
+                                    <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                    <th className="p-2.5 font-bold whitespace-nowrap">Brick ID</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">L (mm)</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">W (mm)</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">H (mm)</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Area (mm²)</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap">Load (kN)</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap bg-red-50 dark:bg-red-950/40 text-red-900 dark:text-red-300">Strength (N/mm²)</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-border">
                                   {testResults[cat].BrickData.compressiveStrength.observations.map((obs, idx) => (
                                     <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
-                                      <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground">{obs.slNo || idx + 1}</td>
+                                      <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{obs.slNo || idx + 1}</td>
                                       <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.brickId || '-'}</td>
                                       <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.length || '-'}</td>
                                       <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.width || '-'}</td>
@@ -1331,25 +1331,25 @@ const TestingManager = ({
 
                           {/* Observations table */}
                           {testResults[cat].SteelData.observations?.length > 0 && (
-                            <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
-                              <table className="w-full text-left text-xs">
+                            <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                              <table className="w-full min-w-full text-left text-sm">
                                 <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                   <tr>
-                                    <th className="p-2.5 font-bold text-center w-8">#</th>
-                                    <th className="p-2.5 font-bold">Bar ID</th>
-                                    <th className="p-2.5 font-bold text-center">Dia (mm)</th>
-                                    <th className="p-2.5 font-bold text-right">Area (mm²)</th>
-                                    <th className="p-2.5 font-bold text-right bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">Yield Stress (N/mm²)</th>
-                                    <th className="p-2.5 font-bold text-right bg-orange-50 dark:bg-orange-950/30 text-orange-900 dark:text-orange-300">Tensile Str. (N/mm²)</th>
-                                    <th className="p-2.5 font-bold text-right bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300">Elongation (%)</th>
-                                    <th className="p-2.5 font-bold text-center">Bend</th>
-                                    <th className="p-2.5 font-bold text-center">Rebend</th>
+                                    <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                    <th className="p-2.5 font-bold whitespace-nowrap">Bar ID</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Dia (mm)</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap">Area (mm²)</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">Yield Stress (N/mm²)</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap bg-orange-50 dark:bg-orange-950/30 text-orange-900 dark:text-orange-300">Tensile Str. (N/mm²)</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300">Elongation (%)</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Bend</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Rebend</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-border">
                                   {testResults[cat].SteelData.observations.map((obs, idx) => (
                                     <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
-                                      <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground">{obs.slNo || idx + 1}</td>
+                                      <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{obs.slNo || idx + 1}</td>
                                       <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.barId || '-'}</td>
                                       <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.nominalDia || '-'}</td>
                                       <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.area || '-'}</td>
@@ -1477,15 +1477,15 @@ const TestingManager = ({
 
                           {/* Sieve analysis table */}
                           {testResults[cat].FineAggData.sieveAnalysis?.rows?.length > 0 && (
-                            <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
-                              <table className="w-full text-left text-xs">
+                            <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                              <table className="w-full min-w-full text-left text-sm">
                                 <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                   <tr>
-                                    <th className="p-2.5 font-bold min-w-[100px]">IS Sieve</th>
-                                    <th className="p-2.5 font-bold text-right">Wt Retained (g)</th>
-                                    <th className="p-2.5 font-bold text-right">Cum. Retained (g)</th>
-                                    <th className="p-2.5 font-bold text-right bg-teal-50 dark:bg-teal-950/30 text-teal-900 dark:text-teal-300">Cum % Retained</th>
-                                    <th className="p-2.5 font-bold text-right bg-teal-100/60 dark:bg-teal-900/30 text-teal-900 dark:text-teal-200">% Passing</th>
+                                    <th className="p-2.5 font-bold min-w-[120px] whitespace-nowrap">IS Sieve</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap">Wt Retained (g)</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap">Cum. Retained (g)</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap bg-teal-50 dark:bg-teal-950/30 text-teal-900 dark:text-teal-300">Cum % Retained</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap bg-teal-100/60 dark:bg-teal-900/30 text-teal-900 dark:text-teal-200">% Passing</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-border">
@@ -1591,24 +1591,24 @@ const TestingManager = ({
 
                             {/* Compressive strength table */}
                             {solidHollowData.compressiveStrength?.observations?.length > 0 && (
-                              <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
-                                <table className="w-full text-left text-xs">
+                              <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                <table className="w-full min-w-full text-left text-sm">
                                   <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                     <tr>
-                                      <th className="p-2.5 font-bold text-center w-8">#</th>
-                                      <th className="p-2.5 font-bold">Block ID</th>
-                                      <th className="p-2.5 font-bold text-center">L (mm)</th>
-                                      <th className="p-2.5 font-bold text-center">B (mm)</th>
-                                      <th className="p-2.5 font-bold text-center">H (mm)</th>
-                                      <th className="p-2.5 font-bold text-right">Area (mm²)</th>
-                                      <th className="p-2.5 font-bold text-right">Load (kN)</th>
-                                      <th className="p-2.5 font-bold text-right bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-300">σ (N/mm²)</th>
+                                      <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                      <th className="p-2.5 font-bold whitespace-nowrap">Block ID</th>
+                                      <th className="p-2.5 font-bold text-center whitespace-nowrap">L (mm)</th>
+                                      <th className="p-2.5 font-bold text-center whitespace-nowrap">B (mm)</th>
+                                      <th className="p-2.5 font-bold text-center whitespace-nowrap">H (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Area (mm²)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Load (kN)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-300">σ (N/mm²)</th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-gray-100 dark:divide-border">
                                     {solidHollowData.compressiveStrength.observations.map((obs, idx) => (
                                       <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
-                                        <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground">{obs.slNo || idx + 1}</td>
+                                        <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{obs.slNo || idx + 1}</td>
                                         <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.blockId || '-'}</td>
                                         <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.length || '-'}</td>
                                         <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.width || '-'}</td>
@@ -1717,7 +1717,7 @@ const TestingManager = ({
 
                             {/* Compressive Strength Table */}
                             {paverData.compressive?.rows?.length > 0 && (
-                              <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                              <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
                                 <div className="p-2.5 px-3 bg-stone-50/70 dark:bg-muted/30 border-b flex items-center justify-between text-xs">
                                   <span className="font-bold text-gray-800 dark:text-foreground">
                                     Compressive Strength Test (IS 15658 Table 5)
@@ -1726,34 +1726,34 @@ const TestingManager = ({
                                     Avg: {paverData.avgCorrectedStrength} N/mm²
                                   </span>
                                 </div>
-                                <table className="w-full text-left text-xs">
+                                <table className="w-full min-w-full text-left text-sm">
                                   <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                     <tr>
-                                      <th className="p-2 text-center w-8">#</th>
-                                      <th className="p-2 font-bold">ID</th>
-                                      <th className="p-2 text-right">L (mm)</th>
-                                      <th className="p-2 text-right">B (mm)</th>
-                                      <th className="p-2 text-right">W (mm)</th>
-                                      <th className="p-2 text-right">Area (mm²)</th>
-                                      <th className="p-2 text-right">Load (kN)</th>
-                                      <th className="p-2 text-right">Str (N/mm²)</th>
-                                      <th className="p-2 text-right">Factor</th>
-                                      <th className="p-2 text-right bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300 font-bold">Corr Str (N/mm²)</th>
+                                      <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                      <th className="p-2.5 font-bold whitespace-nowrap">ID</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">L (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">B (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">W (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Area (mm²)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Load (kN)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Str (N/mm²)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Factor</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300">Corr Str (N/mm²)</th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-gray-100 dark:divide-border">
                                     {paverData.compressive.rows.map((obs, idx) => (
                                       <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
-                                        <td className="p-2 text-center font-bold text-gray-400 dark:text-muted-foreground">{idx + 1}</td>
-                                        <td className="p-2 font-mono font-medium text-gray-800 dark:text-foreground">{obs.sampleId || `R${idx + 1}`}</td>
-                                        <td className="p-2 text-right font-mono text-gray-600 dark:text-muted-foreground">{obs.length || '-'}</td>
-                                        <td className="p-2 text-right font-mono text-gray-600 dark:text-muted-foreground">{obs.breadth || '-'}</td>
-                                        <td className="p-2 text-right font-mono text-gray-600 dark:text-muted-foreground">{obs.thickness || '-'}</td>
-                                        <td className="p-2 text-right font-mono text-gray-700 dark:text-foreground">{obs.areaFormatted || obs.area || '-'}</td>
-                                        <td className="p-2 text-right font-mono text-gray-700 dark:text-foreground">{obs.failureLoadKn || '-'}</td>
-                                        <td className="p-2 text-right font-mono text-gray-700 dark:text-foreground">{obs.compStrengthFormatted || '-'}</td>
-                                        <td className="p-2 text-right font-mono text-indigo-700 dark:text-indigo-300">{obs.correctionFactor ? obs.correctionFactor.toFixed(2) : '-'}</td>
-                                        <td className="p-2 text-right font-mono font-bold text-emerald-900 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20">{obs.correctedStrengthFormatted || '-'}</td>
+                                        <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{idx + 1}</td>
+                                        <td className="p-2.5 font-medium text-gray-800 dark:text-foreground whitespace-nowrap">{obs.sampleId || `R${idx + 1}`}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.length || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.breadth || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.thickness || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.areaFormatted || obs.area || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.failureLoadKn || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.compStrengthFormatted || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-indigo-700 dark:text-indigo-300 whitespace-nowrap">{obs.correctionFactor ? obs.correctionFactor.toFixed(2) : '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-emerald-900 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20 whitespace-nowrap">{obs.correctedStrengthFormatted || '-'}</td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -1763,7 +1763,7 @@ const TestingManager = ({
 
                             {/* Water Absorption Table */}
                             {paverData.waterAbsorption?.rows?.length > 0 && (
-                              <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                              <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
                                 <div className="p-2.5 px-3 bg-stone-50/70 dark:bg-muted/30 border-b flex items-center justify-between text-xs">
                                   <span className="font-bold text-gray-800 dark:text-foreground">
                                     Water Absorption Test (IS 15658 Annex D)
@@ -1772,30 +1772,30 @@ const TestingManager = ({
                                     Avg: {paverData.avgWaterAbsorption}%
                                   </span>
                                 </div>
-                                <table className="w-full text-left text-xs">
+                                <table className="w-full min-w-full text-left text-sm">
                                   <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                     <tr>
-                                      <th className="p-2 text-center w-8">#</th>
-                                      <th className="p-2 font-bold">ID</th>
-                                      <th className="p-2 text-right">L (mm)</th>
-                                      <th className="p-2 text-right">B (mm)</th>
-                                      <th className="p-2 text-right">W (mm)</th>
-                                      <th className="p-2 text-right">Wet Mass (kg)</th>
-                                      <th className="p-2 text-right">Dry Mass (kg)</th>
-                                      <th className="p-2 text-right bg-blue-50 dark:bg-blue-950/30 text-blue-900 dark:text-blue-300 font-bold">Water Absorption (%)</th>
+                                      <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                      <th className="p-2.5 font-bold whitespace-nowrap">ID</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">L (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">B (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">W (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Wet Mass (kg)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Dry Mass (kg)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-blue-50 dark:bg-blue-950/30 text-blue-900 dark:text-blue-300">Water Absorption (%)</th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-gray-100 dark:divide-border">
                                     {paverData.waterAbsorption.rows.map((obs, idx) => (
                                       <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
-                                        <td className="p-2 text-center font-bold text-gray-400 dark:text-muted-foreground">{idx + 1}</td>
-                                        <td className="p-2 font-mono font-medium text-gray-800 dark:text-foreground">{obs.sampleId || `R${idx + 1}`}</td>
-                                        <td className="p-2 text-right font-mono text-gray-600 dark:text-muted-foreground">{obs.length || '-'}</td>
-                                        <td className="p-2 text-right font-mono text-gray-600 dark:text-muted-foreground">{obs.breadth || '-'}</td>
-                                        <td className="p-2 text-right font-mono text-gray-600 dark:text-muted-foreground">{obs.thickness || '-'}</td>
-                                        <td className="p-2 text-right font-mono text-gray-700 dark:text-foreground">{obs.wetMassKg || '-'}</td>
-                                        <td className="p-2 text-right font-mono text-gray-700 dark:text-foreground">{obs.dryMassKg || '-'}</td>
-                                        <td className="p-2 text-right font-mono font-bold text-blue-900 dark:text-blue-300 bg-blue-50/40 dark:bg-blue-950/20">{obs.waterAbsorptionFormatted ? `${obs.waterAbsorptionFormatted}%` : '-'}</td>
+                                        <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{idx + 1}</td>
+                                        <td className="p-2.5 font-medium text-gray-800 dark:text-foreground whitespace-nowrap">{obs.sampleId || `R${idx + 1}`}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.length || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.breadth || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.thickness || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.wetMassKg || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.dryMassKg || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-blue-900 dark:text-blue-300 bg-blue-50/40 dark:bg-blue-950/20 whitespace-nowrap">{obs.waterAbsorptionFormatted ? `${obs.waterAbsorptionFormatted}%` : '-'}</td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -1895,79 +1895,79 @@ const TestingManager = ({
                                         <FlaskConical className="w-3 h-3 text-primary" /> Borehole
                                         Logs
                                       </h5>
-                                      <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
-                                        <table className="w-full text-left text-[11px]">
-                                          <thead className="bg-gray-50 border-b">
+                                      <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                        <table className="w-full min-w-full text-left text-sm">
+                                          <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                             <tr>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold text-center w-20 whitespace-nowrap">
                                                 BH
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Max Depth of Exploration (m)
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Latitude
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Longitude
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap text-center">
                                                 From (m)
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap text-center">
                                                 To (m)
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap text-center">
                                                 Sampling
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold">
                                                 Soil Type
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 SPT N Values (15/30/45)
                                               </th>
                                             </tr>
                                           </thead>
-                                          <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                          <tbody className="divide-y divide-gray-100 dark:divide-border">
                                             {boreholeLogs.map((bh, bhIdx) =>
                                               bh.map((d, dIdx) => (
                                                 <tr
                                                   key={`bh-${bhIdx}-${dIdx}`}
-                                                  className="hover:bg-gray-50/30 transition-colors"
+                                                  className="hover:bg-gray-50/50 dark:hover:bg-muted/30 transition-colors"
                                                 >
-                                                  <td className="p-3 font-bold text-gray-400">
+                                                  <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">
                                                     BH-{bhIdx + 1}
                                                   </td>
-                                                  <td className="p-3 font-mono text-gray-500">
+                                                  <td className="p-2.5 font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">
                                                     {maxDepths[bhIdx] || '-'}
                                                   </td>
-                                                  <td className="p-3 font-mono text-gray-500">
+                                                  <td className="p-2.5 font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">
                                                     {latitudes[bhIdx] || '-'}
                                                   </td>
-                                                  <td className="p-3 font-mono text-gray-500">
+                                                  <td className="p-2.5 font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">
                                                     {longitudes[bhIdx] || '-'}
                                                   </td>
-                                                  <td className="p-3 text-gray-900 font-medium">
+                                                  <td className="p-2.5 font-medium text-gray-800 dark:text-foreground whitespace-nowrap text-center">
                                                     {d.fromDepth ?? d.depth ?? '-'}
                                                   </td>
-                                                  <td className="p-3 text-gray-900 font-medium">
+                                                  <td className="p-2.5 font-medium text-gray-800 dark:text-foreground whitespace-nowrap text-center">
                                                     {d.toDepth ?? '-'}
                                                   </td>
-                                                  <td className="p-3">
+                                                  <td className="p-2.5 text-center whitespace-nowrap">
                                                     <Badge
                                                       variant="outline"
-                                                      className="text-[9px] font-bold py-0 h-4 bg-gray-50"
+                                                      className="text-[10px] font-bold py-0 h-5"
                                                     >
                                                       {d.natureOfSampling || '-'}
                                                     </Badge>
                                                   </td>
                                                   <td
-                                                    className="p-3 text-gray-600 max-w-[200px] truncate"
+                                                    className="p-2.5 font-medium text-gray-800 dark:text-foreground"
                                                     title={d.soilType}
                                                   >
                                                     {d.soilType || '-'}
                                                   </td>
-                                                  <td className="p-3 font-mono text-gray-500">
+                                                  <td className="p-2.5 font-mono text-gray-700 dark:text-foreground whitespace-nowrap">
                                                     {d.natureOfSampling === 'Core'
                                                       ? `- (CR: ${d.coreRecovery || '-'}%, RQD: ${d.rqd || '-'}%)`
                                                       : `${d.spt1 || '-'}/${d.spt2 || '-'}/${d.spt3 || '-'}`}
@@ -1988,65 +1988,65 @@ const TestingManager = ({
                                         <Beaker className="w-3 h-3 text-blue-500" /> Lab Test
                                         Results
                                       </h5>
-                                      <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
-                                        <table className="w-full text-left text-[11px]">
-                                          <thead className="bg-gray-50 border-b">
+                                      <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                        <table className="w-full min-w-full text-left text-sm">
+                                          <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                             <tr>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold text-center w-20 whitespace-nowrap">
                                                 BH
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Depth
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Density/Moist.
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Grain Size (G/S/SC)
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Atterberg (LL/PL/PI)
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 SG/FSI
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Shrinkage (SL/R)
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Compaction (MDD/OMC)
                                               </th>
                                               {showSoilCbr && (
-                                                <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                <th className="p-2.5 font-bold whitespace-nowrap">
                                                   Lab CBR (%)
                                                 </th>
                                               )}
                                               {showRockTests && (
                                                 <>
-                                                  <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                  <th className="p-2.5 font-bold whitespace-nowrap">
                                                     Point Load (MPa)
                                                   </th>
-                                                  <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                  <th className="p-2.5 font-bold whitespace-nowrap">
                                                     UCS (MPa)
                                                   </th>
                                                 </>
                                               )}
                                             </tr>
                                           </thead>
-                                          <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                          <tbody className="divide-y divide-gray-100 dark:divide-border">
                                             {labTestResults.map((bh, bhIdx) =>
                                               bh.map((d, dIdx) => (
                                                 <tr
                                                   key={`lab-${bhIdx}-${dIdx}`}
-                                                  className="hover:bg-gray-50/30 transition-colors"
+                                                  className="hover:bg-gray-50/50 dark:hover:bg-muted/30 transition-colors"
                                                 >
-                                                  <td className="p-3 font-bold text-gray-400">
+                                                  <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">
                                                     BH-{bhIdx + 1}
                                                   </td>
-                                                  <td className="p-3 text-gray-900 font-medium">
+                                                  <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">
                                                     {d.depth || '-'}
                                                   </td>
-                                                  <td className="p-3 text-gray-600">
+                                                  <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
                                                     {d.bulkDensity || '-'}/
                                                     {d.moistureContent && d.moistureContent !== '-' ? `${d.moistureContent}%` : '-'}
                                                     {d.containerNo && d.containerNo !== '-' && (
@@ -2058,12 +2058,12 @@ const TestingManager = ({
                                                       </span>
                                                     )}
                                                   </td>
-                                                  <td className="p-3 text-gray-600">
+                                                  <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
                                                     {d.grainSizeDistribution?.gravel || '-'}/
                                                     {d.grainSizeDistribution?.sand || '-'}/
                                                     {d.grainSizeDistribution?.siltAndClay || '-'}
                                                   </td>
-                                                  <td className="p-3 text-gray-600">
+                                                  <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
                                                     <div>
                                                       {d.atterbergLimits?.liquidLimit || '-'}/
                                                       {d.atterbergLimits?.plasticLimit || '-'}/
@@ -2078,7 +2078,7 @@ const TestingManager = ({
                                                       </span>
                                                     )}
                                                   </td>
-                                                  <td className="p-3 text-gray-600">
+                                                  <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
                                                     <div>
                                                       <span>{d.specificGravity || '-'}</span>/
                                                       <span>{d.freeSwellIndex && d.freeSwellIndex !== '-' ? `${d.freeSwellIndex}%` : '-'}</span>
@@ -2108,7 +2108,7 @@ const TestingManager = ({
                                                       </span>
                                                     )}
                                                   </td>
-                                                  <td className="p-3 text-gray-600">
+                                                  <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
                                                     <div>
                                                       {d.shrinkageLimit ? (
                                                         <span>
@@ -2120,7 +2120,7 @@ const TestingManager = ({
                                                       )}
                                                     </div>
                                                   </td>
-                                                  <td className="p-3 text-gray-600 text-[11px]">
+                                                  <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
                                                     <div className="space-y-0.5">
                                                       {d.lightCompaction?.mdd && (
                                                         <div className="text-amber-700 dark:text-amber-300">
@@ -2136,7 +2136,7 @@ const TestingManager = ({
                                                     </div>
                                                   </td>
                                                   {showSoilCbr && (
-                                                    <td className="p-3 text-gray-600 text-[11px]">
+                                                    <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
                                                       {d.labCbr?.reportedCbr ? (
                                                         <div className="text-blue-700 dark:text-blue-300 font-medium">
                                                           <span>{d.labCbr.reportedCbr}%</span>
@@ -2153,7 +2153,7 @@ const TestingManager = ({
                                                   )}
                                                   {showRockTests && (
                                                     <>
-                                                      <td className="p-3 text-gray-600 text-[11px]">
+                                                      <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
                                                         {d.pointLoadIndex?.reportedPli ? (
                                                           <div className="text-emerald-700 dark:text-emerald-300 font-medium">
                                                             <span>{d.pointLoadIndex.reportedPli} MPa</span>
@@ -2170,7 +2170,7 @@ const TestingManager = ({
                                                           '-'
                                                         )}
                                                       </td>
-                                                      <td className="p-3 text-gray-600 text-[11px]">
+                                                      <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
                                                         {d.ucs?.reportedUcs ? (
                                                           <div className="text-blue-700 dark:text-blue-300 font-medium">
                                                             <span>{d.ucs.reportedUcs} MPa</span>
@@ -2243,69 +2243,69 @@ const TestingManager = ({
                                             Details -{' '}
                                             {isRock ? 'Rock Foundation' : 'Soil Foundation'}
                                           </h5>
-                                          <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden w-full">
-                                            <table className="w-full text-left text-[11px]">
-                                              <thead className="bg-gray-50 border-b">
+                                          <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                            <table className="w-full min-w-full text-left text-sm">
+                                              <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                                 <tr>
-                                                  <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                  <th className="p-2.5 font-bold text-center w-24 whitespace-nowrap">
                                                     BH
                                                   </th>
                                                   {!isRock && (
-                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                    <th className="p-2.5 font-bold whitespace-nowrap">
                                                       Shape
                                                     </th>
                                                   )}
                                                   {!isRock && (
-                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                    <th className="p-2.5 font-bold whitespace-nowrap">
                                                       Material
                                                     </th>
                                                   )}
                                                   {isRock && (
-                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                    <th className="p-2.5 font-bold whitespace-nowrap">
                                                       Rock Top/Bottom
                                                     </th>
                                                   )}
-                                                  <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                  <th className="p-2.5 font-bold whitespace-nowrap">
                                                     Width B (m)
                                                   </th>
-                                                  <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                  <th className="p-2.5 font-bold whitespace-nowrap">
                                                     Length L (m)
                                                   </th>
-                                                  <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                  <th className="p-2.5 font-bold whitespace-nowrap">
                                                     Depth Df (m)
                                                   </th>
                                                   {!isRock && (
-                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                    <th className="p-2.5 font-bold whitespace-nowrap">
                                                       Cohesion C
                                                     </th>
                                                   )}
                                                   {!isRock && (
-                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                    <th className="p-2.5 font-bold whitespace-nowrap">
                                                       Angle Φ
                                                     </th>
                                                   )}
                                                   {!isRock && (
-                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                    <th className="p-2.5 font-bold whitespace-nowrap">
                                                       Unit Wt γ
                                                     </th>
                                                   )}
-                                                  <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                  <th className="p-2.5 font-bold whitespace-nowrap">
                                                     Safe BC (qs)
                                                   </th>
-                                                  <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                  <th className="p-2.5 font-bold whitespace-nowrap">
                                                     Allowable BC (qa)
                                                   </th>
                                                   {!isRock && (
-                                                    <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                    <th className="p-2.5 font-bold whitespace-nowrap">
                                                       Safe BP (qsafe)
                                                     </th>
                                                   )}
-                                                  <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                                  <th className="p-2.5 font-bold whitespace-nowrap">
                                                     Rec. SBC
                                                   </th>
                                                 </tr>
                                               </thead>
-                                              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                              <tbody className="divide-y divide-gray-100 dark:divide-border">
                                                 {rows.map(({ d, bhIdx, entryIdx }, idx) => {
                                                   const computed = isRock
                                                     ? computeRockSbcValues(d)
@@ -2316,67 +2316,67 @@ const TestingManager = ({
                                                   return (
                                                     <tr
                                                       key={`sbc-${bhIdx}-${idx}`}
-                                                      className="hover:bg-gray-50/30 transition-colors"
+                                                      className="hover:bg-gray-50/50 dark:hover:bg-muted/30 transition-colors"
                                                     >
-                                                      <td className="p-3 font-bold text-gray-400">
+                                                      <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">
                                                         BH-{bhIdx + 1}
                                                         {hasMultiple ? ` (${entryIdx + 1})` : ''}
                                                       </td>
                                                       {!isRock && (
-                                                        <td className="p-3 text-gray-900">
+                                                        <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">
                                                           {d.sbcShape || '-'}
                                                         </td>
                                                       )}
                                                       {!isRock && (
-                                                        <td className="p-3 text-gray-900">
+                                                        <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">
                                                           {d.soilTypeInput || '-'}
                                                         </td>
                                                       )}
                                                       {isRock && (
-                                                        <td className="p-3 text-gray-900">
+                                                        <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">
                                                           {d.depthTop || d.depthBottom
                                                             ? `${d.depthTop || 0} - ${d.depthBottom || 0}`
                                                             : '-'}
                                                         </td>
                                                       )}
-                                                      <td className="p-3 text-gray-900">
+                                                      <td className="p-2.5 font-mono text-gray-700 dark:text-foreground">
                                                         {d.sbcB || d.widthB || '-'}
                                                       </td>
-                                                      <td className="p-3 text-gray-900">
+                                                      <td className="p-2.5 font-mono text-gray-700 dark:text-foreground">
                                                         {d.sbcL || d.lengthL || '-'}
                                                       </td>
-                                                      <td className="p-3 text-gray-900">
+                                                      <td className="p-2.5 font-mono text-gray-700 dark:text-foreground">
                                                         {d.sbcD || d.df || '-'}
                                                       </td>
                                                       {!isRock && (
-                                                        <td className="p-3 text-gray-900">
+                                                        <td className="p-2.5 font-mono text-gray-700 dark:text-foreground">
                                                           {d.sbcC || '-'}
                                                         </td>
                                                       )}
                                                       {!isRock && (
-                                                        <td className="p-3 text-gray-900">
+                                                        <td className="p-2.5 font-mono text-gray-700 dark:text-foreground">
                                                           {d.sbcPhi || '-'}
                                                         </td>
                                                       )}
                                                       {!isRock && (
-                                                        <td className="p-3 text-gray-900">
+                                                        <td className="p-2.5 font-mono text-gray-700 dark:text-foreground">
                                                           {d.sbcGamma || '-'}
                                                         </td>
                                                       )}
-                                                      <td className="p-3 text-gray-900 font-mono">
+                                                      <td className="p-2.5 font-mono text-gray-700 dark:text-foreground">
                                                         {computed.computedQs !== null &&
                                                         computed.computedQs !== undefined
                                                           ? Number(computed.computedQs).toFixed(2)
                                                           : '-'}
                                                       </td>
-                                                      <td className="p-3 text-gray-900 font-mono">
+                                                      <td className="p-2.5 font-mono text-gray-700 dark:text-foreground">
                                                         {computed.computedQa !== null &&
                                                         computed.computedQa !== undefined
                                                           ? Number(computed.computedQa).toFixed(2)
                                                           : '-'}
                                                       </td>
                                                       {!isRock && (
-                                                        <td className="p-3 text-gray-900 font-mono">
+                                                        <td className="p-2.5 font-mono text-gray-700 dark:text-foreground">
                                                           {computed.computedQsafe !== null &&
                                                           computed.computedQsafe !== undefined
                                                             ? Number(
@@ -2385,7 +2385,7 @@ const TestingManager = ({
                                                             : '-'}
                                                         </td>
                                                       )}
-                                                      <td className="p-3 text-primary font-bold font-mono">
+                                                      <td className="p-2.5 text-primary font-bold font-mono">
                                                         {computed.computedRecommendedSbc !== null &&
                                                         computed.computedRecommendedSbc !==
                                                           undefined
@@ -2419,35 +2419,35 @@ const TestingManager = ({
                                         <LandPlot className="w-3 h-3 text-emerald-500" /> Sub-Soil
                                         Profile
                                       </h5>
-                                      <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
-                                        <table className="w-full text-left text-[11px]">
-                                          <thead className="bg-gray-50 border-b">
+                                      <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                        <table className="w-full min-w-full text-left text-sm">
+                                          <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                             <tr>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold text-center w-20 whitespace-nowrap">
                                                 BH
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Depth (m)
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold">
                                                 Description
                                               </th>
                                             </tr>
                                           </thead>
-                                          <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                          <tbody className="divide-y divide-gray-100 dark:divide-border">
                                             {geotechData.subSoilProfile.map((bh, bhIdx) =>
                                               bh.map((d, dIdx) => (
                                                 <tr
                                                   key={`profile-${bhIdx}-${dIdx}`}
-                                                  className="hover:bg-gray-50/30 transition-colors"
+                                                  className="hover:bg-gray-50/50 dark:hover:bg-muted/30 transition-colors"
                                                 >
-                                                  <td className="p-3 font-bold text-gray-400">
+                                                  <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">
                                                     BH-{bhIdx + 1}
                                                   </td>
-                                                  <td className="p-3 text-gray-900 font-medium">
+                                                  <td className="p-2.5 font-medium text-gray-800 dark:text-foreground whitespace-nowrap">
                                                     {d.depth || '-'}
                                                   </td>
-                                                  <td className="p-3 text-gray-600">
+                                                  <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
                                                     {d.description || '-'}
                                                   </td>
                                                 </tr>
@@ -2466,14 +2466,14 @@ const TestingManager = ({
                                         <Layers className="w-3 h-3 text-orange-500" /> Sieve
                                         Analysis - Weight Retained (gms)
                                       </h5>
-                                      <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
-                                        <table className="w-full text-left text-[11px]">
-                                          <thead className="bg-gray-50 border-b">
+                                      <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                        <table className="w-full min-w-full text-left text-sm">
+                                          <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                             <tr>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold text-center w-20 whitespace-nowrap">
                                                 BH
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Depth
                                               </th>
                                               {[
@@ -2491,24 +2491,24 @@ const TestingManager = ({
                                               ].map(({ key, label }) => (
                                                 <th
                                                   key={key}
-                                                  className="p-2 font-bold text-gray-400 text-center text-[9px] uppercase"
+                                                  className="p-2.5 font-bold text-center whitespace-nowrap"
                                                 >
                                                   {label}
                                                 </th>
                                               ))}
                                             </tr>
                                           </thead>
-                                          <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                          <tbody className="divide-y divide-gray-100 dark:divide-border">
                                             {grainSizeAnalysis.map((bh, bhIdx) =>
                                               bh.map((d, dIdx) => (
                                                 <tr
                                                   key={`sieve-${bhIdx}-${dIdx}`}
-                                                  className="hover:bg-gray-50/30 transition-colors"
+                                                  className="hover:bg-gray-50/50 dark:hover:bg-muted/30 transition-colors"
                                                 >
-                                                  <td className="p-3 font-bold text-gray-400">
+                                                  <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">
                                                     BH-{bhIdx + 1}
                                                   </td>
-                                                  <td className="p-3 text-gray-900 font-medium">
+                                                  <td className="p-2.5 font-medium text-gray-800 dark:text-foreground whitespace-nowrap">
                                                     {d.depth || '-'}
                                                   </td>
                                                   {[
@@ -2526,7 +2526,7 @@ const TestingManager = ({
                                                   ].map((key) => (
                                                     <td
                                                       key={key}
-                                                      className="p-2 text-center text-gray-500 font-mono"
+                                                      className="p-2.5 text-center text-gray-600 dark:text-muted-foreground font-mono whitespace-nowrap"
                                                     >
                                                       {d[key] ?? '-'}
                                                     </td>
@@ -2548,40 +2548,40 @@ const TestingManager = ({
                                         <FlaskConical className="w-3 h-3 text-rose-500" /> Chemical
                                         Analysis
                                       </h5>
-                                      <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden w-full">
-                                        <table className="w-full text-left text-[11px]">
-                                          <thead className="bg-gray-50 border-b">
+                                      <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                        <table className="w-full min-w-full text-left text-sm">
+                                          <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                             <tr>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 pH Value
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Sulphates
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Chlorides
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold">
                                                 Other Parameters
                                               </th>
                                             </tr>
                                           </thead>
-                                          <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                          <tbody className="divide-y divide-gray-100 dark:divide-border">
                                             {geotechData.chemicalAnalysis.map((d, idx) => (
                                               <tr
                                                 key={`chem-${idx}`}
-                                                className="hover:bg-gray-50/30 transition-colors"
+                                                className="hover:bg-gray-50/50 dark:hover:bg-muted/30 transition-colors"
                                               >
-                                                <td className="p-3 text-gray-900 font-medium">
+                                                <td className="p-2.5 font-medium text-gray-800 dark:text-foreground whitespace-nowrap">
                                                   {d.phValue || '-'}
                                                 </td>
-                                                <td className="p-3 text-gray-600">
+                                                <td className="p-2.5 text-gray-600 dark:text-muted-foreground whitespace-nowrap">
                                                   {d.sulphates || '-'}
                                                 </td>
-                                                <td className="p-3 text-gray-600">
+                                                <td className="p-2.5 text-gray-600 dark:text-muted-foreground whitespace-nowrap">
                                                   {d.chlorides || '-'}
                                                 </td>
-                                                <td className="p-3 text-gray-500 italic text-[10px]">
+                                                <td className="p-2.5 text-gray-500 dark:text-muted-foreground italic text-xs">
                                                   {d.additionalKeys
                                                     ?.filter((k) => k.key)
                                                     .map((k) => `${k.key}: ${k.value}`)
@@ -2602,47 +2602,47 @@ const TestingManager = ({
                                         <Beaker className="w-3 h-3 text-indigo-500" /> Direct Shear
                                         Results
                                       </h5>
-                                      <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden w-full">
-                                        <table className="w-full text-left text-[11px]">
-                                          <thead className="bg-gray-50 border-b">
+                                      <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                        <table className="w-full min-w-full text-left text-sm">
+                                          <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                             <tr>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold text-center w-20 whitespace-nowrap">
                                                 BH
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Shear Box Size
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Depth
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 c Value
                                               </th>
-                                              <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 phi Value
                                               </th>
                                             </tr>
                                           </thead>
-                                          <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                                          <tbody className="divide-y divide-gray-100 dark:divide-border">
                                             {geotechData.directShearResults.map((bh, bhIdx) =>
                                               bh.map((d, dIdx) => (
                                                 <tr
                                                   key={`shear-${bhIdx}-${dIdx}`}
-                                                  className="hover:bg-gray-50/30 transition-colors"
+                                                  className="hover:bg-gray-50/50 dark:hover:bg-muted/30 transition-colors"
                                                 >
-                                                  <td className="p-3 font-bold text-gray-400">
+                                                  <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">
                                                     BH-{bhIdx + 1}
                                                   </td>
-                                                  <td className="p-3 text-gray-600">
+                                                  <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
                                                     {d.shearBoxSize || '-'}
                                                   </td>
-                                                  <td className="p-3 text-gray-600">
+                                                  <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
                                                     {d.depthOfSample || '-'}
                                                   </td>
-                                                  <td className="p-3 text-gray-900 font-bold">
+                                                  <td className="p-2.5 font-mono font-bold text-gray-800 dark:text-foreground">
                                                     {d.cValue || '-'}
                                                   </td>
-                                                  <td className="p-3 text-gray-900 font-bold">
+                                                  <td className="p-2.5 font-mono font-bold text-gray-800 dark:text-foreground">
                                                     {d.phiValue || '-'}
                                                   </td>
                                                 </tr>

@@ -1568,56 +1568,40 @@ const JobsManager = ({ id }) => {
                       </p>
                     </div>
                   ) : auditLogs.length > 0 ? (
-                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
-                      <table className="w-full text-left text-[11px]">
-                        <thead className="bg-gray-50 border-b">
+                    <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                           <tr>
-                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                              Date & Time
-                            </th>
-                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                              User
-                            </th>
-                            {/* <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">Action</th> */}
-                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                              Transition
-                            </th>
-                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                              Remarks
-                            </th>
+                            <th className="p-2.5 font-bold">Date & Time</th>
+                            <th className="p-2.5 font-bold">User</th>
+                            <th className="p-2.5 font-bold">Transition</th>
+                            <th className="p-2.5 font-bold">Remarks</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                        <tbody className="divide-y divide-gray-100 dark:divide-border">
                           {auditLogs.map((log) => (
-                            <tr key={log.id} className="hover:bg-gray-50/30 transition-colors">
-                              <td className="p-3 font-medium text-gray-600 whitespace-nowrap">
+                            <tr key={log.id} className="hover:bg-gray-50/50 dark:hover:bg-muted/30 transition-colors">
+                              <td className="p-2.5 font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">
                                 {new Date(log.created_at).toLocaleString('en-IN', {
                                   dateStyle: 'medium',
                                   timeStyle: 'short',
                                 })}
                               </td>
-                              <td className="p-3">
-                                <div className="font-bold text-gray-900">
-                                  {log.users?.full_name || log.users?.username || '-'}
-                                </div>
+                              <td className="p-2.5 text-gray-800 dark:text-foreground">
+                                {log.users?.full_name || log.users?.username || '-'}
                               </td>
-                              {/* <td className="p-3">
-                                                                <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] font-bold uppercase">
-                                                                    {ACTIONS[log.action_id]?.label || log.action_id}
-                                                                </Badge>
-                                                            </td> */}
-                              <td className="p-3">
-                                <div className="flex items-center gap-2 text-[10px]">
-                                  <span className="text-gray-600">
+                              <td className="p-2.5">
+                                <div className="flex items-center gap-2 text-sm">
+                                  <span className="text-gray-600 dark:text-muted-foreground">
                                     {getStatusLabel(log.from_state)}
                                   </span>
-                                  <ArrowRight className="w-3 h-3 text-blue-600" />
+                                  <ArrowRight className="w-3.5 h-3.5 text-blue-600" />
                                   <span className="font-bold text-primary">
                                     {getStatusLabel(log.to_state)}
                                   </span>
                                 </div>
                               </td>
-                              <td className="p-3 text-gray-500 italic">{log.remarks || '-'}</td>
+                              <td className="p-2.5 text-gray-600 dark:text-muted-foreground italic">{log.remarks || '-'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1650,14 +1634,14 @@ const JobsManager = ({ id }) => {
                 if (visibleDocs.length === 0) return null;
                 return (
                   <div className="p-4 bg-white rounded-sm border border-gray-100 shadow-sm">
-                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-gray-500 dark:text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                       <FileText className="w-4 h-4" /> Job Documents
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {visibleDocs.map((doc) => (
                         <div
                           key={doc.id}
-                          className="p-3 bg-gray-50/50 rounded-xl border border-gray-100 flex items-center justify-between group hover:bg-gray-50 hover:border-primary/30 transition-all cursor-pointer"
+                          className="p-3 bg-gray-50/50 dark:bg-muted/30 rounded-xl border border-gray-100 dark:border-border flex items-center justify-between group hover:bg-gray-50 dark:hover:bg-muted/50 hover:border-primary/30 transition-all cursor-pointer"
                           onClick={() => {
                             if (doc.document_type === 'Report' && doc.content) {
                               setReportPreviewData(doc.content);
@@ -1667,17 +1651,17 @@ const JobsManager = ({ id }) => {
                             }
                           }}
                         >
-                          <div className="space-y-0.5">
-                            <div className="text-[9px] font-bold text-primary uppercase tracking-wider">
+                          <div className="space-y-1">
+                            <div className="text-xs font-bold text-primary uppercase tracking-wider">
                               {doc.document_type}
                             </div>
-                            <div className="font-mono text-xs font-bold text-gray-700">
+                            <div className="font-mono text-sm font-bold text-gray-800 dark:text-foreground">
                               {doc.document_type === 'Quotation'
                                 ? (doc.version && doc.version > 1 ? `${doc.quote_number}/R${doc.version - 1}` : doc.quote_number)
                                 : doc.quote_number}
                             </div>
                           </div>
-                          <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-primary" />
+                          <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-primary" />
                         </div>
                       ))}
                     </div>
@@ -1696,16 +1680,16 @@ const JobsManager = ({ id }) => {
             )}
           >
             <div className="space-y-6">
-              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">
+              <h3 className="text-sm font-bold text-gray-500 dark:text-muted-foreground uppercase tracking-wider">
                 Client Details
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="space-y-2 md:col-span-2">
-                  <Label className="text-xs text-gray-700 font-semibold">Client</Label>
+                  <Label className="text-sm font-bold text-gray-700 dark:text-gray-200">Client</Label>
                   {canModify ? (
                     <ReactSelect
-                      className="mt-1 text-xs"
+                      className="mt-1 text-sm font-normal"
                       classNamePrefix="react-select"
                       options={clients.map((c) => ({ value: c.id, label: c.client_name || c.clientName || '' }))}
                       value={(() => {
@@ -1747,26 +1731,26 @@ const JobsManager = ({ id }) => {
                       styles={themedReactSelectStyles({
                         minHeight: '40px',
                         borderRadius: '0.75rem',
-                        fontSize: '0.75rem',
+                        fontSize: '0.875rem',
                       })}
                     />
                   ) : (
-                    <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">
+                    <p className="text-sm font-normal h-10 flex items-center px-4 bg-gray-50/50 dark:bg-muted/20 border border-gray-100 dark:border-border rounded-xl text-gray-800 dark:text-foreground">
                       {editingRecord.clients?.client_name || editingRecord.client_name || ''}
                     </p>
                   )}
                 </div>
                 {!isAddingNew && editingRecord.work_order_id && (
                   <div className="space-y-2">
-                    <Label className="text-xs text-gray-700 font-semibold">Work Order ID</Label>
+                    <Label className="text-sm font-bold text-gray-700 dark:text-gray-200">Work Order ID</Label>
                     {!canModify && (
-                      <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">
+                      <p className="text-sm font-normal h-10 flex items-center px-4 bg-gray-50/50 dark:bg-muted/20 border border-gray-100 dark:border-border rounded-xl text-gray-800 dark:text-foreground">
                         {editingRecord.work_order_id || ''}
                       </p>
                     )}
                     {canModify && (
                       <Input
-                        className="text-xs h-10 border-gray-200 rounded-xl bg-white"
+                        className="text-sm font-normal h-10 border-gray-200 dark:border-border rounded-xl bg-white dark:bg-card text-gray-800 dark:text-foreground"
                         value={editingRecord.work_order_id || ''}
                         onChange={(e) =>
                           setEditingRecord({ ...editingRecord, work_order_id: e.target.value })
@@ -1777,15 +1761,15 @@ const JobsManager = ({ id }) => {
                   </div>
                 )}
                 <div className="space-y-2 md:col-span-2 lg:col-span-3">
-                  <Label className="text-xs text-gray-700 font-semibold">Project Name</Label>
+                  <Label className="text-sm font-bold text-gray-700 dark:text-gray-200">Project Name</Label>
                   {!canModify && (
-                    <p className="text-xs min-h-20 flex items-start px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600 whitespace-pre-wrap">
+                    <p className="text-sm font-normal min-h-20 flex items-start px-4 py-3 bg-gray-50/50 dark:bg-muted/20 border border-gray-100 dark:border-border rounded-xl text-gray-800 dark:text-foreground whitespace-pre-wrap">
                       {editingRecord.project_name || ''}
                     </p>
                   )}
                   {canModify && (
                     <Textarea
-                      className="text-xs min-h-24 border-gray-200 rounded-xl bg-white"
+                      className="text-sm font-normal min-h-24 border-gray-200 dark:border-border rounded-xl bg-white dark:bg-card text-gray-800 dark:text-foreground"
                       value={editingRecord.project_name || ''}
                       onChange={(e) =>
                         setEditingRecord({ ...editingRecord, project_name: e.target.value })
@@ -1795,15 +1779,15 @@ const JobsManager = ({ id }) => {
                   )}
                 </div>
                 <div className="space-y-2 md:col-span-2 lg:col-span-3">
-                  <Label className="text-xs text-gray-700 font-semibold">Project Address</Label>
+                  <Label className="text-sm font-bold text-gray-700 dark:text-gray-200">Project Address</Label>
                   {!canModify && (
-                    <p className="text-xs h-10 flex items-center px-4 bg-gray-50/50 border border-gray-100 rounded-xl text-gray-600">
+                    <p className="text-sm font-normal h-10 flex items-center px-4 bg-gray-50/50 dark:bg-muted/20 border border-gray-100 dark:border-border rounded-xl text-gray-800 dark:text-foreground">
                       {editingRecord.project_address || ''}
                     </p>
                   )}
                   {canModify && (
                     <Input
-                      className="text-xs h-10 border-gray-200 rounded-xl bg-white"
+                      className="text-sm font-normal h-10 border-gray-200 dark:border-border rounded-xl bg-white dark:bg-card text-gray-800 dark:text-foreground"
                       value={editingRecord.project_address || ''}
                       onChange={(e) =>
                         setEditingRecord({ ...editingRecord, project_address: e.target.value })
@@ -1822,7 +1806,7 @@ const JobsManager = ({ id }) => {
               {linkedDocs.find((d) => d.document_type === 'Quotation') && (
                 <div className="bg-white !mt-2 rounded-2xl shadow-sm bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 ">
+                    <h3 className="text-sm font-bold text-gray-500 dark:text-muted-foreground uppercase tracking-wider flex items-center gap-2 ">
                       <FileText className="w-4 h-4" /> Quotation Summary
                     </h3>
                     {canModify && (
@@ -1835,65 +1819,54 @@ const JobsManager = ({ id }) => {
                             navigate(`/doc/${encodeId(qDoc.id)}`);
                           }
                         }}
-                        className="h-8 text-xs text-primary hover:bg-primary/5"
+                        className="h-8 text-sm font-medium text-primary hover:bg-primary/5"
                       >
-                        <ExternalLink className="w-3 h-3 mr-1" /> View Full Document
+                        <ExternalLink className="w-3.5 h-3.5 mr-1.5" /> View Full Document
                       </Button>
                     )}
                   </div>
-                  <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
-                    <table className="w-full text-left text-[11px]">
-                      <thead className="bg-gray-50 border-b">
+                  <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                         <tr>
-                          <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                            Description
-                          </th>
-                          <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-center">
-                            Qty
-                          </th>
-                          <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-center">
-                            Unit
-                          </th>
-                          <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">
-                            Unit Price
-                          </th>
-                          <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">
-                            Total
-                          </th>
+                          <th className="p-2.5 font-bold">Description</th>
+                          <th className="p-2.5 font-bold text-center">Qty</th>
+                          <th className="p-2.5 font-bold text-center">Unit</th>
+                          <th className="p-2.5 font-bold text-right">Unit Price</th>
+                          <th className="p-2.5 font-bold text-right">Total</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                      <tbody className="divide-y divide-gray-100 dark:divide-border">
                         {(
                           linkedDocs.find((d) => d.document_type === 'Quotation')?.content?.items ||
                           []
                         ).map((item, idx) => (
-                          <tr key={idx} className="hover:bg-gray-50/30 transition-colors">
-                            <td className="p-3 text-gray-700 font-medium whitespace-pre-wrap">
+                          <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30 transition-colors">
+                            <td className="p-2.5 font-normal text-gray-800 dark:text-foreground whitespace-pre-wrap">
                               {item.description}
                             </td>
-                            <td className="p-3 text-center text-gray-500">{item.qty}</td>
-                            <td className="p-3 text-center text-gray-500">{item.unit}</td>
-                            <td className="p-3 text-right text-gray-500 tabular-nums">
+                            <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{item.qty}</td>
+                            <td className="p-2.5 text-center text-gray-600 dark:text-muted-foreground">{item.unit}</td>
+                            <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground tabular-nums">
                               ₹{Number(item.price || 0).toLocaleString('en-IN')}
                             </td>
-                            <td className="p-3 text-right font-bold text-gray-900 tabular-nums">
+                            <td className="p-2.5 text-right font-mono font-bold text-gray-900 dark:text-foreground tabular-nums">
                               ₹{Number(item.total || 0).toLocaleString('en-IN')}
                             </td>
                           </tr>
                         ))}
-                        <tr className="bg-gray-50/50">
+                        <tr className="bg-gray-50/50 dark:bg-muted/20">
                           <td
                             colSpan="4"
-                            className="p-3 text-right font-bold text-gray-400 uppercase tracking-widest"
+                            className="p-2.5 text-right font-bold text-gray-700 dark:text-foreground"
                           >
                             Grand Total (Incl. Tax)
                           </td>
-                          <td className="p-3 text-right font-black text-primary text-sm tabular-nums">
+                          <td className="p-2.5 text-right font-mono font-bold text-gray-900 dark:text-foreground tabular-nums">
                             ₹
                             {Number(
-                              computeGrandTotal(
-                                linkedDocs.find((d) => d.document_type === 'Quotation')
-                              ) || 0
+                              linkedDocs.find((d) => d.document_type === 'Quotation')?.content
+                                ?.grand_total || 0
                             ).toLocaleString('en-IN')}
                           </td>
                         </tr>
@@ -1908,7 +1881,7 @@ const JobsManager = ({ id }) => {
                 Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.MATERIAL_RECEIVED) && (
                 <div className="bg-white !mt-2 rounded-2xl shadow-sm bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-gray-500 dark:text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                       <Package className="w-4 h-4" /> Material Inward Details
                     </h3>
                     {canModify && (
@@ -1916,9 +1889,9 @@ const JobsManager = ({ id }) => {
                         variant="outline"
                         size="sm"
                         onClick={() => setShowingMaterialForm(true)}
-                        className="h-8 text-xs"
+                        className="h-8 text-sm font-medium"
                       >
-                        <Edit className="w-3 h-3 mr-1" /> Edit Entries
+                        <Edit className="w-3.5 h-3.5 mr-1.5" /> Edit Entries
                       </Button>
                     )}
                   </div>
@@ -1933,50 +1906,36 @@ const JobsManager = ({ id }) => {
                       <p>No material samples needed or registered for this job.</p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
-                      <table className="w-full text-left text-[11px]">
-                        <thead className="bg-gray-50 border-b">
+                    <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                           <tr>
-                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                              Code
-                            </th>
-                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                              Material Type
-                            </th>
-                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                              Description
-                            </th>
-                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-center">
-                              Qty
-                            </th>
-                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">
-                              Date
-                            </th>
-                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">
-                              Collected By
-                            </th>
-                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px] text-right">
-                              Collected At
-                            </th>
+                            <th className="p-2.5 font-bold">Code</th>
+                            <th className="p-2.5 font-bold">Material Type</th>
+                            <th className="p-2.5 font-bold">Description</th>
+                            <th className="p-2.5 font-bold text-center">Qty</th>
+                            <th className="p-2.5 font-bold text-right">Date</th>
+                            <th className="p-2.5 font-bold text-right">Collected By</th>
+                            <th className="p-2.5 font-bold text-right">Collected At</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                        <tbody className="divide-y divide-gray-100 dark:divide-border">
                           {jobSamples.map((s, i) => (
-                            <tr key={i} className="hover:bg-gray-50/30 transition-colors">
-                              <td className="p-3 font-bold text-gray-900">{s.sample_code}</td>
-                              <td className="p-3 text-gray-500">
+                            <tr key={i} className="hover:bg-gray-50/50 dark:hover:bg-muted/30 transition-colors">
+                              <td className="p-2.5 font-bold text-gray-900 dark:text-foreground">{s.sample_code}</td>
+                              <td className="p-2.5 text-gray-800 dark:text-foreground">
                                 {materials.find((m) => String(m.id) === String(s.material_type))
                                   ?.name ||
                                   s.material_type ||
                                   '-'}
                               </td>
-                              <td className="p-3 text-gray-500">{s.sample_description}</td>
-                              <td className="p-3 text-center text-gray-500">{s.quantity}</td>
-                              <td className="p-3 text-right text-gray-400">{s.received_date}</td>
-                              <td className="p-3 text-right text-gray-400">
+                              <td className="p-2.5 text-gray-600 dark:text-muted-foreground">{s.sample_description || '-'}</td>
+                              <td className="p-2.5 text-center font-mono text-gray-700 dark:text-foreground">{s.quantity}</td>
+                              <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground">{s.received_date || '-'}</td>
+                              <td className="p-2.5 text-right text-gray-600 dark:text-muted-foreground">
                                 {s.users?.full_name || '-'}
                               </td>
-                              <td className="p-3 text-right text-gray-400">
+                              <td className="p-2.5 text-right text-gray-600 dark:text-muted-foreground">
                                 {s.collection_centers?.name || '-'}
                               </td>
                             </tr>
@@ -1993,16 +1952,16 @@ const JobsManager = ({ id }) => {
                 <div className="bg-white !mt-2 rounded-2xl shadow-sm bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
                   {(canModify || user?.role === ROLES.MRO.slug) && (
                     <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-gray-500 dark:text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                         <UserPlus className="w-4 h-4" /> Technician Assignments
                       </h3>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setShowingTechForm(true)}
-                        className="h-8 text-xs"
+                        className="h-8 text-sm font-medium"
                       >
-                        <Edit className="w-3 h-3 mr-1" /> Edit Assignments
+                        <Edit className="w-3.5 h-3.5 mr-1.5" /> Edit Assignments
                       </Button>
                     </div>
                   )}
@@ -2012,42 +1971,38 @@ const JobsManager = ({ id }) => {
                       <p className="text-xs text-gray-500 font-medium">Loading technician assignments...</p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto border rounded-xl shadow-sm bg-white overflow-hidden">
-                      <table className="w-full text-left text-[11px]">
-                        <thead className="bg-gray-50 border-b">
+                    <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                           <tr>
-                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                              Assigned Technician
-                            </th>
-                            <th className="p-3 font-bold text-gray-500 uppercase tracking-widest text-[9px]">
-                              Assigned Test Parameters / Department
-                            </th>
+                            <th className="p-2.5 font-bold">Assigned Technician</th>
+                            <th className="p-2.5 font-bold">Assigned Test Parameters / Department</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                        <tbody className="divide-y divide-gray-100 dark:divide-border">
                           {techAssignments.map((a, i) => (
-                            <tr key={i} className="hover:bg-gray-50/30 transition-colors">
-                              <td className="p-3 font-bold text-gray-900">
+                            <tr key={i} className="hover:bg-gray-50/50 dark:hover:bg-muted/30 transition-colors">
+                              <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">
                                 {a.full_name || a.username}
                               </td>
-                              <td className="p-3 text-gray-600">
+                              <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
                                 {a.assigned_tests ? (
                                   <div className="flex flex-wrap gap-1">
                                     {a.assigned_tests.split(',').map((t, idx) => (
-                                      <span key={idx} className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold px-2 py-0.5 rounded-md">
+                                      <span key={idx} className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold px-2.5 py-0.5 rounded-md dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
                                         {t.trim()}
                                       </span>
                                     ))}
                                   </div>
                                 ) : (
-                                  <span className="italic text-gray-400">All Department / Job Tests</span>
+                                  <span className="italic text-gray-400 dark:text-muted-foreground">All Department / Job Tests</span>
                                 )}
                               </td>
                             </tr>
                           ))}
                           {techAssignments.length === 0 && (
                             <tr>
-                              <td colSpan={2} className="p-3 text-gray-500 italic">
+                              <td colSpan={2} className="p-2.5 text-gray-500 dark:text-muted-foreground italic">
                                 No technician assigned yet.
                               </td>
                             </tr>
@@ -2063,7 +2018,7 @@ const JobsManager = ({ id }) => {
               {Object.values(WORKFLOW_STATES).indexOf(editingRecord.status) >=
                 Object.values(WORKFLOW_STATES).indexOf(WORKFLOW_STATES.UNDER_TESTING) && (
                 <div className="bg-white !mt-2 rounded-2xl bg-white p-4 rounded-sm border border-gray-100 shadow-sm block">
-                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-gray-500 dark:text-muted-foreground uppercase tracking-wider mb-6 flex items-center gap-2">
                     <Package className="w-4 h-4" /> Testing Data
                   </h3>
                   <TestingManager
@@ -2084,7 +2039,7 @@ const JobsManager = ({ id }) => {
           <div className="flex justify-end gap-3 pt-8 border-t">
             <Button
               variant="outline"
-              className="h-10 p-2 text-xs rounded-lg dark:text-white"
+              className="h-10 px-4 text-sm font-medium rounded-lg dark:text-white"
               onClick={() => {
                 // Close the edit view without saving
                 setEditingRecord(null);
@@ -2095,7 +2050,7 @@ const JobsManager = ({ id }) => {
               Cancel
             </Button>
             <Button
-              className="h-10 p-2 text-xs rounded-lg bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 dark:text-white"
+              className="h-10 px-4 text-sm font-medium rounded-lg bg-primary hover:bg-primary-dark shadow-lg shadow-primary/20 dark:text-white"
               onClick={handleSave}
               disabled={isSaving}
             >
