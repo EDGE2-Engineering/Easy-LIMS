@@ -43,6 +43,7 @@ import { useMaterials } from '@/contexts/MaterialsContext';
 import { useLabTests } from '@/contexts/LabTestsContext';
 import GeotechTestForm from './GeotechTestForm';
 import ConcreteCubeModal from './ConcreteCubeModal';
+import BrickTestModal from './BrickTestModal';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { camelCaseToTitleCase } from '@/lib/utils';
@@ -91,6 +92,7 @@ const TestingManager = ({
           forms: ['borehole', 'lab', 'subsoil', 'directshear'],
           isGeotech: true,
           isCube: false,
+          isBrick: false,
           isRegular: false,
         };
       }
@@ -102,6 +104,19 @@ const TestingManager = ({
           forms: ['cube'],
           isGeotech: false,
           isCube: true,
+          isBrick: false,
+          isRegular: false,
+        };
+      }
+
+      // Hardcoded bypass: Bricks use the Brick test input modal per IS 3495 / IS 1077
+      if (lowerName === 'brick' || lowerName === 'bricks' || lowerName.includes('brick')) {
+        return {
+          material,
+          forms: ['brick'],
+          isGeotech: false,
+          isCube: false,
+          isBrick: true,
           isRegular: false,
         };
       }
@@ -112,6 +127,7 @@ const TestingManager = ({
           forms: ['regular'],
           isGeotech: false,
           isCube: false,
+          isBrick: false,
           isRegular: true,
         };
       }
@@ -122,13 +138,15 @@ const TestingManager = ({
         ['borehole', 'sieve', 'lab', 'subsoil', 'directshear'].includes(f)
       );
       const hasCube = forms.includes('cube');
+      const hasBrick = forms.includes('brick');
       const hasRegular = forms.includes('regular');
       return {
         material,
         forms: forms.length > 0 ? forms : (hasCube ? ['cube'] : ['regular']),
         isGeotech: hasGeotech,
         isCube: hasCube,
-        isRegular: !hasCube && (hasRegular || forms.length === 0),
+        isBrick: hasBrick,
+        isRegular: !hasCube && !hasBrick && (hasRegular || forms.length === 0),
       };
     },
     [materials, materialFormAssociations]
@@ -141,6 +159,7 @@ const TestingManager = ({
   const [techCapabilities, setTechCapabilities] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [cubeModalCategory, setCubeModalCategory] = useState(null);
+  const [brickModalCategory, setBrickModalCategory] = useState(null);
   const [entryMode, setEntryMode] = useState('Drilling'); // 'Manual' or 'Drilling'
   const [rlValuesNote, setRlValuesNote] = useState('R.L. Values are assumed.');
   const { toast } = useToast();
@@ -611,10 +630,10 @@ const TestingManager = ({
               (materialName ? (jobDetails.test_types || {})[materialName] : []) ||
               [];
             const dataTestTypes = Object.keys(testResults[cat] || {}).filter(
-              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData'
+              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData' && k !== 'BrickData'
             );
             const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
-            const { isGeotech, isCube, isRegular, forms } = getMaterialAndForms(cat);
+            const { isGeotech, isCube, isBrick, isRegular, forms } = getMaterialAndForms(cat);
             return (
               <TabsContent key={cat} value={cat} className="space-y-6 outline-none mt-0">
                 {isCube && (
@@ -728,6 +747,123 @@ const TestingManager = ({
                               IS 516: Round up nearest 0.5 value applied
                             </div>
                           </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {isBrick && (
+                  <div className="bg-white dark:bg-card p-6 rounded-none border border-gray-100 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full">
+                    <div>
+                      <div className="flex items-center justify-between mb-0">
+                        <h4 className="text-sm font-bold text-gray-800 dark:text-foreground flex items-center gap-2">
+                          {/* Brick Test Data */}
+                        </h4>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setBrickModalCategory(cat)}
+                              className="h-8 text-xs"
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              {testResults[cat]?.BrickData ? 'Edit Bricks Test Data' : 'Enter Bricks Test Data'}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Open Brick Test Input Modal per IS 3495 / IS 1077</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+
+                      {!testResults[cat]?.BrickData ? (
+                        <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending brick test input</p>
+                      ) : (
+                        <div className="space-y-4 mt-3">
+                          {/* Compressive Strength summary */}
+                          {testResults[cat].BrickData.compressiveStrength?.avgCompressiveStrength && (
+                            <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-red-50/40 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40">
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-red-800 dark:text-red-400">Avg Compressive Strength</span>
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-xl font-black text-red-900 dark:text-red-300 font-mono">
+                                    {testResults[cat].BrickData.compressiveStrength.avgCompressiveStrength}
+                                  </span>
+                                  <span className="text-xs font-bold text-red-800 dark:text-red-400">N/mm²</span>
+                                </div>
+                              </div>
+                              {testResults[cat].BrickData.waterAbsorption?.avgWaterAbsorption && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-blue-800 dark:text-blue-400">Avg Water Absorption</span>
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-xl font-black text-blue-900 dark:text-blue-300 font-mono">
+                                      {testResults[cat].BrickData.waterAbsorption.avgWaterAbsorption}
+                                    </span>
+                                    <span className="text-xs font-bold text-blue-800 dark:text-blue-400">%</span>
+                                  </div>
+                                </div>
+                              )}
+                              {testResults[cat].BrickData.efflorescence?.observations?.length > 0 && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">Efflorescence</span>
+                                  <div className="text-sm font-bold text-gray-800 dark:text-foreground">
+                                    {testResults[cat].BrickData.efflorescence.observations[0]?.rating || 'Nil'}
+                                    {testResults[cat].BrickData.efflorescence.observations.length > 1 && (
+                                      <span className="text-xs font-normal text-gray-500 dark:text-muted-foreground ml-1">
+                                        ({testResults[cat].BrickData.efflorescence.observations.length} specimens)
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              {testResults[cat].BrickData.dimensions?.avgLength && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">Avg Dimensions</span>
+                                  <div className="text-sm font-bold text-gray-800 dark:text-foreground font-mono">
+                                    {testResults[cat].BrickData.dimensions.avgLength} × {testResults[cat].BrickData.dimensions.avgWidth} × {testResults[cat].BrickData.dimensions.avgHeight} mm
+                                  </div>
+                                </div>
+                              )}
+                              <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground self-end ml-auto">
+                                IS 3495 / IS 1077
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Compressive strength observations table */}
+                          {testResults[cat].BrickData.compressiveStrength?.observations?.length > 0 && (
+                            <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                              <table className="w-full text-left text-xs">
+                                <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                  <tr>
+                                    <th className="p-2.5 font-bold text-center w-10">#</th>
+                                    <th className="p-2.5 font-bold">Brick ID</th>
+                                    <th className="p-2.5 font-bold text-center">L (mm)</th>
+                                    <th className="p-2.5 font-bold text-center">W (mm)</th>
+                                    <th className="p-2.5 font-bold text-center">H (mm)</th>
+                                    <th className="p-2.5 font-bold text-center">Area (mm²)</th>
+                                    <th className="p-2.5 font-bold text-right">Load (kN)</th>
+                                    <th className="p-2.5 font-bold text-right bg-red-50 dark:bg-red-950/40 text-red-900 dark:text-red-300">Strength (N/mm²)</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                  {testResults[cat].BrickData.compressiveStrength.observations.map((obs, idx) => (
+                                    <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                      <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground">{obs.slNo || idx + 1}</td>
+                                      <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.brickId || '-'}</td>
+                                      <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.length || '-'}</td>
+                                      <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.width || '-'}</td>
+                                      <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.height || '-'}</td>
+                                      <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.area || '-'}</td>
+                                      <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.failureLoadKn || '-'}</td>
+                                      <td className="p-2.5 text-right font-mono font-bold text-red-900 dark:text-red-300 bg-red-50/40 dark:bg-red-950/30">{obs.strength || '-'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1951,6 +2087,37 @@ const TestingManager = ({
             };
             setTestResults(updatedResults);
             setCubeModalCategory(null);
+            await handleSaveResults(categoryToSave, updatedResults);
+          }}
+        />
+      )}
+
+      {/* Brick Test Input Modal */}
+      {brickModalCategory && (
+        <BrickTestModal
+          isOpen={!!brickModalCategory}
+          onClose={() => setBrickModalCategory(null)}
+          jobCode={jobDetails?.job_code}
+          sampleCode={
+            samples.find(
+              (s) =>
+                String(s.material_type) === String(brickModalCategory) ||
+                materials.find((m) => String(m.id) === String(s.material_type))?.name ===
+                  brickModalCategory
+            )?.sample_code || ''
+          }
+          initialData={testResults[brickModalCategory]?.BrickData || {}}
+          onApply={async (brickData) => {
+            const categoryToSave = brickModalCategory;
+            const updatedResults = {
+              ...testResults,
+              [categoryToSave]: {
+                ...(testResults[categoryToSave] || {}),
+                BrickData: brickData,
+              },
+            };
+            setTestResults(updatedResults);
+            setBrickModalCategory(null);
             await handleSaveResults(categoryToSave, updatedResults);
           }}
         />
