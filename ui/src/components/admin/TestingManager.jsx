@@ -45,6 +45,7 @@ import GeotechTestForm from './GeotechTestForm';
 import ConcreteCubeModal from './ConcreteCubeModal';
 import BrickTestModal from './BrickTestModal';
 import SteelTestModal from './SteelTestModal';
+import FineAggregateTestModal from './FineAggregateTestModal';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { camelCaseToTitleCase } from '@/lib/utils';
@@ -95,6 +96,7 @@ const TestingManager = ({
           isCube: false,
           isBrick: false,
           isSteel: false,
+          isFineAggregate: false,
           isRegular: false,
         };
       }
@@ -108,6 +110,7 @@ const TestingManager = ({
           isCube: true,
           isBrick: false,
           isSteel: false,
+          isFineAggregate: false,
           isRegular: false,
         };
       }
@@ -121,6 +124,7 @@ const TestingManager = ({
           isCube: false,
           isBrick: true,
           isSteel: false,
+          isFineAggregate: false,
           isRegular: false,
         };
       }
@@ -134,6 +138,31 @@ const TestingManager = ({
           isCube: false,
           isBrick: false,
           isSteel: true,
+          isFineAggregate: false,
+          isRegular: false,
+        };
+      }
+
+      // Hardcoded bypass: Fine Aggregate uses the Fine Aggregate test input modal per IS 2386
+      // Matches: "Fine Aggregate", "Aggregate (Fine)", "Fine Agg", "M Sand", "River Sand", "Sand", etc.
+      const hasFineWord = lowerName.includes('fine');
+      const hasAggWord  = lowerName.includes('aggregate') || lowerName.includes('agg');
+      if (
+        (hasFineWord && hasAggWord) ||
+        lowerName === 'fine aggregate' ||
+        lowerName === 'fine agg' ||
+        lowerName === 'm sand' ||
+        lowerName === 'river sand' ||
+        lowerName === 'sand'
+      ) {
+        return {
+          material,
+          forms: ['fineaggregate'],
+          isGeotech: false,
+          isCube: false,
+          isBrick: false,
+          isSteel: false,
+          isFineAggregate: true,
           isRegular: false,
         };
       }
@@ -146,6 +175,7 @@ const TestingManager = ({
           isCube: false,
           isBrick: false,
           isSteel: false,
+          isFineAggregate: false,
           isRegular: true,
         };
       }
@@ -158,6 +188,7 @@ const TestingManager = ({
       const hasCube = forms.includes('cube');
       const hasBrick = forms.includes('brick');
       const hasSteel = forms.includes('steel');
+      const hasFineAggregate = forms.includes('fineaggregate');
       const hasRegular = forms.includes('regular');
       return {
         material,
@@ -166,7 +197,8 @@ const TestingManager = ({
         isCube: hasCube,
         isBrick: hasBrick,
         isSteel: hasSteel,
-        isRegular: !hasCube && !hasBrick && !hasSteel && (hasRegular || forms.length === 0),
+        isFineAggregate: hasFineAggregate,
+        isRegular: !hasCube && !hasBrick && !hasSteel && !hasFineAggregate && (hasRegular || forms.length === 0),
       };
     },
     [materials, materialFormAssociations]
@@ -181,6 +213,7 @@ const TestingManager = ({
   const [cubeModalCategory, setCubeModalCategory] = useState(null);
   const [brickModalCategory, setBrickModalCategory] = useState(null);
   const [steelModalCategory, setSteelModalCategory] = useState(null);
+  const [fineAggModalCategory, setFineAggModalCategory] = useState(null);
   const [entryMode, setEntryMode] = useState('Drilling'); // 'Manual' or 'Drilling'
   const [rlValuesNote, setRlValuesNote] = useState('R.L. Values are assumed.');
   const { toast } = useToast();
@@ -651,10 +684,10 @@ const TestingManager = ({
               (materialName ? (jobDetails.test_types || {})[materialName] : []) ||
               [];
             const dataTestTypes = Object.keys(testResults[cat] || {}).filter(
-              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData' && k !== 'BrickData' && k !== 'SteelData'
+              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData' && k !== 'BrickData' && k !== 'SteelData' && k !== 'FineAggData'
             );
             const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
-            const { isGeotech, isCube, isBrick, isSteel, isRegular, forms } = getMaterialAndForms(cat);
+            const { isGeotech, isCube, isBrick, isSteel, isFineAggregate, isRegular, forms } = getMaterialAndForms(cat);
             return (
               <TabsContent key={cat} value={cat} className="space-y-6 outline-none mt-0">
                 {isCube && (
@@ -996,6 +1029,136 @@ const TestingManager = ({
                                           {obs.rebendTest || 'NCO'}
                                         </Badge>
                                       </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {isFineAggregate && (
+                  <div className="bg-white dark:bg-card p-6 rounded-none border border-gray-100 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full">
+                    <div>
+                      <div className="flex items-center justify-between mb-0">
+                        <h4 className="text-sm font-bold text-gray-800 dark:text-foreground flex items-center gap-2">
+                          {/* Fine Aggregate Test Data */}
+                        </h4>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setFineAggModalCategory(cat)}
+                              className="h-8 text-xs"
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              {testResults[cat]?.FineAggData ? 'Edit Fine Aggregate Test Data' : 'Enter Fine Aggregate Test Data'}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Open Fine Aggregate Test Input Modal per IS 2386</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+
+                      {!testResults[cat]?.FineAggData ? (
+                        <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending fine aggregate test input</p>
+                      ) : (
+                        <div className="space-y-4 mt-3">
+                          {/* Summary row */}
+                          <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-teal-50/40 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-700/40">
+                            {testResults[cat].FineAggData.sieveAnalysis?.finenessModulus && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-teal-800 dark:text-teal-400">Fineness Modulus</span>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-xl font-black text-teal-900 dark:text-teal-300 font-mono">
+                                    {testResults[cat].FineAggData.sieveAnalysis.finenessModulus}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            {testResults[cat].FineAggData.finer75?.finerPct && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-teal-800 dark:text-teal-400">Finer than 75 µm</span>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-xl font-black text-teal-900 dark:text-teal-300 font-mono">
+                                    {testResults[cat].FineAggData.finer75.finerPct}
+                                  </span>
+                                  <span className="text-xs font-bold text-teal-700 dark:text-teal-400">%</span>
+                                </div>
+                              </div>
+                            )}
+                            {testResults[cat].FineAggData.sgWa?.avgSgSsd && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-teal-800 dark:text-teal-400">Avg SSD SG</span>
+                                <div className="text-xl font-black text-teal-900 dark:text-teal-300 font-mono">
+                                  {testResults[cat].FineAggData.sgWa.avgSgSsd}
+                                </div>
+                              </div>
+                            )}
+                            {testResults[cat].FineAggData.sgWa?.avgWa && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-blue-800 dark:text-blue-400">Avg Water Absorption</span>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-xl font-black text-blue-900 dark:text-blue-300 font-mono">
+                                    {testResults[cat].FineAggData.sgWa.avgWa}
+                                  </span>
+                                  <span className="text-xs font-bold text-blue-700 dark:text-blue-400">%</span>
+                                </div>
+                              </div>
+                            )}
+                            {testResults[cat].FineAggData.bulkDensity?.avgCompactedBulkDensity && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-orange-800 dark:text-orange-400">Compacted BD</span>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-xl font-black text-orange-900 dark:text-orange-300 font-mono">
+                                    {testResults[cat].FineAggData.bulkDensity.avgCompactedBulkDensity}
+                                  </span>
+                                  <span className="text-xs font-bold text-orange-700 dark:text-orange-400">kg/L</span>
+                                </div>
+                              </div>
+                            )}
+                            {testResults[cat].FineAggData.bulkDensity?.avgLooseBulkDensity && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-yellow-800 dark:text-yellow-400">Loose BD</span>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-xl font-black text-yellow-900 dark:text-yellow-300 font-mono">
+                                    {testResults[cat].FineAggData.bulkDensity.avgLooseBulkDensity}
+                                  </span>
+                                  <span className="text-xs font-bold text-yellow-700 dark:text-yellow-400">kg/L</span>
+                                </div>
+                              </div>
+                            )}
+                            <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground self-end ml-auto">
+                              IS 2386 (Part 1 &amp; 3): 1963 RA 2021
+                            </div>
+                          </div>
+
+                          {/* Sieve analysis table */}
+                          {testResults[cat].FineAggData.sieveAnalysis?.rows?.length > 0 && (
+                            <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
+                              <table className="w-full text-left text-xs">
+                                <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                  <tr>
+                                    <th className="p-2.5 font-bold min-w-[100px]">IS Sieve</th>
+                                    <th className="p-2.5 font-bold text-right">Wt Retained (g)</th>
+                                    <th className="p-2.5 font-bold text-right">Cum. Retained (g)</th>
+                                    <th className="p-2.5 font-bold text-right bg-teal-50 dark:bg-teal-950/30 text-teal-900 dark:text-teal-300">Cum % Retained</th>
+                                    <th className="p-2.5 font-bold text-right bg-teal-100/60 dark:bg-teal-900/30 text-teal-900 dark:text-teal-200">% Passing</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                  {testResults[cat].FineAggData.sieveAnalysis.rows.map((row, idx) => (
+                                    <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                      <td className="p-2.5 font-semibold text-gray-700 dark:text-foreground">{row.sieve}</td>
+                                      <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground">{row.weightRetained}</td>
+                                      <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground">{row.cumulativeRetained}</td>
+                                      <td className="p-2.5 text-right font-mono text-teal-800 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-950/20">{row.cumulativePctRetained}</td>
+                                      <td className="p-2.5 text-right font-mono font-bold text-teal-900 dark:text-teal-200 bg-teal-100/40 dark:bg-teal-900/20">{row.pctPassing}</td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -2287,6 +2450,37 @@ const TestingManager = ({
             };
             setTestResults(updatedResults);
             setSteelModalCategory(null);
+            await handleSaveResults(categoryToSave, updatedResults);
+          }}
+        />
+      )}
+
+      {/* Fine Aggregate Test Input Modal */}
+      {fineAggModalCategory && (
+        <FineAggregateTestModal
+          isOpen={!!fineAggModalCategory}
+          onClose={() => setFineAggModalCategory(null)}
+          jobCode={jobDetails?.job_code}
+          sampleCode={
+            samples.find(
+              (s) =>
+                String(s.material_type) === String(fineAggModalCategory) ||
+                materials.find((m) => String(m.id) === String(s.material_type))?.name ===
+                  fineAggModalCategory
+            )?.sample_code || ''
+          }
+          initialData={testResults[fineAggModalCategory]?.FineAggData || {}}
+          onApply={async (fineAggData) => {
+            const categoryToSave = fineAggModalCategory;
+            const updatedResults = {
+              ...testResults,
+              [categoryToSave]: {
+                ...(testResults[categoryToSave] || {}),
+                FineAggData: fineAggData,
+              },
+            };
+            setTestResults(updatedResults);
+            setFineAggModalCategory(null);
             await handleSaveResults(categoryToSave, updatedResults);
           }}
         />
