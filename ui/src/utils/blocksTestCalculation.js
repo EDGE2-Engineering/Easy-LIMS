@@ -286,3 +286,18 @@ export function calculateBlockDensity(observations = []) {
 
   return { rows, avgDensity, avgDensityFmt };
 }
+
+// ─── Solid/Hollow Blocks Aliases (for explicit naming convention) ──────────────
+
+export const SOLID_HOLLOW_BLOCK_GRADES = BLOCK_GRADES;
+export const DEFAULT_SOLID_HOLLOW_COMP_OBS = DEFAULT_COMP_OBS;
+export const DEFAULT_SOLID_HOLLOW_WA_OBS = DEFAULT_WA_OBS;
+export const DEFAULT_SOLID_HOLLOW_DENSITY_OBS = DEFAULT_DENSITY_OBS;
+export const DEFAULT_SOLID_HOLLOW_COMP_OBSERVATIONS = DEFAULT_COMP_OBSERVATIONS;
+export const DEFAULT_SOLID_HOLLOW_WA_OBSERVATIONS = DEFAULT_WA_OBSERVATIONS;
+export const DEFAULT_SOLID_HOLLOW_DENSITY_OBSERVATIONS = DEFAULT_DENSITY_OBSERVATIONS;
+export const SAMPLE_SOLID_HOLLOW_BLOCKS_TEST_DATA = SAMPLE_BLOCKS_TEST_DATA;
+
+export const calculateSolidHollowBlocksCompressiveStrength = calculateBlocksCompressiveStrength;
+export const calculateSolidHollowBlocksWaterAbsorption = calculateBlocksWaterAbsorption;
+export const calculateSolidHollowBlockDensity = calculateBlockDensity;
