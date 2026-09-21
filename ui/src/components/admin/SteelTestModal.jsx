@@ -150,7 +150,7 @@ export default function SteelTestModal({
   // ─── Render ──────────────────────────────────────────────────────────────
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[98vw] w-[1400px] max-h-[94vh] flex flex-col p-0 gap-0 overflow-hidden bg-white dark:bg-card border-gray-200 dark:border-border shadow-2xl rounded-2xl">
+      <DialogContent className="max-w-8xl max-h-[94vh] flex flex-col p-0 gap-0 overflow-hidden bg-white dark:bg-card border-gray-200 dark:border-border shadow-2xl rounded-2xl">
 
         {/* ── Header ───────────────────────────────────────────────────── */}
         <DialogHeader className="p-4 sm:p-5 border-b dark:border-border bg-gradient-to-r from-slate-50/80 via-zinc-50/40 to-transparent dark:from-slate-950/40 dark:via-zinc-950/20 dark:to-transparent shrink-0">
