@@ -338,6 +338,172 @@ class PostgresToDynamoMigrator:
         logger.info(f"Done '{table_name}': {rows_count} row(s) migrated" + (f", {chunks_count} blob chunks created." if chunks_count else "."))
         return rows_count, chunks_count
 
+    def migrate_jobs_with_embedded_docs(self) -> Tuple[int, Dict[str, int]]:
+        """
+        Consolidates jobs, job_workflow_logs, material_inward_register,
+        job_to_technicians, and job_tests into a single document per job.
+        Returns (jobs_count, sub_entity_counts).
+        """
+        logger.info("==========================================================")
+        logger.info("Consolidating Jobs & Sub-Entities into Single Job Documents")
+        logger.info("==========================================================")
+
+        # 1. Fetch job_workflow_logs
+        job_logs: Dict[str, List[Any]] = {}
+        max_log_id = 0
+        total_logs = 0
+        with self.pg_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute('SELECT * FROM "job_workflow_logs" ORDER BY id ASC;')
+            for r in cur:
+                d = dict(r)
+                total_logs += 1
+                jid = str(d.get("job_id"))
+                if d.get("id") and isinstance(d.get("id"), int) and d.get("id") > max_log_id:
+                    max_log_id = d.get("id")
+                job_logs.setdefault(jid, []).append(to_dynamo_attribute(d))
+        logger.info(f"  [Embedded] Loaded {total_logs} workflow logs across {len(job_logs)} jobs.")
+
+        # 2. Fetch job_to_technicians
+        job_techs: Dict[str, List[Any]] = {}
+        total_techs = 0
+        with self.pg_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute('SELECT * FROM "job_to_technicians";')
+            for r in cur:
+                d = dict(r)
+                total_techs += 1
+                jid = str(d.get("job_id"))
+                job_techs.setdefault(jid, []).append(to_dynamo_attribute(d))
+        logger.info(f"  [Embedded] Loaded {total_techs} technician assignments across {len(job_techs)} jobs.")
+
+        # 3. Fetch job_tests
+        job_tests: Dict[str, List[Any]] = {}
+        max_test_id = 0
+        total_tests = 0
+        with self.pg_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute('SELECT * FROM "job_tests" ORDER BY id ASC;')
+            for r in cur:
+                d = dict(r)
+                total_tests += 1
+                jid = str(d.get("job_id"))
+                if d.get("id") and isinstance(d.get("id"), int) and d.get("id") > max_test_id:
+                    max_test_id = d.get("id")
+                job_tests.setdefault(jid, []).append(to_dynamo_attribute(d))
+        logger.info(f"  [Embedded] Loaded {total_tests} job tests across {len(job_tests)} jobs.")
+
+        # 4. Fetch material_inward_register
+        job_materials: Dict[str, List[Any]] = {}
+        standalone_materials: List[Dict[str, Any]] = []
+        max_material_id = 0
+        total_materials = 0
+        with self.pg_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute('SELECT * FROM "material_inward_register" ORDER BY id ASC;')
+            for r in cur:
+                d = dict(r)
+                total_materials += 1
+                jid = d.get("job_id")
+                if d.get("id") and isinstance(d.get("id"), int) and d.get("id") > max_material_id:
+                    max_material_id = d.get("id")
+                if jid:
+                    job_materials.setdefault(str(jid), []).append(to_dynamo_attribute(d))
+                else:
+                    standalone_materials.append(d)
+        logger.info(f"  [Embedded] Loaded {total_materials} material records ({len(job_materials)} jobs with materials, {len(standalone_materials)} standalone).")
+
+        # 5. Fetch jobs and construct consolidated documents
+        jobs_count = 0
+        max_job_id = 0
+
+        with self.pg_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute('SELECT * FROM "jobs" ORDER BY id ASC;')
+
+            if self.dry_run:
+                for r in cur:
+                    jobs_count += 1
+                logger.info(f"[Dry-Run] Consolidated {jobs_count} job documents with nested logs, materials, technicians, and tests.")
+            else:
+                with self.table.batch_writer() as batch:
+                    for r in cur:
+                        jobs_count += 1
+                        job_dict = dict(r)
+                        jid_str = str(job_dict.get("id"))
+                        if job_dict.get("id") and isinstance(job_dict.get("id"), int) and job_dict.get("id") > max_job_id:
+                            max_job_id = job_dict.get("id")
+
+                        # Consolidate embedded sub-entities
+                        mats = job_materials.get(jid_str, [])
+                        logs = job_logs.get(jid_str, [])
+                        techs = job_techs.get(jid_str, [])
+                        tests = job_tests.get(jid_str, [])
+
+                        job_dict["materials"] = mats
+                        job_dict["material_inward_register"] = mats
+                        job_dict["materials_received"] = mats
+
+                        job_dict["logs"] = logs
+                        job_dict["workflow_logs"] = logs
+                        job_dict["job_workflow_logs"] = logs
+
+                        job_dict["technicians"] = techs
+                        job_dict["job_to_technicians"] = techs
+                        job_dict["technician_assignments"] = techs
+
+                        job_dict["tests"] = tests
+                        job_dict["job_tests"] = tests
+
+                        # Convert to DynamoDB item
+                        dynamo_item = {k: to_dynamo_attribute(v) for k, v in job_dict.items() if v is not None}
+                        dynamo_item["PK"] = f"JOB#{jid_str}"
+                        dynamo_item["SK"] = "META"
+                        dynamo_item["_type"] = "jobs"
+                        dynamo_item["GSI1PK"] = "ENTITY#jobs"
+                        dynamo_item["GSI1SK"] = str(dynamo_item.get("created_at") or dynamo_item.get("updated_at") or dynamo_item["PK"])
+
+                        batch.put_item(Item=dynamo_item)
+
+                # Write standalone materials
+                if standalone_materials:
+                    with self.table.batch_writer() as batch:
+                        for sm in standalone_materials:
+                            d_item = {k: to_dynamo_attribute(v) for k, v in sm.items() if v is not None}
+                            sm_id = str(sm.get("id"))
+                            d_item["PK"] = f"MATERIAL_INWARD_REGISTER#{sm_id}"
+                            d_item["SK"] = "META"
+                            d_item["_type"] = "material_inward_register"
+                            d_item["GSI1PK"] = "ENTITY#material_inward_register"
+                            d_item["GSI1SK"] = str(d_item.get("created_at") or d_item["PK"])
+                            batch.put_item(Item=d_item)
+
+                # Update atomic counters
+                for counter_name, max_val in [
+                    ("jobs", max_job_id),
+                    ("job_workflow_logs", max_log_id),
+                    ("job_tests", max_test_id),
+                    ("material_inward_register", max_material_id),
+                ]:
+                    if max_val > 0:
+                        try:
+                            self.table.update_item(
+                                Key={"PK": "COUNTER", "SK": counter_name},
+                                UpdateExpression="SET #v = :m",
+                                ExpressionAttributeNames={"#v": "current_value"},
+                                ExpressionAttributeValues={":m": max_val},
+                            )
+                            logger.info(f"  [Counter] Initialized '{counter_name}' counter to {max_val}")
+                        except Exception as e:
+                            logger.warning(f"  [Counter] Could not set counter for '{counter_name}': {e}")
+
+        logger.info(f"✓ Consolidated {jobs_count} jobs with {total_logs} logs, {total_materials} materials, {total_techs} technicians, {total_tests} tests.")
+        counts = {
+            "jobs (consolidated)": jobs_count,
+            "job_workflow_logs (embedded)": total_logs,
+            "job_to_technicians (embedded)": total_techs,
+            "job_tests (embedded)": total_tests,
+            "material_inward_register (embedded)": total_materials - len(standalone_materials),
+        }
+        if standalone_materials:
+            counts["material_inward_register (standalone)"] = len(standalone_materials)
+        return jobs_count, counts
+
     def run_all(self, filter_tables: Optional[List[str]] = None):
         """Runs the complete migration process across all discovered tables."""
         start_time = time.time()
@@ -358,7 +524,30 @@ class PostgresToDynamoMigrator:
         total_chunks = 0
         table_summaries = {}
 
+        # Consolidated job tables set
+        JOB_CONSOLIDATED_TABLES = {
+            "jobs",
+            "job_workflow_logs",
+            "job_to_technicians",
+            "job_tests",
+            "material_inward_register",
+        }
+
+        should_migrate_jobs = (
+            filter_tables is None
+            or any(t.lower() in JOB_CONSOLIDATED_TABLES for t in filter_tables)
+        )
+
+        if should_migrate_jobs:
+            jobs_count, sub_counts = self.migrate_jobs_with_embedded_docs()
+            total_rows += jobs_count
+            for k, cnt in sub_counts.items():
+                table_summaries[k] = cnt
+
         for table in tables:
+            # Skip tables that were already consolidated into the single job document
+            if table.lower() in JOB_CONSOLIDATED_TABLES:
+                continue
             pk_cols = pks.get(table, ["id" if "id" in pks.get(table, []) else "id"])
             rows, chunks = self.migrate_table(table, pk_cols)
             total_rows += rows
@@ -371,7 +560,7 @@ class PostgresToDynamoMigrator:
         logger.info("==========================================================")
         for t, r in table_summaries.items():
             if r > 0:
-                logger.info(f"  - {t:<35}: {r:>6} rows")
+                logger.info(f"  - {t:<40}: {r:>6} rows")
         logger.info(f"Total Rows Migrated: {total_rows}")
         if total_chunks > 0:
             logger.info(f"Total Blob Chunks: {total_chunks}")

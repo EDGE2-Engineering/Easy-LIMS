@@ -143,6 +143,27 @@ class DynamoDBService:
         if "updated_at" not in item_copy or not item_copy["updated_at"]:
             item_copy["updated_at"] = now_iso
 
+        # Consolidate embedded keys if saving a job document
+        if table_key == "jobs":
+            mats = item_copy.get("materials") or item_copy.get("material_inward_register") or []
+            item_copy["materials"] = mats
+            item_copy["material_inward_register"] = mats
+            item_copy["materials_received"] = mats
+
+            logs = item_copy.get("logs") or item_copy.get("job_workflow_logs") or item_copy.get("workflow_logs") or []
+            item_copy["logs"] = logs
+            item_copy["workflow_logs"] = logs
+            item_copy["job_workflow_logs"] = logs
+
+            techs = item_copy.get("technicians") or item_copy.get("job_to_technicians") or []
+            item_copy["technicians"] = techs
+            item_copy["job_to_technicians"] = techs
+            item_copy["technician_assignments"] = techs
+
+            tests = item_copy.get("tests") or item_copy.get("job_tests") or []
+            item_copy["tests"] = tests
+            item_copy["job_tests"] = tests
+
         dynamo_item = {k: to_dynamo_val(v) for k, v in item_copy.items() if v is not None}
         dynamo_item["PK"] = pk
         dynamo_item["SK"] = sk
@@ -162,7 +183,27 @@ class DynamoDBService:
             item = res.get("Item")
             if not item or item.get("_deleted"):
                 return None
-            return sanitize_dynamo_row(item)
+            sanitized = sanitize_dynamo_row(item)
+            if table_key == "jobs":
+                mats = sanitized.get("materials") or sanitized.get("material_inward_register") or []
+                sanitized["materials"] = mats
+                sanitized["material_inward_register"] = mats
+                sanitized["materials_received"] = mats
+
+                logs = sanitized.get("logs") or sanitized.get("job_workflow_logs") or sanitized.get("workflow_logs") or []
+                sanitized["logs"] = logs
+                sanitized["workflow_logs"] = logs
+                sanitized["job_workflow_logs"] = logs
+
+                techs = sanitized.get("technicians") or sanitized.get("job_to_technicians") or []
+                sanitized["technicians"] = techs
+                sanitized["job_to_technicians"] = techs
+                sanitized["technician_assignments"] = techs
+
+                tests = sanitized.get("tests") or sanitized.get("job_tests") or []
+                sanitized["tests"] = tests
+                sanitized["job_tests"] = tests
+            return sanitized
         except Exception as e:
             logger.error(f"Error getting entity {pk}: {e}")
             return None
@@ -611,6 +652,28 @@ class DynamoDBService:
             res = re.sub(rf"\${idx}::[a-zA-Z_0-9]+(\[\])?", token, res)
         return res
 
+    def _extract_job_id_from_where(self, where_clause: str, params: List[Any]) -> Optional[Any]:
+        """Extracts job_id value if present in WHERE conditions."""
+        if not where_clause:
+            return None
+        m = re.search(r"(?:[a-zA-Z_0-9]+\.)?job_id\s*=\s*\$([0-9]+)", where_clause, re.IGNORECASE)
+        if m:
+            idx = int(m.group(1)) - 1
+            if idx < len(params):
+                val = params[idx]
+                if isinstance(val, (list, tuple)) and len(val) == 1:
+                    return val[0]
+                return val
+        m2 = re.search(r"(?:[a-zA-Z_0-9]+\.)?job_id\s*=\s*([0-9]+)", where_clause, re.IGNORECASE)
+        if m2:
+            return int(m2.group(1))
+        m3 = re.search(r"(?:[a-zA-Z_0-9]+\.)?job_id\s*=\s*ANY\s*\(\s*\$([0-9]+)", where_clause, re.IGNORECASE)
+        if m3:
+            idx = int(m3.group(1)) - 1
+            if idx < len(params):
+                return params[idx]
+        return None
+
     def _handle_select(self, query: str, params: List[Any]) -> List[Dict[str, Any]]:
         # Check for COUNT(*)
         is_count = bool(re.search(r"SELECT\s+COUNT\s*\(\s*\*?\s*\)", query, re.IGNORECASE))
@@ -674,18 +737,57 @@ class DynamoDBService:
             else:
                 offset_val = int(o_tok)
 
-        # Quick path for direct single ID lookup: WHERE id = $1
-        id_eq_match = re.match(r"^id\s*=\s*\$([0-9]+)$", where_clause.strip(), re.IGNORECASE)
-        if id_eq_match:
-            p_idx = int(id_eq_match.group(1)) - 1
-            if p_idx < len(params):
-                item = self.get_entity(table_name, params[p_idx])
-                if is_count:
-                    return [{"count": 1 if item else 0}]
-                return [item] if item else []
+        # Embedded sub-entities of jobs (one document per job architecture)
+        if table_name in ("job_workflow_logs", "job_to_technicians", "job_tests", "material_inward_register"):
+            extracted_job_id = self._extract_job_id_from_where(where_clause, params)
+            if extracted_job_id is not None:
+                if isinstance(extracted_job_id, (list, tuple, set)):
+                    target_jids = [str(x) for x in extracted_job_id]
+                    all_jobs, _ = self.list_entities("jobs")
+                    matched_jobs = [j for j in all_jobs if str(j.get("id")) in target_jids]
+                else:
+                    target_job = self.get_entity("jobs", extracted_job_id)
+                    matched_jobs = [target_job] if target_job else []
 
-        # Scan all items for table
-        items, _ = self.list_entities(table_name)
+                items = []
+                for j in matched_jobs:
+                    if table_name == "job_workflow_logs":
+                        items.extend(list(j.get("logs") or j.get("job_workflow_logs") or []))
+                    elif table_name == "job_to_technicians":
+                        items.extend(list(j.get("technicians") or j.get("job_to_technicians") or []))
+                    elif table_name == "job_tests":
+                        items.extend(list(j.get("tests") or j.get("job_tests") or []))
+                    elif table_name == "material_inward_register":
+                        items.extend(list(j.get("materials") or j.get("material_inward_register") or []))
+            else:
+                # No job_id filter in WHERE; collect from all jobs
+                all_jobs, _ = self.list_entities("jobs")
+                items = []
+                for j in all_jobs:
+                    if table_name == "job_workflow_logs":
+                        items.extend(list(j.get("logs") or j.get("job_workflow_logs") or []))
+                    elif table_name == "job_to_technicians":
+                        items.extend(list(j.get("technicians") or j.get("job_to_technicians") or []))
+                    elif table_name == "job_tests":
+                        items.extend(list(j.get("tests") or j.get("job_tests") or []))
+                    elif table_name == "material_inward_register":
+                        items.extend(list(j.get("materials") or j.get("material_inward_register") or []))
+                if table_name == "material_inward_register":
+                    standalone, _ = self.list_entities("material_inward_register")
+                    items.extend([s for s in standalone if not s.get("job_id")])
+        else:
+            # Quick path for direct single ID lookup: WHERE id = $1
+            id_eq_match = re.match(r"^id\s*=\s*\$([0-9]+)$", where_clause.strip(), re.IGNORECASE)
+            if id_eq_match:
+                p_idx = int(id_eq_match.group(1)) - 1
+                if p_idx < len(params):
+                    item = self.get_entity(table_name, params[p_idx])
+                    if is_count:
+                        return [{"count": 1 if item else 0}]
+                    return [item] if item else []
+
+            # Scan all items for table
+            items, _ = self.list_entities(table_name)
 
         # Filter items
         if where_clause:
@@ -822,6 +924,48 @@ class DynamoDBService:
             )
             return [res]
 
+        # Embedded sub-entities of jobs (one document per job architecture)
+        if table_name in ("job_workflow_logs", "job_to_technicians", "job_tests", "material_inward_register"):
+            job_id = item.get("job_id")
+            if job_id is not None:
+                job = self.get_entity("jobs", job_id)
+                if job:
+                    if not item.get("id"):
+                        item["id"] = self.get_next_id(table_name)
+                    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                    if not item.get("created_at"):
+                        item["created_at"] = now_iso
+                    if not item.get("updated_at"):
+                        item["updated_at"] = now_iso
+
+                    if table_name == "job_workflow_logs":
+                        logs = list(job.get("logs") or [])
+                        logs.append(item)
+                        job["logs"] = logs
+                        job["workflow_logs"] = logs
+                        job["job_workflow_logs"] = logs
+                    elif table_name == "job_to_technicians":
+                        techs = list(job.get("technicians") or [])
+                        if not any(str(t.get("technician_id")) == str(item.get("technician_id")) for t in techs):
+                            techs.append(item)
+                        job["technicians"] = techs
+                        job["job_to_technicians"] = techs
+                        job["technician_assignments"] = techs
+                    elif table_name == "job_tests":
+                        tests = list(job.get("tests") or [])
+                        tests.append(item)
+                        job["tests"] = tests
+                        job["job_tests"] = tests
+                    elif table_name == "material_inward_register":
+                        mats = list(job.get("materials") or [])
+                        mats.append(item)
+                        job["materials"] = mats
+                        job["material_inward_register"] = mats
+                        job["materials_received"] = mats
+
+                    self.put_entity("jobs", job)
+                    return [item]
+
         created = self.put_entity(table_name, item)
         return [created]
 
@@ -864,6 +1008,34 @@ class DynamoDBService:
             else:
                 updates[col] = val_expr.strip("'\"")
 
+        # Embedded sub-entities of jobs
+        if table_name in ("job_tests", "material_inward_register"):
+            all_jobs, _ = self.list_entities("jobs")
+            for j in all_jobs:
+                if table_name == "job_tests":
+                    tests = list(j.get("tests") or [])
+                    for idx, t in enumerate(tests):
+                        if str(t.get("id")) == str(id_val):
+                            t.update(updates)
+                            t["updated_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                            tests[idx] = t
+                            j["tests"] = tests
+                            j["job_tests"] = tests
+                            self.put_entity("jobs", j)
+                            return [t]
+                elif table_name == "material_inward_register":
+                    mats = list(j.get("materials") or [])
+                    for idx, m in enumerate(mats):
+                        if str(m.get("id")) == str(id_val):
+                            m.update(updates)
+                            m["updated_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                            mats[idx] = m
+                            j["materials"] = mats
+                            j["material_inward_register"] = mats
+                            j["materials_received"] = mats
+                            self.put_entity("jobs", j)
+                            return [m]
+
         updated = self.update_entity(table_name, id_val, updates)
         return [updated] if updated else []
 
@@ -885,6 +1057,58 @@ class DynamoDBService:
                 if file_id:
                     self.delete_file_blob(file_id)
                     return [{"id": file_id}]
+
+        # Embedded sub-entities of jobs
+        if table_name in ("job_workflow_logs", "job_to_technicians", "job_tests", "material_inward_register"):
+            extracted_job_id = self._extract_job_id_from_where(where_clause, params)
+            if extracted_job_id is not None:
+                job = self.get_entity("jobs", extracted_job_id)
+                if job:
+                    if table_name == "job_tests":
+                        job["tests"] = []
+                        job["job_tests"] = []
+                    elif table_name == "job_to_technicians":
+                        t_match = re.search(r"technician_id\s*=\s*\$([0-9]+)", where_clause, re.IGNORECASE)
+                        if t_match:
+                            t_idx = int(t_match.group(1)) - 1
+                            t_val = params[t_idx] if t_idx < len(params) else None
+                            techs = [t for t in (job.get("technicians") or []) if str(t.get("technician_id")) != str(t_val)]
+                        else:
+                            techs = []
+                        job["technicians"] = techs
+                        job["job_to_technicians"] = techs
+                        job["technician_assignments"] = techs
+                    elif table_name == "material_inward_register":
+                        job["materials"] = []
+                        job["material_inward_register"] = []
+                        job["materials_received"] = []
+                    self.put_entity("jobs", job)
+                    return []
+            else:
+                id_match = re.search(r"id\s*=\s*\$([0-9]+)", where_clause, re.IGNORECASE)
+                if id_match:
+                    idx = int(id_match.group(1)) - 1
+                    target_id = params[idx] if idx < len(params) else None
+                    if target_id is not None:
+                        all_jobs, _ = self.list_entities("jobs")
+                        for j in all_jobs:
+                            if table_name == "job_tests":
+                                orig_len = len(j.get("tests") or [])
+                                tests = [t for t in (j.get("tests") or []) if str(t.get("id")) != str(target_id)]
+                                if len(tests) != orig_len:
+                                    j["tests"] = tests
+                                    j["job_tests"] = tests
+                                    self.put_entity("jobs", j)
+                                    return [{"id": target_id}]
+                            elif table_name == "material_inward_register":
+                                orig_len = len(j.get("materials") or [])
+                                mats = [m for m in (j.get("materials") or []) if str(m.get("id")) != str(target_id)]
+                                if len(mats) != orig_len:
+                                    j["materials"] = mats
+                                    j["material_inward_register"] = mats
+                                    j["materials_received"] = mats
+                                    self.put_entity("jobs", j)
+                                    return [{"id": target_id}]
 
         # Single ID match
         id_match = re.search(r"id\s*=\s*\$([0-9]+)", where_clause, re.IGNORECASE)
