@@ -64,6 +64,64 @@ def sanitize_dynamo_row(item: Dict[str, Any]) -> Dict[str, Any]:
     return res
 
 
+def mask_nested_parentheses(s: str) -> str:
+    """Replaces all content inside parentheses at depth > 0 with spaces to safely isolate outer clauses."""
+    res = []
+    depth = 0
+    for ch in s:
+        if ch == "(":
+            depth += 1
+            res.append(" ")
+        elif ch == ")":
+            depth = max(0, depth - 1)
+            res.append(" ")
+        elif depth > 0:
+            res.append(" ")
+        else:
+            res.append(ch)
+    return "".join(res)
+
+
+def split_top_level(s: str, delimiter: str) -> List[str]:
+    """Splits a string by delimiter keyword (e.g. 'AND' or 'OR') only at parenthesis depth 0."""
+    chunks = []
+    depth = 0
+    current = []
+    i = 0
+    d_len = len(delimiter)
+    while i < len(s):
+        ch = s[i]
+        if ch == "(":
+            depth += 1
+            current.append(ch)
+            i += 1
+        elif ch == ")":
+            depth = max(0, depth - 1)
+            current.append(ch)
+            i += 1
+        elif depth == 0 and s[i:].upper().startswith(delimiter.upper()):
+            before_ok = (i == 0 or s[i-1].isspace())
+            after_idx = i + d_len
+            after_ok = (after_idx >= len(s) or s[after_idx].isspace())
+            if before_ok and after_ok:
+                chunk = "".join(current).strip()
+                if chunk:
+                    chunks.append(chunk)
+                current = []
+                i = after_idx
+                continue
+            else:
+                current.append(ch)
+                i += 1
+        else:
+            current.append(ch)
+            i += 1
+    chunk = "".join(current).strip()
+    if chunk:
+        chunks.append(chunk)
+    return chunks
+
+
 class DynamoDBService:
     def __init__(self):
         self.region = os.getenv("AWS_REGION", "us-east-1")
@@ -134,7 +192,7 @@ class DynamoDBService:
             item_copy["id"] = self.get_next_id(table_key)
 
         id_val = item_copy["id"]
-        pk = f"{table_key.upper()}#{id_val}"
+        pk = self._resolve_pk(table_key, id_val)
         sk = "META"
 
         now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -175,12 +233,80 @@ class DynamoDBService:
         self._invalidate_cache(table_key)
         return sanitize_dynamo_row(dynamo_item)
 
+    def _resolve_pk(self, table_name: str, id_val: Union[int, str]) -> str:
+        table_key = table_name.strip().lower()
+        if table_key in ("jobs", "job"):
+            return f"JOB#{id_val}"
+        if table_key in ("files", "file"):
+            return f"FILE#{id_val}"
+        return f"{table_key.upper()}#{id_val}"
+
+    def get_client_map(self) -> Dict[Any, str]:
+        now = time.time()
+        with self._cache_lock:
+            if hasattr(self, "_client_map_cache") and now - getattr(self, "_client_map_time", 0) < 60.0:
+                return dict(self._client_map_cache)
+        clients, _ = self.list_entities("clients")
+        c_map = {c.get("id"): c.get("client_name") for c in clients if c.get("id") and c.get("client_name")}
+        with self._cache_lock:
+            self._client_map_cache = c_map
+            self._client_map_time = now
+        return dict(c_map)
+
+    def get_user_map(self) -> Dict[Any, str]:
+        now = time.time()
+        with self._cache_lock:
+            if hasattr(self, "_user_map_cache") and now - getattr(self, "_user_map_time", 0) < 60.0:
+                return dict(self._user_map_cache)
+        users, _ = self.list_entities("users")
+        u_map = {u.get("id"): (u.get("full_name") or u.get("username")) for u in users if u.get("id")}
+        with self._cache_lock:
+            self._user_map_cache = u_map
+            self._user_map_time = now
+        return dict(u_map)
+
+    def get_quotation_map(self) -> Dict[Any, float]:
+        now = time.time()
+        with self._cache_lock:
+            if hasattr(self, "_quotation_map_cache") and now - getattr(self, "_quotation_map_time", 0) < 60.0:
+                return dict(self._quotation_map_cache)
+        docs, _ = self.list_entities("documents")
+        quotations = [d for d in docs if str(d.get("document_type", "")).lower() == "quotation"]
+        quotations.sort(key=lambda x: str(x.get("created_at") or ""))
+        q_map = {}
+        for q in quotations:
+            jid = q.get("job_id")
+            if not jid:
+                continue
+            c = q.get("content")
+            if isinstance(c, str):
+                try:
+                    c = json.loads(c)
+                except Exception:
+                    c = {}
+            if isinstance(c, dict):
+                items = c.get("items") or []
+                subtotal = sum(float(it.get("total") or 0) for it in items if isinstance(it, dict))
+                discount = float(c.get("discount") or 0)
+                after_discount = subtotal * (1.0 - discount / 100.0)
+                q_map[jid] = round(after_discount * 1.18, 2)
+        with self._cache_lock:
+            self._quotation_map_cache = q_map
+            self._quotation_map_time = now
+        return dict(q_map)
+
     def get_entity(self, table_name: str, id_val: Union[int, str]) -> Optional[Dict[str, Any]]:
         table_key = table_name.strip().lower()
-        pk = f"{table_key.upper()}#{id_val}"
+        pk = self._resolve_pk(table_key, id_val)
         try:
             res = self.table.get_item(Key={"PK": pk, "SK": "META"})
             item = res.get("Item")
+            if not item:
+                # Check alternate plural/singular format
+                alt_pk = f"JOBS#{id_val}" if pk.startswith("JOB#") else (f"JOB#{id_val}" if pk.startswith("JOBS#") else None)
+                if alt_pk:
+                    res2 = self.table.get_item(Key={"PK": alt_pk, "SK": "META"})
+                    item = res2.get("Item")
             if not item or item.get("_deleted"):
                 return None
             sanitized = sanitize_dynamo_row(item)
@@ -218,7 +344,17 @@ class DynamoDBService:
         merged["updated_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
         table_key = table_name.strip().lower()
-        pk = f"{table_key.upper()}#{id_val}"
+        pk = self._resolve_pk(table_key, id_val)
+        if table_key == "jobs":
+            try:
+                res_check = self.table.get_item(Key={"PK": pk, "SK": "META"})
+                if not res_check.get("Item"):
+                    alt_pk = f"JOBS#{id_val}"
+                    if self.table.get_item(Key={"PK": alt_pk, "SK": "META"}).get("Item"):
+                        pk = alt_pk
+            except Exception:
+                pass
+
         dynamo_item = {k: to_dynamo_val(v) for k, v in merged.items() if v is not None}
         dynamo_item["PK"] = pk
         dynamo_item["SK"] = "META"
@@ -232,33 +368,35 @@ class DynamoDBService:
 
     def delete_entity(self, table_name: str, id_val: Union[int, str]) -> bool:
         table_key = table_name.strip().lower()
-        pk = f"{table_key.upper()}#{id_val}"
-        try:
-            self.table.delete_item(Key={"PK": pk, "SK": "META"})
-            self._invalidate_cache(table_key)
-            return True
-        except ClientError as e:
-            code = e.response.get("Error", {}).get("Code", "")
-            if code == "AccessDeniedException":
-                # Fallback to soft delete if IAM user lacks dynamodb:DeleteItem
-                logger.warning(f"dynamodb:DeleteItem denied for {pk}, performing soft-delete fallback")
-                try:
-                    self.table.update_item(
-                        Key={"PK": pk, "SK": "META"},
-                        UpdateExpression="SET #del = :t",
-                        ExpressionAttributeNames={"#del": "_deleted"},
-                        ExpressionAttributeValues={":t": True},
-                    )
-                    self._invalidate_cache(table_key)
-                    return True
-                except Exception as inner_e:
-                    logger.error(f"Failed soft delete fallback: {inner_e}")
-                    return False
-            logger.error(f"Error deleting entity {pk}: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"Error deleting entity {pk}: {e}")
-            return False
+        pk = self._resolve_pk(table_key, id_val)
+        keys_to_delete = [pk]
+        if table_key == "jobs":
+            keys_to_delete.append(f"JOBS#{id_val}")
+        deleted = False
+        for p in keys_to_delete:
+            try:
+                self.table.delete_item(Key={"PK": p, "SK": "META"})
+                deleted = True
+            except ClientError as e:
+                code = e.response.get("Error", {}).get("Code", "")
+                if code == "AccessDeniedException":
+                    logger.warning(f"dynamodb:DeleteItem denied for {p}, performing soft-delete fallback")
+                    try:
+                        self.table.update_item(
+                            Key={"PK": p, "SK": "META"},
+                            UpdateExpression="SET #del = :t",
+                            ExpressionAttributeNames={"#del": "_deleted"},
+                            ExpressionAttributeValues={":t": True},
+                        )
+                        deleted = True
+                    except Exception as inner_e:
+                        logger.error(f"Failed soft delete fallback: {inner_e}")
+                else:
+                    logger.error(f"Error deleting entity {p}: {e}")
+            except Exception as e:
+                logger.error(f"Error deleting entity {p}: {e}")
+        self._invalidate_cache(table_key)
+        return deleted
 
     def list_entities(
         self,
@@ -675,19 +813,21 @@ class DynamoDBService:
         return None
 
     def _handle_select(self, query: str, params: List[Any]) -> List[Dict[str, Any]]:
+        # Mask nested parentheses to spaces so subqueries in SELECT/WHERE do not mask outer clauses
+        mask = mask_nested_parentheses(query)
+
         # Check for COUNT(*)
-        is_count = bool(re.search(r"SELECT\s+COUNT\s*\(\s*\*?\s*\)", query, re.IGNORECASE))
+        is_count = bool(re.search(r"SELECT\s+COUNT", mask, re.IGNORECASE) or re.search(r"SELECT\s+COUNT\s*\(\s*\*?\s*\)", query, re.IGNORECASE))
 
         # Extract table name: FROM <table>
-        from_match = re.search(r"FROM\s+([a-zA-Z_0-9]+)", query, re.IGNORECASE)
+        from_match = re.search(r"\bFROM\s+([a-zA-Z_0-9]+)", mask, re.IGNORECASE)
         if not from_match:
             return []
         table_name = from_match.group(1).lower()
 
         # Handle special file queries
         if table_name == "files":
-            # Check if querying a single file by id
-            id_match = re.search(r"WHERE\s+id\s*=\s*\$1", query, re.IGNORECASE)
+            id_match = re.search(r"WHERE\s+id\s*=\s*\$1", mask, re.IGNORECASE)
             if id_match and params:
                 file_id = str(params[0])
                 if "data" in query.lower():
@@ -701,16 +841,19 @@ class DynamoDBService:
                     meta = self.get_file_meta(file_id)
                     return [meta] if meta else []
 
-        # Extract WHERE clause
+        # Extract WHERE clause from original query using masked positions
         where_clause = ""
-        where_match = re.search(r"WHERE\s+(.*?)(?:ORDER\s+BY|LIMIT|GROUP\s+BY|$)", query, re.IGNORECASE | re.DOTALL)
+        where_match = re.search(r"\bWHERE\b", mask, re.IGNORECASE)
         if where_match:
-            where_clause = where_match.group(1).strip()
+            w_start = where_match.end()
+            next_m = re.search(r"\b(ORDER\s+BY|LIMIT|GROUP\s+BY)\b", mask[w_start:], re.IGNORECASE)
+            w_end = w_start + next_m.start() if next_m else len(query)
+            where_clause = query[w_start:w_end].strip()
 
-        # Extract ORDER BY clause
+        # Extract ORDER BY clause (handles optional table alias prefix e.g. j.created_at)
         order_by_col = None
         order_dir = "ASC"
-        order_match = re.search(r"ORDER\s+BY\s+([a-zA-Z_0-9]+)(?:\s+(ASC|DESC))?", query, re.IGNORECASE)
+        order_match = re.search(r"\bORDER\s+BY\s+(?:[a-zA-Z_0-9]+\.)?([a-zA-Z_0-9]+)(?:\s+(ASC|DESC))?", mask, re.IGNORECASE)
         if order_match:
             order_by_col = order_match.group(1)
             if order_match.group(2):
@@ -719,7 +862,7 @@ class DynamoDBService:
         # Extract LIMIT & OFFSET
         limit_val = None
         offset_val = 0
-        limit_match = re.search(r"LIMIT\s+(\$[0-9]+|\d+)", query, re.IGNORECASE)
+        limit_match = re.search(r"\bLIMIT\s+(\$[0-9]+|\d+)", mask, re.IGNORECASE)
         if limit_match:
             l_tok = limit_match.group(1)
             if l_tok.startswith("$"):
@@ -728,7 +871,7 @@ class DynamoDBService:
             else:
                 limit_val = int(l_tok)
 
-        offset_match = re.search(r"OFFSET\s+(\$[0-9]+|\d+)", query, re.IGNORECASE)
+        offset_match = re.search(r"\bOFFSET\s+(\$[0-9]+|\d+)", mask, re.IGNORECASE)
         if offset_match:
             o_tok = offset_match.group(1)
             if o_tok.startswith("$"):
@@ -776,8 +919,8 @@ class DynamoDBService:
                     standalone, _ = self.list_entities("material_inward_register")
                     items.extend([s for s in standalone if not s.get("job_id")])
         else:
-            # Quick path for direct single ID lookup: WHERE id = $1
-            id_eq_match = re.match(r"^id\s*=\s*\$([0-9]+)$", where_clause.strip(), re.IGNORECASE)
+            # Quick path for direct single ID lookup: WHERE id = $1 or WHERE j.id = $1
+            id_eq_match = re.match(r"^(?:[a-zA-Z_0-9]+\.)?id\s*=\s*\$([0-9]+)$", where_clause.strip(), re.IGNORECASE)
             if id_eq_match:
                 p_idx = int(id_eq_match.group(1)) - 1
                 if p_idx < len(params):
@@ -789,6 +932,21 @@ class DynamoDBService:
             # Scan all items for table
             items, _ = self.list_entities(table_name)
 
+        # Enrich jobs with client_name, user names, and quotation amounts
+        if table_name == "jobs" and not is_count:
+            c_map = self.get_client_map()
+            u_map = self.get_user_map()
+            q_map = self.get_quotation_map()
+            for it in items:
+                if not it.get("client_name") and it.get("client_id") in c_map:
+                    it["client_name"] = c_map[it["client_id"]]
+                if not it.get("created_by_name") and it.get("created_by") in u_map:
+                    it["created_by_name"] = u_map[it["created_by"]]
+                if not it.get("updated_by_name") and it.get("updated_by") in u_map:
+                    it["updated_by_name"] = u_map[it["updated_by"]]
+                if "quotationAmount" not in it or it.get("quotationAmount") is None:
+                    it["quotationAmount"] = q_map.get(it.get("id"))
+
         # Filter items
         if where_clause:
             items = [it for it in items if self._eval_where(it, where_clause, params)]
@@ -796,10 +954,20 @@ class DynamoDBService:
         if is_count:
             return [{"count": len(items)}]
 
-        # Sort
+        # Sort with type-safe comparator
         if order_by_col:
             is_desc = (order_dir == "DESC")
-            items.sort(key=lambda x: (x.get(order_by_col) is not None, x.get(order_by_col)), reverse=is_desc)
+            def _safe_sort_key(it):
+                val = it.get(order_by_col)
+                if val is None:
+                    return (0, "")
+                if isinstance(val, (int, float, Decimal)):
+                    return (1, float(val))
+                return (2, str(val).lower())
+            try:
+                items.sort(key=_safe_sort_key, reverse=is_desc)
+            except Exception as e:
+                logger.warning(f"Sort failed for {order_by_col}: {e}")
 
         # Paginate
         if limit_val is not None:
@@ -807,82 +975,153 @@ class DynamoDBService:
 
         return items
 
+    def _eval_atom(self, item: Dict[str, Any], cond: str, params: List[Any], client_map: Dict[Any, str], user_map: Dict[Any, str]) -> bool:
+        """Evaluates a single atomic condition (no outer AND/OR)."""
+        cond = cond.strip()
+        if not cond:
+            return True
+
+        # 1. NOT (col = ANY($n))
+        not_any_m = re.search(r"NOT\s*\(\s*(?:[a-zA-Z_0-9]+\.)?([a-zA-Z_0-9]+)\s*=\s*ANY\s*\(\s*\$([0-9]+)", cond, re.IGNORECASE)
+        if not_any_m:
+            col = not_any_m.group(1)
+            idx = int(not_any_m.group(2)) - 1
+            allowed = params[idx] if idx < len(params) else []
+            if not isinstance(allowed, (list, tuple, set)):
+                allowed = [allowed]
+            val = item.get(col)
+            return val not in allowed and str(val) not in [str(x) for x in allowed]
+
+        # 2. col = ANY($n)
+        any_m = re.search(r"(?:[a-zA-Z_0-9]+\.)?([a-zA-Z_0-9]+)\s*=\s*ANY\s*\(\s*\$([0-9]+)", cond, re.IGNORECASE)
+        if any_m:
+            col = any_m.group(1)
+            idx = int(any_m.group(2)) - 1
+            allowed = params[idx] if idx < len(params) else []
+            if not isinstance(allowed, (list, tuple, set)):
+                allowed = [allowed]
+            val = item.get(col)
+            return val in allowed or str(val) in [str(x) for x in allowed]
+
+        # 3. col != $n or col <> $n
+        neq_m = re.search(r"(?:[a-zA-Z_0-9]+\.)?([a-zA-Z_0-9]+)\s*(?:!=|<>)\s*\$([0-9]+)", cond, re.IGNORECASE)
+        if neq_m:
+            col = neq_m.group(1)
+            idx = int(neq_m.group(2)) - 1
+            target = params[idx] if idx < len(params) else None
+            val = item.get(col)
+            return str(val) != str(target) and val != target
+
+        # 4. col >= $n
+        gte_m = re.search(r"(?:[a-zA-Z_0-9]+\.)?([a-zA-Z_0-9]+)\s*>=\s*\$([0-9]+)", cond, re.IGNORECASE)
+        if gte_m:
+            col = gte_m.group(1)
+            idx = int(gte_m.group(2)) - 1
+            target = str(params[idx]) if idx < len(params) else ""
+            val = str(item.get(col) or "")
+            return val >= target
+
+        # 5. col <= $n
+        lte_m = re.search(r"(?:[a-zA-Z_0-9]+\.)?([a-zA-Z_0-9]+)\s*<=\s*\$([0-9]+)", cond, re.IGNORECASE)
+        if lte_m:
+            col = lte_m.group(1)
+            idx = int(lte_m.group(2)) - 1
+            target = str(params[idx]) if idx < len(params) else ""
+            val = str(item.get(col) or "")
+            return val <= target
+
+        # 6. col > $n
+        gt_m = re.search(r"(?:[a-zA-Z_0-9]+\.)?([a-zA-Z_0-9]+)\s*>\s*\$([0-9]+)", cond, re.IGNORECASE)
+        if gt_m:
+            col = gt_m.group(1)
+            idx = int(gt_m.group(2)) - 1
+            target = str(params[idx]) if idx < len(params) else ""
+            val = str(item.get(col) or "")
+            return val > target
+
+        # 7. col < $n
+        lt_m = re.search(r"(?:[a-zA-Z_0-9]+\.)?([a-zA-Z_0-9]+)\s*<\s*\$([0-9]+)", cond, re.IGNORECASE)
+        if lt_m:
+            col = lt_m.group(1)
+            idx = int(lt_m.group(2)) - 1
+            target = str(params[idx]) if idx < len(params) else ""
+            val = str(item.get(col) or "")
+            return val < target
+
+        # 8. col ILIKE $n or col LIKE $n
+        ilike_m = re.search(r"(?:[a-zA-Z_0-9]+\.)?([a-zA-Z_0-9]+)(?:::text)?\s+(?:ILIKE|LIKE)\s+\$([0-9]+)", cond, re.IGNORECASE)
+        if ilike_m:
+            col = ilike_m.group(1)
+            idx = int(ilike_m.group(2)) - 1
+            pattern = str(params[idx]).strip("%").lower() if idx < len(params) else ""
+            val = item.get(col)
+            if val is None:
+                if col == "client_name":
+                    val = client_map.get(item.get("client_id"))
+                elif col in ("created_by_name", "full_name"):
+                    val = user_map.get(item.get("created_by") or item.get("user_id"))
+            return pattern in str(val or "").lower()
+
+        # 9. col IS NULL
+        is_null_m = re.search(r"(?:[a-zA-Z_0-9]+\.)?([a-zA-Z_0-9]+)\s+IS\s+NULL", cond, re.IGNORECASE)
+        if is_null_m:
+            col = is_null_m.group(1)
+            return item.get(col) is None
+
+        # 10. col IS NOT NULL
+        is_not_null_m = re.search(r"(?:[a-zA-Z_0-9]+\.)?([a-zA-Z_0-9]+)\s+IS\s+NOT\s+NULL", cond, re.IGNORECASE)
+        if is_not_null_m:
+            col = is_not_null_m.group(1)
+            return item.get(col) is not None
+
+        # 11. col = $n
+        eq_m = re.search(r"(?:[a-zA-Z_0-9]+\.)?([a-zA-Z_0-9]+)\s*=\s*\$([0-9]+)", cond, re.IGNORECASE)
+        if eq_m:
+            col = eq_m.group(1)
+            idx = int(eq_m.group(2)) - 1
+            target = params[idx] if idx < len(params) else None
+            val = item.get(col)
+            return str(val) == str(target) or val == target
+
+        # 12. col = literal (e.g. is_active = true)
+        lit_eq_m = re.search(r"(?:[a-zA-Z_0-9]+\.)?([a-zA-Z_0-9]+)\s*=\s*([a-zA-Z_0-9'\"]+)", cond, re.IGNORECASE)
+        if lit_eq_m:
+            col = lit_eq_m.group(1)
+            lit_val = lit_eq_m.group(2).strip("'\"").lower()
+            val = item.get(col)
+            if lit_val in ("true", "t", "1"):
+                return bool(val)
+            if lit_val in ("false", "f", "0"):
+                return not bool(val)
+            return str(val).lower() == lit_val
+
+        return True
+
     def _eval_where(self, item: Dict[str, Any], where_clause: str, params: List[Any]) -> bool:
-        """Evaluates WHERE conditions for an item."""
-        # Split on AND
-        conditions = re.split(r"\s+AND\s+", where_clause, flags=re.IGNORECASE)
-        for cond in conditions:
-            cond = cond.strip()
-            if not cond:
+        """Evaluates WHERE conditions for an item, correctly handling top-level ANDs and nested ORs."""
+        c_map = self.get_client_map()
+        u_map = self.get_user_map()
+
+        and_chunks = split_top_level(where_clause, "AND")
+        for and_cond in and_chunks:
+            cond_clean = and_cond.strip()
+            if not cond_clean:
                 continue
 
-            # col = ANY($1)
-            any_match = re.search(r"([a-zA-Z_0-9]+)\s*=\s*ANY\s*\(\s*\$([0-9]+)", cond, re.IGNORECASE)
-            if any_match:
-                col = any_match.group(1)
-                idx = int(any_match.group(2)) - 1
-                allowed = params[idx] if idx < len(params) else []
-                if not isinstance(allowed, (list, tuple, set)):
-                    allowed = [allowed]
-                val = item.get(col)
-                if val not in allowed and str(val) not in [str(x) for x in allowed]:
-                    return False
-                continue
-
-            # col ILIKE $1
-            ilike_match = re.search(r"([a-zA-Z_0-9]+)\s+ILIKE\s+\$([0-9]+)", cond, re.IGNORECASE)
-            if ilike_match:
-                col = ilike_match.group(1)
-                idx = int(ilike_match.group(2)) - 1
-                pattern = str(params[idx]).strip("%").lower() if idx < len(params) else ""
-                val_str = str(item.get(col) or "").lower()
-                if pattern not in val_str:
-                    return False
-                continue
-
-            # col = $1
-            eq_match = re.search(r"([a-zA-Z_0-9]+)\s*=\s*\$([0-9]+)", cond, re.IGNORECASE)
-            if eq_match:
-                col = eq_match.group(1)
-                idx = int(eq_match.group(2)) - 1
-                target = params[idx] if idx < len(params) else None
-                val = item.get(col)
-                if str(val) != str(target) and val != target:
-                    return False
-                continue
-
-            # col IS NULL
-            is_null_match = re.search(r"([a-zA-Z_0-9]+)\s+IS\s+NULL", cond, re.IGNORECASE)
-            if is_null_match:
-                col = is_null_match.group(1)
-                if item.get(col) is not None:
-                    return False
-                continue
-
-            # col IS NOT NULL
-            is_not_null_match = re.search(r"([a-zA-Z_0-9]+)\s+IS\s+NOT\s+NULL", cond, re.IGNORECASE)
-            if is_not_null_match:
-                col = is_not_null_match.group(1)
-                if item.get(col) is None:
-                    return False
-                continue
-
-            # col = literal (e.g. is_active = true)
-            lit_eq_match = re.search(r"([a-zA-Z_0-9]+)\s*=\s*([a-zA-Z_0-9'\"]+)", cond, re.IGNORECASE)
-            if lit_eq_match:
-                col = lit_eq_match.group(1)
-                lit_val = lit_eq_match.group(2).strip("'\"").lower()
-                val = item.get(col)
-                if lit_val in ("true", "t", "1"):
-                    if not bool(val):
+            # Check if this AND-chunk is a parenthesized OR group: (A OR B OR C)
+            if cond_clean.startswith("(") and cond_clean.endswith(")"):
+                inner = cond_clean[1:-1].strip()
+                or_chunks = split_top_level(inner, "OR")
+                if len(or_chunks) > 1:
+                    matched = any(self._eval_atom(item, oc, params, c_map, u_map) for oc in or_chunks)
+                    if not matched:
                         return False
-                elif lit_val in ("false", "f", "0"):
-                    if bool(val):
-                        return False
+                    continue
                 else:
-                    if str(val).lower() != lit_val:
-                        return False
-                continue
+                    cond_clean = inner
+
+            if not self._eval_atom(item, cond_clean, params, c_map, u_map):
+                return False
 
         return True
 
