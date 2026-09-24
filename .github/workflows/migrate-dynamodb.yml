@@ -1,0 +1,89 @@
+name: Migrate PostgreSQL to AWS DynamoDB
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (audit only, no writes/deletions)'
+        required: false
+        default: false
+        type: boolean
+      clear_before_migration:
+        description: 'Wipe all items in DynamoDB table before migrating'
+        required: false
+        default: false
+        type: boolean
+      tables:
+        description: 'Comma-separated specific tables to migrate (leave blank for all)'
+        required: false
+        default: ''
+        type: string
+      batch_size:
+        description: 'Batch read size from PostgreSQL'
+        required: false
+        default: '500'
+        type: string
+
+jobs:
+  migrate:
+    name: Run Database Migration
+    runs-on: ubuntu-latest
+
+    env:
+      # PostgreSQL Source Connection (checks standard secret aliases)
+      PG_DATABASE_URL: ${{ secrets.PG_DATABASE_URL || secrets.DATABASE_URL || secrets.POSTGRES_DATABASE_URL }}
+      PG_USER: ${{ secrets.PG_USER || secrets.POSTGRES_USER }}
+      PG_PASSWORD: ${{ secrets.PG_PASSWORD || secrets.POSTGRES_PASSWORD }}
+      PG_HOST: ${{ secrets.PG_HOST || secrets.POSTGRES_HOST }}
+      PG_PORT: ${{ secrets.PG_PORT || secrets.POSTGRES_PORT }}
+      PG_NAME: ${{ secrets.PG_NAME || secrets.POSTGRES_DB }}
+
+      # AWS DynamoDB Target Configuration
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      DYNAMODB_TABLE_NAME: ${{ secrets.DYNAMODB_TABLE_NAME || 'easy-lims' }}
+      DYNAMODB_ENDPOINT_URL: ${{ secrets.DYNAMODB_ENDPOINT_URL }}
+      DYNAMODB_CLEAR_BEFORE_MIGRATION: ${{ inputs.clear_before_migration && 'true' || secrets.DYNAMODB_CLEAR_BEFORE_MIGRATION || 'false' }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'server/requirements.txt'
+
+      - name: Install Migration Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install boto3 psycopg2-binary python-dotenv
+
+      - name: Run Migration Script
+        run: |
+          CMD="python scripts/migrate_pg_to_dynamo.py"
+
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "[INFO] Running in DRY-RUN mode..."
+            CMD="$CMD --dry-run"
+          fi
+
+          if [ "${{ inputs.clear_before_migration }}" = "true" ]; then
+            echo "[WARN] Clearing DynamoDB table prior to migration..."
+            CMD="$CMD --clear-before-migration"
+          fi
+
+          if [ -n "${{ inputs.tables }}" ]; then
+            echo "[INFO] Filtering tables: ${{ inputs.tables }}"
+            CMD="$CMD --tables \"${{ inputs.tables }}\""
+          fi
+
+          if [ -n "${{ inputs.batch_size }}" ]; then
+            CMD="$CMD --batch-size ${{ inputs.batch_size }}"
+          fi
+
+          echo "Executing: $CMD"
+          eval $CMD
