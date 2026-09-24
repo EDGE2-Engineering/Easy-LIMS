@@ -214,9 +214,13 @@ function Invoke-DockerBuild {
 
 function Invoke-DockerRun {
     Invoke-DockerBuild
-    Write-Host "Running Docker container easy-lims:latest on port 8000..." -ForegroundColor Green
-    if (-not (Test-Path server/.env)) { New-Item -ItemType File -Path server/.env -Force }
-    docker run -p 8000:8000 -e DATABASE_URL="$env:DATABASE_URL" --env-file server/.env easy-lims:latest
+    if (-not (Test-Path .env)) { New-Item -ItemType File -Path .env -Force }
+    docker run -p 8000:8000 --env-file .env easy-lims:latest
+}
+
+function Invoke-DbMigrate {
+    Write-Host "Migrating data from PostgreSQL to AWS DynamoDB..." -ForegroundColor Green
+    python scripts/migrate_pg_to_dynamo.py
 }
 
 function Invoke-DbSetup {
@@ -242,6 +246,7 @@ switch ($Target) {
     "test"             { Invoke-Test -EnvFile $EnvFile }
     "test-e2e"         { Invoke-TestE2E -EnvFile $EnvFile }
     "test-ui"          { Invoke-TestUI -EnvFile $EnvFile }
+    "db-migrate"       { Invoke-DbMigrate }
     "db-setup"         { Invoke-DbSetup }
     "db-dump"          { Invoke-DbDump }
     "format"           { Invoke-Format }

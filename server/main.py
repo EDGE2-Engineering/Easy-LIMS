@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import datetime
 import re
@@ -12,10 +13,15 @@ from fastapi import FastAPI, HTTPException, Request, Response, UploadFile, File,
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
-import asyncpg
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from urllib.parse import quote_plus
+
+# Ensure the server directory is in python path
+base_dir = os.path.dirname(__file__)
+if base_dir not in sys.path:
+    sys.path.insert(0, base_dir)
+
+from dynamo_client import get_dynamo_pool, get_dynamo_service
 
 # Load dev.env from root or server directory if present, fallback to .env
 base_dir = os.path.dirname(__file__)
@@ -38,59 +44,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DYNAMODB_TABLE_NAME = os.getenv("DYNAMODB_TABLE_NAME", "easy-lims")
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
-# Enforce environment variable check prior to server startup
-has_database_url = bool(DATABASE_URL)
-has_custom_db_config = bool(
-    (os.getenv("DB_USER") or os.getenv("POSTGRES_USER")) and
-    (os.getenv("DB_HOST") or os.getenv("POSTGRES_HOST")) and
-    (os.getenv("DB_NAME") or os.getenv("POSTGRES_DB"))
-)
+logger.info(f"Using DynamoDB configuration (table: {DYNAMODB_TABLE_NAME}, region: {AWS_REGION}).")
 
-if not (has_database_url or has_custom_db_config):
-    error_msg = (
-        "CRITICAL ERROR: Required database environment variables are not set! Server cannot start.\n"
-        "Please set one of the following environment configurations in your environment or .env file:\n"
-        "  1) DATABASE_URL\n"
-        "  2) DB_USER (or POSTGRES_USER), DB_HOST (or POSTGRES_HOST), and DB_NAME (or POSTGRES_DB)"
-    )
-    logger.error(error_msg)
-    raise RuntimeError(error_msg)
-
-if has_database_url:
-    logger.info("Using DATABASE_URL from environment.")
-else:
-    db_user = os.getenv("DB_USER") or os.getenv("POSTGRES_USER")
-    db_pass = os.getenv("DB_PASSWORD") or os.getenv("POSTGRES_PASSWORD") or ""
-    db_host = os.getenv("DB_HOST") or os.getenv("POSTGRES_HOST")
-    db_port = os.getenv("DB_PORT", "5432")
-    db_name = os.getenv("DB_NAME") or os.getenv("POSTGRES_DB")
-    DATABASE_URL = f"postgresql://{quote_plus(db_user)}:{quote_plus(db_pass)}@{db_host}:{db_port}/{db_name}"
-    logger.info("Using Postgres database configuration from environment.")
 db_pool = None
 
 async def init_db_pool():
     global db_pool
     if db_pool is None or getattr(db_pool, "_closed", False):
-        logger.info("Connecting to database...")
-        ssl_val = "require" if "sslmode=require" in DATABASE_URL else None
-        
-        min_size = int(os.getenv("DB_POOL_MIN_SIZE", "5"))
-        max_size = int(os.getenv("DB_POOL_MAX_SIZE", "20"))
-        
-        db_pool = await asyncpg.create_pool(
-            DATABASE_URL,
-            min_size=min_size,
-            max_size=max_size,
-            max_queries=50000,
-            max_inactive_connection_lifetime=300.0,
-            command_timeout=30.0,
-            statement_cache_size=0,
-            ssl=ssl_val,
-            timeout=15.0
-        )
-        logger.info(f"Database connection pool established (min_size={min_size}, max_size={max_size}).")
+        logger.info("Initializing DynamoDB connection and seed data...")
+        svc = get_dynamo_service()
+        svc.seed_initial_data()
+        db_pool = get_dynamo_pool()
+        logger.info(f"DynamoDB connection established (table: {DYNAMODB_TABLE_NAME}).")
     return db_pool
 
 @app.middleware("http")
@@ -300,15 +268,7 @@ async def fetch_with_coerced_params(conn, query: str, params: list):
     if not params:
         rows = await conn.fetch(query)
     else:
-        stmt = await conn.prepare(query)
-        param_types = stmt.get_parameters()
-        coerced = []
-        for val, ptype in zip(params, param_types):
-            if isinstance(val, list):
-                coerced.append([coerce_value(v, ptype.name) for v in val])
-            else:
-                coerced.append(coerce_value(val, ptype.name))
-        rows = await stmt.fetch(*coerced)
+        rows = await conn.fetch(query, *params)
     return [sanitize_row(r) for r in rows]
 
 
@@ -3968,103 +3928,83 @@ async def upload_file(
 
     data = await file.read()
     file_id = str(uuid.uuid4())
-    query = """
-        INSERT INTO files (id, filename, content_type, file_size, data, created_by, created_at)
-        VALUES ($1::uuid, $2, $3, $4, $5, $6, NOW())
-        RETURNING id, filename, content_type, file_size, created_at, created_by
-    """
-    params = [file_id, file.filename, file.content_type, len(data), data, created_by]
-    async with db_pool.acquire() as conn:
-        try:
-            rows = await conn.fetch(query, *params)
-            row = dict(rows[0])
-            row["id"] = str(row["id"])
-            row["created_at"] = row["created_at"].isoformat() if row["created_at"] else None
-            return row
-        except Exception as e:
-            logger.error(f"Error uploading file: {e}")
-            raise HTTPException(status_code=400, detail=str(e))
+    svc = get_dynamo_service()
+    try:
+        row = svc.put_file_blob(
+            file_id=file_id,
+            filename=file.filename or "file",
+            content_type=file.content_type,
+            data=data,
+            created_by=created_by,
+        )
+        return row
+    except Exception as e:
+        logger.error(f"Error uploading file to DynamoDB: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/api/files/{file_id}", tags=["Files"], summary="Download a file by ID")
 async def download_file(file_id: str):
-    if not db_pool:
-        raise HTTPException(status_code=500, detail="Database not connected")
-
-    query = "SELECT id, filename, content_type, file_size, data, created_at, created_by FROM files WHERE id = $1::uuid"
-    async with db_pool.acquire() as conn:
-        try:
-            rows = await conn.fetch(query, file_id)
-            if not rows:
-                raise HTTPException(status_code=404, detail="File not found")
-            row = dict(rows[0])
-            return Response(
-                content=bytes(row["data"]),
-                media_type=row["content_type"] or "application/octet-stream",
-                headers={
-                    "Content-Disposition": f'attachment; filename="{row["filename"]}"',
-                    "Content-Length": str(row["file_size"] or len(row["data"])),
-                }
-            )
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error downloading file {file_id}: {e}")
-            raise HTTPException(status_code=400, detail=str(e))
+    svc = get_dynamo_service()
+    try:
+        blob_res = svc.get_file_blob(file_id)
+        if not blob_res:
+            raise HTTPException(status_code=404, detail="File not found")
+        meta, data_bytes = blob_res
+        return Response(
+            content=data_bytes,
+            media_type=meta.get("content_type") or "application/octet-stream",
+            headers={
+                "Content-Disposition": f'attachment; filename="{meta.get("filename", "file")}"',
+                "Content-Length": str(meta.get("file_size") or len(data_bytes)),
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error downloading file {file_id}: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/api/files/{file_id}/meta", tags=["Files"], summary="Get file metadata (no binary data)")
 async def get_file_meta(file_id: str):
-    if not db_pool:
-        raise HTTPException(status_code=500, detail="Database not connected")
-
-    query = "SELECT id, filename, content_type, file_size, created_at, created_by FROM files WHERE id = $1::uuid"
-    async with db_pool.acquire() as conn:
-        try:
-            rows = await conn.fetch(query, file_id)
-            if not rows:
-                raise HTTPException(status_code=404, detail="File not found")
-            row = dict(rows[0])
-            row["id"] = str(row["id"])
-            row["created_at"] = row["created_at"].isoformat() if row["created_at"] else None
-            return row
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error fetching file meta {file_id}: {e}")
-            raise HTTPException(status_code=400, detail=str(e))
+    svc = get_dynamo_service()
+    try:
+        meta = svc.get_file_meta(file_id)
+        if not meta:
+            raise HTTPException(status_code=404, detail="File not found")
+        return meta
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching file meta {file_id}: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.delete("/api/files/{file_id}", tags=["Files"], summary="Delete a file")
 async def delete_file(file_id: str):
-    if not db_pool:
-        raise HTTPException(status_code=500, detail="Database not connected")
-
-    query = "DELETE FROM files WHERE id = $1::uuid RETURNING id"
-    async with db_pool.acquire() as conn:
-        try:
-            rows = await conn.fetch(query, file_id)
-            if not rows:
-                raise HTTPException(status_code=404, detail="File not found")
-            return {"message": "File deleted", "id": file_id}
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error deleting file {file_id}: {e}")
-            raise HTTPException(status_code=400, detail=str(e))
+    svc = get_dynamo_service()
+    try:
+        meta = svc.get_file_meta(file_id)
+        if not meta:
+            raise HTTPException(status_code=404, detail="File not found")
+        svc.delete_file_blob(file_id)
+        return {"message": "File deleted", "id": file_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting file {file_id}: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 # Helper: resolve attachment metadata for a list of file UUIDs
 async def _get_attachment_metas(conn, file_ids: List[str]) -> List[dict]:
     if not file_ids:
         return []
-    rows = await conn.fetch(
-        "SELECT id, filename, content_type, file_size, created_at, created_by FROM files WHERE id = ANY($1::uuid[])",
-        file_ids
-    )
+    svc = get_dynamo_service()
     result = []
-    for r in rows:
-        meta = dict(r)
-        meta["id"] = str(meta["id"])
-        meta["created_at"] = meta["created_at"].isoformat() if meta["created_at"] else None
-        meta["url"] = f"/api/files/{meta['id']}"
-        result.append(meta)
+    for fid in file_ids:
+        meta = svc.get_file_meta(str(fid))
+        if meta:
+            meta["id"] = str(meta.get("id"))
+            meta["url"] = f"/api/files/{meta['id']}"
+            result.append(meta)
     return result
 
 # ============================================================================
@@ -4852,6 +4792,35 @@ async def delete_bank_account(account_id: str):
         if not rows:
             raise HTTPException(status_code=404, detail="Bank account not found")
         return {"message": "Bank account deleted", "id": account_id}
+
+class AccountTransferReq(BaseModel):
+    from_account_id: Union[int, str]
+    to_account_id: Union[int, str]
+    amount: float
+    notes: Optional[str] = None
+
+@app.post("/api/bank-accounts/transfer", tags=["Banking"], summary="ACID Transaction: Atomically transfer balance between accounts with audit log")
+async def transfer_bank_account_balance(req: AccountTransferReq, request: Request):
+    svc = get_dynamo_service()
+    current_user = getattr(request.state, "current_user", {})
+    user_id = current_user.get("id") if current_user else None
+    try:
+        res = svc.transfer_balances_with_audit(
+            from_account_id=req.from_account_id,
+            to_account_id=req.to_account_id,
+            amount=req.amount,
+            performed_by=user_id,
+            notes=req.notes
+        )
+        return res
+    except Exception as e:
+        err_str = str(e)
+        if "TransactionCanceledException" in err_str or "ConditionalCheckFailed" in err_str:
+            raise HTTPException(
+                status_code=400,
+                detail="Transaction cancelled and fully rolled back: Source account must exist and have sufficient balance, and destination account must exist."
+            )
+        raise HTTPException(status_code=500, detail=err_str)
 
 @app.get("/api/bank-statements", tags=["Banking"], summary="List bank statement transactions")
 async def list_bank_statements(page: Optional[int] = None, limit: Optional[int] = None, source: Optional[str] = None):

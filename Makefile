@@ -8,7 +8,7 @@ else
     PIP ?= $(if $(wildcard .venv/bin/pip),$(CURDIR)/.venv/bin/pip,pip3)
 endif
 
-.PHONY: help install venv dev preview stop build build-production clean clean-build android android-install format format-check setup-hooks docker-build docker-run init-test test test-e2e test-ui db-setup
+.PHONY: help install venv dev preview stop build build-production clean clean-build android android-install format format-check setup-hooks docker-build docker-run init-test test test-e2e test-ui db-setup db-migrate
 
 # Default target
 help:
@@ -27,6 +27,7 @@ help:
 	@echo "  make test-ui          - Run E2E tests (UI/trace mode) via Python Playwright"
 	@echo "  make docker-build     - Build Docker image (easy-lims:latest)"
 	@echo "  make docker-run       - Build & run Docker container"
+	@echo "  make db-migrate       - Migrate all data from PostgreSQL to AWS DynamoDB"
 	@echo "  make db-setup         - Apply setup.sql to PostgreSQL database"
 	@echo "  make format           - Format source files with Prettier (writes in-place)"
 	@echo "  make format-check     - Check formatting without writing (CI-friendly)"
@@ -93,8 +94,8 @@ docker-build:
 
 docker-run: docker-build
 	@echo "Running Docker container easy-lims:latest on port 8000..."
-	node -e "const fs=require('fs'); if (!fs.existsSync('server/.env')) fs.writeFileSync('server/.env', '');"
-	docker run -p 8000:8000 -e DATABASE_URL="$${DATABASE_URL}" --env-file server/.env easy-lims:latest
+	node -e "const fs=require('fs'); if (!fs.existsSync('.env')) fs.writeFileSync('.env', '');"
+	docker run -p 8000:8000 --env-file .env easy-lims:latest
 
 # Mobile targets
 android-install:
@@ -125,6 +126,11 @@ test-e2e: init-test
 
 test-ui: init-test
 	@$(PYTHON) tests/run_tests.py --ui --env-file $(ENV_FILE)
+
+# Migrate data from PostgreSQL to AWS DynamoDB
+db-migrate:
+	@echo "Migrating data from PostgreSQL to DynamoDB..."
+	@$(PYTHON) scripts/migrate_pg_to_dynamo.py
 
 # Apply database setup SQL schema
 db-setup:
