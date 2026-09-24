@@ -2649,13 +2649,19 @@ async def _enrich_field_tests(conn, rows):
     # Build lookup dicts
     tech_map: Dict[int, list] = {}
     for r in tech_rows:
-        tech_map.setdefault(r["field_test_id"], []).append({"type": r["type"]})
+        t_type = r.get("type")
+        if t_type is not None:
+            tech_map.setdefault(r.get("field_test_id"), []).append({"type": t_type})
     tc_map: Dict[int, list] = {}
     for r in tc_rows:
-        tc_map.setdefault(r["field_test_id"], []).append({"type": r["type"]})
+        t_type = r.get("type")
+        if t_type is not None:
+            tc_map.setdefault(r.get("field_test_id"), []).append({"type": t_type})
     pt_map: Dict[int, list] = {}
     for r in pt_rows:
-        pt_map.setdefault(r["field_test_id"], []).append({"type": r["type"]})
+        t_type = r.get("type")
+        if t_type is not None:
+            pt_map.setdefault(r.get("field_test_id"), []).append({"type": t_type})
 
     enriched = []
     for row in rows:
@@ -2897,13 +2903,19 @@ async def _enrich_lab_tests(conn, rows):
 
     tech_map: Dict[int, list] = {}
     for r in tech_rows:
-        tech_map.setdefault(r["lab_test_id"], []).append({"type": r["type"]})
+        t_type = r.get("type")
+        if t_type is not None:
+            tech_map.setdefault(r.get("lab_test_id"), []).append({"type": t_type})
     tc_map: Dict[int, list] = {}
     for r in tc_rows:
-        tc_map.setdefault(r["lab_test_id"], []).append({"type": r["type"]})
+        t_type = r.get("type")
+        if t_type is not None:
+            tc_map.setdefault(r.get("lab_test_id"), []).append({"type": t_type})
     pt_map: Dict[int, list] = {}
     for r in pt_rows:
-        pt_map.setdefault(r["lab_test_id"], []).append({"type": r["type"]})
+        t_type = r.get("type")
+        if t_type is not None:
+            pt_map.setdefault(r.get("lab_test_id"), []).append({"type": t_type})
 
     enriched = []
     for row in rows:
@@ -3166,16 +3178,24 @@ async def _enrich_sampling(conn, rows):
 
     mat_map: Dict[int, list] = {}
     for r in mat_rows:
-        mat_map.setdefault(r["sampling_id"], []).append({"name": r["name"]})
+        m_name = r.get("name")
+        if m_name is not None:
+            mat_map.setdefault(r.get("sampling_id"), []).append({"name": m_name})
     tech_map: Dict[int, list] = {}
     for r in tech_rows:
-        tech_map.setdefault(r["sampling_id"], []).append({"type": r["type"]})
+        t_type = r.get("type")
+        if t_type is not None:
+            tech_map.setdefault(r.get("sampling_id"), []).append({"type": t_type})
     tc_map: Dict[int, list] = {}
     for r in tc_rows:
-        tc_map.setdefault(r["sampling_id"], []).append({"type": r["type"]})
+        t_type = r.get("type")
+        if t_type is not None:
+            tc_map.setdefault(r.get("sampling_id"), []).append({"type": t_type})
     pt_map: Dict[int, list] = {}
     for r in pt_rows:
-        pt_map.setdefault(r["sampling_id"], []).append({"type": r["type"]})
+        t_type = r.get("type")
+        if t_type is not None:
+            pt_map.setdefault(r.get("sampling_id"), []).append({"type": t_type})
 
     enriched = []
     for row in rows:

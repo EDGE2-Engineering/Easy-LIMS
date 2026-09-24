@@ -819,11 +819,34 @@ class DynamoDBService:
         # Check for COUNT(*)
         is_count = bool(re.search(r"SELECT\s+COUNT", mask, re.IGNORECASE) or re.search(r"SELECT\s+COUNT\s*\(\s*\*?\s*\)", query, re.IGNORECASE))
 
-        # Extract table name: FROM <table>
-        from_match = re.search(r"\bFROM\s+([a-zA-Z_0-9]+)", mask, re.IGNORECASE)
+        # Extract table name and alias: FROM <table> [alias]
+        from_match = re.search(r"\bFROM\s+([a-zA-Z_0-9]+)(?:\s+(?:AS\s+)?([a-zA-Z_0-9]+))?", mask, re.IGNORECASE)
         if not from_match:
             return []
         table_name = from_match.group(1).lower()
+        table_alias = (from_match.group(2) or "").lower()
+        if table_alias in ("where", "join", "left", "inner", "right", "full", "order", "group", "limit", "as", "on"):
+            table_alias = ""
+
+        # Extract all JOIN clauses: [LEFT|INNER|RIGHT|FULL]? JOIN <table> [alias] ON <expr1> = <expr2>
+        join_pattern = re.compile(
+            r"\b(?:(LEFT|INNER|RIGHT|FULL)\s+)?JOIN\s+([a-zA-Z_0-9]+)(?:\s+(?:AS\s+)?([a-zA-Z_0-9]+))?\s+ON\s+([a-zA-Z_0-9\.]+)\s*=\s*([a-zA-Z_0-9\.]+)",
+            re.IGNORECASE
+        )
+        joins = []
+        for jm in join_pattern.finditer(mask):
+            j_type = (jm.group(1) or "INNER").upper()
+            j_tbl = jm.group(2).lower()
+            j_als = (jm.group(3) or "").lower()
+            if j_als in ("on", "where", "join", "left", "inner", "right", "full", "order", "group", "limit", "as"):
+                j_als = ""
+            joins.append({
+                "type": j_type,
+                "table": j_tbl,
+                "alias": j_als,
+                "left_expr": jm.group(4),
+                "right_expr": jm.group(5),
+            })
 
         # Handle special file queries
         if table_name == "files":
@@ -919,18 +942,91 @@ class DynamoDBService:
                     standalone, _ = self.list_entities("material_inward_register")
                     items.extend([s for s in standalone if not s.get("job_id")])
         else:
-            # Quick path for direct single ID lookup: WHERE id = $1 or WHERE j.id = $1
+            # Quick path for direct single ID lookup: WHERE id = $1 or WHERE j.id = $1 (only when no joins)
             id_eq_match = re.match(r"^(?:[a-zA-Z_0-9]+\.)?id\s*=\s*\$([0-9]+)$", where_clause.strip(), re.IGNORECASE)
-            if id_eq_match:
+            if id_eq_match and not joins:
                 p_idx = int(id_eq_match.group(1)) - 1
                 if p_idx < len(params):
                     item = self.get_entity(table_name, params[p_idx])
                     if is_count:
                         return [{"count": 1 if item else 0}]
                     return [item] if item else []
+            elif id_eq_match and joins:
+                p_idx = int(id_eq_match.group(1)) - 1
+                if p_idx < len(params):
+                    item = self.get_entity(table_name, params[p_idx])
+                    items = [item] if item else []
+                else:
+                    items = []
+            else:
+                # Scan all items for table
+                items, _ = self.list_entities(table_name)
 
-            # Scan all items for table
-            items, _ = self.list_entities(table_name)
+        # Execute JOINs if present
+        if joins and items:
+            for j in joins:
+                j_table = j["table"]
+                j_alias = j["alias"]
+                j_type = j["type"]
+                left_e = j["left_expr"]
+                right_e = j["right_expr"]
+
+                l_tbl, l_col = left_e.split(".", 1) if "." in left_e else ("", left_e)
+                r_tbl, r_col = right_e.split(".", 1) if "." in right_e else ("", right_e)
+
+                if l_tbl.lower() in (j_table, j_alias) and l_tbl != "":
+                    joined_col = l_col.lower()
+                    main_col = r_col.lower()
+                elif r_tbl.lower() in (j_table, j_alias) and r_tbl != "":
+                    joined_col = r_col.lower()
+                    main_col = l_col.lower()
+                elif l_col.lower() == "id" or f"{j_table}_id" in r_col.lower():
+                    joined_col = l_col.lower()
+                    main_col = r_col.lower()
+                else:
+                    joined_col = r_col.lower()
+                    main_col = l_col.lower()
+
+                joined_items, _ = self.list_entities(j_table)
+                joined_lookup: Dict[str, List[Dict[str, Any]]] = {}
+                for jit in joined_items:
+                    jv = jit.get(joined_col)
+                    if jv is not None:
+                        joined_lookup.setdefault(str(jv), []).append(jit)
+
+                new_items = []
+                for it in items:
+                    mv = it.get(main_col)
+                    matches = joined_lookup.get(str(mv), []) if mv is not None else []
+                    if matches:
+                        for m in matches:
+                            merged = dict(it)
+                            for k, v in m.items():
+                                if k not in merged or merged[k] is None:
+                                    merged[k] = v
+                            if j_alias:
+                                merged[j_alias] = m
+                            merged[j_table] = m
+                            if j_table == "users" and "full_name" in m:
+                                if "created_by" in it and (main_col == "created_by" or str(it.get("created_by")) == str(m.get("id"))):
+                                    merged.setdefault("created_by_name", m["full_name"])
+                                if "updated_by" in it and (main_col == "updated_by" or str(it.get("updated_by")) == str(m.get("id"))):
+                                    merged.setdefault("updated_by_name", m["full_name"])
+                                if "requester_id" in it and (main_col == "requester_id" or str(it.get("requester_id")) == str(m.get("id"))):
+                                    merged.setdefault("requester_name", m["full_name"])
+                                if "performed_by" in it and (main_col == "performed_by" or str(it.get("performed_by")) == str(m.get("id"))):
+                                    merged.setdefault("performed_by_name", m["full_name"])
+                            if j_table == "clients":
+                                c_name = m.get("client_name") or m.get("company_name")
+                                if c_name:
+                                    merged.setdefault("client_name", c_name)
+                            if j_table == "jobs":
+                                if "job_number" in m:
+                                    merged.setdefault("job_number", m["job_number"])
+                            new_items.append(merged)
+                    elif j_type == "LEFT":
+                        new_items.append(it)
+                items = new_items
 
         # Enrich jobs with client_name, user names, and quotation amounts
         if table_name == "jobs" and not is_count:
