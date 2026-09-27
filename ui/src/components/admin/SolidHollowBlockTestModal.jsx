@@ -332,7 +332,7 @@ export default function SolidHollowBlockTestModal({
                       <thead>
                         <tr className={theadCls}>
                           <th className={`${thCls} text-center w-10`}>#</th>
-                          <th className={`${thCls} min-w-[110px]`}>Block ID</th>
+                          <th className={`${thCls} min-w-[110px]`}>Identification</th>
                           <th className={`${thCls} text-center min-w-[75px]`}>L (mm)</th>
                           <th className={`${thCls} text-center min-w-[75px]`}>B (mm)</th>
                           <th className={`${thCls} text-center min-w-[75px]`}>H (mm)</th>
@@ -470,7 +470,7 @@ export default function SolidHollowBlockTestModal({
                       <thead>
                         <tr className={theadCls}>
                           <th className={`${thCls} text-center w-10`}>#</th>
-                          <th className={`${thCls} min-w-[110px]`}>Block ID</th>
+                          <th className={`${thCls} min-w-[110px]`}>Identification</th>
                           <th className={`${thCls} min-w-[130px]`}>ID Mark / Supplier</th>
                           <th className={`${thCls} text-right min-w-[140px]`}>A — Wet Mass (kg)</th>
                           <th className={`${thCls} text-right min-w-[150px]`}>B — Oven-Dry Mass (kg)</th>
@@ -578,7 +578,7 @@ export default function SolidHollowBlockTestModal({
                       <thead>
                         <tr className={theadCls}>
                           <th className={`${thCls} text-center w-10`}>#</th>
-                          <th className={`${thCls} min-w-[110px]`}>Block ID</th>
+                          <th className={`${thCls} min-w-[110px]`}>Identification</th>
                           <th className={`${thCls} text-center min-w-[75px]`}>L (mm)</th>
                           <th className={`${thCls} text-center min-w-[75px]`}>B (mm)</th>
                           <th className={`${thCls} text-center min-w-[75px]`}>H (mm)</th>

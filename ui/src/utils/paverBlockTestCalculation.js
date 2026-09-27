@@ -41,8 +41,11 @@ export const DEFAULT_PAVER_BLOCK_METADATA = {
 export const DEFAULT_PAVER_COMP_OBSERVATION = {
   sampleId: '',
   length: '270',
+  width: '200',
   breadth: '200',
   thickness: '80',
+  msp: '1.74',
+  mstd: '1.28',
   failureLoadKn: '',
 };
 
@@ -54,6 +57,7 @@ export const DEFAULT_PAVER_COMP_OBSERVATIONS = Array.from({ length: 8 }, (_, i) 
 export const DEFAULT_PAVER_WA_OBSERVATION = {
   sampleId: '',
   length: '270',
+  width: '200',
   breadth: '200',
   thickness: '80',
   wetMassKg: '',
@@ -78,19 +82,48 @@ export const SAMPLE_PAVER_BLOCK_TEST_DATA = {
     periodOfTest: '04-06-2026',
   },
   compressiveObservations: [
-    { sampleId: 'R1', length: '270', breadth: '200', thickness: '80', failureLoadKn: '1950.485' },
-    { sampleId: 'R2', length: '272', breadth: '192', thickness: '80', failureLoadKn: '1975.265' },
-    { sampleId: 'R3', length: '269', breadth: '198', thickness: '80', failureLoadKn: '1980.124' },
-    { sampleId: 'R4', length: '270', breadth: '197', thickness: '80', failureLoadKn: '1985.254' },
-    { sampleId: 'R5', length: '268', breadth: '199', thickness: '80', failureLoadKn: '1979.668' },
-    { sampleId: 'R6', length: '272', breadth: '198', thickness: '80', failureLoadKn: '1935.624' },
-    { sampleId: 'R7', length: '269', breadth: '199', thickness: '80', failureLoadKn: '1945.263' },
-    { sampleId: 'R8', length: '270', breadth: '200', thickness: '80', failureLoadKn: '1973.264' },
+    { sampleId: 'R1', length: '270', width: '200', breadth: '200', thickness: '80', msp: '1.74', mstd: '1.28', failureLoadKn: '1950.485' },
+    { sampleId: 'R2', length: '272', width: '192', breadth: '192', thickness: '80', msp: '1.68', mstd: '1.28', failureLoadKn: '1975.265' },
+    { sampleId: 'R3', length: '269', width: '198', breadth: '198', thickness: '80', msp: '1.72', mstd: '1.28', failureLoadKn: '1980.124' },
+    { sampleId: 'R4', length: '270', width: '197', breadth: '197', thickness: '80', msp: '1.70', mstd: '1.28', failureLoadKn: '1985.254' },
+    { sampleId: 'R5', length: '268', width: '199', breadth: '199', thickness: '80', msp: '1.75', mstd: '1.28', failureLoadKn: '1979.668' },
+    { sampleId: 'R6', length: '272', width: '198', breadth: '198', thickness: '80', msp: '1.71', mstd: '1.28', failureLoadKn: '1935.624' },
+    { sampleId: 'R7', length: '269', width: '199', breadth: '199', thickness: '80', msp: '1.69', mstd: '1.28', failureLoadKn: '1945.263' },
+    { sampleId: 'R8', length: '270', width: '200', breadth: '200', thickness: '80', msp: '1.73', mstd: '1.28', failureLoadKn: '1973.264' },
   ],
   waterAbsorptionObservations: [
-    { sampleId: 'R1', length: '270', breadth: '200', thickness: '80', wetMassKg: '9.660', dryMassKg: '9.261' },
-    { sampleId: 'R2', length: '270', breadth: '200', thickness: '80', wetMassKg: '9.758', dryMassKg: '9.364' },
-    { sampleId: 'R3', length: '270', breadth: '200', thickness: '80', wetMassKg: '9.545', dryMassKg: '9.184' },
+    { sampleId: 'R1', length: '270', width: '200', breadth: '200', thickness: '80', wetMassKg: '9.660', dryMassKg: '9.261' },
+    { sampleId: 'R2', length: '270', width: '200', breadth: '200', thickness: '80', wetMassKg: '9.758', dryMassKg: '9.364' },
+    { sampleId: 'R3', length: '270', width: '200', breadth: '200', thickness: '80', wetMassKg: '9.545', dryMassKg: '9.184' },
+  ],
+};
+
+/**
+ * Sample test data for Chamfered Paver Block strictly following handwritten test sheet (Page 2 of PDF)
+ */
+export const SAMPLE_CHAMFERED_PAVER_BLOCK_TEST_DATA = {
+  metadata: {
+    standard: 'IS 15658 : 2021',
+    shapeOfPaver: 'Type A',
+    blockType: 'chamfered',
+    numberOfSamplesComp: 8,
+    numberOfSamplesWa: 3,
+    periodOfTest: '04-06-2026',
+  },
+  compressiveObservations: [
+    { sampleId: 'R1', msp: '1.74', mstd: '1.28', thickness: '60', failureLoadKn: '123.054' },
+    { sampleId: 'R2', msp: '1.68', mstd: '1.28', thickness: '60', failureLoadKn: '123.456' },
+    { sampleId: 'R3', msp: '1.72', mstd: '1.28', thickness: '60', failureLoadKn: '124.120' },
+    { sampleId: 'R4', msp: '1.70', mstd: '1.28', thickness: '60', failureLoadKn: '122.950' },
+    { sampleId: 'R5', msp: '1.75', mstd: '1.28', thickness: '60', failureLoadKn: '125.040' },
+    { sampleId: 'R6', msp: '1.71', mstd: '1.28', thickness: '60', failureLoadKn: '123.880' },
+    { sampleId: 'R7', msp: '1.69', mstd: '1.28', thickness: '60', failureLoadKn: '122.750' },
+    { sampleId: 'R8', msp: '1.73', mstd: '1.28', thickness: '60', failureLoadKn: '124.500' },
+  ],
+  waterAbsorptionObservations: [
+    { sampleId: 'R1', length: '270', width: '200', breadth: '200', thickness: '80', wetMassKg: '9.660', dryMassKg: '9.261' },
+    { sampleId: 'R2', length: '270', width: '200', breadth: '200', thickness: '80', wetMassKg: '9.758', dryMassKg: '9.364' },
+    { sampleId: 'R3', length: '270', width: '200', breadth: '200', thickness: '80', wetMassKg: '9.545', dryMassKg: '9.184' },
   ],
 };
 
@@ -150,20 +183,35 @@ export function calculatePaverBlockCompressiveStrength(observations = [], metada
   const rowErrors = [];
 
   const blockType = metadata.blockType || 'plain';
+  const isChamfered = String(blockType).toLowerCase().includes('chamfer') || String(blockType).toLowerCase().includes('arris');
 
   observations.forEach((obs, index) => {
     const rowNum = index + 1;
     const l = parseFloat(obs.length);
-    const b = parseFloat(obs.breadth);
+    const w = parseFloat(obs.width !== undefined ? obs.width : obs.breadth);
+    const msp = parseFloat(obs.msp);
+    const mstd = parseFloat(obs.mstd);
     const t = parseFloat(obs.thickness);
     const loadKn = parseFloat(obs.failureLoadKn);
 
-    // 1. Nominal Cross Sectional Area (sq. mm) = Length * Breadth
+    // 1. Cross-Sectional Area (sq. mm):
+    // Plain block: Area = Length * Width
+    // Chamfered block (IS 15658:2021 Clause B-3.3.2 & B-3.3.3 / Method 2): Area = (20,000 * m_sp) / m_std
     let area = null;
     let areaFormatted = '';
-    if (!isNaN(l) && !isNaN(b) && l > 0 && b > 0) {
-      area = Math.round(l * b);
-      areaFormatted = String(area);
+    if (isChamfered) {
+      if (!isNaN(msp) && !isNaN(mstd) && msp > 0 && mstd > 0) {
+        area = Math.round((20000 * msp) / mstd);
+        areaFormatted = String(area);
+      } else if (!isNaN(l) && !isNaN(w) && l > 0 && w > 0) {
+        area = Math.round(l * w);
+        areaFormatted = String(area);
+      }
+    } else {
+      if (!isNaN(l) && !isNaN(w) && l > 0 && w > 0) {
+        area = Math.round(l * w);
+        areaFormatted = String(area);
+      }
     }
 
     // 2. Compressive Strength (N/mm²) = (Load kN / Area mm²) * 1000
@@ -192,6 +240,12 @@ export function calculatePaverBlockCompressiveStrength(observations = [], metada
       ...obs,
       rowNum,
       sampleId: obs.sampleId || `Sample ${rowNum}`,
+      length: obs.length,
+      width: obs.width !== undefined ? obs.width : obs.breadth,
+      breadth: obs.breadth !== undefined ? obs.breadth : obs.width,
+      msp: obs.msp !== undefined ? obs.msp : '',
+      mstd: obs.mstd !== undefined ? obs.mstd : '',
+      thickness: obs.thickness,
       area,
       areaFormatted,
       compStrength,
@@ -259,6 +313,10 @@ export function calculatePaverBlockWaterAbsorption(observations = [], metadata =
       ...obs,
       rowNum,
       sampleId: obs.sampleId || `Sample ${rowNum}`,
+      length: obs.length,
+      width: obs.width !== undefined ? obs.width : obs.breadth,
+      breadth: obs.breadth !== undefined ? obs.breadth : obs.width,
+      thickness: obs.thickness,
       waterAbsorption,
       waterAbsorptionFormatted,
     });

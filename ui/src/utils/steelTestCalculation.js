@@ -3,6 +3,10 @@
  * Standards: IS 1786: 2008 · IS 1608 (Part 1): 2022
  *
  * Column map:
+ *  Sample ID (replaces Bar ID)
+ *  Heat/ Lot No.                    — client reference dropdown (omitted from report if absent)
+ *  Invoice No.                      — client reference dropdown (omitted from report if absent)
+ *  Vehicle No.                      — client reference dropdown (omitted from report if absent)
  *  C1  Nominal Diameter (mm)        — input
  *  C2  Weight (kg)                  — input
  *  C3  Length (m)                   — input
@@ -19,6 +23,7 @@
  *  C14 Rebend Test                  — dropdown: NCO | CO
  *
  * Density factor: 0.00785 kg/(mm²·m)
+ * Note: Avg. yield stress, avg. tensile strength, avg. elongation shall not appear in final report (individual results only).
  */
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -35,7 +40,11 @@ export const NOMINAL_DIAMETERS = ['8', '10', '12', '16', '20', '25', '32'];
 // ─── Default shapes ──────────────────────────────────────────────────────────
 
 export const DEFAULT_STEEL_OBSERVATION = {
-  barId:           '',   // free-text label, e.g. "Sample 1"
+  sampleId:        '',   // "Sample ID" (replaces Bar ID)
+  barId:           '',   // kept in sync for backward compatibility
+  heatNo:          '',   // "Heat/ Lot No."
+  invoiceNo:       '',   // "Invoice No."
+  vehicleNo:       '',   // "Vehicle No."
   nominalDia:      '',   // C1
   weight:          '',   // C2 kg
   length:          '',   // C3 m
@@ -48,43 +57,112 @@ export const DEFAULT_STEEL_OBSERVATION = {
 
 export const DEFAULT_STEEL_OBSERVATIONS = Array.from({ length: 3 }, (_, i) => ({
   ...DEFAULT_STEEL_OBSERVATION,
+  sampleId: `Sample ${i + 1}`,
   barId: `Sample ${i + 1}`,
 }));
 
-// ─── Sample data (8 mm worked example from spec) ────────────────────────────
+// ─── Sample data (from reference report PDF: 8 to 25 mm with Heat & Invoice Nos) ────
 
 export const SAMPLE_STEEL_TEST_DATA = {
+  heatNoOptions: ['72142090'],
+  invoiceNoOptions: ['CREDIT/2780', 'CREDIT/2778'],
+  vehicleNoOptions: [],
+  clientReferenceColumns: {
+    heatNo: true,
+    invoiceNo: true,
+    vehicleNo: false,
+  },
+  includeHeatNoInReport: true,
+  includeInvoiceNoInReport: true,
+  includeVehicleNoInReport: false,
   observations: [
     {
-      barId:           'Sample 1',
+      sampleId:        'EESIPL/01/389(A)',
+      barId:           'EESIPL/01/389(A)',
+      heatNo:          '72142090',
+      invoiceNo:       'CREDIT/2780',
+      vehicleNo:       '',
       nominalDia:      '8',
       weight:          '0.396',
       length:          '1',
-      yieldLoad:       '45.68',
-      ultimateLoad:    '58.26',
-      finalGaugeLength:'48.32',
-      bendTest:        'NCO',
-      rebendTest:      'NCO',
-    },
-    {
-      barId:           'Sample 2',
-      nominalDia:      '8',
-      weight:          '0.397',
-      length:          '1',
-      yieldLoad:       '46.10',
-      ultimateLoad:    '58.90',
-      finalGaugeLength:'48.10',
-      bendTest:        'NCO',
-      rebendTest:      'NCO',
-    },
-    {
-      barId:           'Sample 3',
-      nominalDia:      '8',
-      weight:          '0.395',
-      length:          '1',
-      yieldLoad:       '45.50',
-      ultimateLoad:    '57.95',
+      yieldLoad:       '54.18',
+      ultimateLoad:    '57.81',
       finalGaugeLength:'47.90',
+      bendTest:        'NCO',
+      rebendTest:      'NCO',
+    },
+    {
+      sampleId:        'EESIPL/01/389(B)',
+      barId:           'EESIPL/01/389(B)',
+      heatNo:          '72142090',
+      invoiceNo:       'CREDIT/2778',
+      vehicleNo:       '',
+      nominalDia:      '10',
+      weight:          '0.614',
+      length:          '1',
+      yieldLoad:       '66.57',
+      ultimateLoad:    '72.99',
+      finalGaugeLength:'59.98',
+      bendTest:        'NCO',
+      rebendTest:      'NCO',
+    },
+    {
+      sampleId:        'EESIPL/01/389(C)',
+      barId:           'EESIPL/01/389(C)',
+      heatNo:          '72142090',
+      invoiceNo:       'CREDIT/2780',
+      vehicleNo:       '',
+      nominalDia:      '12',
+      weight:          '0.879',
+      length:          '1',
+      yieldLoad:       '89.69',
+      ultimateLoad:    '101.11',
+      finalGaugeLength:'70.76',
+      bendTest:        'NCO',
+      rebendTest:      'NCO',
+    },
+    {
+      sampleId:        'EESIPL/01/389(D)',
+      barId:           'EESIPL/01/389(D)',
+      heatNo:          '72142090',
+      invoiceNo:       'CREDIT/2778',
+      vehicleNo:       '',
+      nominalDia:      '16',
+      weight:          '1.545',
+      length:          '1',
+      yieldLoad:       '124.19',
+      ultimateLoad:    '142.70',
+      finalGaugeLength:'93.41',
+      bendTest:        'NCO',
+      rebendTest:      'NCO',
+    },
+    {
+      sampleId:        'EESIPL/01/389(E)',
+      barId:           'EESIPL/01/389(E)',
+      heatNo:          '72142090',
+      invoiceNo:       'CREDIT/2780',
+      vehicleNo:       '',
+      nominalDia:      '20',
+      weight:          '2.472',
+      length:          '1',
+      yieldLoad:       '195.55',
+      ultimateLoad:    '228.93',
+      finalGaugeLength:'117.72',
+      bendTest:        'NCO',
+      rebendTest:      'NCO',
+    },
+    {
+      sampleId:        'EESIPL/01/389(F)',
+      barId:           'EESIPL/01/389(F)',
+      heatNo:          '72142090',
+      invoiceNo:       'CREDIT/2778',
+      vehicleNo:       '',
+      nominalDia:      '25',
+      weight:          '3.827',
+      length:          '1',
+      yieldLoad:       '297.40',
+      ultimateLoad:    '351.02',
+      finalGaugeLength:'145.45',
       bendTest:        'NCO',
       rebendTest:      'NCO',
     },
@@ -104,9 +182,10 @@ function fmt(val, dec) {
  * Calculate all derived steel test values for a list of observations.
  *
  * @param {Array} observations
+ * @param {Object} metadata
  * @returns {{ rows: Array, summary: Object }}
  */
-export function calculateSteelTest(observations = []) {
+export function calculateSteelTest(observations = [], metadata = {}) {
   const rows = [];
   const validYieldStresses   = [];
   const validTensileStrengths= [];
@@ -115,6 +194,11 @@ export function calculateSteelTest(observations = []) {
   observations.forEach((obs, i) => {
     const slNo = i + 1;
     const errors = [];
+
+    const sampleId = obs.sampleId || obs.barId || `Sample ${slNo}`;
+    const heatNo   = obs.heatNo !== undefined && obs.heatNo !== null ? String(obs.heatNo).trim() : '';
+    const invoiceNo= obs.invoiceNo !== undefined && obs.invoiceNo !== null ? String(obs.invoiceNo).trim() : '';
+    const vehicleNo= obs.vehicleNo !== undefined && obs.vehicleNo !== null ? String(obs.vehicleNo).trim() : '';
 
     const weight   = parseFloat(obs.weight);    // C2 kg
     const length   = parseFloat(obs.length);    // C3 m
@@ -187,7 +271,11 @@ export function calculateSteelTest(observations = []) {
 
     rows.push({
       slNo,
-      barId:              obs.barId || `Sample ${slNo}`,
+      sampleId,
+      barId:              sampleId, // backward compatibility
+      heatNo,
+      invoiceNo,
+      vehicleNo,
       nominalDia:         obs.nominalDia || '',
       weight:             obs.weight || '',
       length:             obs.length || '',
@@ -214,6 +302,17 @@ export function calculateSteelTest(observations = []) {
   const avgTensileStrength   = avg(validTensileStrengths);
   const avgElongation        = avg(validElongations);
 
+  // Client reference presence
+  const hasHeatNo = rows.some((r) => r.heatNo && r.heatNo.length > 0);
+  const hasInvoiceNo = rows.some((r) => r.invoiceNo && r.invoiceNo.length > 0);
+  const hasVehicleNo = rows.some((r) => r.vehicleNo && r.vehicleNo.length > 0);
+
+  const clientReferenceColumns = {
+    heatNo: metadata?.includeHeatNoInReport ?? (metadata?.clientReferenceColumns?.heatNo ?? hasHeatNo),
+    invoiceNo: metadata?.includeInvoiceNoInReport ?? (metadata?.clientReferenceColumns?.invoiceNo ?? hasInvoiceNo),
+    vehicleNo: metadata?.includeVehicleNoInReport ?? (metadata?.clientReferenceColumns?.vehicleNo ?? hasVehicleNo),
+  };
+
   return {
     rows,
     summary: {
@@ -224,6 +323,18 @@ export function calculateSteelTest(observations = []) {
       avgElongation,
       avgElongationFmt:       fmt(avgElongation,      2),
       count: rows.length,
+      // Requirement 1: Averages shall not appear in final report, only individual results
+      reportExcludeAverages: true,
+      reportExcludeAvgYieldStress: true,
+      reportExcludeAvgTensileStrength: true,
+      reportExcludeAvgElongation: true,
+      includeAveragesInReport: false,
+      reportClauseNote: 'Avg. yield stress, avg. tensile strength, and avg. elongation are for testing data only and shall not appear in the final report; only individual results are required.',
+      // Requirement 3: Client reference presence flags
+      hasHeatNo,
+      hasInvoiceNo,
+      hasVehicleNo,
+      clientReferenceColumns,
     },
   };
 }

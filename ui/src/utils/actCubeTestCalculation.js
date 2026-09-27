@@ -1,3 +1,7 @@
+import { formatDateDDMMYYYY } from './cubeTestCalculation.js';
+
+export { formatDateDDMMYYYY };
+
 /**
  * Utility functions for ACT (Accelerated Curing Test) Cube Compressive Strength Calculation
  * Standards:
@@ -6,22 +10,19 @@
  *
  * Formulas & Guidelines from IS 9013, IS 516 and Document Specification:
  * 1. Cross-sectional Area (C5) = L x B (sq. mm)
- * 2. Age at test (C8) = Date of testing (C7) - Date of casting (C6) (in days)
- * 3. Compressive Strength (C11) = (Failure Load in kN / Area in sq. mm) * 1000 (N/mm²)
- *    Rounded to the nearest 0.5 N/mm² as per IS 516 / handwriting note:
- *    Formula: Math.round(val * 2) / 2
- * 4. Predicted 28-day ACT Compressive Strength (C12) = (C11 * 1.64) + 8.09 (N/mm²)
+ * 2. Age at test (C8) = Date of testing (C7) - Date of casting (C6) (in days, displayed as number under Age (days))
+ * 3. Failure Load in kN (C10)
+ * 4. ACT Compressive Strength (C11) = (Failure Load in kN / Area in sq. mm) * 1000 (N/mm²)
+ *    Rounded to the nearest 0.5 N/mm² as per IS 516: Math.round(val * 2) / 2
+ * 5. Predicted 28-day ACT Compressive Strength (C12) = (C11 * 1.64) + 8.09 (N/mm²)
  *    Per IS 9013 Clause 9 accelerated curing correlation equation: R₂₈ = 1.64 * Rₐ + 8.09
- *    Formatted to 2 decimal places.
- * 5. Average Predicted 28-day ACT Compressive Strength (CR) = Mean of C12 values,
- *    rounded to the nearest 0.5 N/mm² (e.g. 33.78 -> 34.00 N/mm²).
- * 6. Average ACT Compressive Strength = Mean of individual C11 strengths.
- * 7. Type of failure (C13): Satisfactory / Unsatisfactory dropdown.
- * 8. Decimal precision:
- *    - Weight (kg) (C9): 3 decimal places
- *    - Failure Load (kN) (C10): 3 decimal places
- *    - Compressive Strength (N/mm²) (C11): 1-2 decimal places (nearest 0.5)
- *    - Predicted 28-day ACT Strength (N/mm²) (C12): 2 decimal places
+ *    Rounded to the nearest 0.5 N/mm² as per specification.
+ * 6. Average Predicted 28-day ACT Compressive Strength (CR) = Mean of C12 values,
+ *    rounded to the nearest 0.5 N/mm² (e.g. 35.50 N/mm²).
+ * 7. Average ACT Compressive Strength = Mean of individual C11 strengths.
+ * 8. Reporting Requirements:
+ *    - Final report shall display ONLY "Predicted 28 days Compressive Strength".
+ *    - Average weight and average ACT strength are recorded for testing data only and excluded from final report.
  */
 
 export const DEFAULT_ACT_CUBE_METADATA = {
@@ -209,6 +210,7 @@ export function calculateActCubeTest(observations = [], metadata = {}) {
     let roundedStrength = null;
     let strengthFormatted = '';
     let loadFormatted = '';
+    let rawPredicted28Day = null;
     let predicted28DayStrength = null;
     let predicted28DayFormatted = '';
 
@@ -224,9 +226,12 @@ export function calculateActCubeTest(observations = [], metadata = {}) {
         validStrengths.push(roundedStrength);
 
         // 5. Predicted 28-day ACT compressive strength: C12 = (C11 * 1.64) + 8.09
-        // Uses the rounded strength C11 as shown in Page 2 consideration: (16.0 * 1.64) + 8.09 = 34.33
-        predicted28DayStrength = roundedStrength * 1.64 + 8.09;
-        predicted28DayFormatted = predicted28DayStrength.toFixed(2);
+        // Requirement 6: Round off the Predicted 28d Compressive Strength to the nearest 0.5
+        rawPredicted28Day = roundedStrength * 1.64 + 8.09;
+        predicted28DayStrength = roundToNearestHalf(rawPredicted28Day);
+        predicted28DayFormatted = predicted28DayStrength % 1 === 0
+          ? predicted28DayStrength.toFixed(1)
+          : predicted28DayStrength.toFixed(2);
         validPredictedStrengths.push(predicted28DayStrength);
       } else {
         rowErrors.push('Valid dimensions (L, B) required to calculate compressive strength.');
@@ -255,7 +260,9 @@ export function calculateActCubeTest(observations = [], metadata = {}) {
       area,
       areaFormatted,
       dateOfCasting: obs.dateOfCasting || '',
+      dateOfCastingFormatted: formatDateDDMMYYYY(obs.dateOfCasting),
       dateOfTesting: obs.dateOfTesting || '',
+      dateOfTestingFormatted: formatDateDDMMYYYY(obs.dateOfTesting),
       ageDays,
       ageFormatted,
       weightKg: obs.weightKg || '',
@@ -265,6 +272,7 @@ export function calculateActCubeTest(observations = [], metadata = {}) {
       rawStrength,
       roundedStrength,
       strengthFormatted,
+      rawPredicted28Day,
       predicted28DayStrength,
       predicted28DayFormatted,
       density,
@@ -274,7 +282,7 @@ export function calculateActCubeTest(observations = [], metadata = {}) {
     });
   });
 
-  // Average ACT Compressive Strength
+  // Average ACT Compressive Strength (Ra)
   let rawAverageStrength = null;
   let averageStrength = null;
   let averageStrengthFormatted = '';
@@ -287,7 +295,7 @@ export function calculateActCubeTest(observations = [], metadata = {}) {
   }
 
   // Average Predicted 28-day ACT Compressive Strength (CR)
-  // Page 2 note: Average = (34.33 + 32.69 + 34.33) / 3 = 33.78 -> [33.78 is Round up nearest value = 34.00 N/mm²]
+  // Rounded to nearest 0.5
   let rawAveragePredictedStrength = null;
   let averagePredictedStrength = null;
   let averagePredictedStrengthFormatted = '';
@@ -332,6 +340,18 @@ export function calculateActCubeTest(observations = [], metadata = {}) {
     averagePredictedStrengthFormatted,
     averageWeightFormatted,
     averageAgeFormatted,
+    // Requirement 7: Average weight and average ACT strength are testing data only, excluded from final report.
+    // Final report shall display only "Predicted 28 days Compressive Strength".
+    reportedStrength: averagePredictedStrengthFormatted || averageStrengthFormatted,
+    finalReportResult: averagePredictedStrengthFormatted,
+    finalReportResultLabel: 'Predicted 28 days Compressive Strength',
+    finalReportResultUnit: 'N/mm²',
+    reportExcludeAvgWeight: true,
+    reportExcludeAvgActStrength: true,
+    reportExcludeAvgStrength: true,
+    includeAvgWeightInReport: false,
+    includeAvgActStrengthInReport: false,
+    includeAvgStrengthInReport: false,
     generalErrors,
     gradeOfConcrete: metadata.gradeOfConcrete || 'M25',
     standard: metadata.standard || 'IS 9013 (RA 2018), IS 516 (part 1/Sec 1) : 2021',

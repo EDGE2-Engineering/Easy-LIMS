@@ -2,23 +2,25 @@
  * Utility functions for Concrete Core Compressive Strength Calculation
  * Standard: IS 516 (part 4) : 2018 - Sampling, Prepared Specimen and Testing of Concrete (Cores)
  *
- * Formulas & Guidelines from IS 516 (Part 4): 2018 and Document Specification:
+ * Formulas & Guidelines from IS 516 (Part 4): 2018 Clause 8.4.1 and Document Specification:
  * 1. Area of Core = (pi * D^2) / 4 (sq. mm)
  * 2. Cylinder Compressive Strength (C7) = (Failure Load in kN / Area of Core in sq. mm) * 1000 (N/mm²)
  * 3. L/D Ratio (C8) = Length (L) / Dia (D)
  * 4. H/D Ratio Correction Factor (C9) per IS 516 (Part 4) Clause 8.4.2:
  *    - If L/D >= 2.0: Correction Factor = 1.00
  *    - If L/D < 2.0: Correction Factor F = 0.11 * N + 0.78 (where N = L/D ratio)
- * 5. Diameter Correction Factor (Dia Factor) per IS 516 (Part 4) Clause 8.4:
- *    - For 75 ± 5 mm: 1.03
- *    - For < 70 mm: 1.06
- *    - Default template factor as used on Page 3: 1.03
- * 6. Corrected Cylinder Compressive Strength (C10) = Cylinder Strength (C7) * H/D Correction Factor (C9) * Dia Factor (N/mm²)
+ * 5. Diameter Correction Factor (Dia CF) per IS 516 (Part 4): 2018 Clause 8.4.1:
+ *    - For core diameter < 70 mm: 1.06
+ *    - For core diameter 75 ± 5 mm (70 mm to 80 mm): 1.03
+ *    - If core diameter > 100 mm (or >= 100 mm): restricted to 1.00 (reference cores)
+ * 6. Corrected Cylinder Compressive Strength (C10) = Cylinder Strength (C7) * H/D Correction Factor (C9) * Dia CF (N/mm²)
  * 7. Equivalent Cube Compressive Strength (C11) = Corrected Cylinder Strength (C10) * (5 / 4) (N/mm²)
- *    Rounded to the nearest 0.5 N/mm² per IS 516 / handwriting note:
- *    Formula: Math.round(val * 2) / 2
- * 8. Type of Failure (C12): Satisfactory / Unsatisfactory dropdown.
- * 9. Decimal precision:
+ *    Rounded to the nearest 0.5 N/mm² per IS 516: Formula: Math.round(val * 2) / 2
+ * 8. Final Report Result:
+ *    - The Average Equivalent Cube Compressive Strength is reported in the final report as the final result.
+ *    - Excluded from final report: Avg. corrective cylinder strength, Average weight, Average H/D ratio.
+ * 9. Type of Failure (C12): Satisfactory / Unsatisfactory dropdown.
+ * 10. Decimal precision:
  *    - Length & Dia: 2 decimal places
  *    - Weight (kg): 3 decimal places
  *    - Failure Load (kN): 3 decimal places
@@ -31,7 +33,7 @@ export const DEFAULT_CONCRETE_CORE_METADATA = {
   gradeOfConcrete: 'M35',
   cappingMaterial: 'Epoxy, Ep 10',
   periodOfTest: 'Not furnished',
-  diameterFactor: '1.03',
+  diameterFactor: '1.00',
 };
 
 export const DEFAULT_CONCRETE_CORE_OBSERVATION = {
@@ -50,16 +52,16 @@ export const DEFAULT_CONCRETE_CORE_OBSERVATIONS = [
 ];
 
 /**
- * Sample test data strictly following the handwriting example in Page 1, 2 and 3 of the PDF:
+ * Sample test data per IS 516 (part 4) : 2018 Clause 8.4.1:
  * Standard: IS 516 (part 4) : 2018
  * Grade: M35 (or Not furnished)
  * Capping material: Epoxy, Ep 10
  * Period of test: Not furnished
  * Row 1: Identification: "Not furnished", Extraction Date: "Not furnished", L: 198.00, D: 145.00, Weight: 7.965 kg, Load: 512.910 kN
- *   -> Area = 16513 mm², Cyl Str: 31.05 N/mm², L/D: 1.37, CF: 0.93, Corr Cyl Str: 29.75 N/mm², Eq Cube Str: 37.00 N/mm², Satisfactory
+ *   -> Area = 16513 mm², Cyl Str: 31.06 N/mm², L/D: 1.37, CF: 0.93, Dia CF: 1.00 (D > 100mm), Corr Cyl Str: 28.89 N/mm², Eq Cube Str: 36.0 N/mm², Satisfactory
  * Row 2: Identification: "Not furnished", Extraction Date: "Not furnished", L: 198.50, D: 141.92, Weight: 7.698 kg, Load: 462.322 kN
- *   -> Area = 15819 mm², Cyl Str: 29.13 N/mm², L/D: 1.40, CF: 0.93, Corr Cyl Str: 28.02 N/mm², Eq Cube Str: 35.00 N/mm², Satisfactory
- * Average Equivalent Cube Strength = (37.0 + 35.0) / 2 = 36.00 N/mm²
+ *   -> Area = 15819 mm², Cyl Str: 29.23 N/mm², L/D: 1.40, CF: 0.93, Dia CF: 1.00 (D > 100mm), Corr Cyl Str: 27.18 N/mm², Eq Cube Str: 34.0 N/mm², Satisfactory
+ * Average Equivalent Cube Strength = (36.0 + 34.0) / 2 = 35.0 N/mm² (Final Report Result)
  */
 export const SAMPLE_CONCRETE_CORE_TEST_DATA = {
   metadata: {
@@ -68,7 +70,7 @@ export const SAMPLE_CONCRETE_CORE_TEST_DATA = {
     gradeOfConcrete: 'M35',
     cappingMaterial: 'Epoxy, Ep 10',
     periodOfTest: 'Not furnished',
-    diameterFactor: '1.03',
+    diameterFactor: '1.00',
   },
   observations: [
     {
@@ -103,16 +105,19 @@ export function roundToNearestHalf(val) {
 }
 
 /**
- * Determines default diameter correction factor based on core diameter
- * @param {number} dia Diameter in mm
+ * Determines diameter correction factor per IS 516 (Part 4) : 2018 Clause 8.4.1
+ * - For core diameter < 70 mm: 1.06
+ * - For core diameter 75 ± 5 mm (70 mm to 80 mm): 1.03
+ * - For core diameter > 100 mm (or >= 100 mm): restricted to 1.00
+ * @param {number|string} dia Diameter in mm
  * @returns {number}
  */
 export function getStandardDiaFactor(dia) {
-  if (isNaN(dia) || dia <= 0) return 1.03;
-  if (dia < 70) return 1.06;
-  if (dia <= 80) return 1.03;
-  // If dia >= 100mm, standard allows 1.00, but document notes use 1.03 default template factor
-  return 1.03;
+  const d = parseFloat(dia);
+  if (isNaN(d) || d <= 0) return 1.00;
+  if (d < 70) return 1.06;
+  if (d <= 80) return 1.03; // 75 ± 5 mm (70 mm to 80 mm)
+  return 1.00; // >= 100 mm (and standard >= 80 mm) restricted to 1.00
 }
 
 /**
@@ -131,7 +136,7 @@ export function calculateConcreteCoreTest(observations = [], metadata = {}) {
   const validLdRatios = [];
   const generalErrors = [];
 
-  const defaultDiaFactor = parseFloat(metadata.diameterFactor) || 1.03;
+  const defaultDiaFactor = parseFloat(metadata.diameterFactor) || 1.00;
 
   observations.forEach((obs, index) => {
     const rowNum = index + 1;
@@ -208,9 +213,26 @@ export function calculateConcreteCoreTest(observations = [], metadata = {}) {
 
     // 6. Corrected Cylinder Compressive Strength: C10 (N/mm²)
     // C10 = C7 * C9 * DiaFactor
+    // Dia CF per IS 516 (Part 4) : 2018 Clause 8.4.1:
+    // - For core diameter < 70 mm: 1.06
+    // - For core diameter 75 ± 5 mm (70 mm to 80 mm): 1.03
+    // - For core diameter > 100 mm (or >= 100 mm): restricted to 1.00
+    let rowDiaFactor = 1.00;
+    if (
+      obs.diaFactor !== '' &&
+      obs.diaFactor !== undefined &&
+      obs.diaFactor !== null &&
+      !isNaN(parseFloat(obs.diaFactor))
+    ) {
+      rowDiaFactor = parseFloat(obs.diaFactor);
+    } else if (!isNaN(d) && d > 0) {
+      rowDiaFactor = getStandardDiaFactor(d);
+    } else if (metadata.diameterFactor && !isNaN(parseFloat(metadata.diameterFactor))) {
+      rowDiaFactor = parseFloat(metadata.diameterFactor);
+    }
+
     let corrCylStrength = null;
     let corrCylStrengthFormatted = '';
-    const rowDiaFactor = defaultDiaFactor;
 
     if (cylStrength !== null && correctionFactor !== null) {
       // Use standard rounding to 2 decimals at each step as in handwritten consideration:
@@ -231,7 +253,7 @@ export function calculateConcreteCoreTest(observations = [], metadata = {}) {
       const c10Val = parseFloat(corrCylStrengthFormatted);
       rawCubeStrength = c10Val * 1.25;
       roundedCubeStrength = roundToNearestHalf(rawCubeStrength);
-      cubeStrengthFormatted = roundedCubeStrength % 1 === 0 ? roundedCubeStrength.toFixed(1) : roundedCubeStrength.toFixed(2);
+      cubeStrengthFormatted = roundedCubeStrength.toFixed(1);
       validCubeStrengths.push(roundedCubeStrength);
     }
 
@@ -286,7 +308,7 @@ export function calculateConcreteCoreTest(observations = [], metadata = {}) {
     const sum = validCubeStrengths.reduce((acc, v) => acc + v, 0);
     rawAverageCubeStrength = sum / validCubeStrengths.length;
     averageCubeStrength = roundToNearestHalf(rawAverageCubeStrength);
-    averageCubeStrengthFormatted = averageCubeStrength % 1 === 0 ? averageCubeStrength.toFixed(1) : averageCubeStrength.toFixed(2);
+    averageCubeStrengthFormatted = averageCubeStrength.toFixed(1);
   }
 
   // Average Corrected Cylinder Strength
@@ -338,5 +360,18 @@ export function calculateConcreteCoreTest(observations = [], metadata = {}) {
     cappingMaterial: metadata.cappingMaterial || 'Epoxy, Ep 10',
     periodOfTest: metadata.periodOfTest || 'Not furnished',
     diameterFactor: defaultDiaFactor,
+    // Final report specifications per IS 516 (Part 4) : 2018 & specification note:
+    // Final Report Result: Average Equivalent Cube Compressive Strength
+    // Excluded from final report: Avg Corr. Cylinder Strength, Average Weight, Average L/D Ratio
+    reportedStrength: averageCubeStrengthFormatted,
+    finalReportResult: averageCubeStrengthFormatted,
+    finalReportResultLabel: 'Average Equivalent Cube Compressive Strength',
+    finalReportResultUnit: 'N/mm²',
+    reportExcludeAvgWeight: true,
+    reportExcludeAvgCorrCylStrength: true,
+    reportExcludeAvgLdRatio: true,
+    includeAvgWeightInReport: false,
+    includeAvgCorrCylStrengthInReport: false,
+    includeAvgLdRatioInReport: false,
   };
 }

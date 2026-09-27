@@ -191,6 +191,15 @@ export default function ConcreteCoreModal({
       avgWeight: calcResult.averageWeightFormatted,
       avgLdRatio: calcResult.averageLdRatioFormatted,
       reportedStrength: calcResult.averageCubeStrengthFormatted,
+      finalReportResult: calcResult.averageCubeStrengthFormatted,
+      finalReportResultLabel: 'Average Equivalent Cube Compressive Strength',
+      finalReportResultUnit: 'N/mm²',
+      reportExcludeAvgWeight: true,
+      reportExcludeAvgCorrCylStrength: true,
+      reportExcludeAvgLdRatio: true,
+      includeAvgWeightInReport: false,
+      includeAvgCorrCylStrengthInReport: false,
+      includeAvgLdRatioInReport: false,
     };
 
     if (onApply) {
@@ -395,6 +404,12 @@ export default function ConcreteCoreModal({
                         <span className="text-[10px] text-gray-400 font-mono">(C9)</span>
                       </div>
                     </th>
+                    <th className="p-2.5 text-right min-w-[85px]">
+                      <div className="flex flex-col items-end">
+                        <span>Dia CF</span>
+                        <span className="text-[10px] text-gray-400 font-mono">(Cl 8.4.1)</span>
+                      </div>
+                    </th>
                     <th className="p-2.5 text-right min-w-[110px] bg-blue-50/50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-300">
                       <div className="flex flex-col items-end">
                         <span>Corr. Cyl. (N/mm²)</span>
@@ -518,6 +533,13 @@ export default function ConcreteCoreModal({
                         {row.correctionFactorFormatted || '-'}
                       </td>
 
+                      {/* Dia CF (Clause 8.4.1) */}
+                      <td className="p-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
+                        {row.diaFactor !== null && row.diaFactor !== undefined
+                          ? Number(row.diaFactor).toFixed(2)
+                          : '-'}
+                      </td>
+
                       {/* C10: Corrected Cylinder Strength (N/mm²) */}
                       <td className="p-2.5 text-right font-mono font-bold text-blue-900 dark:text-blue-300 bg-blue-50/40 dark:bg-blue-950/20">
                         {row.corrCylStrengthFormatted || '-'}
@@ -607,7 +629,7 @@ export default function ConcreteCoreModal({
             <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-500/10 via-blue-500/5 to-transparent border border-indigo-500/20 shadow-sm space-y-1">
               <span className="text-[10px] uppercase font-bold text-indigo-800 dark:text-indigo-400 tracking-wider flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                Avg Eq. Cube Strength
+                Avg Eq. Cube Strength (Final Report Result)
               </span>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-black text-indigo-950 dark:text-indigo-300 font-mono">
@@ -616,56 +638,56 @@ export default function ConcreteCoreModal({
                 <span className="text-xs font-bold text-indigo-800 dark:text-indigo-400">N/mm²</span>
               </div>
               <p className="text-[11px] text-indigo-700/80 dark:text-indigo-400/80">
-                Rounded to nearest 0.5 N/mm²
+                Final result for report • Rounded to nearest 0.5 N/mm²
               </p>
             </div>
 
             {/* Average Corrected Cylinder Strength */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 via-cyan-500/5 to-transparent border border-blue-500/20 shadow-sm space-y-1">
-              <span className="text-[10px] uppercase font-bold text-blue-800 dark:text-blue-400 tracking-wider">
+            <div className="p-4 rounded-xl bg-gray-50/70 dark:bg-muted/40 border border-gray-200 dark:border-border space-y-1">
+              <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground tracking-wider">
                 Avg Corr. Cylinder Strength
               </span>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-blue-950 dark:text-blue-300 font-mono">
+                <span className="text-xl font-bold text-gray-700 dark:text-muted-foreground font-mono">
                   {calcResult.averageCorrCylStrengthFormatted || '-'}
                 </span>
-                <span className="text-xs font-bold text-blue-800 dark:text-blue-400">N/mm²</span>
+                <span className="text-xs font-semibold text-gray-500 dark:text-muted-foreground">N/mm²</span>
               </div>
-              <p className="text-[11px] text-blue-700/80 dark:text-blue-400/80">
-                H/D and Dia factors applied
+              <p className="text-[11px] text-gray-400 dark:text-muted-foreground">
+                Testing data only • Excluded from final report
               </p>
             </div>
 
             {/* Average Weight */}
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-muted/40 border border-gray-200 dark:border-border space-y-1">
+            <div className="p-4 rounded-xl bg-gray-50/70 dark:bg-muted/40 border border-gray-200 dark:border-border space-y-1">
               <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground tracking-wider flex items-center gap-1">
                 <Scale className="w-3 h-3" />
                 Average Weight
               </span>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-xl font-bold text-gray-900 dark:text-foreground font-mono">
+                <span className="text-xl font-bold text-gray-700 dark:text-muted-foreground font-mono">
                   {calcResult.averageWeightFormatted || '-'}
                 </span>
-                <span className="text-xs font-semibold text-gray-600 dark:text-muted-foreground">kg</span>
+                <span className="text-xs font-semibold text-gray-500 dark:text-muted-foreground">kg</span>
               </div>
-              <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
-                Specimen core mass
+              <p className="text-[11px] text-gray-400 dark:text-muted-foreground">
+                Testing data only • Excluded from final report
               </p>
             </div>
 
             {/* Average L/D Ratio */}
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-muted/40 border border-gray-200 dark:border-border space-y-1">
+            <div className="p-4 rounded-xl bg-gray-50/70 dark:bg-muted/40 border border-gray-200 dark:border-border space-y-1">
               <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground tracking-wider flex items-center gap-1">
                 <Activity className="w-3 h-3" />
-                Average L/D Ratio
+                Average H/D (L/D) Ratio
               </span>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-xl font-bold text-gray-900 dark:text-foreground font-mono">
+                <span className="text-xl font-bold text-gray-700 dark:text-muted-foreground font-mono">
                   {calcResult.averageLdRatioFormatted || '-'}
                 </span>
               </div>
-              <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
-                Slenderness ratio
+              <p className="text-[11px] text-gray-400 dark:text-muted-foreground">
+                Testing data only • Excluded from final report
               </p>
             </div>
           </div>
@@ -679,8 +701,10 @@ export default function ConcreteCoreModal({
               </div>
               <p className="text-[11px] text-blue-800/80 dark:text-blue-300/80">
                 1. <strong>H/D Correction Factor (C9)</strong>: If L/D &lt; 2.0, F = 0.11 × (L/D) + 0.78; if L/D ≥ 2.0, F = 1.00.<br />
-                2. <strong>Corrected Cylinder Strength (C10)</strong>: Cyl. Strength × H/D CF × Dia Factor (1.03).<br />
-                3. <strong>Equivalent Cube Strength (C11)</strong>: Corrected Cylinder Strength × (5/4) = × 1.25, rounded to the nearest 0.5 N/mm².
+                2. <strong>Diameter Correction Factor (Dia CF per Cl. 8.4.1)</strong>: 1.06 for D &lt; 70 mm; 1.03 for 75 ± 5 mm (70 to 80 mm); 1.00 for D &gt; 100 mm (or ≥ 100 mm).<br />
+                3. <strong>Corrected Cylinder Strength (C10)</strong>: Cyl. Strength × H/D CF × Dia CF.<br />
+                4. <strong>Equivalent Cube Strength (C11)</strong>: Corrected Cylinder Strength × (5/4) = × 1.25, rounded to nearest 0.5 N/mm².<br />
+                5. <strong>Final Report Result</strong>: The Average Equivalent Cube Compressive Strength is reported in the final report as the final result (Avg. corrected cylinder strength, Average weight, and Average H/D ratio are excluded from the final report).
               </p>
             </div>
           </div>

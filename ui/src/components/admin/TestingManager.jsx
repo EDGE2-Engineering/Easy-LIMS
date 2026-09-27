@@ -47,13 +47,16 @@ import ActCubeModal from './ActCubeModal';
 import ConcreteCoreModal from './ConcreteCoreModal';
 import BrickTestModal from './BrickTestModal';
 import SteelTestModal from './SteelTestModal';
+import StructuralSteelTestModal from './StructuralSteelTestModal';
 import FineAggregateTestModal from './FineAggregateTestModal';
 import SolidHollowBlockTestModal from './SolidHollowBlockTestModal';
 import PaverBlockModal from './PaverBlockModal';
+import AacBlockModal from './AacBlockModal';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { camelCaseToTitleCase } from '@/lib/utils';
 import { formatDateDDMMYYYY, calculateCubeTest } from '@/utils/cubeTestCalculation';
+import { calculateActCubeTest, roundToNearestHalf } from '@/utils/actCubeTestCalculation';
 
 // Names of geotechnical material types (matched against TEST_SCHEMA keys)
 const GEOTECH_NAMES = ['Soil', 'Rock', 'Soil and Rock'];
@@ -98,7 +101,7 @@ const TestingManager = ({
           material,
           forms: ['borehole', 'lab', 'subsoil', 'directshear'],
           isGeotech: true,
-          isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false,
+          isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isStructuralSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false, isAacBlock: false,
           isRegular: false,
         };
       }
@@ -119,7 +122,7 @@ const TestingManager = ({
       ) {
         return {
           material, forms: ['actcube'],
-          isGeotech: false, isCube: false, isActCube: true, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false,
+          isGeotech: false, isCube: false, isActCube: true, isConcreteCore: false, isBrick: false, isSteel: false, isStructuralSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false, isAacBlock: false,
           isRegular: false,
         };
       }
@@ -138,7 +141,7 @@ const TestingManager = ({
       ) {
         return {
           material, forms: ['concretecore'],
-          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: true, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: true, isBrick: false, isSteel: false, isStructuralSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false, isAacBlock: false,
           isRegular: false,
         };
       }
@@ -146,7 +149,7 @@ const TestingManager = ({
       if (lowerName === 'cube' || lowerName.includes('cube') || lowerName === 'concrete cube') {
         return {
           material, forms: ['cube'],
-          isGeotech: false, isCube: true, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false,
+          isGeotech: false, isCube: true, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isStructuralSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false, isAacBlock: false,
           isRegular: false,
         };
       }
@@ -154,7 +157,28 @@ const TestingManager = ({
       if (lowerName === 'brick' || lowerName === 'bricks' || lowerName.includes('brick')) {
         return {
           material, forms: ['brick'],
-          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: true, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: true, isSteel: false, isStructuralSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false, isAacBlock: false,
+          isRegular: false,
+        };
+      }
+
+      // Hardcoded bypass: Structural Steel
+      // Matches 'structural steel', 'structural', 'ms plates', 'ms plate', 'w-beam', 'w beam', 'channel', etc.
+      // Must be evaluated BEFORE generic reinforcement steel check to avoid misidentifying Structural Steel.
+      const hasStructuralWord = lowerName.includes('structural');
+      const hasMsPlateWord = lowerName.includes('ms plate') || lowerName.includes('ms plates') || lowerName.includes('plate');
+      const hasBeamWord = lowerName.includes('w-beam') || lowerName.includes('w beam');
+      const hasChannelWord = lowerName.includes('channel');
+      if (
+        hasStructuralWord ||
+        lowerName === 'structural steel' ||
+        hasMsPlateWord ||
+        hasBeamWord ||
+        hasChannelWord
+      ) {
+        return {
+          material, forms: ['structuralsteel', 'structural_steel'],
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isStructuralSteel: true, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false, isAacBlock: false,
           isRegular: false,
         };
       }
@@ -162,7 +186,7 @@ const TestingManager = ({
       if (lowerName === 'steel' || lowerName.includes('steel') || lowerName.includes('tmt') || lowerName.includes('rebar')) {
         return {
           material, forms: ['steel'],
-          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: true, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: true, isStructuralSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false, isAacBlock: false,
           isRegular: false,
         };
       }
@@ -179,20 +203,32 @@ const TestingManager = ({
       ) {
         return {
           material, forms: ['fineaggregate'],
-          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: true, isSolidHollowBlocks: false, isPaverBlock: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isStructuralSteel: false, isFineAggregate: true, isSolidHollowBlocks: false, isPaverBlock: false, isAacBlock: false,
+          isRegular: false,
+        };
+      }
+
+      // Hardcoded bypass: AAC Block — matches any name containing both 'aac' and 'block'
+      // While looking for type matches look for both "AAC" and "Block" to match the type,
+      // just like how the other material type keyword matches are being done.
+      const hasAacWord = lowerName.includes('aac') || lowerName.includes('acc');
+      const hasBlockWord = lowerName.includes('block');
+      if ((hasAacWord && hasBlockWord) || lowerName.includes('aac block') || lowerName === 'aac') {
+        return {
+          material, forms: ['aacblock', 'aac_block', 'aac'],
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isStructuralSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false, isAacBlock: true,
           isRegular: false,
         };
       }
 
       // Hardcoded bypass: Solid/Hollow Blocks — matches any name containing both 'block'
       // and at least one of 'solid' or 'hollow' (order-independent)
-      const hasBlockWord  = lowerName.includes('block');
       const hasSolidWord  = lowerName.includes('solid');
       const hasHollowWord = lowerName.includes('hollow');
       if (hasBlockWord && (hasSolidWord || hasHollowWord)) {
         return {
           material, forms: ['solidhollowblocks', 'blocks'],
-          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: true, isPaverBlock: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isStructuralSteel: false, isFineAggregate: false, isSolidHollowBlocks: true, isPaverBlock: false, isAacBlock: false,
           isRegular: false,
         };
       }
@@ -201,7 +237,7 @@ const TestingManager = ({
       if (lowerName.includes('paver')) {
         return {
           material, forms: ['paverblock', 'paver'],
-          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: true,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isStructuralSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: true, isAacBlock: false,
           isRegular: false,
         };
       }
@@ -209,7 +245,7 @@ const TestingManager = ({
       if (!material) {
         return {
           material: null, forms: ['regular'],
-          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false,
+          isGeotech: false, isCube: false, isActCube: false, isConcreteCore: false, isBrick: false, isSteel: false, isStructuralSteel: false, isFineAggregate: false, isSolidHollowBlocks: false, isPaverBlock: false, isAacBlock: false,
           isRegular: true,
         };
       }
@@ -223,24 +259,28 @@ const TestingManager = ({
       const hasActCube = forms.includes('actcube') || forms.includes('act_cube') || forms.includes('act');
       const hasConcreteCore = forms.includes('concretecore') || forms.includes('concrete_core') || forms.includes('core');
       const hasBrick = forms.includes('brick');
+      const hasStructuralSteel = forms.includes('structuralsteel') || forms.includes('structural_steel');
       const hasSteel = forms.includes('steel');
       const hasFineAggregate = forms.includes('fineaggregate');
       const hasSolidHollowBlocks = forms.includes('solidhollowblocks') || forms.includes('solid_hollow_blocks') || forms.includes('blocks');
       const hasPaverBlock = forms.includes('paverblock') || forms.includes('paver_block') || forms.includes('paver');
+      const hasAacBlock = forms.includes('aacblock') || forms.includes('aac_block') || forms.includes('aac');
       const hasRegular = forms.includes('regular');
       return {
         material,
-        forms: forms.length > 0 ? forms : (hasPaverBlock ? ['paverblock'] : (hasConcreteCore ? ['concretecore'] : (hasActCube ? ['actcube'] : (hasCube ? ['cube'] : ['regular'])))),
+        forms: forms.length > 0 ? forms : (hasStructuralSteel ? ['structuralsteel'] : (hasAacBlock ? ['aacblock'] : (hasPaverBlock ? ['paverblock'] : (hasConcreteCore ? ['concretecore'] : (hasActCube ? ['actcube'] : (hasCube ? ['cube'] : ['regular'])))))),
         isGeotech: hasGeotech,
         isCube: hasCube,
         isActCube: hasActCube,
         isConcreteCore: hasConcreteCore,
         isBrick: hasBrick,
-        isSteel: hasSteel,
+        isSteel: hasSteel && !hasStructuralSteel,
+        isStructuralSteel: hasStructuralSteel,
         isFineAggregate: hasFineAggregate,
         isSolidHollowBlocks: hasSolidHollowBlocks,
         isPaverBlock: hasPaverBlock,
-        isRegular: !hasCube && !hasActCube && !hasConcreteCore && !hasBrick && !hasSteel && !hasFineAggregate && !hasSolidHollowBlocks && !hasPaverBlock && (hasRegular || forms.length === 0),
+        isAacBlock: hasAacBlock,
+        isRegular: !hasCube && !hasActCube && !hasConcreteCore && !hasBrick && !hasSteel && !hasStructuralSteel && !hasFineAggregate && !hasSolidHollowBlocks && !hasPaverBlock && !hasAacBlock && (hasRegular || forms.length === 0),
       };
     },
     [materials, materialFormAssociations]
@@ -258,8 +298,10 @@ const TestingManager = ({
   const [paverBlockModalCategory, setPaverBlockModalCategory] = useState(null);
   const [brickModalCategory, setBrickModalCategory] = useState(null);
   const [steelModalCategory, setSteelModalCategory] = useState(null);
+  const [structuralSteelModalCategory, setStructuralSteelModalCategory] = useState(null);
   const [fineAggModalCategory, setFineAggModalCategory] = useState(null);
   const [solidHollowBlocksModalCategory, setSolidHollowBlocksModalCategory] = useState(null);
+  const [aacBlockModalCategory, setAacBlockModalCategory] = useState(null);
   const [entryMode, setEntryMode] = useState('Drilling'); // 'Manual' or 'Drilling'
   const [rlValuesNote, setRlValuesNote] = useState('R.L. Values are assumed.');
   const { toast } = useToast();
@@ -730,10 +772,10 @@ const TestingManager = ({
               (materialName ? (jobDetails.test_types || {})[materialName] : []) ||
               [];
             const dataTestTypes = Object.keys(testResults[cat] || {}).filter(
-              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData' && k !== 'ActCubeData' && k !== 'ConcreteCoreData' && k !== 'BrickData' && k !== 'SteelData' && k !== 'FineAggData' && k !== 'SolidHollowBlocksData' && k !== 'BlocksData' && k !== 'PaverBlockData'
+              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData' && k !== 'ActCubeData' && k !== 'ConcreteCoreData' && k !== 'BrickData' && k !== 'SteelData' && k !== 'StructuralSteelData' && k !== 'FineAggData' && k !== 'SolidHollowBlocksData' && k !== 'BlocksData' && k !== 'PaverBlockData' && k !== 'AacBlockData'
             );
             const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
-            const { isGeotech, isCube, isActCube, isConcreteCore, isBrick, isSteel, isFineAggregate, isSolidHollowBlocks, isPaverBlock, isRegular, forms } = getMaterialAndForms(cat);
+            const { isGeotech, isCube, isActCube, isConcreteCore, isBrick, isSteel, isStructuralSteel, isFineAggregate, isSolidHollowBlocks, isPaverBlock, isAacBlock, isRegular, forms } = getMaterialAndForms(cat);
             return (
               <TabsContent key={cat} value={cat} className="space-y-6 outline-none mt-0">
                 {isConcreteCore && (
@@ -781,6 +823,7 @@ const TestingManager = ({
                                   <th className="p-2.5 font-bold text-right whitespace-nowrap">Cyl. Str. (N/mm²)</th>
                                   <th className="p-2.5 font-bold text-right whitespace-nowrap">L/D</th>
                                   <th className="p-2.5 font-bold text-right whitespace-nowrap">H/D CF</th>
+                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">Dia CF</th>
                                   <th className="p-2.5 font-bold text-right whitespace-nowrap bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300">
                                     Corr. Cyl. (N/mm²)
                                   </th>
@@ -803,6 +846,11 @@ const TestingManager = ({
                                     <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.cylStrength || '-'}</td>
                                     <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.ldRatio || '-'}</td>
                                     <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.correctionFactor || '-'}</td>
+                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">
+                                      {obs.diaFactor !== null && obs.diaFactor !== undefined
+                                        ? Number(obs.diaFactor).toFixed(2)
+                                        : '-'}
+                                    </td>
                                     <td className="p-2.5 text-right font-mono font-bold text-blue-900 dark:text-blue-300 bg-blue-50/40 dark:bg-blue-950/30">
                                       {obs.corrCylStrength || '-'}
                                     </td>
@@ -831,7 +879,7 @@ const TestingManager = ({
                             <div className="flex flex-wrap items-center gap-6">
                               <div>
                                 <span className="text-[10px] uppercase font-bold text-indigo-800 dark:text-indigo-400">
-                                  Avg Equivalent Cube Strength
+                                  Avg Equivalent Cube Compressive Strength (Final Result)
                                 </span>
                                 <div className="flex items-baseline gap-1.5">
                                   <span className="text-xl font-black text-indigo-900 dark:text-indigo-300 font-mono">
@@ -841,25 +889,35 @@ const TestingManager = ({
                                 </div>
                               </div>
                               {testResults[cat]?.ConcreteCoreData?.avgCorrCylStrength && (
-                                <div>
-                                  <span className="text-[10px] uppercase font-bold text-blue-800 dark:text-blue-400">
+                                <div title="Recorded for testing data (excluded from final report)">
+                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
                                     Avg Corr. Cylinder Strength
                                   </span>
                                   <div className="flex items-baseline gap-1.5">
-                                    <span className="text-lg font-bold text-blue-900 dark:text-blue-300 font-mono">
+                                    <span className="text-sm font-semibold text-gray-700 dark:text-muted-foreground font-mono">
                                       {testResults[cat]?.ConcreteCoreData?.avgCorrCylStrength}
                                     </span>
-                                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">N/mm²</span>
+                                    <span className="text-xs text-gray-500 dark:text-muted-foreground">N/mm²</span>
                                   </div>
                                 </div>
                               )}
                               {testResults[cat]?.ConcreteCoreData?.avgWeight && (
-                                <div>
+                                <div title="Recorded for testing data (excluded from final report)">
                                   <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
                                     Average Weight
                                   </span>
-                                  <div className="text-sm font-bold text-gray-800 dark:text-foreground font-mono">
+                                  <div className="text-sm font-semibold text-gray-700 dark:text-muted-foreground font-mono">
                                     {testResults[cat]?.ConcreteCoreData?.avgWeight} kg
+                                  </div>
+                                </div>
+                              )}
+                              {testResults[cat]?.ConcreteCoreData?.avgLdRatio && (
+                                <div title="Recorded for testing data (excluded from final report)">
+                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
+                                    Average H/D Ratio
+                                  </span>
+                                  <div className="text-sm font-semibold text-gray-700 dark:text-muted-foreground font-mono">
+                                    {testResults[cat]?.ConcreteCoreData?.avgLdRatio}
                                   </div>
                                 </div>
                               )}
@@ -912,119 +970,171 @@ const TestingManager = ({
                       !testResults[cat]?.ActCubeData?.observations ||
                       testResults[cat]?.ActCubeData?.observations.length === 0 ? (
                         <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending ACT cube test input</p>
-                      ) : (
-                        <div className="space-y-8 mt-4">
-                          <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
-                            <table className="w-full min-w-full text-left text-sm">
-                              <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
-                                <tr>
-                                  <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
-                                  <th className="p-2.5 font-bold whitespace-nowrap">Identification</th>
-                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Dimensions (mm)</th>
-                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Area (mm²)</th>
-                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Casting Date</th>
-                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Testing Date</th>
-                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Age</th>
-                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">Weight (kg)</th>
-                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">Load (kN)</th>
-                                  <th className="p-2.5 font-bold text-right whitespace-nowrap bg-teal-50 dark:bg-teal-950/40 text-teal-900 dark:text-teal-300">
-                                    ACT Strength (N/mm²)
-                                  </th>
-                                  <th className="p-2.5 font-bold text-right whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300">
-                                    Predicted 28d (N/mm²)
-                                  </th>
-                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Failure Type</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-100 dark:divide-border">
-                                {testResults[cat]?.ActCubeData?.observations?.map((obs, idx) => (
-                                  <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
-                                    <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{obs.trialNo || idx + 1}</td>
-                                    <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.cubeId || '-'}</td>
-                                    <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{`${obs.length || 150}×${obs.breadth || 150}×${obs.height || 150}`}</td>
-                                    <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.area || '22500'}</td>
-                                    <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{formatDateDDMMYYYY(obs.dateOfCasting)}</td>
-                                    <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{formatDateDDMMYYYY(obs.dateOfTesting)}</td>
-                                    <td className="p-2.5 text-center font-mono">{obs.ageDays ? `${obs.ageDays}d` : '-'}</td>
-                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.weightKg || '-'}</td>
-                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.failureLoadKn || '-'}</td>
-                                    <td className="p-2.5 text-right font-mono font-bold text-teal-900 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-950/30">
-                                      {obs.compressiveStrength || '-'}
-                                    </td>
-                                    <td className="p-2.5 text-right font-mono font-black text-emerald-900 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/30">
-                                      {obs.predicted28DayStrength || '-'}
-                                    </td>
-                                    <td className="p-2.5 text-center">
-                                      <Badge
-                                        variant="outline"
-                                        className={`text-[10px] ${
-                                          obs.failureType === 'Satisfactory'
-                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
-                                            : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800'
-                                        }`}
-                                      >
-                                        {obs.failureType || 'Satisfactory'}
-                                      </Badge>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                      ) : (() => {
+                        const actCubeCalc = testResults[cat]?.ActCubeData?.observations?.length
+                          ? calculateActCubeTest(testResults[cat].ActCubeData.observations, testResults[cat].ActCubeData)
+                          : null;
+                        const displayAvgPredicted =
+                          testResults[cat]?.ActCubeData?.avgPredicted28DayStrength ||
+                          testResults[cat]?.ActCubeData?.reportedStrength ||
+                          actCubeCalc?.averagePredictedStrengthFormatted ||
+                          '-';
+                        const displayAvgStrength =
+                          testResults[cat]?.ActCubeData?.avgCompressiveStrength ||
+                          actCubeCalc?.averageStrengthFormatted ||
+                          '-';
+                        const displayAvgWeight =
+                          testResults[cat]?.ActCubeData?.avgWeight ||
+                          actCubeCalc?.averageWeightFormatted;
 
-                          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-teal-50/40 dark:bg-teal-950/20 border border-teal-200 dark:border-teal-800/40">
-                            <div className="flex flex-wrap items-center gap-6">
-                              <div>
-                                <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-400">
-                                  Predicted 28-day ACT Strength (CR)
-                                </span>
-                                <div className="flex items-baseline gap-1.5">
-                                  <span className="text-xl font-black text-emerald-900 dark:text-emerald-300 font-mono">
-                                    {testResults[cat]?.ActCubeData?.avgPredicted28DayStrength || testResults[cat]?.ActCubeData?.reportedStrength || '-'}
-                                  </span>
-                                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-400">N/mm²</span>
-                                </div>
-                              </div>
-                              {testResults[cat]?.ActCubeData?.avgCompressiveStrength && (
+                        return (
+                          <div className="space-y-8 mt-4">
+                            <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                              <table className="w-full min-w-full text-left text-sm">
+                                <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                  <tr>
+                                    <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                    <th className="p-2.5 font-bold whitespace-nowrap">Identification</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Dimensions (mm)</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Area (mm²)</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Casting Date</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Testing Date</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Age (days)</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap">Weight (kg)</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap">Failure Load (kN)</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap bg-teal-50 dark:bg-teal-950/40 text-teal-900 dark:text-teal-300">
+                                      ACT Compressive strength (N/mm²)
+                                    </th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300">
+                                      Predicted 28d Compressive Strength (N/mm²)
+                                    </th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Failure Type</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                  {testResults[cat]?.ActCubeData?.observations?.map((obs, idx) => {
+                                    const rowCalc = actCubeCalc?.rows?.[idx];
+                                    const rawAge = obs.ageDays !== undefined && obs.ageDays !== null && obs.ageDays !== '' ? obs.ageDays : rowCalc?.ageFormatted;
+                                    const cleanAge = rawAge ? String(rawAge).replace(/d$/i, '').trim() : '-';
+                                    const predVal =
+                                      rowCalc?.predicted28DayFormatted ||
+                                      (obs.predicted28DayStrength
+                                        ? (() => {
+                                            const num = parseFloat(obs.predicted28DayStrength);
+                                            if (isNaN(num)) return obs.predicted28DayStrength;
+                                            const r = roundToNearestHalf(num);
+                                            return r % 1 === 0 ? r.toFixed(1) : r.toFixed(2);
+                                          })()
+                                        : '-');
+
+                                    return (
+                                      <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                        <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">
+                                          {obs.trialNo || idx + 1}
+                                        </td>
+                                        <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">
+                                          {obs.cubeId || '-'}
+                                        </td>
+                                        <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">
+                                          {`${obs.length || 150}×${obs.breadth || 150}×${obs.height || 150}`}
+                                        </td>
+                                        <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">
+                                          {obs.area || rowCalc?.areaFormatted || '22500'}
+                                        </td>
+                                        <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">
+                                          {formatDateDDMMYYYY(obs.dateOfCasting)}
+                                        </td>
+                                        <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">
+                                          {formatDateDDMMYYYY(obs.dateOfTesting)}
+                                        </td>
+                                        <td className="p-2.5 text-center font-mono font-medium text-gray-800 dark:text-foreground">
+                                          {cleanAge || '-'}
+                                        </td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">
+                                          {obs.weightKg || '-'}
+                                        </td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">
+                                          {obs.failureLoadKn || rowCalc?.loadFormatted || '-'}
+                                        </td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-teal-900 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-950/30">
+                                          {rowCalc?.strengthFormatted || obs.compressiveStrength || '-'}
+                                        </td>
+                                        <td className="p-2.5 text-right font-mono font-black text-emerald-900 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/30">
+                                          {predVal}
+                                        </td>
+                                        <td className="p-2.5 text-center">
+                                          <Badge
+                                            variant="outline"
+                                            className={`text-[10px] ${
+                                              obs.failureType === 'Satisfactory'
+                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                                                : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800'
+                                            }`}
+                                          >
+                                            {obs.failureType || 'Satisfactory'}
+                                          </Badge>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-teal-50/40 dark:bg-teal-950/20 border border-teal-200 dark:border-teal-800/40">
+                              <div className="flex flex-wrap items-center gap-6">
                                 <div>
-                                  <span className="text-[10px] uppercase font-bold text-teal-800 dark:text-teal-400">
-                                    Avg ACT Strength (Ra)
+                                  <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-400">
+                                    Predicted 28 days Compressive Strength (Final Report Result)
                                   </span>
                                   <div className="flex items-baseline gap-1.5">
-                                    <span className="text-lg font-bold text-teal-900 dark:text-teal-300 font-mono">
-                                      {testResults[cat]?.ActCubeData?.avgCompressiveStrength}
+                                    <span className="text-xl font-black text-emerald-900 dark:text-emerald-300 font-mono">
+                                      {displayAvgPredicted}
                                     </span>
-                                    <span className="text-xs font-semibold text-teal-700 dark:text-teal-400">N/mm²</span>
+                                    <span className="text-xs font-bold text-emerald-800 dark:text-emerald-400">N/mm²</span>
                                   </div>
                                 </div>
-                              )}
-                              {testResults[cat]?.ActCubeData?.avgWeight && (
-                                <div>
-                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
-                                    Average Weight
-                                  </span>
-                                  <div className="text-sm font-bold text-gray-800 dark:text-foreground font-mono">
-                                    {testResults[cat]?.ActCubeData?.avgWeight} kg
+                                {displayAvgStrength && displayAvgStrength !== '-' && (
+                                  <div title="Recorded for testing data (excluded from final report)">
+                                    <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
+                                      Avg ACT Strength (Ra)
+                                    </span>
+                                    <div className="flex items-baseline gap-1.5">
+                                      <span className="text-sm font-semibold text-gray-700 dark:text-muted-foreground font-mono">
+                                        {displayAvgStrength}
+                                      </span>
+                                      <span className="text-xs text-gray-500 dark:text-muted-foreground">N/mm²</span>
+                                    </div>
                                   </div>
-                                </div>
-                              )}
-                              {testResults[cat]?.ActCubeData?.waterAdditionDateTime && (
-                                <div>
-                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
-                                    Water Addition
-                                  </span>
-                                  <div className="text-sm font-medium text-gray-700 dark:text-foreground font-mono">
-                                    {testResults[cat]?.ActCubeData?.waterAdditionDateTime}
+                                )}
+                                {displayAvgWeight && (
+                                  <div title="Recorded for testing data (excluded from final report)">
+                                    <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
+                                      Average Weight
+                                    </span>
+                                    <div className="text-sm font-semibold text-gray-700 dark:text-muted-foreground font-mono">
+                                      {displayAvgWeight} kg
+                                    </div>
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                            <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground">
-                              IS 9013 Clause 9: R₂₈ = 1.64 × Rₐ + 8.09 (Round up nearest 0.5)
+                                )}
+                                {testResults[cat]?.ActCubeData?.waterAdditionDateTime && (
+                                  <div>
+                                    <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
+                                      Water Addition
+                                    </span>
+                                    <div className="text-sm font-medium text-gray-700 dark:text-foreground font-mono">
+                                      {testResults[cat]?.ActCubeData?.waterAdditionDateTime}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground">
+                                IS 9013 Clause 9: R₂₈ = 1.64 × Rₐ + 8.09 (Round up nearest 0.5)
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
@@ -1255,14 +1365,24 @@ const TestingManager = ({
                                   </div>
                                 </div>
                               )}
-                              {testResults[cat].BrickData.dimensions?.avgLength && (
-                                <div>
-                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">Avg Dimensions</span>
-                                  <div className="text-sm font-bold text-gray-800 dark:text-foreground font-mono">
-                                    {testResults[cat].BrickData.dimensions.avgLength} × {testResults[cat].BrickData.dimensions.avgWidth} × {testResults[cat].BrickData.dimensions.avgHeight} mm
+                              {(testResults[cat].BrickData.dimensions?.avgLength || testResults[cat].BrickData.dimensions?.totalLength) && (() => {
+                                const dims = testResults[cat].BrickData.dimensions;
+                                const l = dims.avgLength ?? dims.totalLength;
+                                const b = dims.avgWidth ?? dims.totalWidth;
+                                const h = dims.avgHeight ?? dims.totalHeight;
+                                const parts = [];
+                                if (l != null) parts.push(`Length, L = ${l} mm`);
+                                if (b != null) parts.push(`Breadth, B = ${b} mm`);
+                                if (h != null) parts.push(`Height, H = ${h} mm`);
+                                return (
+                                  <div>
+                                    <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">Dimensions</span>
+                                    <div className="text-sm font-bold text-gray-800 dark:text-foreground font-mono">
+                                      {parts.join('; ')}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                );
+                              })()}
                               <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground self-end ml-auto">
                                 IS 3495 / IS 1077
                               </div>
@@ -1276,7 +1396,7 @@ const TestingManager = ({
                                 <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                   <tr>
                                     <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
-                                    <th className="p-2.5 font-bold whitespace-nowrap">Brick ID</th>
+                                    <th className="p-2.5 font-bold whitespace-nowrap">Identification</th>
                                     <th className="p-2.5 font-bold text-center whitespace-nowrap">L (mm)</th>
                                     <th className="p-2.5 font-bold text-center whitespace-nowrap">W (mm)</th>
                                     <th className="p-2.5 font-bold text-center whitespace-nowrap">H (mm)</th>
@@ -1337,88 +1457,335 @@ const TestingManager = ({
                       ) : (
                         <div className="space-y-4 mt-3">
                           {/* Summary row */}
-                          <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-slate-50/40 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-700/40">
-                            {testResults[cat].SteelData.avgYieldStress && (
-                              <div>
-                                <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-400">Avg Yield Stress</span>
-                                <div className="flex items-baseline gap-1.5">
-                                  <span className="text-xl font-black text-amber-900 dark:text-amber-300 font-mono">
-                                    {testResults[cat].SteelData.avgYieldStress}
+                          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-slate-50/60 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700/50">
+                            <div className="flex flex-wrap items-center gap-6">
+                              {testResults[cat].SteelData.avgYieldStress && (
+                                <div title="Recorded for testing data only (excluded from final report; only individual results are required)">
+                                  <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-400">
+                                    Avg Yield Stress
                                   </span>
-                                  <span className="text-xs font-bold text-amber-700 dark:text-amber-400">N/mm²</span>
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-xl font-black text-amber-900 dark:text-amber-300 font-mono">
+                                      {testResults[cat].SteelData.avgYieldStress}
+                                    </span>
+                                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400">N/mm²</span>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                            {testResults[cat].SteelData.avgTensileStrength && (
-                              <div>
-                                <span className="text-[10px] uppercase font-bold text-orange-800 dark:text-orange-400">Avg Tensile Strength</span>
-                                <div className="flex items-baseline gap-1.5">
-                                  <span className="text-xl font-black text-orange-900 dark:text-orange-300 font-mono">
-                                    {testResults[cat].SteelData.avgTensileStrength}
+                              )}
+                              {testResults[cat].SteelData.avgTensileStrength && (
+                                <div title="Recorded for testing data only (excluded from final report; only individual results are required)">
+                                  <span className="text-[10px] uppercase font-bold text-orange-800 dark:text-orange-400">
+                                    Avg Tensile Strength
                                   </span>
-                                  <span className="text-xs font-bold text-orange-700 dark:text-orange-400">N/mm²</span>
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-xl font-black text-orange-900 dark:text-orange-300 font-mono">
+                                      {testResults[cat].SteelData.avgTensileStrength}
+                                    </span>
+                                    <span className="text-xs font-bold text-orange-700 dark:text-orange-400">N/mm²</span>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                            {testResults[cat].SteelData.avgElongation && (
-                              <div>
-                                <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-400">Avg Elongation</span>
-                                <div className="flex items-baseline gap-1.5">
-                                  <span className="text-xl font-black text-emerald-900 dark:text-emerald-300 font-mono">
-                                    {testResults[cat].SteelData.avgElongation}
+                              )}
+                              {testResults[cat].SteelData.avgElongation && (
+                                <div title="Recorded for testing data only (excluded from final report; only individual results are required)">
+                                  <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-400">
+                                    Avg Elongation
                                   </span>
-                                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">%</span>
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-xl font-black text-emerald-900 dark:text-emerald-300 font-mono">
+                                      {testResults[cat].SteelData.avgElongation}
+                                    </span>
+                                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">%</span>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                            <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground self-end ml-auto">
-                              IS 1786: 2008 / IS 1608-1: 2022
+                              )}
+                            </div>
+
+                            <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground self-end ml-auto flex flex-col items-end gap-1">
+                              <span className="text-[10px] font-semibold text-amber-800 dark:text-amber-400 bg-amber-100/70 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-800">
+                                Testing Data Only • Excluded from final report (individual results only)
+                              </span>
+                              <span>IS 1786: 2008 / IS 1608-1: 2022</span>
                             </div>
                           </div>
 
                           {/* Observations table */}
-                          {testResults[cat].SteelData.observations?.length > 0 && (
-                            <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
-                              <table className="w-full min-w-full text-left text-sm">
-                                <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
-                                  <tr>
-                                    <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
-                                    <th className="p-2.5 font-bold whitespace-nowrap">Bar ID</th>
-                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Dia (mm)</th>
-                                    <th className="p-2.5 font-bold text-right whitespace-nowrap">Area (mm²)</th>
-                                    <th className="p-2.5 font-bold text-right whitespace-nowrap bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">Yield Stress (N/mm²)</th>
-                                    <th className="p-2.5 font-bold text-right whitespace-nowrap bg-orange-50 dark:bg-orange-950/30 text-orange-900 dark:text-orange-300">Tensile Str. (N/mm²)</th>
-                                    <th className="p-2.5 font-bold text-right whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300">Elongation (%)</th>
-                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Bend</th>
-                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Rebend</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100 dark:divide-border">
-                                  {testResults[cat].SteelData.observations.map((obs, idx) => (
-                                    <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
-                                      <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{obs.slNo || idx + 1}</td>
-                                      <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.barId || '-'}</td>
-                                      <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.nominalDia || '-'}</td>
-                                      <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.area || '-'}</td>
-                                      <td className="p-2.5 text-right font-mono font-bold text-amber-900 dark:text-amber-300 bg-amber-50/40 dark:bg-amber-950/20">{obs.yieldStress || '-'}</td>
-                                      <td className="p-2.5 text-right font-mono font-bold text-orange-900 dark:text-orange-300 bg-orange-50/40 dark:bg-orange-950/20">{obs.tensileStrength || '-'}</td>
-                                      <td className="p-2.5 text-right font-mono font-bold text-emerald-900 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20">{obs.elongation || '-'}</td>
-                                      <td className="p-2.5 text-center">
-                                        <Badge variant="outline" className={`text-[10px] ${obs.bendTest === 'NCO' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800'}`}>
-                                          {obs.bendTest || 'NCO'}
-                                        </Badge>
-                                      </td>
-                                      <td className="p-2.5 text-center">
-                                        <Badge variant="outline" className={`text-[10px] ${obs.rebendTest === 'NCO' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800'}`}>
-                                          {obs.rebendTest || 'NCO'}
-                                        </Badge>
-                                      </td>
+                          {testResults[cat].SteelData.observations?.length > 0 && (() => {
+                            const steelData = testResults[cat].SteelData;
+                            const steelObs = steelData.observations || [];
+                            const clientRefCols = steelData.clientReferenceColumns || {};
+
+                            const showHeatNo = clientRefCols.heatNo ?? (
+                              steelData.includeHeatNoInReport ??
+                              steelObs.some((o) => o.heatNo && String(o.heatNo).trim() !== '')
+                            );
+                            const showInvoiceNo = clientRefCols.invoiceNo ?? (
+                              steelData.includeInvoiceNoInReport ??
+                              steelObs.some((o) => o.invoiceNo && String(o.invoiceNo).trim() !== '')
+                            );
+                            const showVehicleNo = clientRefCols.vehicleNo ?? (
+                              steelData.includeVehicleNoInReport ??
+                              steelObs.some((o) => o.vehicleNo && String(o.vehicleNo).trim() !== '')
+                            );
+
+                            return (
+                              <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                <table className="w-full min-w-full text-left text-sm">
+                                  <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                    <tr>
+                                      <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                      <th className="p-2.5 font-bold whitespace-nowrap">Sample ID</th>
+                                      {showHeatNo && (
+                                        <th className="p-2.5 font-bold whitespace-nowrap bg-blue-50/50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-300">
+                                          Heat/ Lot No.
+                                        </th>
+                                      )}
+                                      {showInvoiceNo && (
+                                        <th className="p-2.5 font-bold whitespace-nowrap bg-blue-50/50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-300">
+                                          Invoice No.
+                                        </th>
+                                      )}
+                                      {showVehicleNo && (
+                                        <th className="p-2.5 font-bold whitespace-nowrap bg-blue-50/50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-300">
+                                          Vehicle No.
+                                        </th>
+                                      )}
+                                      <th className="p-2.5 font-bold text-center whitespace-nowrap">Dia (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Area (mm²)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">Yield Stress (N/mm²)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-orange-50 dark:bg-orange-950/30 text-orange-900 dark:text-orange-300">Tensile Str. (N/mm²)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300">Elongation (%)</th>
+                                      <th className="p-2.5 font-bold text-center whitespace-nowrap">Bend</th>
+                                      <th className="p-2.5 font-bold text-center whitespace-nowrap">Rebend</th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                    {steelObs.map((obs, idx) => (
+                                      <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                        <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{obs.slNo || idx + 1}</td>
+                                        <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.sampleId || obs.barId || '-'}</td>
+                                        {showHeatNo && (
+                                          <td className="p-2.5 font-mono text-gray-700 dark:text-foreground bg-blue-50/20 dark:bg-blue-950/10 whitespace-nowrap">
+                                            {obs.heatNo || '-'}
+                                          </td>
+                                        )}
+                                        {showInvoiceNo && (
+                                          <td className="p-2.5 font-mono text-gray-700 dark:text-foreground bg-blue-50/20 dark:bg-blue-950/10 whitespace-nowrap">
+                                            {obs.invoiceNo || '-'}
+                                          </td>
+                                        )}
+                                        {showVehicleNo && (
+                                          <td className="p-2.5 font-mono text-gray-700 dark:text-foreground bg-blue-50/20 dark:bg-blue-950/10 whitespace-nowrap">
+                                            {obs.vehicleNo || '-'}
+                                          </td>
+                                        )}
+                                        <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.nominalDia || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.area || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-amber-900 dark:text-amber-300 bg-amber-50/40 dark:bg-amber-950/20">{obs.yieldStress || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-orange-900 dark:text-orange-300 bg-orange-50/40 dark:bg-orange-950/20">{obs.tensileStrength || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-emerald-900 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20">{obs.elongation || '-'}</td>
+                                        <td className="p-2.5 text-center">
+                                          <Badge variant="outline" className={`text-[10px] ${obs.bendTest === 'NCO' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800'}`}>
+                                            {obs.bendTest || 'NCO'}
+                                          </Badge>
+                                        </td>
+                                        <td className="p-2.5 text-center">
+                                          <Badge variant="outline" className={`text-[10px] ${obs.rebendTest === 'NCO' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800'}`}>
+                                            {obs.rebendTest || 'NCO'}
+                                          </Badge>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {isStructuralSteel && (
+                  <div className="bg-white dark:bg-card p-6 rounded-none border border-gray-100 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full">
+                    <div>
+                      <div className="flex items-center justify-between mb-0">
+                        <h4 className="text-sm font-bold text-gray-800 dark:text-foreground flex items-center gap-2">
+                          {/* Structural Steel Test Data */}
+                        </h4>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setStructuralSteelModalCategory(cat)}
+                              className="h-8 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900/50 dark:text-indigo-300"
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              {testResults[cat]?.StructuralSteelData ? 'Edit Structural Steel Test Data' : 'Enter Structural Steel Test Data'}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                            <p className="text-xs">Open Structural Steel Test Input Modal per IS 1608 (Part 1): 2022</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+
+                      {!testResults[cat]?.StructuralSteelData ? (
+                        <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending structural steel test input</p>
+                      ) : (
+                        <div className="space-y-4 mt-3">
+                          {/* Summary row */}
+                          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-slate-50/60 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700/50">
+                            <div className="flex flex-wrap items-center gap-6">
+                              {testResults[cat].StructuralSteelData.avgYieldStress && (
+                                <div title="Recorded for testing data only (excluded from final report; only individual results are required)">
+                                  <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-400">
+                                    Avg Yield Stress
+                                  </span>
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-xl font-black text-amber-900 dark:text-amber-300 font-mono">
+                                      {testResults[cat].StructuralSteelData.avgYieldStress}
+                                    </span>
+                                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400">N/mm²</span>
+                                  </div>
+                                </div>
+                              )}
+                              {testResults[cat].StructuralSteelData.avgTensileStrength && (
+                                <div title="Recorded for testing data only (excluded from final report; only individual results are required)">
+                                  <span className="text-[10px] uppercase font-bold text-orange-800 dark:text-orange-400">
+                                    Avg Tensile Strength
+                                  </span>
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-xl font-black text-orange-900 dark:text-orange-300 font-mono">
+                                      {testResults[cat].StructuralSteelData.avgTensileStrength}
+                                    </span>
+                                    <span className="text-xs font-bold text-orange-700 dark:text-orange-400">N/mm²</span>
+                                  </div>
+                                </div>
+                              )}
+                              {testResults[cat].StructuralSteelData.avgElongation && (
+                                <div title="Recorded for testing data only (excluded from final report; only individual results are required)">
+                                  <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-400">
+                                    Avg Elongation
+                                  </span>
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-xl font-black text-emerald-900 dark:text-emerald-300 font-mono">
+                                      {testResults[cat].StructuralSteelData.avgElongation}
+                                    </span>
+                                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">%</span>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          )}
+
+                            <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground self-end ml-auto flex flex-col items-end gap-1">
+                              <span className="text-[10px] font-semibold text-amber-800 dark:text-amber-400 bg-amber-100/70 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-800">
+                                Testing Data Only • Excluded from final report (individual results only)
+                              </span>
+                              <span>IS 1608 (Part 1) : 2022</span>
+                            </div>
+                          </div>
+
+                          {/* Observations table */}
+                          {testResults[cat].StructuralSteelData.observations?.length > 0 && (() => {
+                            const data = testResults[cat].StructuralSteelData;
+                            const obsList = data.observations || [];
+                            const clientRefCols = data.clientReferenceColumns || {};
+
+                            const showHeatNo = clientRefCols.heatNo ?? (
+                              data.includeHeatNoInReport ??
+                              obsList.some((o) => o.heatNo && String(o.heatNo).trim() !== '')
+                            );
+                            const showInvoiceNo = clientRefCols.invoiceNo ?? (
+                              data.includeInvoiceNoInReport ??
+                              obsList.some((o) => o.invoiceNo && String(o.invoiceNo).trim() !== '')
+                            );
+                            const showVehicleNo = clientRefCols.vehicleNo ?? (
+                              data.includeVehicleNoInReport ??
+                              obsList.some((o) => o.vehicleNo && String(o.vehicleNo).trim() !== '')
+                            );
+
+                            return (
+                              <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                <table className="w-full min-w-full text-left text-sm">
+                                  <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground text-xs">
+                                    <tr>
+                                      <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                      <th className="p-2.5 font-bold whitespace-nowrap">Sample ID</th>
+                                      <th className="p-2.5 font-bold whitespace-nowrap bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-300">
+                                        Sample Name / Type
+                                      </th>
+                                      {showHeatNo && (
+                                        <th className="p-2.5 font-bold whitespace-nowrap bg-blue-50/50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-300">
+                                          Heat/ Lot No.
+                                        </th>
+                                      )}
+                                      {showInvoiceNo && (
+                                        <th className="p-2.5 font-bold whitespace-nowrap bg-blue-50/50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-300">
+                                          Invoice No.
+                                        </th>
+                                      )}
+                                      {showVehicleNo && (
+                                        <th className="p-2.5 font-bold whitespace-nowrap bg-blue-50/50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-300">
+                                          Vehicle No.
+                                        </th>
+                                      )}
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Width (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Thickness (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Area (mm²)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">Yield Stress (N/mm²)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-orange-50 dark:bg-orange-950/30 text-orange-900 dark:text-orange-300">Tensile Str. (N/mm²)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300">IGL (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">FGL (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300">Elongation (%)</th>
+                                      <th className="p-2.5 font-bold text-center whitespace-nowrap">Bend</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100 dark:divide-border text-xs">
+                                    {obsList.map((obs, idx) => (
+                                      <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                        <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{obs.slNo || idx + 1}</td>
+                                        <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.sampleId || '-'}</td>
+                                        <td className="p-2.5 font-medium text-indigo-900 dark:text-indigo-300 bg-indigo-50/20 dark:bg-indigo-950/10 whitespace-nowrap">
+                                          <Badge variant="outline" className="text-[11px] font-sans border-indigo-200 text-indigo-700 dark:border-indigo-800 dark:text-indigo-300">
+                                            {obs.sampleType || obs.sampleName || 'MS Plate'}
+                                          </Badge>
+                                        </td>
+                                        {showHeatNo && (
+                                          <td className="p-2.5 font-mono text-gray-700 dark:text-foreground bg-blue-50/20 dark:bg-blue-950/10 whitespace-nowrap">
+                                            {obs.heatNo || '-'}
+                                          </td>
+                                        )}
+                                        {showInvoiceNo && (
+                                          <td className="p-2.5 font-mono text-gray-700 dark:text-foreground bg-blue-50/20 dark:bg-blue-950/10 whitespace-nowrap">
+                                            {obs.invoiceNo || '-'}
+                                          </td>
+                                        )}
+                                        {showVehicleNo && (
+                                          <td className="p-2.5 font-mono text-gray-700 dark:text-foreground bg-blue-50/20 dark:bg-blue-950/10 whitespace-nowrap">
+                                            {obs.vehicleNo || '-'}
+                                          </td>
+                                        )}
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.width || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.thickness || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-medium text-gray-800 dark:text-foreground">{obs.area || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-amber-900 dark:text-amber-300 bg-amber-50/40 dark:bg-amber-950/20">{obs.yieldStress || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-orange-900 dark:text-orange-300 bg-orange-50/40 dark:bg-orange-950/20">{obs.tensileStrength || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-emerald-800 dark:text-emerald-300 bg-emerald-50/20 dark:bg-emerald-950/10">{obs.initialGaugeLength || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.finalGaugeLength || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-emerald-900 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20">{obs.elongation ? `${obs.elongation}%` : '-'}</td>
+                                        <td className="p-2.5 text-center">
+                                          <Badge variant="outline" className={`text-[10px] ${obs.bendTest === 'NCO' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800'}`}>
+                                            {obs.bendTest || 'NCO'}
+                                          </Badge>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>
@@ -1654,7 +2021,7 @@ const TestingManager = ({
                                   <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                     <tr>
                                       <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
-                                      <th className="p-2.5 font-bold whitespace-nowrap">Block ID</th>
+                                      <th className="p-2.5 font-bold whitespace-nowrap">Identification</th>
                                       <th className="p-2.5 font-bold text-center whitespace-nowrap">L (mm)</th>
                                       <th className="p-2.5 font-bold text-center whitespace-nowrap">B (mm)</th>
                                       <th className="p-2.5 font-bold text-center whitespace-nowrap">H (mm)</th>
@@ -1788,15 +2155,24 @@ const TestingManager = ({
                                   <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                     <tr>
                                       <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
-                                      <th className="p-2.5 font-bold whitespace-nowrap">ID</th>
-                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">L (mm)</th>
-                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">B (mm)</th>
-                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">W (mm)</th>
+                                      <th className="p-2.5 font-bold whitespace-nowrap">Identification</th>
+                                      {paverData.blockType === 'chamfered' ? (
+                                        <>
+                                          <th className="p-2.5 font-bold text-right whitespace-nowrap">msp</th>
+                                          <th className="p-2.5 font-bold text-right whitespace-nowrap">mstd</th>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <th className="p-2.5 font-bold text-right whitespace-nowrap">L (mm)</th>
+                                          <th className="p-2.5 font-bold text-right whitespace-nowrap">W(mm)</th>
+                                        </>
+                                      )}
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">T(mm)</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap">Area (mm²)</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap">Load (kN)</th>
-                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Str (N/mm²)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Compressive Strength (N/mm²)</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap">Factor</th>
-                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300">Corr Str (N/mm²)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300">Corr. Comp. Strength (N/mm²)</th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-gray-100 dark:divide-border">
@@ -1804,8 +2180,17 @@ const TestingManager = ({
                                       <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
                                         <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{idx + 1}</td>
                                         <td className="p-2.5 font-medium text-gray-800 dark:text-foreground whitespace-nowrap">{obs.sampleId || `R${idx + 1}`}</td>
-                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.length || '-'}</td>
-                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.breadth || '-'}</td>
+                                        {paverData.blockType === 'chamfered' ? (
+                                          <>
+                                            <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.msp || '-'}</td>
+                                            <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.mstd || '-'}</td>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.length || '-'}</td>
+                                            <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.width || obs.breadth || '-'}</td>
+                                          </>
+                                        )}
                                         <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.thickness || '-'}</td>
                                         <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.areaFormatted || obs.area || '-'}</td>
                                         <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.failureLoadKn || '-'}</td>
@@ -1834,10 +2219,10 @@ const TestingManager = ({
                                   <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
                                     <tr>
                                       <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
-                                      <th className="p-2.5 font-bold whitespace-nowrap">ID</th>
+                                      <th className="p-2.5 font-bold whitespace-nowrap">Identification</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap">L (mm)</th>
-                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">B (mm)</th>
-                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">W (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">W(mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">T(mm)</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap">Wet Mass (kg)</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap">Dry Mass (kg)</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap bg-blue-50 dark:bg-blue-950/30 text-blue-900 dark:text-blue-300">Water Absorption (%)</th>
@@ -1849,11 +2234,274 @@ const TestingManager = ({
                                         <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{idx + 1}</td>
                                         <td className="p-2.5 font-medium text-gray-800 dark:text-foreground whitespace-nowrap">{obs.sampleId || `R${idx + 1}`}</td>
                                         <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.length || '-'}</td>
-                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.breadth || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.width || obs.breadth || '-'}</td>
                                         <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.thickness || '-'}</td>
                                         <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.wetMassKg || '-'}</td>
                                         <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.dryMassKg || '-'}</td>
                                         <td className="p-2.5 text-right font-mono font-bold text-blue-900 dark:text-blue-300 bg-blue-50/40 dark:bg-blue-950/20 whitespace-nowrap">{obs.waterAbsorptionFormatted ? `${obs.waterAbsorptionFormatted}%` : '-'}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+                {isAacBlock && (() => {
+                  const aacData = testResults[cat]?.AacBlockData;
+                  return (
+                    <div className="bg-white dark:bg-card p-6 rounded-none border border-gray-100 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full">
+                      <div>
+                        <div className="flex items-center justify-between mb-0">
+                          <h4 className="text-sm font-bold text-gray-800 dark:text-foreground flex items-center gap-2">
+                            {/* AAC Block Test Data */}
+                          </h4>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAacBlockModalCategory(cat)}
+                                className="h-8 text-xs"
+                              >
+                                <Edit className="w-3 h-3 mr-1" />
+                                {aacData ? 'Edit AAC Block Test Data' : 'Enter AAC Block Test Data'}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                              <p className="text-xs">Open AAC Block Test Input Modal per IS 6441 / IS 6598</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+
+                        {!aacData ? (
+                          <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending AAC block test input</p>
+                        ) : (
+                          <div className="space-y-4 mt-3">
+                            {/* Summary row */}
+                            <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-stone-50/40 dark:bg-stone-900/20 border border-stone-200 dark:border-stone-700/40">
+                              {aacData.sampleName && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">Sample</span>
+                                  <div className="text-sm font-semibold text-gray-800 dark:text-foreground font-mono">
+                                    {aacData.sampleName}
+                                  </div>
+                                </div>
+                              )}
+                              {aacData.grade && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">Grade / Class</span>
+                                  <div className="text-sm font-semibold text-gray-800 dark:text-foreground">
+                                    {aacData.grade}
+                                  </div>
+                                </div>
+                              )}
+                              {aacData.compressive?.avgCompressiveStrength && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-teal-800 dark:text-teal-400">Avg Comp. Strength</span>
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="text-xl font-black text-teal-900 dark:text-teal-300 font-mono">
+                                      {aacData.compressive.avgCompressiveStrength}
+                                    </span>
+                                    <span className="text-xs font-bold text-teal-700 dark:text-teal-400">N/mm²</span>
+                                  </div>
+                                </div>
+                              )}
+                              {aacData.waterAbsorption?.avgWaterAbsorption && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-blue-800 dark:text-blue-400">Avg Water Absorption</span>
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="text-xl font-black text-blue-900 dark:text-blue-300 font-mono">
+                                      {aacData.waterAbsorption.avgWaterAbsorption}
+                                    </span>
+                                    <span className="text-xs font-bold text-blue-700 dark:text-blue-400">%</span>
+                                  </div>
+                                </div>
+                              )}
+                              {aacData.density?.avgDensity && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-orange-800 dark:text-orange-400">Avg Bulk Density</span>
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="text-xl font-black text-orange-900 dark:text-orange-300 font-mono">
+                                      {aacData.density.avgDensity}
+                                    </span>
+                                    <span className="text-xs font-bold text-orange-700 dark:text-orange-400">kg/m³</span>
+                                  </div>
+                                </div>
+                              )}
+                              {aacData.moistureContent?.avgMoistureContent && (
+                                <div>
+                                  <span className="text-[10px] uppercase font-bold text-purple-800 dark:text-purple-400">Avg Moisture Content</span>
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="text-xl font-black text-purple-900 dark:text-purple-300 font-mono">
+                                      {aacData.moistureContent.avgMoistureContent}
+                                    </span>
+                                    <span className="text-xs font-bold text-purple-700 dark:text-purple-400">%</span>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground self-end ml-auto font-mono">
+                                IS 6441 / IS 6598
+                              </div>
+                            </div>
+
+                            {/* 1. Compressive Strength Table */}
+                            {aacData.compressive?.observations?.length > 0 && (
+                              <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                <div className="p-2.5 px-3 bg-teal-50/70 dark:bg-teal-950/30 border-b flex items-center justify-between text-xs">
+                                  <span className="font-bold text-gray-800 dark:text-foreground">
+                                    Compressive Strength Test (IS 6441 Part 5: 1972 RA 2012)
+                                  </span>
+                                  <span className="text-teal-700 dark:text-teal-400 font-mono font-bold">
+                                    Avg: {aacData.compressive.avgCompressiveStrength} N/mm²
+                                  </span>
+                                </div>
+                                <table className="w-full min-w-full text-left text-sm">
+                                  <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                    <tr>
+                                      <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                      <th className="p-2.5 font-bold whitespace-nowrap">Specimen ID</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">L (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">B (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">H (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Area (mm²)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Load (kN)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-teal-50 dark:bg-teal-950/30 text-teal-900 dark:text-teal-300">Compressive Strength (N/mm²)</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                    {aacData.compressive.observations.map((obs, idx) => (
+                                      <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                        <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{idx + 1}</td>
+                                        <td className="p-2.5 font-medium text-gray-800 dark:text-foreground whitespace-nowrap">{obs.specimenId || `Specimen ${idx + 1}`}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.length || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.breadth || obs.width || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.height || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.area || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.load || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-teal-900 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-950/20 whitespace-nowrap">{obs.strength || '-'}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+
+                            {/* 2. Water Absorption Table */}
+                            {aacData.waterAbsorption?.observations?.length > 0 && (
+                              <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                <div className="p-2.5 px-3 bg-blue-50/70 dark:bg-blue-950/30 border-b flex items-center justify-between text-xs">
+                                  <span className="font-bold text-gray-800 dark:text-foreground">
+                                    Water Absorption Test (IS 6598: 1972)
+                                  </span>
+                                  <span className="text-blue-700 dark:text-blue-400 font-mono font-bold">
+                                    Avg: {aacData.waterAbsorption.avgWaterAbsorption}%
+                                  </span>
+                                </div>
+                                <table className="w-full min-w-full text-left text-sm">
+                                  <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                    <tr>
+                                      <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                      <th className="p-2.5 font-bold whitespace-nowrap">Specimen ID</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Size (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Wet Mass (A) g</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Oven Dry Mass (B) g</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-blue-50 dark:bg-blue-950/30 text-blue-900 dark:text-blue-300">Water Absorption (%)</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                    {aacData.waterAbsorption.observations.map((obs, idx) => (
+                                      <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                        <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{idx + 1}</td>
+                                        <td className="p-2.5 font-medium text-gray-800 dark:text-foreground whitespace-nowrap">{obs.specimenId || `Specimen ${idx + 1}`}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.specimenSize || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.wetMass || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.dryMass || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-blue-900 dark:text-blue-300 bg-blue-50/40 dark:bg-blue-950/20 whitespace-nowrap">{obs.waterAbsorption ? `${obs.waterAbsorption}%` : '-'}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+
+                            {/* 3. Bulk Density Table */}
+                            {aacData.density?.observations?.length > 0 && (
+                              <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                <div className="p-2.5 px-3 bg-orange-50/70 dark:bg-orange-950/30 border-b flex items-center justify-between text-xs">
+                                  <span className="font-bold text-gray-800 dark:text-foreground">
+                                    Bulk Density Test (IS 6441 Part 1: 1972 Clause 5.1.1)
+                                  </span>
+                                  <span className="text-orange-700 dark:text-orange-400 font-mono font-bold">
+                                    Avg: {aacData.density.avgDensity} kg/m³
+                                  </span>
+                                </div>
+                                <table className="w-full min-w-full text-left text-sm">
+                                  <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                    <tr>
+                                      <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                      <th className="p-2.5 font-bold whitespace-nowrap">Specimen ID</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">L (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">B (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">H (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Volume (m³)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Weight (kg)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-orange-50 dark:bg-orange-950/30 text-orange-900 dark:text-orange-300">Density (kg/m³)</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                    {aacData.density.observations.map((obs, idx) => (
+                                      <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                        <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{idx + 1}</td>
+                                        <td className="p-2.5 font-medium text-gray-800 dark:text-foreground whitespace-nowrap">{obs.specimenId || `Specimen ${idx + 1}`}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.length || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.breadth || obs.width || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.height || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.volume || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.weight || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-orange-900 dark:text-orange-300 bg-orange-50/40 dark:bg-orange-950/20 whitespace-nowrap">{obs.density || '-'}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+
+                            {/* 4. Moisture Content Table */}
+                            {aacData.moistureContent?.observations?.length > 0 && (
+                              <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                <div className="p-2.5 px-3 bg-purple-50/70 dark:bg-purple-950/30 border-b flex items-center justify-between text-xs">
+                                  <span className="font-bold text-gray-800 dark:text-foreground">
+                                    Moisture Content Test (IS 6441 Part 1: 1972 Clause 5.2.1)
+                                  </span>
+                                  <span className="text-purple-700 dark:text-purple-400 font-mono font-bold">
+                                    Avg: {aacData.moistureContent.avgMoistureContent}%
+                                  </span>
+                                </div>
+                                <table className="w-full min-w-full text-left text-sm">
+                                  <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                    <tr>
+                                      <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                      <th className="p-2.5 font-bold whitespace-nowrap">Specimen ID</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Size (mm)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Sample Weight (A) g</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Oven Dry Mass (B) g</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-purple-50 dark:bg-purple-950/30 text-purple-900 dark:text-purple-300">Moisture Content (%)</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                    {aacData.moistureContent.observations.map((obs, idx) => (
+                                      <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                        <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{idx + 1}</td>
+                                        <td className="p-2.5 font-medium text-gray-800 dark:text-foreground whitespace-nowrap">{obs.specimenId || `Specimen ${idx + 1}`}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">{obs.specimenSize || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.wetMass || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground whitespace-nowrap">{obs.dryMass || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-purple-900 dark:text-purple-300 bg-purple-50/40 dark:bg-purple-950/20 whitespace-nowrap">{obs.moistureContent ? `${obs.moistureContent}%` : '-'}</td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -2597,6 +3245,67 @@ const TestingManager = ({
                                       </div>
                                     </div>
                                   )}
+                                  {/* Hydrometer Analysis Table */}
+                                  {grainSizeAnalysis.some((bh) => bh.some((d) => d.hydrometerData)) && (
+                                    <div className="space-y-3">
+                                      <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Layers className="w-3 h-3 text-emerald-500" /> Hydrometer Analysis & Soil Bifurcation (IS 2720: Part 4)
+                                      </h5>
+                                      <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                                        <table className="w-full min-w-full text-left text-sm">
+                                          <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground text-xs">
+                                            <tr>
+                                              <th className="p-2.5 font-bold text-center w-20 whitespace-nowrap">BH</th>
+                                              <th className="p-2.5 font-bold whitespace-nowrap">Depth</th>
+                                              <th className="p-2.5 font-bold text-center whitespace-nowrap">Gs</th>
+                                              <th className="p-2.5 font-bold text-center whitespace-nowrap">75µ Passing</th>
+                                              <th className="p-2.5 font-bold text-center whitespace-nowrap">Silt (0.075-0.002mm)</th>
+                                              <th className="p-2.5 font-bold text-center whitespace-nowrap">Clay (&lt;0.002mm)</th>
+                                              <th className="p-2.5 font-bold text-center whitespace-nowrap">Readings</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-gray-100 dark:divide-border text-xs">
+                                            {grainSizeAnalysis.map((bh, bhIdx) =>
+                                              bh
+                                                .filter((d) => d.hydrometerData)
+                                                .map((d, dIdx) => (
+                                                  <tr
+                                                    key={`hydro-${bhIdx}-${dIdx}`}
+                                                    className="hover:bg-gray-50/50 dark:hover:bg-muted/30 transition-colors"
+                                                  >
+                                                    <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">
+                                                      BH-{bhIdx + 1}
+                                                    </td>
+                                                    <td className="p-2.5 font-medium text-gray-800 dark:text-foreground whitespace-nowrap">
+                                                      {d.depth || '-'}
+                                                    </td>
+                                                    <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground whitespace-nowrap">
+                                                      {d.hydrometerData?.specificGravitySoil || '2.55'}
+                                                    </td>
+                                                    <td className="p-2.5 text-center font-mono font-semibold text-primary whitespace-nowrap">
+                                                      {d.sieve9 !== '' && d.sieve9 !== undefined ? `${d.sieve9}%` : '-'}
+                                                    </td>
+                                                    <td className="p-2.5 text-center font-mono font-semibold text-emerald-600 whitespace-nowrap">
+                                                      {d.hydrometerData?.bifurcation?.silt !== undefined
+                                                        ? `${d.hydrometerData.bifurcation.silt}%`
+                                                        : '-'}
+                                                    </td>
+                                                    <td className="p-2.5 text-center font-mono font-semibold text-teal-600 whitespace-nowrap">
+                                                      {d.hydrometerData?.bifurcation?.clay !== undefined
+                                                        ? `${d.hydrometerData.bifurcation.clay}%`
+                                                        : '-'}
+                                                    </td>
+                                                    <td className="p-2.5 text-center font-mono text-gray-500 whitespace-nowrap">
+                                                      {d.hydrometerData?.readings?.filter((r) => r.hmReading !== '' && r.hmReading !== null)?.length || 0} pts
+                                                    </td>
+                                                  </tr>
+                                                ))
+                                            )}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  )}
                                   {/* Chemical Analysis Table */}
                                   {geotechData.chemicalAnalysis?.some(
                                     (d) => d.phValue || d.sulphates
@@ -2668,16 +3377,19 @@ const TestingManager = ({
                                                 BH
                                               </th>
                                               <th className="p-2.5 font-bold whitespace-nowrap">
-                                                Shear Box Size
+                                                Type
                                               </th>
                                               <th className="p-2.5 font-bold whitespace-nowrap">
                                                 Depth
                                               </th>
                                               <th className="p-2.5 font-bold whitespace-nowrap">
+                                                Shear Box Size
+                                              </th>
+                                              <th className="p-2.5 font-bold whitespace-nowrap">
                                                 c Value
                                               </th>
                                               <th className="p-2.5 font-bold whitespace-nowrap">
-                                                phi Value
+                                                φ Value
                                               </th>
                                             </tr>
                                           </thead>
@@ -2691,17 +3403,31 @@ const TestingManager = ({
                                                   <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">
                                                     BH-{bhIdx + 1}
                                                   </td>
+                                                  <td className="p-2.5 whitespace-nowrap">
+                                                    <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                                                      d.sampleType === 'UDS'
+                                                        ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                        : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                    }`}>
+                                                      {d.sampleType === 'UDS' ? 'UDS' : 'DS'}
+                                                    </span>
+                                                  </td>
+                                                  <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
+                                                    {d.depthOfSample ? `${d.depthOfSample} m` : '-'}
+                                                  </td>
                                                   <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
                                                     {d.shearBoxSize || '-'}
                                                   </td>
-                                                  <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
-                                                    {d.depthOfSample || '-'}
+                                                  <td className="p-2.5 font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                                                    {d.cValue ? `${d.cValue} kg/cm²` : '-'}
+                                                    {d.cValueKPa && (
+                                                      <span className="text-[10px] text-gray-400 font-normal ml-1">
+                                                        ({d.cValueKPa} kN/m²)
+                                                      </span>
+                                                    )}
                                                   </td>
-                                                  <td className="p-2.5 font-mono font-bold text-gray-800 dark:text-foreground">
-                                                    {d.cValue || '-'}
-                                                  </td>
-                                                  <td className="p-2.5 font-mono font-bold text-gray-800 dark:text-foreground">
-                                                    {d.phiValue || '-'}
+                                                  <td className="p-2.5 font-mono font-bold text-indigo-700 dark:text-indigo-400">
+                                                    {d.phiValue ? `${d.phiValue}°` : '-'}
                                                   </td>
                                                 </tr>
                                               ))
@@ -3213,6 +3939,37 @@ const TestingManager = ({
         />
       )}
 
+      {/* Structural Steel Test Input Modal */}
+      {structuralSteelModalCategory && (
+        <StructuralSteelTestModal
+          isOpen={!!structuralSteelModalCategory}
+          onClose={() => setStructuralSteelModalCategory(null)}
+          jobCode={jobDetails?.job_code}
+          sampleCode={
+            samples.find(
+              (s) =>
+                String(s.material_type) === String(structuralSteelModalCategory) ||
+                materials.find((m) => String(m.id) === String(s.material_type))?.name ===
+                  structuralSteelModalCategory
+            )?.sample_code || ''
+          }
+          initialData={testResults[structuralSteelModalCategory]?.StructuralSteelData || {}}
+          onApply={async (structuralSteelData) => {
+            const categoryToSave = structuralSteelModalCategory;
+            const updatedResults = {
+              ...testResults,
+              [categoryToSave]: {
+                ...(testResults[categoryToSave] || {}),
+                StructuralSteelData: structuralSteelData,
+              },
+            };
+            setTestResults(updatedResults);
+            setStructuralSteelModalCategory(null);
+            await handleSaveResults(categoryToSave, updatedResults);
+          }}
+        />
+      )}
+
       {/* Fine Aggregate Test Input Modal */}
       {fineAggModalCategory && (
         <FineAggregateTestModal
@@ -3306,6 +4063,37 @@ const TestingManager = ({
             };
             setTestResults(updatedResults);
             setPaverBlockModalCategory(null);
+            await handleSaveResults(categoryToSave, updatedResults);
+          }}
+        />
+      )}
+
+      {/* AAC Block Test Input Modal */}
+      {aacBlockModalCategory && (
+        <AacBlockModal
+          isOpen={!!aacBlockModalCategory}
+          onClose={() => setAacBlockModalCategory(null)}
+          jobCode={jobDetails?.job_code}
+          sampleCode={
+            samples.find(
+              (s) =>
+                String(s.material_type) === String(aacBlockModalCategory) ||
+                materials.find((m) => String(m.id) === String(s.material_type))?.name ===
+                  aacBlockModalCategory
+            )?.sample_code || ''
+          }
+          initialData={testResults[aacBlockModalCategory]?.AacBlockData || {}}
+          onApply={async (aacBlockData) => {
+            const categoryToSave = aacBlockModalCategory;
+            const updatedResults = {
+              ...testResults,
+              [categoryToSave]: {
+                ...(testResults[categoryToSave] || {}),
+                AacBlockData: aacBlockData,
+              },
+            };
+            setTestResults(updatedResults);
+            setAacBlockModalCategory(null);
             await handleSaveResults(categoryToSave, updatedResults);
           }}
         />

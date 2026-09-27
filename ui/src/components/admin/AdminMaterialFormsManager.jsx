@@ -25,10 +25,16 @@ import ConcreteCubeModal from './ConcreteCubeModal';
 import ActCubeModal from './ActCubeModal';
 import ConcreteCoreModal from './ConcreteCoreModal';
 import PaverBlockModal from './PaverBlockModal';
+import AacBlockModal from './AacBlockModal';
+import SteelTestModal from './SteelTestModal';
+import StructuralSteelTestModal from './StructuralSteelTestModal';
 import { SAMPLE_CUBE_TEST_DATA } from '@/utils/cubeTestCalculation';
 import { SAMPLE_ACT_CUBE_TEST_DATA } from '@/utils/actCubeTestCalculation';
 import { SAMPLE_CONCRETE_CORE_TEST_DATA } from '@/utils/concreteCoreTestCalculation';
 import { SAMPLE_PAVER_BLOCK_TEST_DATA } from '@/utils/paverBlockTestCalculation';
+import { SAMPLE_AAC_BLOCK_TEST_DATA } from '@/utils/aacBlockTestCalculation';
+import { SAMPLE_STEEL_TEST_DATA } from '@/utils/steelTestCalculation';
+import { SAMPLE_STRUCTURAL_STEEL_TEST_DATA } from '@/utils/structuralSteelCalculation';
 
 const FORM_TYPES = [
   {
@@ -66,6 +72,24 @@ const FORM_TYPES = [
     name: 'Paver Block Inputs',
     description:
       'Applicable for material inward type "Paver block" / "Paver". Includes IS 15658 : 2021 Compressive Strength with Table 5 thickness & chamfer correction factors, and Water Absorption.',
+  },
+  {
+    id: 'aacblock',
+    name: 'AAC Block Inputs',
+    description:
+      'Applicable for material type "AAC Block" / "AAC". Includes IS 6441 (Part 5) Compressive Strength, IS 6598 Water Absorption, IS 6441 (Part 1) Bulk Density, and IS 6441 (Part 1) Moisture Content.',
+  },
+  {
+    id: 'steel',
+    name: 'Reinforcement Steel Inputs',
+    description:
+      'Applicable for material type "Steel" / "Reinforcement Steel" / "TMT". Includes IS 1786: 2008 & IS 1608-1: 2022 mechanical properties, client Heat/Lot No., Invoice No., Vehicle No., Yield Stress, Tensile Strength, Elongation, Bend and Rebend tests.',
+  },
+  {
+    id: 'structuralsteel',
+    name: 'Structural Steel Inputs',
+    description:
+      'Applicable for material type "Structural Steel" (MS Plates, W-Beam, Channels, Angles, Sections). Includes IS 1608 (Part 1): 2022 tensile testing with Sample Name / Type, Width, Thickness, Area, Yield Load, Yield Stress (2 dec), Ultimate Load, Tensile Strength (2 dec), Initial Gauge Length (5.65×√Area), Final Gauge Length, and Elongation (2 dec).',
   },
 ];
 
@@ -384,6 +408,9 @@ const AdminMaterialFormsManager = () => {
   const [previewActCubeModalOpen, setPreviewActCubeModalOpen] = useState(false);
   const [previewConcreteCoreModalOpen, setPreviewConcreteCoreModalOpen] = useState(false);
   const [previewPaverBlockModalOpen, setPreviewPaverBlockModalOpen] = useState(false);
+  const [previewAacBlockModalOpen, setPreviewAacBlockModalOpen] = useState(false);
+  const [previewSteelModalOpen, setPreviewSteelModalOpen] = useState(false);
+  const [previewStructuralSteelModalOpen, setPreviewStructuralSteelModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [materialSearch, setMaterialSearch] = useState('');
 
@@ -757,11 +784,11 @@ const AdminMaterialFormsManager = () => {
                                 <th className="p-2 text-center">Trial</th>
                                 <th className="p-2">ID</th>
                                 <th className="p-2 text-center">Dimensions</th>
-                                <th className="p-2 text-center">Age</th>
+                                <th className="p-2 text-center">Age (days)</th>
                                 <th className="p-2 text-right">Weight (kg)</th>
-                                <th className="p-2 text-right">Load (kN)</th>
-                                <th className="p-2 text-right">Strength (N/mm²)</th>
-                                <th className="p-2 text-right font-bold text-teal-900">Predicted 28d (N/mm²)</th>
+                                <th className="p-2 text-right">Failure Load (kN)</th>
+                                <th className="p-2 text-right">ACT Compressive strength (N/mm²)</th>
+                                <th className="p-2 text-right font-bold text-teal-900">Predicted 28d Compressive Strength (N/mm²)</th>
                                 <th className="p-2 text-center">Type of Failure</th>
                               </tr>
                             </thead>
@@ -770,11 +797,11 @@ const AdminMaterialFormsManager = () => {
                                 <td className="p-2 text-center font-bold text-gray-400">1</td>
                                 <td className="p-2 font-sans font-medium">M25, Tm-06, Cement - 80%</td>
                                 <td className="p-2 text-center">150×150×150</td>
-                                <td className="p-2 text-center">1 day</td>
+                                <td className="p-2 text-center">1</td>
                                 <td className="p-2 text-right">8.259</td>
                                 <td className="p-2 text-right">365.250</td>
                                 <td className="p-2 text-right">16.0</td>
-                                <td className="p-2 text-right font-bold text-teal-900 bg-teal-50/50">34.33</td>
+                                <td className="p-2 text-right font-bold text-teal-900 bg-teal-50/50">34.50</td>
                                 <td className="p-2 text-center font-sans">
                                   <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
                                     Satisfactory
@@ -785,11 +812,11 @@ const AdminMaterialFormsManager = () => {
                                 <td className="p-2 text-center font-bold text-gray-400">2</td>
                                 <td className="p-2 font-sans font-medium">M25, Tm-06, Cement - 80%</td>
                                 <td className="p-2 text-center">150×150×150</td>
-                                <td className="p-2 text-center">1 day</td>
+                                <td className="p-2 text-center">1</td>
                                 <td className="p-2 text-right">8.274</td>
                                 <td className="p-2 text-right">341.800</td>
                                 <td className="p-2 text-right">15.0</td>
-                                <td className="p-2 text-right font-bold text-teal-900 bg-teal-50/50">32.69</td>
+                                <td className="p-2 text-right font-bold text-teal-900 bg-teal-50/50">32.50</td>
                                 <td className="p-2 text-center font-sans">
                                   <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
                                     Satisfactory
@@ -800,11 +827,11 @@ const AdminMaterialFormsManager = () => {
                                 <td className="p-2 text-center font-bold text-gray-400">3</td>
                                 <td className="p-2 font-sans font-medium">M25, Tm-06, Cement - 80%</td>
                                 <td className="p-2 text-center">150×150×150</td>
-                                <td className="p-2 text-center">1 day</td>
+                                <td className="p-2 text-center">1</td>
                                 <td className="p-2 text-right">8.296</td>
                                 <td className="p-2 text-right">359.605</td>
                                 <td className="p-2 text-right">16.0</td>
-                                <td className="p-2 text-right font-bold text-teal-900 bg-teal-50/50">34.33</td>
+                                <td className="p-2 text-right font-bold text-teal-900 bg-teal-50/50">34.50</td>
                                 <td className="p-2 text-center font-sans">
                                   <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
                                     Satisfactory
@@ -850,7 +877,7 @@ const AdminMaterialFormsManager = () => {
                             Sample Data Preview (IS 516 Core Batch)
                           </span>
                           <span className="text-xs font-mono font-bold text-indigo-800 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200">
-                            Avg Eq. Cube Strength: 36.0 N/mm² (Grade: M35)
+                            Avg Eq. Cube Strength: 35.0 N/mm² (Grade: M35)
                           </span>
                         </div>
                         <div className="overflow-x-auto">
@@ -865,7 +892,8 @@ const AdminMaterialFormsManager = () => {
                                 <th className="p-2 text-right">Load (kN)</th>
                                 <th className="p-2 text-right">Cyl. Str.</th>
                                 <th className="p-2 text-right">L/D</th>
-                                <th className="p-2 text-right">CF</th>
+                                <th className="p-2 text-right">H/D CF</th>
+                                <th className="p-2 text-right">Dia CF</th>
                                 <th className="p-2 text-right font-bold text-blue-900">Corr. Cyl.</th>
                                 <th className="p-2 text-right font-bold text-indigo-900">Eq. Cube</th>
                                 <th className="p-2 text-center">Failure Type</th>
@@ -879,11 +907,12 @@ const AdminMaterialFormsManager = () => {
                                 <td className="p-2 text-right">145.00</td>
                                 <td className="p-2 text-right">7.965</td>
                                 <td className="p-2 text-right">512.910</td>
-                                <td className="p-2 text-right">31.05</td>
+                                <td className="p-2 text-right">31.06</td>
                                 <td className="p-2 text-right">1.37</td>
                                 <td className="p-2 text-right">0.93</td>
-                                <td className="p-2 text-right font-bold text-blue-900 bg-blue-50/40">29.75</td>
-                                <td className="p-2 text-right font-bold text-indigo-900 bg-indigo-50/50">37.0</td>
+                                <td className="p-2 text-right">1.00</td>
+                                <td className="p-2 text-right font-bold text-blue-900 bg-blue-50/40">28.89</td>
+                                <td className="p-2 text-right font-bold text-indigo-900 bg-indigo-50/50">36.0</td>
                                 <td className="p-2 text-center font-sans">
                                   <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
                                     Satisfactory
@@ -897,11 +926,12 @@ const AdminMaterialFormsManager = () => {
                                 <td className="p-2 text-right">141.92</td>
                                 <td className="p-2 text-right">7.698</td>
                                 <td className="p-2 text-right">462.322</td>
-                                <td className="p-2 text-right">29.13</td>
+                                <td className="p-2 text-right">29.23</td>
                                 <td className="p-2 text-right">1.40</td>
                                 <td className="p-2 text-right">0.93</td>
-                                <td className="p-2 text-right font-bold text-blue-900 bg-blue-50/40">28.02</td>
-                                <td className="p-2 text-right font-bold text-indigo-900 bg-indigo-50/50">35.0</td>
+                                <td className="p-2 text-right">1.00</td>
+                                <td className="p-2 text-right font-bold text-blue-900 bg-blue-50/40">27.18</td>
+                                <td className="p-2 text-right font-bold text-indigo-900 bg-indigo-50/50">34.0</td>
                                 <td className="p-2 text-center font-sans">
                                   <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
                                     Satisfactory
@@ -1001,6 +1031,337 @@ const AdminMaterialFormsManager = () => {
                       </div>
                     </div>
                   )}
+
+                  {activePreviewTab === 'aacblock' && (
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 bg-teal-50 text-teal-600 rounded-xl border border-teal-200">
+                            <Layers className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-gray-900">
+                              AAC Block Inputs Preview
+                            </h4>
+                            <p className="text-xs text-teal-700 mt-0.5">
+                              IS 6441 (Part 5) Compressive Strength, IS 6598 Water Absorption, IS 6441 (Part 1) Bulk Density &amp; Moisture Content.
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => setPreviewAacBlockModalOpen(true)}
+                          className="bg-teal-600 hover:bg-teal-700 text-white font-bold gap-1.5 shadow-sm"
+                        >
+                          <Calculator className="w-4 h-4" />
+                          Open Live Modal Preview
+                        </Button>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between border-b pb-3">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Sample Data Preview (IS 6441 / IS 6598)
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-bold text-teal-800 bg-teal-50 px-2.5 py-1 rounded-md border border-teal-200">
+                              Avg Compressive: 5.6 N/mm²
+                            </span>
+                            <span className="text-xs font-mono font-bold text-blue-800 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
+                              Avg WA: 16.0%
+                            </span>
+                            <span className="text-xs font-mono font-bold text-orange-800 bg-orange-50 px-2.5 py-1 rounded-md border border-orange-200">
+                              Avg Bulk Density: 644.33 kg/m³
+                            </span>
+                            <span className="text-xs font-mono font-bold text-purple-800 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-200">
+                              Avg Moisture: 9%
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left">
+                            <thead className="bg-gray-50 border-b text-gray-600 font-bold">
+                              <tr>
+                                <th className="p-2 text-center">#</th>
+                                <th className="p-2">Specimen ID</th>
+                                <th className="p-2 text-right">L (mm)</th>
+                                <th className="p-2 text-right">B (mm)</th>
+                                <th className="p-2 text-right">H (mm)</th>
+                                <th className="p-2 text-right">Area (mm²)</th>
+                                <th className="p-2 text-right">Load (kN)</th>
+                                <th className="p-2 text-right font-bold text-teal-900 bg-teal-50/70">
+                                  Str (N/mm²)
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 font-mono">
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400">1</td>
+                                <td className="p-2">Specimen 1</td>
+                                <td className="p-2 text-right">150</td>
+                                <td className="p-2 text-right">150</td>
+                                <td className="p-2 text-right">150</td>
+                                <td className="p-2 text-right">22500</td>
+                                <td className="p-2 text-right">117.0</td>
+                                <td className="p-2 text-right font-bold text-teal-900 bg-teal-50/50">5.2</td>
+                              </tr>
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400">2</td>
+                                <td className="p-2">Specimen 2</td>
+                                <td className="p-2 text-right">150</td>
+                                <td className="p-2 text-right">150</td>
+                                <td className="p-2 text-right">150</td>
+                                <td className="p-2 text-right">22500</td>
+                                <td className="p-2 text-right">129.0</td>
+                                <td className="p-2 text-right font-bold text-teal-900 bg-teal-50/50">5.7</td>
+                              </tr>
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400">3</td>
+                                <td className="p-2">Specimen 3</td>
+                                <td className="p-2 text-right">150</td>
+                                <td className="p-2 text-right">150</td>
+                                <td className="p-2 text-right">150</td>
+                                <td className="p-2 text-right">22500</td>
+                                <td className="p-2 text-right">132.0</td>
+                                <td className="p-2 text-right font-bold text-teal-900 bg-teal-50/50">5.9</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activePreviewTab === 'steel' && (
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-800">
+                            Reinforcement Steel Test Input Preview (IS 1786: 2008 / IS 1608-1: 2022)
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Individual results only • Averages excluded from final report • Client reference columns (Heat/Lot No., Invoice No., Vehicle No.)
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => setPreviewSteelModalOpen(true)}
+                          className="bg-slate-700 hover:bg-slate-800 text-white font-bold gap-1.5 shadow-sm"
+                        >
+                          <Zap className="w-4 h-4" />
+                          Open Live Modal Preview
+                        </Button>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between border-b pb-3">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Reference Sample Data Preview (IS 1786 Fe 550D)
+                          </span>
+                          <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md">
+                            * Avg. Yield, Tensile &amp; Elongation are testing data only (excluded from final report)
+                          </span>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left">
+                            <thead className="bg-gray-50 text-gray-600 border-b">
+                              <tr>
+                                <th className="p-2 text-center">#</th>
+                                <th className="p-2">Sample ID</th>
+                                <th className="p-2 font-mono">Heat/ Lot No.</th>
+                                <th className="p-2 font-mono">Invoice No.</th>
+                                <th className="p-2 text-center">Dia (mm)</th>
+                                <th className="p-2 text-right">Mass (kg/m)</th>
+                                <th className="p-2 text-right">Area (mm²)</th>
+                                <th className="p-2 text-right font-bold text-amber-900 bg-amber-50/50">Yield Stress (N/mm²)</th>
+                                <th className="p-2 text-right font-bold text-orange-900 bg-orange-50/50">Tensile Str. (N/mm²)</th>
+                                <th className="p-2 text-right font-bold text-emerald-900 bg-emerald-50/50">Elong. (%)</th>
+                                <th className="p-2 text-center">Bend</th>
+                                <th className="p-2 text-center">Rebend</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400">1</td>
+                                <td className="p-2 font-medium">EESIPL/01/389(A)</td>
+                                <td className="p-2 font-mono text-gray-700">72142090</td>
+                                <td className="p-2 font-mono text-gray-700">CREDIT/2780</td>
+                                <td className="p-2 text-center font-mono">8</td>
+                                <td className="p-2 text-right font-mono">0.396</td>
+                                <td className="p-2 text-right font-mono">50.45</td>
+                                <td className="p-2 text-right font-mono font-bold text-amber-900 bg-amber-50/30">1074</td>
+                                <td className="p-2 text-right font-mono font-bold text-orange-900 bg-orange-50/30">1146</td>
+                                <td className="p-2 text-right font-mono font-bold text-emerald-900 bg-emerald-50/30">19.36</td>
+                                <td className="p-2 text-center"><Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-300">NCO</Badge></td>
+                                <td className="p-2 text-center"><Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-300">NCO</Badge></td>
+                              </tr>
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400">2</td>
+                                <td className="p-2 font-medium">EESIPL/01/389(B)</td>
+                                <td className="p-2 font-mono text-gray-700">72142090</td>
+                                <td className="p-2 font-mono text-gray-700">CREDIT/2778</td>
+                                <td className="p-2 text-center font-mono">10</td>
+                                <td className="p-2 text-right font-mono">0.614</td>
+                                <td className="p-2 text-right font-mono">75.41</td>
+                                <td className="p-2 text-right font-mono font-bold text-amber-900 bg-amber-50/30">851</td>
+                                <td className="p-2 text-right font-mono font-bold text-orange-900 bg-orange-50/30">933</td>
+                                <td className="p-2 text-right font-mono font-bold text-emerald-900 bg-emerald-50/30">21.42</td>
+                                <td className="p-2 text-center"><Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-300">NCO</Badge></td>
+                                <td className="p-2 text-center"><Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-300">NCO</Badge></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activePreviewTab === 'structuralsteel' && (
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-800">
+                            Structural Steel Test Input Preview (IS 1608 (Part 1) : 2022)
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Sample Name / Type space • Width, Thickness, Area, Yield Stress, Ultimate Tensile Strength, Gauge Lengths &amp; Elongation (2 decimal precision)
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => setPreviewStructuralSteelModalOpen(true)}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold gap-1.5 shadow-sm"
+                        >
+                          <Zap className="w-4 h-4" />
+                          Open Live Modal Preview
+                        </Button>
+                      </div>
+
+                      <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between border-b pb-3">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Reference Sample Data Preview (IS 1608-1 Engineering Reference Sheet)
+                          </span>
+                          <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md">
+                            * Avg. Yield, Tensile &amp; Elongation are testing data only (excluded from final report)
+                          </span>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left">
+                            <thead className="bg-gray-50 text-gray-600 border-b">
+                              <tr>
+                                <th className="p-2 text-center">#</th>
+                                <th className="p-2">Sample ID</th>
+                                <th className="p-2 bg-indigo-50/50 text-indigo-900 font-semibold">Sample Name / Type</th>
+                                <th className="p-2 text-right">Width (mm)</th>
+                                <th className="p-2 text-right">Thickness (mm)</th>
+                                <th className="p-2 text-right font-medium">Area (mm²)</th>
+                                <th className="p-2 text-right">Yield Load (kN)</th>
+                                <th className="p-2 text-right font-bold text-amber-900 bg-amber-50/50">Yield Stress (N/mm²)</th>
+                                <th className="p-2 text-right">Ult. Load (kN)</th>
+                                <th className="p-2 text-right font-bold text-orange-900 bg-orange-50/50">Tensile Str. (N/mm²)</th>
+                                <th className="p-2 text-right">IGL (mm)</th>
+                                <th className="p-2 text-right">FGL (mm)</th>
+                                <th className="p-2 text-right font-bold text-emerald-900 bg-emerald-50/50">Elong. (%)</th>
+                                <th className="p-2 text-center">Bend</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 font-mono">
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400 font-sans">1</td>
+                                <td className="p-2 font-medium text-gray-800 font-sans">Sample 1</td>
+                                <td className="p-2 font-sans font-medium text-indigo-900 bg-indigo-50/30">
+                                  <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200">MS Plate</Badge>
+                                </td>
+                                <td className="p-2 text-right">20.000</td>
+                                <td className="p-2 text-right">12.30</td>
+                                <td className="p-2 text-right font-medium">246.000</td>
+                                <td className="p-2 text-right">149.232</td>
+                                <td className="p-2 text-right font-bold text-amber-900 bg-amber-50/30">606.63</td>
+                                <td className="p-2 text-right">183.816</td>
+                                <td className="p-2 text-right font-bold text-orange-900 bg-orange-50/30">747.22</td>
+                                <td className="p-2 text-right">88.62</td>
+                                <td className="p-2 text-right">111.25</td>
+                                <td className="p-2 text-right font-bold text-emerald-900 bg-emerald-50/30">25.54%</td>
+                                <td className="p-2 text-center font-sans"><Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-300">NCO</Badge></td>
+                              </tr>
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400 font-sans">2</td>
+                                <td className="p-2 font-medium text-gray-800 font-sans">Sample 2</td>
+                                <td className="p-2 font-sans font-medium text-indigo-900 bg-indigo-50/30">
+                                  <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200">MS Plate</Badge>
+                                </td>
+                                <td className="p-2 text-right">20.000</td>
+                                <td className="p-2 text-right">12.10</td>
+                                <td className="p-2 text-right font-medium">242.000</td>
+                                <td className="p-2 text-right">159.816</td>
+                                <td className="p-2 text-right font-bold text-amber-900 bg-amber-50/30">660.40</td>
+                                <td className="p-2 text-right">195.864</td>
+                                <td className="p-2 text-right font-bold text-orange-900 bg-orange-50/30">809.36</td>
+                                <td className="p-2 text-right">87.89</td>
+                                <td className="p-2 text-right">110.89</td>
+                                <td className="p-2 text-right font-bold text-emerald-900 bg-emerald-50/30">26.16%</td>
+                                <td className="p-2 text-center font-sans"><Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-300">NCO</Badge></td>
+                              </tr>
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400 font-sans">3</td>
+                                <td className="p-2 font-medium text-gray-800 font-sans">Sample 3</td>
+                                <td className="p-2 font-sans font-medium text-indigo-900 bg-indigo-50/30">
+                                  <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200">W-Beam</Badge>
+                                </td>
+                                <td className="p-2 text-right">20.000</td>
+                                <td className="p-2 text-right">16.01</td>
+                                <td className="p-2 text-right font-medium">320.200</td>
+                                <td className="p-2 text-right">165.960</td>
+                                <td className="p-2 text-right font-bold text-amber-900 bg-amber-50/30">518.30</td>
+                                <td className="p-2 text-right">205.800</td>
+                                <td className="p-2 text-right font-bold text-orange-900 bg-orange-50/30">642.72</td>
+                                <td className="p-2 text-right">101.10</td>
+                                <td className="p-2 text-right">125.36</td>
+                                <td className="p-2 text-right font-bold text-emerald-900 bg-emerald-50/30">23.99%</td>
+                                <td className="p-2 text-center font-sans"><Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-300">NCO</Badge></td>
+                              </tr>
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400 font-sans">4</td>
+                                <td className="p-2 font-medium text-gray-800 font-sans">Sample 4</td>
+                                <td className="p-2 font-sans font-medium text-indigo-900 bg-indigo-50/30">
+                                  <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200">Channel</Badge>
+                                </td>
+                                <td className="p-2 text-right">20.000</td>
+                                <td className="p-2 text-right">22.40</td>
+                                <td className="p-2 text-right font-medium">448.000</td>
+                                <td className="p-2 text-right">297.528</td>
+                                <td className="p-2 text-right font-bold text-amber-900 bg-amber-50/30">664.13</td>
+                                <td className="p-2 text-right">297.552</td>
+                                <td className="p-2 text-right font-bold text-orange-900 bg-orange-50/30">664.18</td>
+                                <td className="p-2 text-right">119.59</td>
+                                <td className="p-2 text-right">148.96</td>
+                                <td className="p-2 text-right font-bold text-emerald-900 bg-emerald-50/30">24.56%</td>
+                                <td className="p-2 text-center font-sans"><Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-300">NCO</Badge></td>
+                              </tr>
+                              <tr>
+                                <td className="p-2 text-center font-bold text-gray-400 font-sans">5</td>
+                                <td className="p-2 font-medium text-gray-800 font-sans">Sample 5</td>
+                                <td className="p-2 font-sans font-medium text-indigo-900 bg-indigo-50/30">
+                                  <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200">MS Plate</Badge>
+                                </td>
+                                <td className="p-2 text-right">20.000</td>
+                                <td className="p-2 text-right">25.10</td>
+                                <td className="p-2 text-right font-medium">502.000</td>
+                                <td className="p-2 text-right">264.144</td>
+                                <td className="p-2 text-right font-bold text-amber-900 bg-amber-50/30">526.18</td>
+                                <td className="p-2 text-right">319.320</td>
+                                <td className="p-2 text-right font-bold text-orange-900 bg-orange-50/30">636.10</td>
+                                <td className="p-2 text-right">126.59</td>
+                                <td className="p-2 text-right">159.63</td>
+                                <td className="p-2 text-right font-bold text-emerald-900 bg-emerald-50/30">26.10%</td>
+                                <td className="p-2 text-center font-sans"><Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-300">NCO</Badge></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Tabs>
             </div>
@@ -1053,6 +1414,39 @@ const AdminMaterialFormsManager = () => {
           jobCode="JOB-DEMO-2026"
           initialData={SAMPLE_PAVER_BLOCK_TEST_DATA}
           onApply={() => setPreviewPaverBlockModalOpen(false)}
+        />
+      )}
+
+      {previewAacBlockModalOpen && (
+        <AacBlockModal
+          isOpen={previewAacBlockModalOpen}
+          onClose={() => setPreviewAacBlockModalOpen(false)}
+          sampleCode="DEMO-AAC-01"
+          jobCode="JOB-DEMO-2026"
+          initialData={SAMPLE_AAC_BLOCK_TEST_DATA}
+          onApply={() => setPreviewAacBlockModalOpen(false)}
+        />
+      )}
+
+      {previewSteelModalOpen && (
+        <SteelTestModal
+          isOpen={previewSteelModalOpen}
+          onClose={() => setPreviewSteelModalOpen(false)}
+          sampleCode="DEMO-STEEL-01"
+          jobCode="JOB-DEMO-2026"
+          initialData={SAMPLE_STEEL_TEST_DATA}
+          onApply={() => setPreviewSteelModalOpen(false)}
+        />
+      )}
+
+      {previewStructuralSteelModalOpen && (
+        <StructuralSteelTestModal
+          isOpen={previewStructuralSteelModalOpen}
+          onClose={() => setPreviewStructuralSteelModalOpen(false)}
+          sampleCode="DEMO-STR-STEEL-01"
+          jobCode="JOB-DEMO-2026"
+          initialData={SAMPLE_STRUCTURAL_STEEL_TEST_DATA}
+          onApply={() => setPreviewStructuralSteelModalOpen(false)}
         />
       )}
     </div>

@@ -1,0 +1,1019 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Plus,
+  Trash2,
+  RotateCcw,
+  Check,
+  Info,
+  Sparkles,
+  AlertTriangle,
+  Zap,
+  Tag,
+  Receipt,
+  Truck,
+  Building2,
+  Layers,
+} from 'lucide-react';
+import {
+  DEFAULT_STRUCTURAL_STEEL_OBSERVATION,
+  DEFAULT_STRUCTURAL_STEEL_OBSERVATIONS,
+  BEND_OPTIONS,
+  COMMON_STRUCTURAL_STEEL_TYPES,
+  SAMPLE_STRUCTURAL_STEEL_TEST_DATA,
+  calculateStructuralSteelTest,
+} from '@/utils/structuralSteelCalculation';
+
+/**
+ * Modal for Structural Steel Tensile Tests
+ * Standard: IS 1608 (Part 1) : 2022
+ *
+ * Applicable for:
+ *  - MS Plates
+ *  - W-Beam
+ *  - Channels
+ *  - Angles, Flats, Sections
+ *
+ * Highlights:
+ *  1. Dedicated space to mention Sample Name or Type for each specimen (per IS 1608 specifications).
+ *  2. 10 Columns:
+ *     - C1: Width (mm) [Input]
+ *     - C2: Thickness (mm) [Input]
+ *     - C3: Area (mm²) [Auto-calculated = C1 × C2]
+ *     - C4: Yield Load (kN) [Input]
+ *     - C5: Yield Stress (N/mm²) [Auto-calculated, 2 decimals]
+ *     - C6: Ultimate Load (kN) [Input]
+ *     - C7: Ultimate Tensile Strength (N/mm²) [Auto-calculated, 2 decimals]
+ *     - C8: Initial Gauge Length (mm) [Auto-calculated = 5.65 × √Area, 2 decimals]
+ *     - C9: Final Gauge Length (mm) [Input]
+ *     - C10: Elongation (%) [Auto-calculated, 2 decimals]
+ *  3. Individual specimen results reported; averages displayed for testing data only.
+ *  4. Client reference tracking (Heat/Lot No., Invoice No., Vehicle No.).
+ */
+export default function StructuralSteelTestModal({
+  isOpen,
+  onClose,
+  sampleCode = '',
+  jobCode = '',
+  initialData = {},
+  onApply,
+}) {
+  const [observations, setObservations] = useState(
+    DEFAULT_STRUCTURAL_STEEL_OBSERVATIONS.map((o) => ({ ...o }))
+  );
+
+  // Client reference dropdown option pools
+  const [heatNoOptions, setHeatNoOptions] = useState([]);
+  const [invoiceNoOptions, setInvoiceNoOptions] = useState([]);
+  const [vehicleNoOptions, setVehicleNoOptions] = useState([]);
+
+  // Report column toggles
+  const [includeHeatNoInReport, setIncludeHeatNoInReport] = useState(false);
+  const [includeInvoiceNoInReport, setIncludeInvoiceNoInReport] = useState(false);
+  const [includeVehicleNoInReport, setIncludeVehicleNoInReport] = useState(false);
+
+  // Quick inputs
+  const [heatInput, setHeatInput] = useState('');
+  const [invoiceInput, setInvoiceInput] = useState('');
+  const [vehicleInput, setVehicleInput] = useState('');
+
+  // ── Load initial data ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (initialData?.observations?.length > 0) {
+      setObservations(
+        initialData.observations.map((o, i) => ({
+          sampleId:         o.sampleId         ?? `Sample ${i + 1}`,
+          sampleType:       o.sampleType       ?? o.sampleName ?? 'MS Plate',
+          sampleName:       o.sampleType       ?? o.sampleName ?? 'MS Plate',
+          heatNo:           o.heatNo           !== undefined ? String(o.heatNo)           : '',
+          invoiceNo:        o.invoiceNo        !== undefined ? String(o.invoiceNo)        : '',
+          vehicleNo:        o.vehicleNo        !== undefined ? String(o.vehicleNo)        : '',
+          width:            o.width            !== undefined ? String(o.width)            : '',
+          thickness:        o.thickness        !== undefined ? String(o.thickness)        : '',
+          yieldLoad:        o.yieldLoad        !== undefined ? String(o.yieldLoad)        : '',
+          ultimateLoad:     o.ultimateLoad     !== undefined ? String(o.ultimateLoad)     : '',
+          finalGaugeLength: o.finalGaugeLength !== undefined ? String(o.finalGaugeLength) : '',
+          bendTest:         o.bendTest         || 'NCO',
+        }))
+      );
+
+      const existingHeats = [
+        ...(initialData.heatNoOptions || []),
+        ...initialData.observations.map((o) => o.heatNo).filter(Boolean),
+      ];
+      const existingInvoices = [
+        ...(initialData.invoiceNoOptions || []),
+        ...initialData.observations.map((o) => o.invoiceNo).filter(Boolean),
+      ];
+      const existingVehicles = [
+        ...(initialData.vehicleNoOptions || []),
+        ...initialData.observations.map((o) => o.vehicleNo).filter(Boolean),
+      ];
+
+      setHeatNoOptions([...new Set(existingHeats.map((s) => String(s).trim()))]);
+      setInvoiceNoOptions([...new Set(existingInvoices.map((s) => String(s).trim()))]);
+      setVehicleNoOptions([...new Set(existingVehicles.map((s) => String(s).trim()))]);
+
+      setIncludeHeatNoInReport(
+        initialData.includeHeatNoInReport ??
+          initialData.clientReferenceColumns?.heatNo ??
+          existingHeats.length > 0
+      );
+      setIncludeInvoiceNoInReport(
+        initialData.includeInvoiceNoInReport ??
+          initialData.clientReferenceColumns?.invoiceNo ??
+          existingInvoices.length > 0
+      );
+      setIncludeVehicleNoInReport(
+        initialData.includeVehicleNoInReport ??
+          initialData.clientReferenceColumns?.vehicleNo ??
+          existingVehicles.length > 0
+      );
+    } else {
+      setObservations(
+        DEFAULT_STRUCTURAL_STEEL_OBSERVATIONS.map((o, i) => ({
+          ...o,
+          sampleId: sampleCode ? `${sampleCode}-${i + 1}` : o.sampleId,
+        }))
+      );
+      setHeatNoOptions([]);
+      setInvoiceNoOptions([]);
+      setVehicleNoOptions([]);
+      setIncludeHeatNoInReport(false);
+      setIncludeInvoiceNoInReport(false);
+      setIncludeVehicleNoInReport(false);
+    }
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Options for dropdowns ───────────────────────────────────────────────
+  const availableHeatNos = useMemo(() => {
+    const fromObs = observations.map((o) => o.heatNo).filter(Boolean);
+    return [...new Set([...heatNoOptions, ...fromObs].map((s) => String(s).trim()))].filter(Boolean);
+  }, [heatNoOptions, observations]);
+
+  const availableInvoiceNos = useMemo(() => {
+    const fromObs = observations.map((o) => o.invoiceNo).filter(Boolean);
+    return [...new Set([...invoiceNoOptions, ...fromObs].map((s) => String(s).trim()))].filter(Boolean);
+  }, [invoiceNoOptions, observations]);
+
+  const availableVehicleNos = useMemo(() => {
+    const fromObs = observations.map((o) => o.vehicleNo).filter(Boolean);
+    return [...new Set([...vehicleNoOptions, ...fromObs].map((s) => String(s).trim()))].filter(Boolean);
+  }, [vehicleNoOptions, observations]);
+
+  // ── Calculation ─────────────────────────────────────────────────────────
+  const { rows, summary } = useMemo(
+    () =>
+      calculateStructuralSteelTest(observations, {
+        includeHeatNoInReport,
+        includeInvoiceNoInReport,
+        includeVehicleNoInReport,
+      }),
+    [observations, includeHeatNoInReport, includeInvoiceNoInReport, includeVehicleNoInReport]
+  );
+
+  // ── Handlers ────────────────────────────────────────────────────────────
+  const change = (i, field, val) =>
+    setObservations((prev) => {
+      const c = [...prev];
+      c[i] = { ...c[i], [field]: val };
+      if (field === 'sampleType') {
+        c[i].sampleName = val;
+      }
+      return c;
+    });
+
+  const addRow = () =>
+    setObservations((p) => [
+      ...p,
+      {
+        ...DEFAULT_STRUCTURAL_STEEL_OBSERVATION,
+        sampleId: `Sample ${p.length + 1}`,
+        sampleType: p[p.length - 1]?.sampleType || 'MS Plate',
+        sampleName: p[p.length - 1]?.sampleType || 'MS Plate',
+        heatNo: availableHeatNos.length === 1 ? availableHeatNos[0] : '',
+        invoiceNo: availableInvoiceNos.length === 1 ? availableInvoiceNos[0] : '',
+        vehicleNo: availableVehicleNos.length === 1 ? availableVehicleNos[0] : '',
+      },
+    ]);
+
+  const removeRow = (i) =>
+    setObservations((p) => (p.length > 1 ? p.filter((_, idx) => idx !== i) : p));
+
+  const applySampleTypeToAll = (val) => {
+    if (!val) return;
+    setObservations((prev) =>
+      prev.map((o) => ({ ...o, sampleType: val, sampleName: val }))
+    );
+  };
+
+  const applyHeatToAll = (val) => {
+    if (!val) return;
+    setObservations((prev) => prev.map((o) => ({ ...o, heatNo: val })));
+    setIncludeHeatNoInReport(true);
+  };
+
+  const applyInvoiceToAll = (val) => {
+    if (!val) return;
+    setObservations((prev) => prev.map((o) => ({ ...o, invoiceNo: val })));
+    setIncludeInvoiceNoInReport(true);
+  };
+
+  const applyVehicleToAll = (val) => {
+    if (!val) return;
+    setObservations((prev) => prev.map((o) => ({ ...o, vehicleNo: val })));
+    setIncludeVehicleNoInReport(true);
+  };
+
+  const handleAddHeatOptions = () => {
+    if (!heatInput.trim()) return;
+    const parts = heatInput.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+    setHeatNoOptions((prev) => [...new Set([...prev, ...parts])]);
+    setIncludeHeatNoInReport(true);
+    setHeatInput('');
+  };
+
+  const handleAddInvoiceOptions = () => {
+    if (!invoiceInput.trim()) return;
+    const parts = invoiceInput.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+    setInvoiceNoOptions((prev) => [...new Set([...prev, ...parts])]);
+    setIncludeInvoiceNoInReport(true);
+    setInvoiceInput('');
+  };
+
+  const handleAddVehicleOptions = () => {
+    if (!vehicleInput.trim()) return;
+    const parts = vehicleInput.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+    setVehicleNoOptions((prev) => [...new Set([...prev, ...parts])]);
+    setIncludeVehicleNoInReport(true);
+    setVehicleInput('');
+  };
+
+  // ── Load Sample Data (from the PDF reference sheet) ──────────────────────
+  const handleLoadSampleData = () => {
+    setObservations(
+      SAMPLE_STRUCTURAL_STEEL_TEST_DATA.observations.map((o) => ({ ...o }))
+    );
+    setHeatNoOptions([...SAMPLE_STRUCTURAL_STEEL_TEST_DATA.heatNoOptions]);
+    setInvoiceNoOptions([...SAMPLE_STRUCTURAL_STEEL_TEST_DATA.invoiceNoOptions]);
+    setVehicleNoOptions([...SAMPLE_STRUCTURAL_STEEL_TEST_DATA.vehicleNoOptions]);
+    setIncludeHeatNoInReport(false);
+    setIncludeInvoiceNoInReport(false);
+    setIncludeVehicleNoInReport(false);
+  };
+
+  const handleReset = () => {
+    setObservations(
+      DEFAULT_STRUCTURAL_STEEL_OBSERVATIONS.map((o, i) => ({
+        ...o,
+        sampleId: sampleCode ? `${sampleCode}-${i + 1}` : o.sampleId,
+      }))
+    );
+    setHeatNoOptions([]);
+    setInvoiceNoOptions([]);
+    setVehicleNoOptions([]);
+    setIncludeHeatNoInReport(false);
+    setIncludeInvoiceNoInReport(false);
+    setIncludeVehicleNoInReport(false);
+  };
+
+  const handleSave = () => {
+    const hasHeatVal = observations.some((o) => o.heatNo && String(o.heatNo).trim() !== '');
+    const hasInvoiceVal = observations.some((o) => o.invoiceNo && String(o.invoiceNo).trim() !== '');
+    const hasVehicleVal = observations.some((o) => o.vehicleNo && String(o.vehicleNo).trim() !== '');
+
+    const payload = {
+      standard: 'IS 1608 (Part 1) : 2022',
+      observations: observations.map((o, i) => {
+        const computed = rows[i] || {};
+        return {
+          ...o,
+          slNo: i + 1,
+          sampleId:         o.sampleId || `Sample ${i + 1}`,
+          sampleType:       o.sampleType || o.sampleName || '',
+          sampleName:       o.sampleType || o.sampleName || '',
+          area:             computed.areaFmt || '',
+          yieldStress:      computed.yieldStressFmt || '',
+          tensileStrength:  computed.tensileStrengthFmt || '',
+          initialGaugeLength: computed.iglFmt || '',
+          finalGaugeLength: o.finalGaugeLength || '',
+          elongation:       computed.elongationFmt || '',
+          bendTest:         o.bendTest || 'NCO',
+        };
+      }),
+      heatNoOptions,
+      invoiceNoOptions,
+      vehicleNoOptions,
+      includeHeatNoInReport:   includeHeatNoInReport && (hasHeatVal || heatNoOptions.length > 0),
+      includeInvoiceNoInReport: includeInvoiceNoInReport && (hasInvoiceVal || invoiceNoOptions.length > 0),
+      includeVehicleNoInReport: includeVehicleNoInReport && (hasVehicleVal || vehicleNoOptions.length > 0),
+      clientReferenceColumns: {
+        heatNo:    includeHeatNoInReport && (hasHeatVal || heatNoOptions.length > 0),
+        invoiceNo: includeInvoiceNoInReport && (hasInvoiceVal || invoiceNoOptions.length > 0),
+        vehicleNo: includeVehicleNoInReport && (hasVehicleVal || vehicleNoOptions.length > 0),
+      },
+      avgYieldStress:     summary.avgYieldStressFmt,
+      avgTensileStrength: summary.avgTensileStrengthFmt,
+      avgElongation:      summary.avgElongationFmt,
+      reportExcludeAverages: true,
+      reportExcludeAvgYieldStress: true,
+      reportExcludeAvgTensileStrength: true,
+      reportExcludeAvgElongation: true,
+      includeAveragesInReport: false,
+      reportClauseNote:
+        'Avg. yield stress, avg. tensile strength, and avg. elongation are for testing data only and shall not appear in the final report; only individual specimen results are required.',
+    };
+
+    onApply(payload);
+    onClose();
+  };
+
+  const thBase = 'p-2 text-center font-bold whitespace-nowrap text-xs border-r dark:border-border';
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-[96vw] xl:max-w-7xl max-h-[92vh] overflow-y-auto bg-slate-50/50 dark:bg-card">
+        <DialogHeader className="border-b pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-foreground">
+                <Building2 className="w-5 h-5 text-indigo-600" />
+                Structural Steel Test Data Entry
+              </DialogTitle>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-300 font-mono text-[11px]">
+                  IS 1608 (Part 1) : 2022
+                </Badge>
+                <span className="text-xs text-gray-500 dark:text-muted-foreground">
+                  Metallic materials — Tensile testing (MS Plates, W-Beam, Channels, Sections)
+                </span>
+                {jobCode && (
+                  <Badge variant="secondary" className="text-xs font-mono">
+                    Job: {jobCode}
+                  </Badge>
+                )}
+                {sampleCode && (
+                  <Badge variant="secondary" className="text-xs font-mono">
+                    Sample: {sampleCode}
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleLoadSampleData}
+                className="gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border-indigo-200"
+              >
+                <Sparkles className="w-3.5 h-3.5" /> Load PDF Reference Data
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+                className="gap-1.5 text-xs text-gray-600 dark:text-gray-300"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> Reset
+              </Button>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {/* Top Info Banner & Sample Types Shortcut */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            {/* Sample Name / Type space explanation */}
+            <div className="lg:col-span-2 p-3 rounded-xl bg-white dark:bg-card border border-indigo-100 dark:border-indigo-950/40 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                    <Tag className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                      Sample Name / Type Specification
+                    </h4>
+                    <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
+                      Space provided to mention sample name or type (MS Plates, W-Beam, Channel, Angles, etc.)
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-gray-100 dark:border-border">
+                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Quick Preset:</span>
+                {COMMON_STRUCTURAL_STEEL_TYPES.map((type) => (
+                  <Badge
+                    key={type}
+                    variant="outline"
+                    className="text-[11px] cursor-pointer hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 transition-colors py-0.5"
+                    title={`Click to set "${type}" for all specimens`}
+                    onClick={() => applySampleTypeToAll(type)}
+                  >
+                    + {type}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* IS Standard Note */}
+            <div className="p-3 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 shadow-sm flex flex-col justify-between">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                <div>
+                  <h4 className="text-xs font-bold text-amber-900 dark:text-amber-300">
+                    Calculation Rules (IS 1608: 2022)
+                  </h4>
+                  <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80 mt-0.5 leading-relaxed">
+                    Yield Stress &amp; Ultimate Tensile Strength formatted to <strong>2 decimal places</strong>.
+                    Initial Gauge Length = <strong>5.65 × √Area</strong> (Cl. D.2 / 3.1).
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-semibold text-amber-900/80 dark:text-amber-300/70 pt-2 border-t border-amber-200/60 mt-2">
+                * Averages are for testing data only and excluded from final report.
+              </span>
+            </div>
+          </div>
+
+          {/* Client Reference Options (Collapsible / Optional) */}
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-slate-800 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 uppercase tracking-wider">
+                <Layers className="w-3.5 h-3.5 text-blue-500" /> Client Reference Columns (Optional)
+              </span>
+              <span className="text-[11px] text-gray-500 dark:text-muted-foreground">
+                Toggles determine inclusion in final report table
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Heat No */}
+              <div className="p-2.5 rounded-lg bg-white dark:bg-card border border-gray-200 dark:border-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                    <Tag className="w-3 h-3 text-blue-500" /> Heat / Lot No.
+                  </Label>
+                  <label className="flex items-center gap-1.5 text-[11px] cursor-pointer text-gray-600 dark:text-gray-400">
+                    <Checkbox
+                      checked={includeHeatNoInReport}
+                      onCheckedChange={setIncludeHeatNoInReport}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span>Include in Report</span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    value={heatInput}
+                    onChange={(e) => setHeatInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddHeatOptions())}
+                    placeholder="e.g. HT-2026-01"
+                    className="h-7 text-xs font-mono"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddHeatOptions}
+                    className="h-7 px-2 text-xs shrink-0"
+                  >
+                    + Add
+                  </Button>
+                </div>
+                {availableHeatNos.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-gray-100 dark:border-border">
+                    <span className="text-[10px] text-gray-400">Pool:</span>
+                    {availableHeatNos.map((val) => (
+                      <Badge
+                        key={val}
+                        variant="secondary"
+                        className="text-[10px] py-0 px-1.5 font-mono cursor-pointer hover:bg-blue-50 hover:text-blue-700"
+                        title="Click to apply to all rows"
+                        onClick={() => applyHeatToAll(val)}
+                      >
+                        {val}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Invoice No */}
+              <div className="p-2.5 rounded-lg bg-white dark:bg-card border border-gray-200 dark:border-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                    <Receipt className="w-3 h-3 text-indigo-500" /> Invoice No.
+                  </Label>
+                  <label className="flex items-center gap-1.5 text-[11px] cursor-pointer text-gray-600 dark:text-gray-400">
+                    <Checkbox
+                      checked={includeInvoiceNoInReport}
+                      onCheckedChange={setIncludeInvoiceNoInReport}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span>Include in Report</span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    value={invoiceInput}
+                    onChange={(e) => setInvoiceInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddInvoiceOptions())}
+                    placeholder="e.g. INV-2026-01"
+                    className="h-7 text-xs font-mono"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddInvoiceOptions}
+                    className="h-7 px-2 text-xs shrink-0"
+                  >
+                    + Add
+                  </Button>
+                </div>
+                {availableInvoiceNos.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-gray-100 dark:border-border">
+                    <span className="text-[10px] text-gray-400">Pool:</span>
+                    {availableInvoiceNos.map((val) => (
+                      <Badge
+                        key={val}
+                        variant="secondary"
+                        className="text-[10px] py-0 px-1.5 font-mono cursor-pointer hover:bg-indigo-50 hover:text-indigo-700"
+                        title="Click to apply to all rows"
+                        onClick={() => applyInvoiceToAll(val)}
+                      >
+                        {val}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Vehicle No */}
+              <div className="p-2.5 rounded-lg bg-white dark:bg-card border border-gray-200 dark:border-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                    <Truck className="w-3 h-3 text-emerald-500" /> Vehicle No.
+                  </Label>
+                  <label className="flex items-center gap-1.5 text-[11px] cursor-pointer text-gray-600 dark:text-gray-400">
+                    <Checkbox
+                      checked={includeVehicleNoInReport}
+                      onCheckedChange={setIncludeVehicleNoInReport}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span>Include in Report</span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    value={vehicleInput}
+                    onChange={(e) => setVehicleInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddVehicleOptions())}
+                    placeholder="e.g. MH-12-AB-1234"
+                    className="h-7 text-xs font-mono"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddVehicleOptions}
+                    className="h-7 px-2 text-xs shrink-0"
+                  >
+                    + Add
+                  </Button>
+                </div>
+                {availableVehicleNos.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-gray-100 dark:border-border">
+                    <span className="text-[10px] text-gray-400">Pool:</span>
+                    {availableVehicleNos.map((val) => (
+                      <Badge
+                        key={val}
+                        variant="secondary"
+                        className="text-[10px] py-0 px-1.5 font-mono cursor-pointer hover:bg-emerald-50 hover:text-emerald-700"
+                        title="Click to apply to all rows"
+                        onClick={() => applyVehicleToAll(val)}
+                      >
+                        {val}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Observations Table */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-indigo-500" /> Structural Steel Observations
+                </h4>
+                <Badge variant="outline" className="text-[10px] font-mono">
+                  {observations.length} {observations.length === 1 ? 'specimen' : 'specimens'}
+                </Badge>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addRow}
+                className="h-7 text-xs gap-1 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+              >
+                <Plus className="w-3 h-3" /> Add Specimen
+              </Button>
+            </div>
+
+            <div className="border dark:border-border rounded-xl overflow-hidden shadow-sm bg-white dark:bg-card">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    {/* Header Group */}
+                    <tr className="bg-gray-100/90 dark:bg-muted/60 border-b dark:border-border text-[10px] font-bold text-gray-500 dark:text-muted-foreground uppercase tracking-wider">
+                      <th className={thBase} rowSpan={2}>#</th>
+                      <th className={thBase} rowSpan={2}>Sample ID</th>
+                      <th className={`${thBase} bg-indigo-50/70 dark:bg-indigo-950/30 text-indigo-900 dark:text-indigo-300`} rowSpan={2}>
+                        Sample Name / Type
+                        <span className="block text-[9px] font-normal text-indigo-600 dark:text-indigo-400">
+                          (MS Plate, W-Beam, Channel)
+                        </span>
+                      </th>
+                      {/* Client references if active */}
+                      {(availableHeatNos.length > 0 || includeHeatNoInReport) && (
+                        <th className={`${thBase} bg-blue-50/60 dark:bg-blue-950/20`} rowSpan={2}>
+                          Heat/ Lot No.
+                        </th>
+                      )}
+                      {(availableInvoiceNos.length > 0 || includeInvoiceNoInReport) && (
+                        <th className={`${thBase} bg-blue-50/60 dark:bg-blue-950/20`} rowSpan={2}>
+                          Invoice No.
+                        </th>
+                      )}
+                      {(availableVehicleNos.length > 0 || includeVehicleNoInReport) && (
+                        <th className={`${thBase} bg-blue-50/60 dark:bg-blue-950/20`} rowSpan={2}>
+                          Vehicle No.
+                        </th>
+                      )}
+                      {/* Inputs */}
+                      <th className={`${thBase} border-l dark:border-border`} colSpan={2}>Dimensions (Inputs)</th>
+                      {/* Derived Area */}
+                      <th className={`${thBase} bg-slate-100/80 dark:bg-slate-900/40 border-l dark:border-border`}>Derived</th>
+                      {/* Yield */}
+                      <th className={`${thBase} border-l dark:border-border`} colSpan={2}>Yield</th>
+                      {/* Tensile */}
+                      <th className={`${thBase} border-l dark:border-border`} colSpan={2}>Tensile</th>
+                      {/* Gauge & Elongation */}
+                      <th className={`${thBase} bg-emerald-50/60 dark:bg-emerald-950/20 border-l dark:border-border`} colSpan={3}>Gauge / Elongation</th>
+                      {/* Bend */}
+                      <th className={`${thBase} border-l dark:border-border`} rowSpan={2}>Bend</th>
+                      <th className={thBase} rowSpan={2}></th>
+                    </tr>
+
+                    <tr className="bg-gray-50/90 dark:bg-muted/50 border-b dark:border-border text-gray-600 dark:text-gray-300">
+                      {/* C1 Width */}
+                      <th className={`${thBase} border-l dark:border-border min-w-[85px]`}>
+                        C1<span className="block text-[9px] font-normal text-gray-400">Width (mm)</span>
+                      </th>
+                      {/* C2 Thickness */}
+                      <th className={`${thBase} min-w-[85px]`}>
+                        C2<span className="block text-[9px] font-normal text-gray-400">Thickness (mm)</span>
+                      </th>
+                      {/* C3 Area */}
+                      <th className={`${thBase} bg-slate-100/80 dark:bg-slate-900/40 border-l dark:border-border min-w-[95px]`}>
+                        C3<span className="block text-[9px] font-normal text-slate-500">Area mm²</span>
+                      </th>
+                      {/* C4 Yield Load */}
+                      <th className={`${thBase} border-l dark:border-border min-w-[90px]`}>
+                        C4<span className="block text-[9px] font-normal text-gray-400">Yield Load (kN)</span>
+                      </th>
+                      {/* C5 Yield Stress */}
+                      <th className={`${thBase} bg-amber-50/70 dark:bg-amber-950/30 min-w-[105px]`}>
+                        C5<span className="block text-[9px] font-normal text-amber-600">Yield Stress N/mm²</span>
+                      </th>
+                      {/* C6 Ult Load */}
+                      <th className={`${thBase} border-l dark:border-border min-w-[90px]`}>
+                        C6<span className="block text-[9px] font-normal text-gray-400">Ult. Load (kN)</span>
+                      </th>
+                      {/* C7 Tensile Str */}
+                      <th className={`${thBase} bg-orange-50/70 dark:bg-orange-950/30 min-w-[110px]`}>
+                        C7<span className="block text-[9px] font-normal text-orange-600">Tensile Str. N/mm²</span>
+                      </th>
+                      {/* C8 IGL */}
+                      <th className={`${thBase} bg-emerald-50/50 dark:bg-emerald-950/20 border-l dark:border-border min-w-[90px]`}>
+                        C8<span className="block text-[9px] font-normal text-emerald-600">IGL (mm)</span>
+                      </th>
+                      {/* C9 FGL */}
+                      <th className={`${thBase} min-w-[85px]`}>
+                        C9<span className="block text-[9px] font-normal text-gray-400">FGL (mm)</span>
+                      </th>
+                      {/* C10 Elongation */}
+                      <th className={`${thBase} bg-emerald-50/70 dark:bg-emerald-950/30 min-w-[90px]`}>
+                        C10<span className="block text-[9px] font-normal text-emerald-600">Elong. (%)</span>
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-gray-100 dark:divide-border font-mono">
+                    {observations.map((obs, i) => {
+                      const r = rows[i] || {};
+                      const hasErr = r.errors?.length > 0;
+
+                      return (
+                        <tr
+                          key={i}
+                          className={`hover:bg-slate-50/60 dark:hover:bg-muted/30 transition-colors ${
+                            hasErr ? 'bg-red-50/30 dark:bg-red-950/20' : ''
+                          }`}
+                        >
+                          {/* # */}
+                          <td className="p-2 text-center text-gray-400 dark:text-muted-foreground font-sans font-bold text-xs">
+                            {i + 1}
+                          </td>
+
+                          {/* Sample ID */}
+                          <td className="p-1.5">
+                            <Input
+                              value={obs.sampleId}
+                              onChange={(e) => change(i, 'sampleId', e.target.value)}
+                              placeholder={`Sample ${i + 1}`}
+                              className="h-7 text-xs font-mono font-medium min-w-[100px]"
+                            />
+                          </td>
+
+                          {/* Sample Name / Type (per user specification) */}
+                          <td className="p-1.5 bg-indigo-50/20 dark:bg-indigo-950/10">
+                            <div className="relative min-w-[130px]">
+                              <Input
+                                list={`types-list-${i}`}
+                                value={obs.sampleType}
+                                onChange={(e) => change(i, 'sampleType', e.target.value)}
+                                placeholder="e.g. MS Plate, W-Beam"
+                                className="h-7 text-xs font-sans font-medium border-indigo-200 focus:border-indigo-400"
+                              />
+                              <datalist id={`types-list-${i}`}>
+                                {COMMON_STRUCTURAL_STEEL_TYPES.map((t) => (
+                                  <option key={t} value={t} />
+                                ))}
+                              </datalist>
+                            </div>
+                          </td>
+
+                          {/* Client references */}
+                          {(availableHeatNos.length > 0 || includeHeatNoInReport) && (
+                            <td className="p-1.5 bg-blue-50/20 dark:bg-blue-950/10">
+                              <Input
+                                value={obs.heatNo}
+                                onChange={(e) => change(i, 'heatNo', e.target.value)}
+                                placeholder="Heat No."
+                                className="h-7 text-xs font-mono min-w-[90px]"
+                              />
+                            </td>
+                          )}
+
+                          {(availableInvoiceNos.length > 0 || includeInvoiceNoInReport) && (
+                            <td className="p-1.5 bg-blue-50/20 dark:bg-blue-950/10">
+                              <Input
+                                value={obs.invoiceNo}
+                                onChange={(e) => change(i, 'invoiceNo', e.target.value)}
+                                placeholder="Invoice No."
+                                className="h-7 text-xs font-mono min-w-[90px]"
+                              />
+                            </td>
+                          )}
+
+                          {(availableVehicleNos.length > 0 || includeVehicleNoInReport) && (
+                            <td className="p-1.5 bg-blue-50/20 dark:bg-blue-950/10">
+                              <Input
+                                value={obs.vehicleNo}
+                                onChange={(e) => change(i, 'vehicleNo', e.target.value)}
+                                placeholder="Vehicle No."
+                                className="h-7 text-xs font-mono min-w-[90px]"
+                              />
+                            </td>
+                          )}
+
+                          {/* C1: Width (mm) */}
+                          <td className="p-1.5">
+                            <Input
+                              type="number"
+                              step="0.001"
+                              value={obs.width}
+                              onChange={(e) => change(i, 'width', e.target.value)}
+                              placeholder="20.000"
+                              className="h-7 text-xs text-right font-mono min-w-[80px]"
+                            />
+                          </td>
+
+                          {/* C2: Thickness (mm) */}
+                          <td className="p-1.5">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={obs.thickness}
+                              onChange={(e) => change(i, 'thickness', e.target.value)}
+                              placeholder="12.30"
+                              className="h-7 text-xs text-right font-mono min-w-[80px]"
+                            />
+                          </td>
+
+                          {/* C3: Area (mm²) - Calculated */}
+                          <td className="p-2 text-right font-mono font-bold text-slate-800 dark:text-slate-200 bg-slate-100/60 dark:bg-slate-900/30 whitespace-nowrap">
+                            {r.areaFmt || '—'}
+                          </td>
+
+                          {/* C4: Yield Load (kN) */}
+                          <td className="p-1.5">
+                            <Input
+                              type="number"
+                              step="0.001"
+                              value={obs.yieldLoad}
+                              onChange={(e) => change(i, 'yieldLoad', e.target.value)}
+                              placeholder="149.232"
+                              className="h-7 text-xs text-right font-mono min-w-[85px]"
+                            />
+                          </td>
+
+                          {/* C5: Yield Stress (N/mm²) - Calculated */}
+                          <td className="p-2 text-right font-mono font-bold text-amber-900 dark:text-amber-300 bg-amber-50/40 dark:bg-amber-950/20 whitespace-nowrap">
+                            {r.yieldStressFmt || '—'}
+                          </td>
+
+                          {/* C6: Ultimate Load (kN) */}
+                          <td className="p-1.5">
+                            <Input
+                              type="number"
+                              step="0.001"
+                              value={obs.ultimateLoad}
+                              onChange={(e) => change(i, 'ultimateLoad', e.target.value)}
+                              placeholder="183.816"
+                              className="h-7 text-xs text-right font-mono min-w-[85px]"
+                            />
+                          </td>
+
+                          {/* C7: Ultimate Tensile Strength (N/mm²) - Calculated */}
+                          <td className="p-2 text-right font-mono font-bold text-orange-900 dark:text-orange-300 bg-orange-50/40 dark:bg-orange-950/20 whitespace-nowrap">
+                            {r.tensileStrengthFmt || '—'}
+                          </td>
+
+                          {/* C8: Initial Gauge Length (mm) - Calculated */}
+                          <td className="p-2 text-right font-mono text-emerald-800 dark:text-emerald-300 bg-emerald-50/30 dark:bg-emerald-950/10 whitespace-nowrap">
+                            {r.iglFmt || '—'}
+                          </td>
+
+                          {/* C9: Final Gauge Length (mm) */}
+                          <td className="p-1.5">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={obs.finalGaugeLength}
+                              onChange={(e) => change(i, 'finalGaugeLength', e.target.value)}
+                              placeholder="111.25"
+                              className="h-7 text-xs text-right font-mono min-w-[85px]"
+                            />
+                          </td>
+
+                          {/* C10: Elongation (%) - Calculated */}
+                          <td className="p-2 text-right font-mono font-bold text-emerald-900 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20 whitespace-nowrap">
+                            {r.elongationFmt ? `${r.elongationFmt}%` : '—'}
+                          </td>
+
+                          {/* Bend Test */}
+                          <td className="p-1.5 text-center min-w-[70px]">
+                            <Select
+                              value={obs.bendTest || 'NCO'}
+                              onValueChange={(val) => change(i, 'bendTest', val)}
+                            >
+                              <SelectTrigger className="h-7 text-[11px] px-1.5 w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {BEND_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                    {opt.value}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+
+                          {/* Delete */}
+                          <td className="p-1 text-center">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              disabled={observations.length <= 1}
+                              onClick={() => removeRow(i)}
+                              className="h-7 w-7 p-0 text-gray-400 hover:text-red-600 disabled:opacity-30"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Testing Data Summary (Excluded from Final Report notice) */}
+          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-slate-100/70 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800">
+            <div className="flex flex-wrap items-center gap-6">
+              {/* Avg Yield Stress */}
+              <div title="Recorded for testing data only (excluded from final report)">
+                <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-400">
+                  Avg Yield Stress
+                </span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-black text-amber-900 dark:text-amber-300 font-mono">
+                    {summary.avgYieldStressFmt || '—'}
+                  </span>
+                  <span className="text-xs font-bold text-amber-700 dark:text-amber-400">N/mm²</span>
+                </div>
+              </div>
+
+              {/* Avg Tensile Strength */}
+              <div title="Recorded for testing data only (excluded from final report)">
+                <span className="text-[10px] uppercase font-bold text-orange-800 dark:text-orange-400">
+                  Avg Tensile Strength
+                </span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-black text-orange-900 dark:text-orange-300 font-mono">
+                    {summary.avgTensileStrengthFmt || '—'}
+                  </span>
+                  <span className="text-xs font-bold text-orange-700 dark:text-orange-400">N/mm²</span>
+                </div>
+              </div>
+
+              {/* Avg Elongation */}
+              <div title="Recorded for testing data only (excluded from final report)">
+                <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-400">
+                  Avg Elongation
+                </span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-black text-emerald-900 dark:text-emerald-300 font-mono">
+                    {summary.avgElongationFmt || '—'}
+                  </span>
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">%</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground ml-auto flex flex-col items-end gap-1">
+              <span className="text-[10px] font-semibold text-amber-800 dark:text-amber-400 bg-amber-100/70 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-800">
+                Testing Data Only • Excluded from final report (individual results only)
+              </span>
+              <span>IS 1608 (Part 1) : 2022 Tensile Testing</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Actions */}
+        <div className="flex items-center justify-between border-t pt-3 mt-2">
+          <div className="text-xs text-gray-500 dark:text-muted-foreground flex items-center gap-1.5">
+            <Check className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Formulas &amp; decimal precisions conform to IS 1608 (Part 1) : 2022</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" onClick={onClose} className="h-8 text-xs">
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSave}
+              className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold gap-1.5 shadow-sm"
+            >
+              <Check className="w-3.5 h-3.5" /> Apply &amp; Save
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -200,7 +200,9 @@ export default function ActCubeModal({
         height: r.height,
         area: r.areaFormatted,
         dateOfCasting: r.dateOfCasting,
+        dateOfCastingFormatted: r.dateOfCastingFormatted,
         dateOfTesting: r.dateOfTesting,
+        dateOfTestingFormatted: r.dateOfTestingFormatted,
         ageDays: r.ageFormatted,
         weightKg: r.weightKg,
         failureLoadKn: r.failureLoadKn,
@@ -214,6 +216,17 @@ export default function ActCubeModal({
       avgWeight: calcResult.averageWeightFormatted,
       avgAge: calcResult.averageAgeFormatted,
       reportedStrength: calcResult.averagePredictedStrengthFormatted || calcResult.averageStrengthFormatted,
+      // Requirement 7: Final report displays only "Predicted 28 days Compressive Strength".
+      // Average weight and average ACT strength are testing data only, excluded from final report.
+      finalReportResult: calcResult.averagePredictedStrengthFormatted,
+      finalReportResultLabel: 'Predicted 28 days Compressive Strength',
+      finalReportResultUnit: 'N/mm²',
+      reportExcludeAvgWeight: true,
+      reportExcludeAvgActStrength: true,
+      reportExcludeAvgStrength: true,
+      includeAvgWeightInReport: false,
+      includeAvgActStrengthInReport: false,
+      includeAvgStrengthInReport: false,
     };
 
     if (onApply) {
@@ -421,7 +434,7 @@ export default function ActCubeModal({
                     </th>
                     <th className="p-2.5 text-center min-w-[70px]">
                       <div className="flex flex-col items-center">
-                        <span>Age</span>
+                        <span>Age (days)</span>
                         <span className="text-[10px] text-gray-400 font-mono">(C8)</span>
                       </div>
                     </th>
@@ -437,16 +450,16 @@ export default function ActCubeModal({
                         <span className="text-[10px] text-teal-600 dark:text-teal-400 font-mono">(C10)</span>
                       </div>
                     </th>
-                    <th className="p-2.5 text-right min-w-[125px] bg-teal-50/60 dark:bg-teal-950/20 text-teal-900 dark:text-teal-300">
+                    <th className="p-2.5 text-right min-w-[140px] bg-teal-50/60 dark:bg-teal-950/20 text-teal-900 dark:text-teal-300">
                       <div className="flex flex-col items-end">
-                        <span>ACT Strength (N/mm²)</span>
+                        <span>ACT Compressive strength (N/mm²)</span>
                         <span className="text-[10px] text-teal-600 dark:text-teal-400 font-mono">(C11: ±0.5)</span>
                       </div>
                     </th>
-                    <th className="p-2.5 text-right min-w-[135px] bg-emerald-50/60 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300">
+                    <th className="p-2.5 text-right min-w-[160px] bg-emerald-50/60 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300">
                       <div className="flex flex-col items-end">
-                        <span>Predicted 28d (N/mm²)</span>
-                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">(C12)</span>
+                        <span>Predicted 28d Compressive Strength (N/mm²)</span>
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">(C12: ±0.5)</span>
                       </div>
                     </th>
                     <th className="p-2.5 text-center min-w-[130px]">
@@ -540,7 +553,7 @@ export default function ActCubeModal({
 
                       {/* C8: Age at Test (Days) */}
                       <td className="p-2.5 text-center font-mono font-semibold text-gray-800 dark:text-foreground">
-                        {row.ageFormatted ? `${row.ageFormatted}d` : '-'}
+                        {row.ageFormatted || '-'}
                       </td>
 
                       {/* C9: Weight (kg) */}
@@ -656,11 +669,11 @@ export default function ActCubeModal({
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Primary: Predicted 28-day ACT Strength */}
+            {/* Primary: Predicted 28-day ACT Strength (Final Report Result) */}
             <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-500/20 shadow-sm space-y-1">
               <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-400 tracking-wider flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                CR: Predicted 28d Strength
+                Predicted 28 days Compressive Strength (Final Report Result)
               </span>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-black text-emerald-950 dark:text-emerald-300 font-mono">
@@ -669,42 +682,40 @@ export default function ActCubeModal({
                 <span className="text-xs font-bold text-emerald-800 dark:text-emerald-400">N/mm²</span>
               </div>
               <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400/80">
-                {calcResult.rawAveragePredictedStrength
-                  ? `Mean: ${calcResult.rawAveragePredictedStrength.toFixed(2)} → Round up nearest 0.5`
-                  : 'Requires test failure load & area'}
+                Final report result • Rounded to nearest 0.5 N/mm²
               </p>
             </div>
 
             {/* Accelerated Compressive Strength */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-teal-500/10 via-cyan-500/5 to-transparent border border-teal-500/20 shadow-sm space-y-1">
-              <span className="text-[10px] uppercase font-bold text-teal-800 dark:text-teal-400 tracking-wider">
+            <div className="p-4 rounded-xl bg-gray-50/70 dark:bg-muted/40 border border-gray-200 dark:border-border space-y-1">
+              <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground tracking-wider">
                 Avg ACT Strength (Ra)
               </span>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-teal-950 dark:text-teal-300 font-mono">
+                <span className="text-xl font-bold text-gray-700 dark:text-muted-foreground font-mono">
                   {calcResult.averageStrengthFormatted || '-'}
                 </span>
-                <span className="text-xs font-bold text-teal-800 dark:text-teal-400">N/mm²</span>
+                <span className="text-xs font-semibold text-gray-500 dark:text-muted-foreground">N/mm²</span>
               </div>
-              <p className="text-[11px] text-teal-700/80 dark:text-teal-400/80">
-                IS 516 nearest 0.5 value applied
+              <p className="text-[11px] text-gray-400 dark:text-muted-foreground">
+                Testing data only • Excluded from final report
               </p>
             </div>
 
             {/* Average Weight */}
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-muted/40 border border-gray-200 dark:border-border space-y-1">
+            <div className="p-4 rounded-xl bg-gray-50/70 dark:bg-muted/40 border border-gray-200 dark:border-border space-y-1">
               <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground tracking-wider flex items-center gap-1">
                 <Scale className="w-3 h-3" />
                 Average Weight
               </span>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-xl font-bold text-gray-900 dark:text-foreground font-mono">
+                <span className="text-xl font-bold text-gray-700 dark:text-muted-foreground font-mono">
                   {calcResult.averageWeightFormatted || '-'}
                 </span>
-                <span className="text-xs font-semibold text-gray-600 dark:text-muted-foreground">kg</span>
+                <span className="text-xs font-semibold text-gray-500 dark:text-muted-foreground">kg</span>
               </div>
-              <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
-                Specimen bulk mass
+              <p className="text-[11px] text-gray-400 dark:text-muted-foreground">
+                Testing data only • Excluded from final report
               </p>
             </div>
 
@@ -733,9 +744,9 @@ export default function ActCubeModal({
                 IS 9013 Clause 9 Prediction Formula: R₂₈ = 1.64 × Rₐ + 8.09 N/mm²
               </div>
               <p className="text-[11px] text-teal-800/80 dark:text-teal-300/80">
-                Where <strong>R₂₈</strong> is the predicted 28-day normal compressive strength, and{' '}
+                Where <strong>R₂₈</strong> is the predicted 28-day normal compressive strength (rounded to the nearest 0.5 N/mm²), and{' '}
                 <strong>Rₐ</strong> is the accelerated compressive strength (rounded to the nearest 0.5 N/mm² per IS 516).
-                Average 28-day predicted strength (CR) is rounded to the nearest 0.5 N/mm².
+                Final report displays only "Predicted 28 days Compressive Strength". Average ACT strength and average weight are recorded for testing data only and excluded from the final report.
               </p>
             </div>
           </div>

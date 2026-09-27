@@ -369,7 +369,7 @@ export default function BrickTestModal({
                       <thead>
                         <tr className={theadCls}>
                           <th className={`${thCls} text-center w-10`}>Sl No</th>
-                          <th className={`${thCls} min-w-[120px]`}>Brick ID</th>
+                          <th className={`${thCls} min-w-[120px]`}>Identification</th>
                           <th className={`${thCls} text-center min-w-[60px]`}>L (mm)</th>
                           <th className={`${thCls} text-center min-w-[60px]`}>W (mm)</th>
                           <th className={`${thCls} text-center min-w-[60px]`}>H (mm)</th>
@@ -512,7 +512,7 @@ export default function BrickTestModal({
                       <thead>
                         <tr className={theadCls}>
                           <th className={`${thCls} text-center w-10`}>Sl No</th>
-                          <th className={`${thCls} min-w-[120px]`}>Brick ID</th>
+                          <th className={`${thCls} min-w-[120px]`}>Identification</th>
                           <th className={`${thCls} text-right min-w-[130px]`}>
                             Wet Weight W₁ (g)
                           </th>
@@ -629,7 +629,7 @@ export default function BrickTestModal({
                       <thead>
                         <tr className={theadCls}>
                           <th className={`${thCls} text-center w-10`}>Sl No</th>
-                          <th className={`${thCls} min-w-[150px]`}>Brick ID</th>
+                          <th className={`${thCls} min-w-[150px]`}>Identification</th>
                           <th className={`${thCls} min-w-[160px]`}>Rating of Efflorescence</th>
                           <th className={`${thCls} w-10`}></th>
                         </tr>
@@ -729,7 +729,7 @@ export default function BrickTestModal({
                       <thead className="sticky top-0 z-10">
                         <tr className={theadCls}>
                           <th className={`${thCls} text-center w-10`}>Sl No</th>
-                          <th className={`${thCls} min-w-[120px]`}>Brick ID</th>
+                          <th className={`${thCls} min-w-[120px]`}>Identification</th>
                           <th className={`${thCls} text-center min-w-[90px]`}>Length (mm)</th>
                           <th className={`${thCls} text-center min-w-[90px]`}>Width (mm)</th>
                           <th className={`${thCls} text-center min-w-[90px]`}>Height (mm)</th>

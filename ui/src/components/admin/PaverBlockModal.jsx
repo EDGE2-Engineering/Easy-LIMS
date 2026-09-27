@@ -37,6 +37,7 @@ import {
   DEFAULT_PAVER_WA_OBSERVATION,
   DEFAULT_PAVER_WA_OBSERVATIONS,
   SAMPLE_PAVER_BLOCK_TEST_DATA,
+  SAMPLE_CHAMFERED_PAVER_BLOCK_TEST_DATA,
   TABLE_5_CORRECTION_FACTORS,
   getPaverCorrectionFactor,
   calculatePaverBlockCompressiveStrength,
@@ -86,7 +87,10 @@ export default function PaverBlockModal({
           loadedComp.map((obs, idx) => ({
             sampleId: obs.sampleId || `Sample ${idx + 1}`,
             length: obs.length !== undefined ? String(obs.length) : '270',
-            breadth: obs.breadth !== undefined ? String(obs.breadth) : '200',
+            width: obs.width !== undefined ? String(obs.width) : (obs.breadth !== undefined ? String(obs.breadth) : '200'),
+            breadth: obs.breadth !== undefined ? String(obs.breadth) : (obs.width !== undefined ? String(obs.width) : '200'),
+            msp: obs.msp !== undefined ? String(obs.msp) : '1.74',
+            mstd: obs.mstd !== undefined ? String(obs.mstd) : '1.28',
             thickness: obs.thickness !== undefined ? String(obs.thickness) : '80',
             failureLoadKn: obs.failureLoadKn !== undefined ? String(obs.failureLoadKn) : '',
           }))
@@ -110,7 +114,8 @@ export default function PaverBlockModal({
           loadedWa.map((obs, idx) => ({
             sampleId: obs.sampleId || `Sample ${idx + 1}`,
             length: obs.length !== undefined ? String(obs.length) : '270',
-            breadth: obs.breadth !== undefined ? String(obs.breadth) : '200',
+            width: obs.width !== undefined ? String(obs.width) : (obs.breadth !== undefined ? String(obs.breadth) : '200'),
+            breadth: obs.breadth !== undefined ? String(obs.breadth) : (obs.width !== undefined ? String(obs.width) : '200'),
             thickness: obs.thickness !== undefined ? String(obs.thickness) : '80',
             wetMassKg: obs.wetMassKg !== undefined ? String(obs.wetMassKg) : '',
             dryMassKg: obs.dryMassKg !== undefined ? String(obs.dryMassKg) : '',
@@ -212,12 +217,26 @@ export default function PaverBlockModal({
 
   // Pre-fill sample data from handwritten PDF (IS 15658)
   const handleFillSampleData = () => {
-    setMetadata({
-      ...DEFAULT_PAVER_BLOCK_METADATA,
-      ...SAMPLE_PAVER_BLOCK_TEST_DATA.metadata,
-    });
-    setCompObs(deepClone(SAMPLE_PAVER_BLOCK_TEST_DATA.compressiveObservations));
-    setWaObs(deepClone(SAMPLE_PAVER_BLOCK_TEST_DATA.waterAbsorptionObservations));
+    const isChamfered = String(metadata.blockType).toLowerCase().includes('chamfer');
+    if (isChamfered) {
+      setMetadata((prev) => ({
+        ...DEFAULT_PAVER_BLOCK_METADATA,
+        ...SAMPLE_CHAMFERED_PAVER_BLOCK_TEST_DATA.metadata,
+        standard: prev.standard || SAMPLE_CHAMFERED_PAVER_BLOCK_TEST_DATA.metadata.standard,
+        blockType: 'chamfered',
+      }));
+      setCompObs(deepClone(SAMPLE_CHAMFERED_PAVER_BLOCK_TEST_DATA.compressiveObservations));
+      setWaObs(deepClone(SAMPLE_CHAMFERED_PAVER_BLOCK_TEST_DATA.waterAbsorptionObservations));
+    } else {
+      setMetadata((prev) => ({
+        ...DEFAULT_PAVER_BLOCK_METADATA,
+        ...SAMPLE_PAVER_BLOCK_TEST_DATA.metadata,
+        standard: prev.standard || SAMPLE_PAVER_BLOCK_TEST_DATA.metadata.standard,
+        blockType: 'plain',
+      }));
+      setCompObs(deepClone(SAMPLE_PAVER_BLOCK_TEST_DATA.compressiveObservations));
+      setWaObs(deepClone(SAMPLE_PAVER_BLOCK_TEST_DATA.waterAbsorptionObservations));
+    }
   };
 
   // Save & Apply
@@ -456,7 +475,9 @@ export default function PaverBlockModal({
                     Compressive Strength Observations & Correction Factors
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-muted-foreground">
-                    Area = Length × Breadth | Strength = (Load / Area) × 1000 | Corrected = Strength × Factor (Table 5)
+                    {metadata.blockType === 'chamfered'
+                      ? 'Area = (20,000 × msp) / mstd | Compressive Strength = (Load / Area) × 1000 | Corrected = Compressive Strength × Factor (Table 5)'
+                      : 'Area = Length × Width | Compressive Strength = (Load / Area) × 1000 | Corrected = Compressive Strength × Factor (Table 5)'}
                   </p>
                 </div>
                 <Button
@@ -478,21 +499,30 @@ export default function PaverBlockModal({
                       <tr>
                         <th className="p-2.5 text-center w-10">#</th>
                         <th className="p-2.5 min-w-[100px]">Specimen ID</th>
-                        <th className="p-2.5 text-right min-w-[90px]">Length C₁ (mm)</th>
-                        <th className="p-2.5 text-right min-w-[90px]">Breadth C₂ (mm)</th>
+                        {metadata.blockType === 'chamfered' ? (
+                          <>
+                            <th className="p-2.5 text-right min-w-[90px]">msp C₁</th>
+                            <th className="p-2.5 text-right min-w-[90px]">mstd C₂</th>
+                          </>
+                        ) : (
+                          <>
+                            <th className="p-2.5 text-right min-w-[90px]">Length C₁ (mm)</th>
+                            <th className="p-2.5 text-right min-w-[90px]">Width C₂ (mm)</th>
+                          </>
+                        )}
                         <th className="p-2.5 text-right min-w-[90px]">Thick. C₃ (mm)</th>
                         <th className="p-2.5 text-right min-w-[110px] bg-slate-50 dark:bg-slate-900/30">
                           Nominal Area C₄ (mm²)
                         </th>
                         <th className="p-2.5 text-right min-w-[115px]">Max Load C₅ (kN)</th>
-                        <th className="p-2.5 text-right min-w-[110px] bg-slate-50 dark:bg-slate-900/30">
-                          Strength C₆ (N/mm²)
+                        <th className="p-2.5 text-right min-w-[140px] bg-slate-50 dark:bg-slate-900/30">
+                          Compressive Strength C₆ (N/mm²)
                         </th>
                         <th className="p-2.5 text-right min-w-[90px] text-indigo-700 dark:text-indigo-300">
                           Tbl 5 Factor
                         </th>
-                        <th className="p-2.5 text-right min-w-[125px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 font-bold">
-                          Corr. Strength C₇ (N/mm²)
+                        <th className="p-2.5 text-right min-w-[135px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 font-bold">
+                          Corr. Comp. Strength C₇ (N/mm²)
                         </th>
                         <th className="p-2.5 text-center w-12">Action</th>
                       </tr>
@@ -511,26 +541,56 @@ export default function PaverBlockModal({
                               placeholder={`R${idx + 1}`}
                             />
                           </td>
-                          <td className="p-2">
-                            <Input
-                              type="number"
-                              step="any"
-                              value={row.length}
-                              onChange={(e) => handleCompChange(idx, 'length', e.target.value)}
-                              className="h-8 text-xs text-right font-mono"
-                              placeholder="270"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <Input
-                              type="number"
-                              step="any"
-                              value={row.breadth}
-                              onChange={(e) => handleCompChange(idx, 'breadth', e.target.value)}
-                              className="h-8 text-xs text-right font-mono"
-                              placeholder="200"
-                            />
-                          </td>
+                          {metadata.blockType === 'chamfered' ? (
+                            <>
+                              <td className="p-2">
+                                <Input
+                                  type="number"
+                                  step="any"
+                                  value={row.msp !== undefined ? row.msp : ''}
+                                  onChange={(e) => handleCompChange(idx, 'msp', e.target.value)}
+                                  className="h-8 text-xs text-right font-mono"
+                                  placeholder="1.74"
+                                />
+                              </td>
+                              <td className="p-2">
+                                <Input
+                                  type="number"
+                                  step="any"
+                                  value={row.mstd !== undefined ? row.mstd : ''}
+                                  onChange={(e) => handleCompChange(idx, 'mstd', e.target.value)}
+                                  className="h-8 text-xs text-right font-mono"
+                                  placeholder="1.28"
+                                />
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="p-2">
+                                <Input
+                                  type="number"
+                                  step="any"
+                                  value={row.length}
+                                  onChange={(e) => handleCompChange(idx, 'length', e.target.value)}
+                                  className="h-8 text-xs text-right font-mono"
+                                  placeholder="270"
+                                />
+                              </td>
+                              <td className="p-2">
+                                <Input
+                                  type="number"
+                                  step="any"
+                                  value={row.width !== undefined ? row.width : row.breadth}
+                                  onChange={(e) => {
+                                    handleCompChange(idx, 'width', e.target.value);
+                                    handleCompChange(idx, 'breadth', e.target.value);
+                                  }}
+                                  className="h-8 text-xs text-right font-mono"
+                                  placeholder="200"
+                                />
+                              </td>
+                            </>
+                          )}
                           <td className="p-2">
                             <Input
                               type="number"
@@ -538,7 +598,7 @@ export default function PaverBlockModal({
                               value={row.thickness}
                               onChange={(e) => handleCompChange(idx, 'thickness', e.target.value)}
                               className="h-8 text-xs text-right font-mono"
-                              placeholder="80"
+                              placeholder={metadata.blockType === 'chamfered' ? '60' : '80'}
                             />
                           </td>
                           <td className="p-2.5 text-right font-mono text-gray-700 dark:text-gray-300 bg-slate-50/60 dark:bg-slate-900/20">
@@ -551,7 +611,7 @@ export default function PaverBlockModal({
                               value={row.failureLoadKn}
                               onChange={(e) => handleCompChange(idx, 'failureLoadKn', e.target.value)}
                               className="h-8 text-xs text-right font-mono font-semibold"
-                              placeholder="1950.485"
+                              placeholder={metadata.blockType === 'chamfered' ? '123.054' : '1950.485'}
                             />
                           </td>
                           <td className="p-2.5 text-right font-mono font-semibold text-gray-800 dark:text-gray-200 bg-slate-50/60 dark:bg-slate-900/20">
@@ -676,8 +736,8 @@ export default function PaverBlockModal({
                         <th className="p-2.5 text-center w-10">#</th>
                         <th className="p-2.5 min-w-[120px]">Specimen ID</th>
                         <th className="p-2.5 text-right min-w-[100px]">Length C₁ (mm)</th>
-                        <th className="p-2.5 text-right min-w-[100px]">Breadth C₂ (mm)</th>
-                        <th className="p-2.5 text-right min-w-[100px]">Width C₃ (mm)</th>
+                        <th className="p-2.5 text-right min-w-[100px]">Width C₂ (mm)</th>
+                        <th className="p-2.5 text-right min-w-[100px]">Thick. C₃ (mm)</th>
                         <th className="p-2.5 text-right min-w-[130px]">Wet Mass C₄ (kg)</th>
                         <th className="p-2.5 text-right min-w-[130px]">Oven Dry Mass C₅ (kg)</th>
                         <th className="p-2.5 text-right min-w-[140px] bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 font-bold">
@@ -714,8 +774,11 @@ export default function PaverBlockModal({
                             <Input
                               type="number"
                               step="any"
-                              value={row.breadth}
-                              onChange={(e) => handleWaChange(idx, 'breadth', e.target.value)}
+                              value={row.width !== undefined ? row.width : row.breadth}
+                              onChange={(e) => {
+                                handleWaChange(idx, 'width', e.target.value);
+                                handleWaChange(idx, 'breadth', e.target.value);
+                              }}
                               className="h-8 text-xs text-right font-mono"
                               placeholder="200"
                             />

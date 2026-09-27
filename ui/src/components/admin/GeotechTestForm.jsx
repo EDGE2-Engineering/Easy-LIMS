@@ -49,6 +49,8 @@ import HeavyCompactionModal from './HeavyCompactionModal';
 import LabCbrModal from './LabCbrModal';
 import PointLoadIndexModal from './PointLoadIndexModal';
 import RockUcsModal from './RockUcsModal';
+import DirectShearTestSection from './DirectShearTestSection';
+import { createDefaultDirectShearSample } from '@/utils/directShearCalculation';
 
 /**
  * Look up the Correction Factor (CF) from the overburden correction table stored
@@ -540,17 +542,21 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
       });
     })(),
     subSoilProfile: value?.subSoilProfile || [[{ depth: '', description: '' }]],
-    directShearResults: value?.directShearResults || [
-      [
-        {
-          shearBoxSize: '',
-          depthOfSample: '',
-          cValue: '',
-          phiValue: '',
-          stressReadings: [{ normalStress: '', shearStress: '' }],
-        },
-      ],
-    ],
+    directShearResults: (() => {
+      const raw = value?.directShearResults;
+      if (!Array.isArray(raw) || raw.length === 0) {
+        return [[createDefaultDirectShearSample(0)]];
+      }
+      return raw.map((bhSamples) => {
+        if (!Array.isArray(bhSamples) || bhSamples.length === 0) {
+          return [createDefaultDirectShearSample(0)];
+        }
+        return bhSamples.map((s, idx) => ({
+          ...createDefaultDirectShearSample(idx, s?.depthOfSample),
+          ...s,
+        }));
+      });
+    })(),
     pointLoadStrength: value?.pointLoadStrength || [
       [
         {
@@ -856,7 +862,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     });
   };
 
-  const handleApplySieveModal = (boreholeIndex, depthIndex, { sieveData, grainSizeDistribution }) => {
+  const handleApplySieveModal = (boreholeIndex, depthIndex, { sieveData, hydrometerData, grainSizeDistribution, summary }) => {
     const newResults = [...formData.labTestResults];
     const finalGravel = grainSizeDistribution.gravel && grainSizeDistribution.gravel !== '' ? grainSizeDistribution.gravel : '-';
     const finalSand = grainSizeDistribution.sand && grainSizeDistribution.sand !== '' ? grainSizeDistribution.sand : '-';
@@ -869,8 +875,14 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
         gravel: finalGravel,
         sand: finalSand,
         siltAndClay: finalSiltAndClay,
+        silt: grainSizeDistribution.silt || newResults[boreholeIndex][depthIndex]?.grainSizeDistribution?.silt,
+        clay: grainSizeDistribution.clay || newResults[boreholeIndex][depthIndex]?.grainSizeDistribution?.clay,
+        coarseSand: grainSizeDistribution.coarseSand,
+        mediumSand: grainSizeDistribution.mediumSand,
+        fineSand: grainSizeDistribution.fineSand,
       },
       sieveData: sieveData || null,
+      hydrometerData: hydrometerData || null,
     };
 
     // Synchronize with formData.grainSizeAnalysis for reports, charts & exports
@@ -879,6 +891,10 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     newAnalysis[boreholeIndex][depthIndex] = {
       depth: currentDepth,
       totalWeight: sieveData?.totalWeight || '',
+      sieve_100: sieveData?.sieve_100 || '',
+      sieve_80: sieveData?.sieve_80 || '',
+      sieve_40: sieveData?.sieve_40 || '',
+      sieve_20: sieveData?.sieve_20 || '',
       sieve0: sieveData?.sieve0 || '',
       sieve1: sieveData?.sieve1 || '',
       sieve2: sieveData?.sieve2 || '',
@@ -890,6 +906,7 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
       sieve8: sieveData?.sieve8 || '',
       sieve9: sieveData?.sieve9 || '',
       sieve10: sieveData?.sieve10 || '',
+      hydrometerData: hydrometerData || null,
     };
 
     setFormData({
@@ -899,8 +916,10 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     });
 
     toast({
-      title: 'Grain Size Computed',
-      description: `Gravel: ${finalGravel}%, Sand: ${finalSand}%, Silt & Clay: ${finalSiltAndClay}% applied from Sieve Analysis.`,
+      title: hydrometerData ? 'Grain Size & Hydrometer Computed' : 'Grain Size Computed',
+      description: hydrometerData
+        ? `Gravel: ${finalGravel}%, Sand: ${finalSand}%, Silt: ${grainSizeDistribution.silt}%, Clay: ${grainSizeDistribution.clay}% (Sieve + Hydrometer applied).`
+        : `Gravel: ${finalGravel}%, Sand: ${finalSand}%, Silt & Clay: ${finalSiltAndClay}% applied from Sieve Analysis.`,
     });
   };
 
@@ -1221,51 +1240,26 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
   };
 
   // --- Direct Shear Handlers ---
-  const handleDirectShearChange = (boreholeIndex, rowIndex, field, val) => {
+  const handleDirectShearSampleChange = (boreholeIndex, sampleIndex, updatedSample) => {
     const newResults = [...formData.directShearResults];
     if (!newResults[boreholeIndex]) newResults[boreholeIndex] = [];
-    newResults[boreholeIndex][rowIndex][field] = val;
-    setFormData({ ...formData, directShearResults: newResults });
-  };
-
-  const handleDirectShearStressChange = (boreholeIndex, rowIndex, stressIndex, field, val) => {
-    const newResults = [...formData.directShearResults];
-    newResults[boreholeIndex][rowIndex].stressReadings[stressIndex][field] = val;
+    newResults[boreholeIndex][sampleIndex] = updatedSample;
     setFormData({ ...formData, directShearResults: newResults });
   };
 
   const addDirectShearRow = (boreholeIndex) => {
     const newResults = [...formData.directShearResults];
     if (!newResults[boreholeIndex]) newResults[boreholeIndex] = [];
-    newResults[boreholeIndex].push({
-      shearBoxSize: '',
-      depthOfSample: '',
-      cValue: '',
-      phiValue: '',
-
-      stressReadings: [{ normalStress: '', shearStress: '' }],
-    });
+    newResults[boreholeIndex].push(
+      createDefaultDirectShearSample(newResults[boreholeIndex].length)
+    );
     setFormData({ ...formData, directShearResults: newResults });
   };
 
-  const removeDirectShearRow = (boreholeIndex, rowIndex) => {
+  const removeDirectShearRow = (boreholeIndex, sampleIndex) => {
     const newResults = [...formData.directShearResults];
-    newResults[boreholeIndex].splice(rowIndex, 1);
-    setFormData({ ...formData, directShearResults: newResults });
-  };
-
-  const addStressReading = (boreholeIndex, rowIndex) => {
-    const newResults = [...formData.directShearResults];
-    newResults[boreholeIndex][rowIndex].stressReadings.push({
-      normalStress: '',
-      shearStress: '',
-    });
-    setFormData({ ...formData, directShearResults: newResults });
-  };
-
-  const removeStressReading = (boreholeIndex, rowIndex, stressIndex) => {
-    const newResults = [...formData.directShearResults];
-    newResults[boreholeIndex][rowIndex].stressReadings.splice(stressIndex, 1);
+    if (!newResults[boreholeIndex]) return;
+    newResults[boreholeIndex].splice(sampleIndex, 1);
     setFormData({ ...formData, directShearResults: newResults });
   };
   const hasAnyBoreholeMismatch = formData.boreholeLogs.some((logs, bIndex) => {
@@ -1415,24 +1409,26 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
               sieveModalState.depthIndex
             ]?.depth || ''
           }
-          initialData={
+          initialData={{
+            sieveData:
+              formData.labTestResults?.[sieveModalState.boreholeIndex]?.[
+                sieveModalState.depthIndex
+              ]?.sieveData ||
+              formData.grainSizeAnalysis?.[sieveModalState.boreholeIndex]?.[
+                sieveModalState.depthIndex
+              ] || {},
+            hydrometerData:
+              formData.labTestResults?.[sieveModalState.boreholeIndex]?.[
+                sieveModalState.depthIndex
+              ]?.hydrometerData ||
+              formData.grainSizeAnalysis?.[sieveModalState.boreholeIndex]?.[
+                sieveModalState.depthIndex
+              ]?.hydrometerData || null,
+          }}
+          specificGravity={
             formData.labTestResults?.[sieveModalState.boreholeIndex]?.[
               sieveModalState.depthIndex
-            ]?.sieveData ||
-            formData.grainSizeAnalysis?.[sieveModalState.boreholeIndex]?.[
-              sieveModalState.depthIndex
-            ] ||
-            formData.grainSizeAnalysis?.[sieveModalState.boreholeIndex]?.find(
-              (r) =>
-                r.depth &&
-                String(r.depth) ===
-                  String(
-                    formData.labTestResults?.[sieveModalState.boreholeIndex]?.[
-                      sieveModalState.depthIndex
-                    ]?.depth
-                  )
-            ) ||
-            {}
+            ]?.specificGravity || ''
           }
           onApply={(appliedData) =>
             handleApplySieveModal(
@@ -2590,12 +2586,20 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                       : 'text-gray-400 bg-gray-50/70 border-gray-200 hover:text-primary hover:bg-primary/5 hover:border-primary/20 dark:bg-card/90 dark:border-border dark:text-gray-400 dark:hover:text-primary dark:hover:bg-primary/20 dark:hover:border-primary/40'
                                   }`}
                                   title={
-                                    depthData.sieveData?.totalWeight
+                                    depthData.hydrometerData
+                                      ? `Grain Size: Sieve + Hydrometer Analysis completed. Silt=${depthData.grainSizeDistribution?.silt || '-'}%, Clay=${depthData.grainSizeDistribution?.clay || '-'}%. Click to view/edit.`
+                                      : depthData.sieveData?.totalWeight
                                       ? `Sieve Analysis: Total Wt=${depthData.sieveData.totalWeight}g. Click to edit.`
-                                      : 'Click to calculate Grain Size (G/S/SC) from Sieve Analysis'
+                                      : 'Click to calculate Grain Size (G/S/SC & Hydrometer) from Sieve Analysis'
                                   }
                                 >
                                   <Calculator className="w-3.5 h-3.5" />
+                                  {depthData.hydrometerData && (
+                                    <span
+                                      className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-card"
+                                      title="Hydrometer Analysis Included"
+                                    />
+                                  )}
                                 </button>
                               </div>
                             </td>
@@ -3291,207 +3295,66 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
 
         {/* DIRECT SHEAR TAB */}
         <TabsContent value="directshear" className="mt-0 space-y-4">
-          <div className="bg-gray-50/30 p-4 rounded-xl border border-gray-100">
-            <h3 className="text-md font-bold text-gray-800 mb-1 pb-1 flex items-center gap-2">
-              <TestTube className="w-4 h-4 text-primary" />
-              Direct Shear Test Results
-            </h3>
-            <p className="text-[11px] text-gray-500 mb-4 italic">
-              Record direct shear test parameters and stress readings for each sample.
-            </p>
-            <div className="space-y-4">
+          <div className="bg-gray-50/30 p-4 rounded-xl border border-gray-100 dark:border-border">
+            <div className="flex flex-wrap justify-between items-center mb-3 gap-2">
+              <div>
+                <h3 className="text-md font-bold text-gray-800 dark:text-foreground mb-1 pb-1 flex items-center gap-2">
+                  <TestTube className="w-4 h-4 text-primary" />
+                  Direct Shear Test Results [IS: 2720 Part 13]
+                </h3>
+                <p className="text-[11px] text-gray-500 dark:text-muted-foreground italic">
+                  Laboratory direct shear testing for Disturbed (DS) & Undisturbed (UDS) samples with 3-load determination tables, peak failure stress analysis, and Coulomb failure envelope (c & φ).
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
               {formData.boreholeLogs.map((_, boreholeIndex) => (
                 <div
                   key={boreholeIndex}
-                  className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm"
+                  className="bg-white dark:bg-card p-4 rounded-xl border border-gray-200 dark:border-border shadow-sm space-y-4"
                 >
-                  <h4 className="text-sm font-bold text-gray-800 mb-3">
-                    Direct Shear - BH {boreholeIndex + 1}
-                  </h4>
-                  <div className="space-y-3">
-                    {(formData.directShearResults[boreholeIndex] || []).map((row, rowIndex) => (
-                      <div
-                        key={rowIndex}
-                        className="border border-gray-200 rounded-lg bg-white p-3"
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                            Sample {rowIndex + 1}
-                          </span>
-                          {(formData.directShearResults[boreholeIndex] || []).length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeDirectShearRow(boreholeIndex, rowIndex)}
-                              className="text-red-500 h-7 w-7"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
-                          <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500">Shear Box Size</Label>
-                            <Input
-                              value={row.shearBoxSize || ''}
-                              onChange={(e) =>
-                                handleDirectShearChange(
-                                  boreholeIndex,
-                                  rowIndex,
-                                  'shearBoxSize',
-                                  e.target.value
-                                )
-                              }
-                              className="h-8"
-                              placeholder="e.g. 60mm"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500">Depth of Sample (m)</Label>
-                            <Input
-                              value={row.depthOfSample || ''}
-                              onChange={(e) =>
-                                handleDirectShearChange(
-                                  boreholeIndex,
-                                  rowIndex,
-                                  'depthOfSample',
-                                  e.target.value
-                                )
-                              }
-                              className="h-8"
-                              placeholder="Depth"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500">C Value (kN/m²)</Label>
-                            <Input
-                              value={row.cValue || ''}
-                              onChange={(e) =>
-                                handleDirectShearChange(
-                                  boreholeIndex,
-                                  rowIndex,
-                                  'cValue',
-                                  e.target.value
-                                )
-                              }
-                              className="h-8"
-                              placeholder="Cohesion"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-gray-500">Φ Value (°)</Label>
-                            <Input
-                              value={row.phiValue || ''}
-                              onChange={(e) =>
-                                handleDirectShearChange(
-                                  boreholeIndex,
-                                  rowIndex,
-                                  'phiValue',
-                                  e.target.value
-                                )
-                              }
-                              className="h-8"
-                              placeholder="Friction angle"
-                            />
-                          </div>
-                        </div>
-                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                          Stress Readings
-                        </p>
-                        <div className="border rounded-lg overflow-hidden mb-2">
-                          <table className="w-full text-sm text-left border-collapse">
-                            <thead className="text-[11px] text-gray-500 uppercase bg-gray-50/50 border-b">
-                              <tr>
-                                <th className="px-3 py-2 font-bold">Normal Stress (kN/m²)</th>
-                                <th className="px-3 py-2 font-bold">Shear Stress (kN/m²)</th>
-                                <th className="px-3 py-2 w-[50px]"></th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {(row.stressReadings || []).map((stress, stressIndex) => (
-                                <tr key={stressIndex} className="border-b last:border-0">
-                                  <td className="px-2 py-2">
-                                    <Input
-                                      value={stress.normalStress || ''}
-                                      onChange={(e) =>
-                                        handleDirectShearStressChange(
-                                          boreholeIndex,
-                                          rowIndex,
-                                          stressIndex,
-                                          'normalStress',
-                                          e.target.value
-                                        )
-                                      }
-                                      className="h-8"
-                                      placeholder="Normal stress"
-                                    />
-                                  </td>
-                                  <td className="px-2 py-2">
-                                    <Input
-                                      value={stress.shearStress || ''}
-                                      onChange={(e) =>
-                                        handleDirectShearStressChange(
-                                          boreholeIndex,
-                                          rowIndex,
-                                          stressIndex,
-                                          'shearStress',
-                                          e.target.value
-                                        )
-                                      }
-                                      className="h-8"
-                                      placeholder="Shear stress"
-                                    />
-                                  </td>
-                                  <td className="px-2 py-2 text-right">
-                                    {(row.stressReadings || []).length > 1 && (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() =>
-                                          removeStressReading(boreholeIndex, rowIndex, stressIndex)
-                                        }
-                                        className="text-red-500 h-8 w-8"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </Button>
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => addStressReading(boreholeIndex, rowIndex)}
-                          className="text-primary h-7 text-xs"
-                        >
-                          <Plus className="w-3 h-3 mr-1" /> Add Stress Reading
-                        </Button>
-                      </div>
+                  <div className="flex justify-between items-center border-b border-gray-100 dark:border-border pb-3">
+                    <h4 className="text-sm font-bold text-gray-800 dark:text-foreground flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-primary" />
+                      Direct Shear - BH {boreholeIndex + 1}
+                    </h4>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addDirectShearRow(boreholeIndex)}
+                      className="text-primary hover:bg-primary/5 border-primary/20 h-8 text-xs font-semibold"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" /> Add Direct Shear Sample
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {(formData.directShearResults[boreholeIndex] || []).map((sample, sampleIndex) => (
+                      <DirectShearTestSection
+                        key={sampleIndex}
+                        sample={sample}
+                        sampleIndex={sampleIndex}
+                        boreholeIndex={boreholeIndex}
+                        onChange={(updated) =>
+                          handleDirectShearSampleChange(boreholeIndex, sampleIndex, updated)
+                        }
+                        onRemove={() => removeDirectShearRow(boreholeIndex, sampleIndex)}
+                        canRemove={(formData.directShearResults[boreholeIndex] || []).length > 1}
+                      />
                     ))}
+
                     {(!formData.directShearResults[boreholeIndex] ||
                       formData.directShearResults[boreholeIndex].length === 0) && (
                       <div className="px-3 py-6 text-center text-gray-400 italic text-xs border border-dashed border-gray-200 rounded-lg">
-                        No samples. Click "Add Sample" to begin.
+                        No direct shear samples recorded for BH {boreholeIndex + 1}. Click "Add Direct Shear Sample" to begin.
                       </div>
                     )}
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => addDirectShearRow(boreholeIndex)}
-                    className="text-primary h-8 mt-3"
-                  >
-                    <Plus className="w-4 h-4 mr-2" /> Add Sample
-                  </Button>
                 </div>
               ))}
+
               {formData.boreholeLogs.length === 0 && (
                 <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500 italic">
                   Add a borehole in the 'Borehole' tab to enter direct shear results.

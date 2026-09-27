@@ -22,6 +22,7 @@ import { computeSoilSbcValues, computeRockSbcValues } from '@/utils/sbcCalculato
 import FoundationCrossSectionVisualisation from './admin/FoundationCrossSectionVisualisation';
 import './ReportPreview.css';
 import Chart from 'chart.js/auto';
+import { calculateHydrometerAnalysis } from '@/utils/grainSizeCalculation';
 
 const COMPANY_NAME = 'EDGE2 Engineering Solutions India Pvt. Ltd.';
 const LOGO_SRC = `${import.meta.env.BASE_URL}edge2-logo.png`;
@@ -770,24 +771,45 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
           const explicitTotal = parseFloat(d.totalWeight || d.total_weight || d.sampleWeight);
           const totalWt = !isNaN(explicitTotal) && explicitTotal > 0 ? explicitTotal : sumRetained;
           let cumWt = 0;
+          const mappedSieves = weights.map((s) => {
+            const pctRetained = totalWt > 0 ? (s.wt / totalWt) * 100 : 0;
+            cumWt += s.wt;
+            const cumPctRetained = totalWt > 0 ? (cumWt / totalWt) * 100 : 0;
+            const finesPassing = 100 - cumPctRetained;
+            return {
+              label: s.label,
+              size: s.size,
+              wt: s.wt,
+              pctRetained,
+              cumPctRetained,
+              finesPassing: Math.max(0, finesPassing),
+            };
+          });
+
+          let hydrometerResult = null;
+          let hydrometerPoints = [];
+          if (d.hydrometerData && Array.isArray(d.hydrometerData.readings)) {
+            const fines75 = mappedSieves.find((s) => s.size === 0.075)?.finesPassing || 0;
+            const hydro = calculateHydrometerAnalysis({
+              readings: d.hydrometerData.readings,
+              sieveTotalWeight: totalWt,
+              finesPassing75um: fines75,
+              specificGravitySoil: d.hydrometerData.specificGravitySoil,
+              drySampleWeight: d.hydrometerData.drySampleWeight,
+            });
+            hydrometerResult = hydro;
+            hydrometerPoints = hydro.rows
+              .filter((r) => typeof r.diaParticleD === 'number' && r.diaParticleD > 0 && typeof r.combinedPercentageFiner === 'number')
+              .map((r) => ({ x: r.diaParticleD, y: parseFloat(r.combinedPercentageFiner.toFixed(2)) }));
+          }
+
           return {
             depth: d.depth,
             bhIdx,
-            sieves: weights.map((s) => {
-              const pctRetained = totalWt > 0 ? (s.wt / totalWt) * 100 : 0;
-              cumWt += s.wt;
-              const cumPctRetained = totalWt > 0 ? (cumWt / totalWt) * 100 : 0;
-              const finesPassing = 100 - cumPctRetained;
-              return {
-                label: s.label,
-                size: s.size,
-                wt: s.wt,
-                pctRetained,
-                cumPctRetained,
-                finesPassing: Math.max(0, finesPassing),
-              };
-            }),
+            sieves: mappedSieves,
             totalWt,
+            hydrometerResult,
+            hydrometerPoints,
           };
         })
       ),
@@ -839,6 +861,9 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
             dataPoints.push({ x: s.size, y: parseFloat(s.finesPassing.toFixed(2)) });
           }
         });
+        if (d.hydrometerPoints && d.hydrometerPoints.length > 0) {
+          dataPoints.push(...d.hydrometerPoints);
+        }
         datasets.push({
           label: `BH-${bhIdx + 1} (${d.depth || '?'} m)`,
           data: dataPoints,
@@ -951,6 +976,55 @@ const ParticleSizeDistributionCurveBlock = ({ block }) => {
                   ))}
                 </tbody>
               </table>
+
+              {/* Hydrometer Analysis Table if present */}
+              {d.hydrometerResult && d.hydrometerResult.hasData && (
+                <div className="mt-4">
+                  <p className="text-[10px] font-semibold text-emerald-800 mb-1">
+                    Hydrometer Analysis & Stokes' Law Sedimentation (IS:2720 Part 4)
+                  </p>
+                  <table className="w-full text-[8.5px] border-collapse border border-gray-400 font-mono">
+                    <thead>
+                      <tr className="bg-[#ecfdf5]">
+                        <th className="border border-gray-400 px-1 py-1 text-center font-bold">Time (min)</th>
+                        <th className="border border-gray-400 px-1 py-1 text-center font-bold">Temp (°C)</th>
+                        <th className="border border-gray-400 px-1 py-1 text-center font-bold">Obs. HM (Rh')</th>
+                        <th className="border border-gray-400 px-1 py-1 text-center font-bold">Crctd Rh</th>
+                        <th className="border border-gray-400 px-1 py-1 text-center font-bold">He (cm)</th>
+                        <th className="border border-gray-400 px-1 py-1 text-center font-bold">Factor K</th>
+                        <th className="border border-gray-400 px-1 py-1 text-center font-bold">Dia D (mm)</th>
+                        <th className="border border-gray-400 px-1 py-1 text-center font-bold">% Finer N</th>
+                        <th className="border border-gray-400 px-1 py-1 text-center font-bold">Combined % Finer</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {d.hydrometerResult.rows
+                        .filter((r) => r.rawReading !== '' && r.rawReading !== null)
+                        .map((r, ri) => (
+                          <tr key={ri} className="border-b border-gray-300 text-center">
+                            <td className="border border-gray-400 px-1 py-0.5">{r.time}</td>
+                            <td className="border border-gray-400 px-1 py-0.5">{r.temp}</td>
+                            <td className="border border-gray-400 px-1 py-0.5">{r.rawReading}</td>
+                            <td className="border border-gray-400 px-1 py-0.5">{r.correctedRh}</td>
+                            <td className="border border-gray-400 px-1 py-0.5">{r.effectiveDepthHe}</td>
+                            <td className="border border-gray-400 px-1 py-0.5">{r.factorKDisplay}</td>
+                            <td className="border border-gray-400 px-1 py-0.5 font-bold text-emerald-800">{r.diaParticleD}</td>
+                            <td className="border border-gray-400 px-1 py-0.5">{r.percentageFinerN}%</td>
+                            <td className="border border-gray-400 px-1 py-0.5 font-bold text-blue-900">{r.combinedPercentageFiner}%</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+
+                  {/* Soil Bifurcation Summary */}
+                  <div className="mt-2 p-1.5 bg-gray-50 border border-gray-300 rounded text-[9px] flex items-center justify-between">
+                    <span className="font-semibold text-gray-700">Soil Bifurcation Breakdown:</span>
+                    <span>Silt (0.075 - 0.002 mm): <b>{d.hydrometerResult.bifurcation.silt}%</b></span>
+                    <span>Clay (&lt; 0.002 mm): <b>{d.hydrometerResult.bifurcation.clay}%</b></span>
+                    <span>Total Fines (&lt; 0.075 mm): <b>{d.hydrometerResult.bifurcation.totalFines}%</b></span>
+                  </div>
+                </div>
+              )}
             </div>
           ))
       )}
