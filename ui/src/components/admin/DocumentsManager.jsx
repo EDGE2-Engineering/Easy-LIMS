@@ -566,6 +566,7 @@ const DocumentsManager = () => {
                     <SelectItem value="Quotation">Quotation</SelectItem>
                     <SelectItem value="Proforma Invoice">Proforma Invoice</SelectItem>
                     <SelectItem value="Purchase Order">Purchase Order</SelectItem>
+                    <SelectItem value="Purchase Invoice">Purchase Invoice</SelectItem>
                     <SelectItem value="Delivery Challan">Delivery Challan</SelectItem>
                   </SelectContent>
                 </Select>
@@ -803,7 +804,9 @@ const DocumentsManager = () => {
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${
                           record.document_type === 'Tax Invoice'
                             ? 'bg-blue-50 text-blue-700'
-                            : record.document_type === 'Proforma Invoice'
+                            : record.document_type === 'Purchase Invoice'
+                              ? 'bg-indigo-50 text-indigo-700'
+                              : record.document_type === 'Proforma Invoice'
                               ? 'bg-purple-50 text-purple-700'
                               : record.document_type === 'Purchase Order'
                                 ? 'bg-orange-50 text-orange-700'

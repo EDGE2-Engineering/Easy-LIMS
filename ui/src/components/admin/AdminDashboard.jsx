@@ -269,7 +269,7 @@ const FinancialMetricsWidget = ({ refreshKey }) => {
 
         const [expRes, docsRes] = await Promise.all([
           apiClient.from('expenses').select('amount, date'),
-          apiClient.from('documents').select('content, created_at, document_type').in('document_type', ['Quotation', 'Tax Invoice'])
+          apiClient.from('documents').select('content, created_at, document_type').in('document_type', ['Quotation', 'Tax Invoice', 'Purchase Invoice'])
         ]);
 
         const expenses = expRes.data || [];
@@ -326,7 +326,11 @@ const FinancialMetricsWidget = ({ refreshKey }) => {
 
         const allDocs = docsRes.data || [];
         const quoteMetrics = calculateMetrics(allDocs.filter((d) => d.document_type === 'Quotation'));
-        const invoiceMetrics = calculateMetrics(allDocs.filter((d) => d.document_type === 'Tax Invoice'));
+        const invoiceMetrics = calculateMetrics(
+          allDocs.filter(
+            (d) => d.document_type === 'Tax Invoice' || d.document_type === 'Purchase Invoice'
+          )
+        );
 
         if (isMounted) {
           setFinancials({

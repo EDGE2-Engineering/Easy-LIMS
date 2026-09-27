@@ -262,17 +262,28 @@ const NewQuotationPage = () => {
   const [targetPackageGroupId, setTargetPackageGroupId] = useState('');
   const [hoveredPackageGroupId, setHoveredPackageGroupId] = useState(null);
   const [qty, setQty] = useState(1);
-  const [documentType, setDocumentType] = useState(searchParams.get('type') || 'Quotation'); // 'Tax Invoice', 'Quotation', 'Proforma Invoice', 'Purchase Order', or 'Delivery Challan'
+  const [documentType, setDocumentType] = useState(searchParams.get('type') || 'Quotation'); // 'Tax Invoice', 'Quotation', 'Proforma Invoice', 'Purchase Order', 'Purchase Invoice', or 'Delivery Challan'
   const [discount, setDiscount] = useState(0);
   const [discountShow, setDiscountShow] = useState(true);
   const [daysShow, setDaysShow] = useState(true);
   const [sealShow, setSealShow] = useState(true);
+  const [sealType, setSealType] = useState('auto'); // 'auto' | 'signed' | 'unsigned'
   const [isInterstate, setIsInterstate] = useState(false);
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [clientNameSelection, setClientNameSelection] = useState(''); // Predefined client or 'Other'
   const [customClientName, setCustomClientName] = useState('');
   const [contactSelectionIdx, setContactSelectionIdx] = useState('');
+
+  const isSignedDocumentType = (type) => {
+    if (!type) return false;
+    const lower = String(type).trim().toLowerCase();
+    return lower.includes('invoice') || lower.includes('purchase');
+  };
+
+  const isCurrentSealSigned =
+    sealType === 'signed' ||
+    (sealType !== 'unsigned' && isSignedDocumentType(documentType));
 
   const taxCGST = settings?.tax_cgst ? Number(settings.tax_cgst) : 9;
   const taxSGST = settings?.tax_sgst ? Number(settings.tax_sgst) : 9;
@@ -288,9 +299,10 @@ const NewQuotationPage = () => {
       discountShow,
       daysShow,
       sealShow,
+      sealType,
       isInterstate,
     }),
-    [quoteDetails, items, documentType, discount, discountShow, daysShow, sealShow, isInterstate]
+    [quoteDetails, items, documentType, discount, discountShow, daysShow, sealShow, sealType, isInterstate]
   );
 
   const uniquePackageGroups = useMemo(() => {
@@ -649,6 +661,7 @@ const NewQuotationPage = () => {
             content.daysShow !== undefined ? String(content.daysShow) === 'true' : true;
           const loadedSealShow =
             content.sealShow !== undefined ? String(content.sealShow) === 'true' : true;
+          const loadedSealType = content.sealType || 'auto';
           const loadedIsInterstate =
             content.isInterstate !== undefined ? String(content.isInterstate) === 'true' : false;
 
@@ -666,6 +679,7 @@ const NewQuotationPage = () => {
           setDiscountShow(loadedDiscountShow);
           setDaysShow(loadedDaysShow);
           setSealShow(loadedSealShow);
+          setSealType(loadedSealType);
           setIsInterstate(loadedIsInterstate);
           setSavedRecordId(data.id);
           setDocumentCreatorId(data.created_by);
@@ -680,6 +694,7 @@ const NewQuotationPage = () => {
             discountShow: loadedDiscountShow,
             daysShow: loadedDaysShow,
             sealShow: loadedSealShow,
+            sealType: loadedSealType,
             isInterstate: loadedIsInterstate,
           };
           setLastSavedData(JSON.stringify(snapshot));
@@ -973,6 +988,7 @@ const NewQuotationPage = () => {
           discountShow,
           daysShow,
           sealShow,
+          sealType,
           isInterstate,
         },
         job_id: resolvedJobId,
@@ -1002,6 +1018,7 @@ const NewQuotationPage = () => {
             discountShow,
             daysShow,
             sealShow,
+            sealType,
             isInterstate,
           };
           setLastSavedData(JSON.stringify(snapshot));
@@ -1186,6 +1203,7 @@ const NewQuotationPage = () => {
           discountShow,
           daysShow,
           sealShow,
+          sealType,
           isInterstate,
         },
         job_id: resolvedJobId,
@@ -1215,6 +1233,7 @@ const NewQuotationPage = () => {
         discountShow,
         daysShow,
         sealShow,
+        sealType,
         isInterstate,
       };
       setLastSavedData(JSON.stringify(snapshot));
@@ -1274,6 +1293,7 @@ const NewQuotationPage = () => {
       discountShow,
       daysShow,
       sealShow,
+      sealType,
       isInterstate,
     };
     setLastSavedData(JSON.stringify(currentSnapshot));
@@ -2328,6 +2348,7 @@ const NewQuotationPage = () => {
                     <SelectItem value="Quotation">Quotation</SelectItem>
                     <SelectItem value="Proforma Invoice">Proforma Invoice</SelectItem>
                     <SelectItem value="Purchase Order">Purchase Order</SelectItem>
+                    <SelectItem value="Purchase Invoice">Purchase Invoice</SelectItem>
                     <SelectItem value="Delivery Challan">Delivery Challan</SelectItem>
                   </SelectContent>
                 </Select>
@@ -2426,6 +2447,27 @@ const NewQuotationPage = () => {
                   </Label>
                 </div>
               </div>
+              {sealShow && (
+                <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-dashed">
+                  <Label className="text-xs text-gray-500 font-medium">Seal Format:</Label>
+                  <Select
+                    value={sealType}
+                    onValueChange={setSealType}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className="h-8 text-xs w-[185px]">
+                      <SelectValue placeholder="Seal Format" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">
+                        Auto ({isSignedDocumentType(documentType) ? 'With Signature' : 'Seal Only'})
+                      </SelectItem>
+                      <SelectItem value="signed">With Signature</SelectItem>
+                      <SelectItem value="unsigned">Seal Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               {/* <h2 className="text-lg font-semibold mb-4 flex items-center">
                                 <FileText className="w-5 h-5 mr-2 text-primary" />
                                 Client Details
@@ -2679,12 +2721,12 @@ const NewQuotationPage = () => {
               </div>
             </div>
 
-            {/* Tax Invoice Details Section - Only for Tax Invoice */}
-            {documentType === 'Tax Invoice' && (
+            {/* Invoice Details Section - Only for Tax Invoice and Purchase Invoice */}
+            {(documentType === 'Tax Invoice' || documentType === 'Purchase Invoice') && (
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
                 <h2 className="text-lg font-semibold mb-4 flex items-center text-gray-900">
                   <FileText className="w-5 h-5 mr-2 text-primary" />
-                  Tax Invoice Details
+                  {documentType} Details
                 </h2>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2762,8 +2804,8 @@ const NewQuotationPage = () => {
               </div>
             </div>
 
-            {/* Payment Received Details Section - Only for Tax Invoice */}
-            {documentType === 'Tax Invoice' && (
+            {/* Payment Received Details Section - Only for Tax Invoice and Purchase Invoice */}
+            {(documentType === 'Tax Invoice' || documentType === 'Purchase Invoice') && (
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
                 <h2 className="text-lg font-semibold mb-4 flex items-center">
                   <CreditCard className="w-5 h-5 mr-2 text-primary" />
@@ -3229,8 +3271,8 @@ const NewQuotationPage = () => {
                               </div>
                             </div>
 
-                            {/* Tax Invoice Details - Only for Tax Invoice */}
-                            {documentType === 'Tax Invoice' && (
+                            {/* Invoice Details - Only for Tax Invoice and Purchase Invoice */}
+                            {(documentType === 'Tax Invoice' || documentType === 'Purchase Invoice') && (
                               <div className="grid grid-cols-2 border-t border-l border-gray-200 rounded-md text-xs mt-2 mb-3 overflow-hidden bg-gray-50/20">
                                 <div className="p-2 border-r border-b border-gray-200 min-w-0">
                                   <span className="font-semibold text-gray-500 block uppercase tracking-wider text-[9px] leading-tight">Purchase Order No.</span>
@@ -3818,7 +3860,7 @@ const NewQuotationPage = () => {
                                     ).toLocaleString()}
                                   </span>
                                 </div>
-                                {documentType === 'Tax Invoice' &&
+                                {(documentType === 'Tax Invoice' || documentType === 'Purchase Invoice') &&
                                   quoteDetails.paymentAmount > 0 && (
                                     <>
                                       <div className="flex justify-between text-xs text-red-600">
@@ -3866,8 +3908,9 @@ const NewQuotationPage = () => {
                                 )}
                                 <div className="mt-2 text-xs text-gray-600 italic">
                                   <span>
-                                    * This is a computer generated {documentType.toLowerCase()} and
-                                    does not require a physical signature.
+                                    {isCurrentSealSigned
+                                      ? `* This is a computer generated ${documentType.toLowerCase()} with authorized digital/scanned endorsement.`
+                                      : `* This is a computer generated ${documentType.toLowerCase()} and does not require a physical signature.`}
                                   </span>
                                 </div>
                                 {sealShow && (
@@ -3876,13 +3919,22 @@ const NewQuotationPage = () => {
                                     <div className="flex justify-end mt-4">
                                       <div className="text-center flex flex-col items-center">
                                         <img
-                                          src={`${import.meta.env.BASE_URL}company-seal.png`}
-                                          alt="Company Seal"
-                                          className="w-24 h-24 object-contain"
+                                          src={
+                                            isCurrentSealSigned
+                                              ? `${import.meta.env.BASE_URL}company-seal-signed.png`
+                                              : `${import.meta.env.BASE_URL}company-seal.png`
+                                          }
+                                          alt={isCurrentSealSigned ? 'Authorized Signatory Seal' : 'Company Seal'}
+                                          className="w-28 h-28 object-contain"
                                         />
                                         <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mt-1">
                                           For EDGE2 Engineering Solutions India Pvt. Ltd.
                                         </p>
+                                        {isCurrentSealSigned && (
+                                          <p className="text-[9px] text-gray-500 font-medium tracking-wider">
+                                            Authorized Signatory
+                                          </p>
+                                        )}
                                       </div>
                                     </div>
                                   </div>
@@ -4011,8 +4063,8 @@ const NewQuotationPage = () => {
                           )}
                         </div>
 
-                        {/* Payment Received Details - Only for Tax Invoice */}
-                        {documentType === 'Tax Invoice' && quoteDetails.paymentDate && (
+                        {/* Payment Received Details - Only for Tax Invoice and Purchase Invoice */}
+                        {(documentType === 'Tax Invoice' || documentType === 'Purchase Invoice') && quoteDetails.paymentDate && (
                           <div className="mt-6 pt-4 border-t">
                             <h2 className="font-semibold text-left mb-3 text-sm">
                               Payment Received Details

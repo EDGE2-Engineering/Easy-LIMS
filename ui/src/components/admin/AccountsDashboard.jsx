@@ -72,7 +72,9 @@ const AccountsDashboard = () => {
 
       // Calculate stats from docs
       const quotes = docs.filter((d) => d.document_type === 'Quotation');
-      const invoices = docs.filter((d) => d.document_type === 'Tax Invoice');
+      const invoices = docs.filter(
+        (d) => d.document_type === 'Tax Invoice' || d.document_type === 'Purchase Invoice'
+      );
 
       const totalBilled = invoices.reduce((sum, inv) => {
         const content = inv.content || {};
@@ -109,7 +111,7 @@ const AccountsDashboard = () => {
         .from('documents')
         .select('job_id')
         .in('job_id', jobIds)
-        .eq('document_type', 'Tax Invoice');
+        .in('document_type', ['Tax Invoice', 'Purchase Invoice']);
 
       if (invError) throw invError;
       const existingJobIdsWithInvoice = new Set(existingInvoices.map((i) => i.job_id));

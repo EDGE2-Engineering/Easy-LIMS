@@ -171,7 +171,7 @@ const BusinessInsightsManager = () => {
         apiClient
           .from('documents')
           .select('document_type, created_at, content, client_id')
-          .in('document_type', ['Tax Invoice', 'Quotation']),
+          .in('document_type', ['Tax Invoice', 'Purchase Invoice', 'Quotation']),
         apiClient.from('expenses').select('date, amount'),
         apiClient.from('clients').select('id, client_name').order('client_name'),
       ]);
@@ -181,7 +181,11 @@ const BusinessInsightsManager = () => {
       if (clientsRes.error) throw clientsRes.error;
 
       const allDocs = docsRes.data || [];
-      setInvoices(allDocs.filter((d) => d.document_type === 'Tax Invoice'));
+      setInvoices(
+        allDocs.filter(
+          (d) => d.document_type === 'Tax Invoice' || d.document_type === 'Purchase Invoice'
+        )
+      );
       setQuotations(allDocs.filter((d) => d.document_type === 'Quotation'));
       setExpenses(expensesRes.data || []);
       setClients(clientsRes.data || []);
