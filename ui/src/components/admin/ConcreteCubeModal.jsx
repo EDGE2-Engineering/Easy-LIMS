@@ -177,8 +177,8 @@ export default function ConcreteCubeModal({
   const handleFillSample = () => {
     setMetadata(SAMPLE_CUBE_TEST_DATA.metadata);
     setObservations(SAMPLE_CUBE_TEST_DATA.observations);
-    setCommonCastingDate('2026-01-05');
-    setCommonTestingDate('2026-01-12');
+    setCommonCastingDate('2026-08-19');
+    setCommonTestingDate('2026-09-11');
   };
 
   // Apply & Save
@@ -202,11 +202,19 @@ export default function ConcreteCubeModal({
         compressiveStrength: r.strengthFormatted,
         density: r.densityFormatted,
         failureType: r.failureType,
+        isExcludedFromAverage: r.isExcludedFromAverage,
       })),
       avgCompressiveStrength: calcResult.averageStrengthFormatted,
       avgWeight: calcResult.averageWeightFormatted,
       avgAge: calcResult.averageAgeFormatted,
       reportedStrength: calcResult.averageStrengthFormatted,
+      isOutlierClauseApplied: calcResult.isOutlierClauseApplied,
+      closestValues: calcResult.closestValues,
+      excludedValues: calcResult.excludedValues,
+      calculationClauseNote: calcResult.calculationClauseNote,
+      // Requirement 5: Average weight is for testing data only and not required in final report
+      reportExcludeAvgWeight: true,
+      includeAvgWeightInReport: false,
     };
 
     if (onApply) {
@@ -381,7 +389,7 @@ export default function ConcreteCubeModal({
                         Date of Testing (C7)
                       </th>
                       <th className="p-2.5 font-bold text-center min-w-[80px]">
-                        Age (C8)
+                        Age (days) (C8)
                         <span className="block text-[10px] text-gray-400 font-normal">days</span>
                       </th>
                       <th className="p-2.5 font-bold text-right min-w-[100px]">
@@ -389,13 +397,13 @@ export default function ConcreteCubeModal({
                         <span className="block text-[10px] text-gray-400 font-normal">kg (3 dec)</span>
                       </th>
                       <th className="p-2.5 font-bold text-right min-w-[110px]">
-                        Failure Load (C10)
-                        <span className="block text-[10px] text-gray-400 font-normal">kN (3 dec)</span>
+                        Failure Load (kN) (C10)
+                        <span className="block text-[10px] text-gray-400 font-normal">3 dec</span>
                       </th>
                       <th className="p-2.5 font-bold text-right min-w-[120px] bg-amber-50/50 dark:bg-amber-950/20">
-                        Compressive Str. (C11)
+                        Compressive strength (N/mm²) (C11)
                         <span className="block text-[10px] text-amber-700 dark:text-amber-400 font-normal">
-                          N/mm² (nearest 0.5)
+                          nearest 0.5
                         </span>
                       </th>
                       <th className="p-2.5 font-bold min-w-[120px]">
@@ -490,7 +498,7 @@ export default function ConcreteCubeModal({
                               variant="secondary"
                               className="text-[11px] font-mono px-2 py-0.5 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
                             >
-                              {row.ageFormatted} {parseInt(row.ageFormatted, 10) === 1 ? 'day' : 'days'}
+                              {row.ageFormatted}
                             </Badge>
                           ) : (
                             <span className="text-gray-400">-</span>
@@ -578,6 +586,18 @@ export default function ConcreteCubeModal({
             </div>
           </div>
 
+          {/* IS 516 Clause 3.6 Outlier Rule Notice */}
+          {calcResult.isOutlierClauseApplied && (
+            <div className="p-3.5 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200 shadow-sm">
+              <Info className="w-4 h-4 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div>
+                <span className="font-bold">IS 516 (part 1/Sec 1): 2021 Clause 3.6 Applied: </span>
+                Individual compressive strength variation exceeds &plusmn;15% of the average ({calcResult.initialAverageStrength?.toFixed(1)} N/mm²; acceptable range: {calcResult.lowerLimit15Percent?.toFixed(2)} to {calcResult.upperLimit15Percent?.toFixed(2)} N/mm²).
+                As per Clause 3.6, the average of the two closest values ({calcResult.closestValues?.map((v) => (typeof v === 'number' ? v.toFixed(2) : v)).join(', ')} N/mm²) is taken as the batch representative average ({calcResult.averageStrengthFormatted} N/mm²).
+              </div>
+            </div>
+          )}
+
           {/* Validation Errors Notice */}
           {calcResult.generalErrors.length > 0 && (
             <div className="p-3 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
@@ -604,7 +624,9 @@ export default function ConcreteCubeModal({
                 </span>
               </div>
               <p className="text-[10px] text-gray-500 dark:text-muted-foreground">
-                Rounded to nearest 0.5 N/mm² per standard
+                {calcResult.isOutlierClauseApplied
+                  ? 'Average of 2 closest values (IS 516 Cl 3.6)'
+                  : 'Rounded to nearest 0.5 N/mm² per standard'}
               </p>
             </div>
 
@@ -619,7 +641,7 @@ export default function ConcreteCubeModal({
                 <span className="text-xs font-semibold text-gray-500">kg</span>
               </div>
               <p className="text-[10px] text-gray-500 dark:text-muted-foreground">
-                3 decimals precision
+                Testing data only • Excluded from final report
               </p>
             </div>
 

@@ -53,6 +53,7 @@ import PaverBlockModal from './PaverBlockModal';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { camelCaseToTitleCase } from '@/lib/utils';
+import { formatDateDDMMYYYY, calculateCubeTest } from '@/utils/cubeTestCalculation';
 
 // Names of geotechnical material types (matched against TEST_SCHEMA keys)
 const GEOTECH_NAMES = ['Soil', 'Rock', 'Soil and Rock'];
@@ -942,8 +943,8 @@ const TestingManager = ({
                                     <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.cubeId || '-'}</td>
                                     <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{`${obs.length || 150}×${obs.breadth || 150}×${obs.height || 150}`}</td>
                                     <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.area || '22500'}</td>
-                                    <td className="p-2.5 text-center text-gray-600 dark:text-muted-foreground">{obs.dateOfCasting || '-'}</td>
-                                    <td className="p-2.5 text-center text-gray-600 dark:text-muted-foreground">{obs.dateOfTesting || '-'}</td>
+                                    <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{formatDateDDMMYYYY(obs.dateOfCasting)}</td>
+                                    <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{formatDateDDMMYYYY(obs.dateOfTesting)}</td>
                                     <td className="p-2.5 text-center font-mono">{obs.ageDays ? `${obs.ageDays}d` : '-'}</td>
                                     <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.weightKg || '-'}</td>
                                     <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.failureLoadKn || '-'}</td>
@@ -1056,90 +1057,136 @@ const TestingManager = ({
                       !testResults[cat]?.CubeData?.observations ||
                       testResults[cat]?.CubeData?.observations.length === 0 ? (
                         <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">Pending concrete cube test input</p>
-                      ) : (
-                        <div className="space-y-8 mt-4">
-                          <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
-                            <table className="w-full min-w-full text-left text-sm">
-                              <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
-                                <tr>
-                                  <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
-                                  <th className="p-2.5 font-bold whitespace-nowrap">Identification</th>
-                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Dimensions (mm)</th>
-                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Area (mm²)</th>
-                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Casting Date</th>
-                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Testing Date</th>
-                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Age</th>
-                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">Weight (kg)</th>
-                                  <th className="p-2.5 font-bold text-right whitespace-nowrap">Load (kN)</th>
-                                  <th className="p-2.5 font-bold text-right whitespace-nowrap bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300">
-                                    Strength (N/mm²)
-                                  </th>
-                                  <th className="p-2.5 font-bold text-center whitespace-nowrap">Failure Type</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-100 dark:divide-border">
-                                {testResults[cat]?.CubeData?.observations?.map((obs, idx) => (
-                                  <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
-                                    <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{obs.trialNo || idx + 1}</td>
-                                    <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.cubeId || '-'}</td>
-                                    <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{`${obs.length || 150}×${obs.breadth || 150}×${obs.height || 150}`}</td>
-                                    <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.area || '22500'}</td>
-                                    <td className="p-2.5 text-center text-gray-600 dark:text-muted-foreground">{obs.dateOfCasting || '-'}</td>
-                                    <td className="p-2.5 text-center text-gray-600 dark:text-muted-foreground">{obs.dateOfTesting || '-'}</td>
-                                    <td className="p-2.5 text-center font-mono">{obs.ageDays ? `${obs.ageDays}d` : '-'}</td>
-                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.weightKg || '-'}</td>
-                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.failureLoadKn || '-'}</td>
-                                    <td className="p-2.5 text-right font-mono font-bold text-amber-900 dark:text-amber-300 bg-amber-50/40 dark:bg-amber-950/30">
-                                      {obs.compressiveStrength || '-'}
-                                    </td>
-                                    <td className="p-2.5 text-center">
-                                      <Badge
-                                        variant="outline"
-                                        className={`text-[10px] ${
-                                          obs.failureType === 'Satisfactory'
-                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
-                                            : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800'
-                                        }`}
-                                      >
-                                        {obs.failureType || 'Satisfactory'}
-                                      </Badge>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                      ) : (() => {
+                        const cubeCalc = testResults[cat]?.CubeData?.observations?.length
+                          ? calculateCubeTest(testResults[cat].CubeData.observations, testResults[cat].CubeData)
+                          : null;
+                        const displayAvgStrength =
+                          cubeCalc?.averageStrengthFormatted ||
+                          testResults[cat]?.CubeData?.avgCompressiveStrength ||
+                          '-';
+                        const isOutlierApplied = Boolean(
+                          cubeCalc?.isOutlierClauseApplied ?? testResults[cat]?.CubeData?.isOutlierClauseApplied
+                        );
+                        const closestVals =
+                          cubeCalc?.closestValues || testResults[cat]?.CubeData?.closestValues || [];
+                        const clauseNote =
+                          cubeCalc?.calculationClauseNote || testResults[cat]?.CubeData?.calculationClauseNote || '';
 
-                          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40">
-                            <div className="flex items-center gap-6">
-                              <div>
-                                <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-400">
-                                  Average Compressive Strength
-                                </span>
-                                <div className="flex items-baseline gap-1.5">
-                                  <span className="text-xl font-black text-amber-900 dark:text-amber-300 font-mono">
-                                    {testResults[cat]?.CubeData?.avgCompressiveStrength || '-'}
-                                  </span>
-                                  <span className="text-xs font-bold text-amber-800 dark:text-amber-400">N/mm²</span>
-                                </div>
-                              </div>
-                              {testResults[cat]?.CubeData?.avgWeight && (
+                        return (
+                          <div className="space-y-8 mt-4">
+                            <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
+                              <table className="w-full min-w-full text-left text-sm">
+                                <thead className="bg-gray-50 dark:bg-muted/40 border-b dark:border-border text-gray-600 dark:text-muted-foreground">
+                                  <tr>
+                                    <th className="p-2.5 font-bold text-center w-14 whitespace-nowrap">#</th>
+                                    <th className="p-2.5 font-bold whitespace-nowrap">Identification</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Dimensions (mm)</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Area (mm²)</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Casting Date</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Testing Date</th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Age (days)</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap">Weight (kg)</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap">Failure Load (kN)</th>
+                                    <th className="p-2.5 font-bold text-right whitespace-nowrap bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300">
+                                      Compressive strength (N/mm²)
+                                    </th>
+                                    <th className="p-2.5 font-bold text-center whitespace-nowrap">Failure Type</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-border">
+                                  {testResults[cat]?.CubeData?.observations?.map((obs, idx) => {
+                                    const rowCalc = cubeCalc?.rows?.[idx];
+                                    const strengthVal = obs.compressiveStrength || rowCalc?.strengthFormatted || '-';
+                                    const isExcluded = Boolean(rowCalc?.isExcludedFromAverage);
+
+                                    return (
+                                      <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-muted/30">
+                                        <td className="p-2.5 text-center font-bold text-gray-400 dark:text-muted-foreground whitespace-nowrap">{obs.trialNo || idx + 1}</td>
+                                        <td className="p-2.5 font-medium text-gray-800 dark:text-foreground">{obs.cubeId || '-'}</td>
+                                        <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{`${obs.length || 150}×${obs.breadth || 150}×${obs.height || 150}`}</td>
+                                        <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.area || rowCalc?.areaFormatted || '22500'}</td>
+                                        <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{formatDateDDMMYYYY(obs.dateOfCasting)}</td>
+                                        <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{formatDateDDMMYYYY(obs.dateOfTesting)}</td>
+                                        <td className="p-2.5 text-center font-mono">
+                                          {obs.ageDays !== undefined && obs.ageDays !== null && obs.ageDays !== ''
+                                            ? String(obs.ageDays).replace(/d$/i, '').trim()
+                                            : rowCalc?.ageFormatted || '-'}
+                                        </td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.weightKg || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.failureLoadKn || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-amber-900 dark:text-amber-300 bg-amber-50/40 dark:bg-amber-950/30">
+                                          <span>{strengthVal}</span>
+                                          {isExcluded && (
+                                            <span
+                                              className="ml-1 text-[10px] text-amber-600 font-normal cursor-help"
+                                              title="Excluded from batch representative average per IS 516 Cl 3.6 (> ±15% variation from mean)"
+                                            >
+                                              *
+                                            </span>
+                                          )}
+                                        </td>
+                                        <td className="p-2.5 text-center">
+                                          <Badge
+                                            variant="outline"
+                                            className={`text-[10px] ${
+                                              obs.failureType === 'Satisfactory'
+                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                                                : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800'
+                                            }`}
+                                          >
+                                            {obs.failureType || 'Satisfactory'}
+                                          </Badge>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40">
+                              <div className="flex items-center gap-6">
                                 <div>
-                                  <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
-                                    Average Weight
+                                  <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-400">
+                                    Average Compressive Strength
                                   </span>
-                                  <div className="text-sm font-bold text-gray-800 dark:text-foreground font-mono">
-                                    {testResults[cat]?.CubeData?.avgWeight} kg
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-xl font-black text-amber-900 dark:text-amber-300 font-mono">
+                                      {displayAvgStrength}
+                                    </span>
+                                    <span className="text-xs font-bold text-amber-800 dark:text-amber-400">N/mm²</span>
                                   </div>
                                 </div>
-                              )}
-                            </div>
-                            <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground">
-                              IS 516: Round up nearest 0.5 value applied
+                                {testResults[cat]?.CubeData?.avgWeight && (
+                                  <div title="Recorded for testing data (excluded from final report per IS 516)">
+                                    <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-muted-foreground">
+                                      Average Weight
+                                    </span>
+                                    <div className="text-sm font-bold text-gray-800 dark:text-foreground font-mono">
+                                      {testResults[cat]?.CubeData?.avgWeight} kg
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground">
+                                {isOutlierApplied ? (
+                                  <span
+                                    className="text-amber-800 dark:text-amber-400 font-semibold"
+                                    title={clauseNote}
+                                  >
+                                    IS 516 Cl 3.6: Variation &gt; &plusmn;15% &bull; Avg of 2 closest values applied ({
+                                      closestVals.map((v) => (typeof v === 'number' ? v.toFixed(2) : v)).join(', ')
+                                    } N/mm&sup2;)
+                                  </span>
+                                ) : (
+                                  'IS 516: Round up nearest 0.5 value applied'
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
@@ -1418,17 +1465,6 @@ const TestingManager = ({
                                 </div>
                               </div>
                             )}
-                            {testResults[cat].FineAggData.finer75?.finerPct && (
-                              <div>
-                                <span className="text-[10px] uppercase font-bold text-teal-800 dark:text-teal-400">Finer than 75 µm</span>
-                                <div className="flex items-baseline gap-1">
-                                  <span className="text-xl font-black text-teal-900 dark:text-teal-300 font-mono">
-                                    {testResults[cat].FineAggData.finer75.finerPct}
-                                  </span>
-                                  <span className="text-xs font-bold text-teal-700 dark:text-teal-400">%</span>
-                                </div>
-                              </div>
-                            )}
                             {testResults[cat].FineAggData.sgWa?.avgSgSsd && (
                               <div>
                                 <span className="text-[10px] uppercase font-bold text-teal-800 dark:text-teal-400">Avg SSD SG</span>
@@ -1470,8 +1506,30 @@ const TestingManager = ({
                                 </div>
                               </div>
                             )}
+                            {testResults[cat].FineAggData.siltContent?.siltPct && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-400">Silt Content</span>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-xl font-black text-amber-900 dark:text-amber-300 font-mono">
+                                    {testResults[cat].FineAggData.siltContent.siltPct}
+                                  </span>
+                                  <span className="text-xs font-bold text-amber-700 dark:text-amber-400">%</span>
+                                </div>
+                              </div>
+                            )}
+                            {testResults[cat].FineAggData.finer75?.finerPct && (
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-teal-800 dark:text-teal-400">Percentage finer than 75 Micron</span>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-xl font-black text-teal-900 dark:text-teal-300 font-mono">
+                                    {testResults[cat].FineAggData.finer75.finerPct}
+                                  </span>
+                                  <span className="text-xs font-bold text-teal-700 dark:text-teal-400">%</span>
+                                </div>
+                              </div>
+                            )}
                             <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground self-end ml-auto">
-                              IS 2386 (Part 1 &amp; 3): 1963 RA 2021
+                              IS 2386 (Parts 1, 2 &amp; 3): 1963 RA 2021
                             </div>
                           </div>
 

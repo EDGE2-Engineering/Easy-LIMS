@@ -2,10 +2,11 @@
  * Fine Aggregate Test Calculations
  *
  * Tests covered:
- *  1. Sieve Analysis              – IS 2386 (Part 1): 1963 RA 2021
- *  2. Finer than 75 µm           – IS 2386 (Part 1): 1963 RA 2021
- *  3. Specific Gravity & Water Absorption – IS 2386 (Part 3): 1963 RA 2021
- *  4. Bulk Density                – IS 2386 (Part 3): 1963 RA 2021
+ *  1. Sieve Analysis                      – IS 2386 (Part 1): 1963 RA 2021
+ *  2. Specific Gravity & Water Absorption – IS 2386 (Part 3): 1963 RA 2021
+ *  3. Bulk Density                        – IS 2386 (Part 3): 1963 RA 2021
+ *  4. Silt Content                        – IS 2386 (Part 2): 1963 RA 2021
+ *  5. Percentage finer than 75 micron     – IS 2386 (Part 1): 1963 RA 2021
  *
  * Formulas:
  *  Sieve Analysis:
@@ -13,9 +14,6 @@
  *    Cumulative % Retained = (Cumulative Weight Retained / Sample Weight) × 100
  *    % Passing = 100 − Cumulative % Retained
  *    Fineness Modulus = Σ(Cumulative % Retained for sieves ≥ 150 µm) / 100
- *
- *  Finer than 75 µm:
- *    Finer (%) = ((W1 − W2) / W2) × 100   (NOTE: standard uses W2 as denominator per provided spec)
  *
  *  Specific Gravity & Water Absorption (per trial):
  *    SSD Specific Gravity      = D / (A − (B − C))
@@ -27,6 +25,18 @@
  *    Dry Compacted Bulk Density (kg/L) = M1 / V
  *    Dry Loose Bulk Density (kg/L)     = M2 / V
  *    Averages = mean of valid trials
+ *
+ *  Silt Content:
+ *    Percentage of Silt (%) = (V1 / V2) × 100
+ *    where:
+ *      V1 = Volume of silt layer (ml) (silt settled over the sand layer)
+ *      V2 = Total volume of sample (ml)
+ *
+ *  Percentage finer than 75 micron:
+ *    Percentage finer than 75 micron (%) = ((W1 − W2) / W1) × 100
+ *    where:
+ *      W1 = Original dry weight / sample taken (g)
+ *      W2 = Dry weight after washing (g)
  */
 
 // ─── Standard sieve stack for fine aggregate ─────────────────────────────────
@@ -60,8 +70,13 @@ export const DEFAULT_SIEVE_ANALYSIS = {
 };
 
 export const DEFAULT_FINER75 = {
-  w1: '',  // sample taken (g)
-  w2: '',  // after wash oven dry weight (g)
+  w1: '',  // original dry sample taken (g)
+  w2: '',  // dry weight after washing (g)
+};
+
+export const DEFAULT_SILT_CONTENT = {
+  v1: '',  // volume of silt layer (ml) (silt settled over the sand layer)
+  v2: '',  // total volume of sample (ml)
 };
 
 export const DEFAULT_SG_TRIAL = { a: '', b: '', c: '', d: '' };
@@ -97,6 +112,7 @@ export const SAMPLE_FINE_AGG_DATA = {
     },
   },
   finer75: { w1: '500', w2: '457' },
+  siltContent: { v1: '4', v2: '90' },
   sgWa: {
     trials: [
       { a: '505.00', b: '1890.00', c: '1576.00', d: '495.50' },
@@ -193,9 +209,12 @@ export function calculateSieveAnalysis(data) {
   return { rows, finenessModulus, finenessModulusFmt, errors };
 }
 
-// ─── 2. Finer than 75 µm ─────────────────────────────────────────────────────
+// ─── 2. Percentage finer than 75 micron ───────────────────────────────────────
 
 /**
+ * Percentage finer than 75 micron per IS 2386 (Part 1): 1963 RA 2021
+ * Formula: ((W1 − W2) / W1) × 100
+ * where W1 = Original dry weight / sample taken (g), W2 = Dry weight after washing (g)
  * @param {{ w1: string, w2: string }} data
  * @returns {{ finerPct, finerPctFmt, errors }}
  */
@@ -207,11 +226,15 @@ export function calculateFiner75(data) {
   let finerPct = null;
   let finerPctFmt = '';
 
-  if (!isNaN(w1) && !isNaN(w2) && w2 > 0) {
-    if (w1 < w2) {
-      errors.push('Sample weight (W1) cannot be less than oven-dry weight (W2).');
+  if (!isNaN(w1) && !isNaN(w2)) {
+    if (w1 <= 0) {
+      errors.push('Original dry sample weight (W₁) must be greater than 0.');
+    } else if (w2 < 0) {
+      errors.push('Dry weight after washing (W₂) cannot be negative.');
+    } else if (w1 < w2) {
+      errors.push('Original dry sample weight (W₁) cannot be less than dry weight after washing (W₂).');
     } else {
-      finerPct = ((w1 - w2) / w2) * 100;
+      finerPct = ((w1 - w2) / w1) * 100;
       finerPctFmt = fmt2(finerPct);
     }
   }
@@ -318,3 +341,39 @@ export function calculateBulkDensity(data) {
     avgLoose,     avgLooseFmt:     fmt2(avgLoose),
   };
 }
+
+// ─── 5. Silt Content ──────────────────────────────────────────────────────────
+
+/**
+ * Silt Content per IS 2386 (Part 2): 1963 RA 2021
+ * Formula: (V1 / V2) × 100
+ * where:
+ *   V1 = Volume of silt layer (ml) (silt settled over the sand layer)
+ *   V2 = Total volume of sample (ml)
+ * @param {{ v1: string, v2: string }} data
+ * @returns {{ siltPct, siltPctFmt, errors }}
+ */
+export function calculateSiltContent(data) {
+  const v1 = parseFloat(data?.v1);
+  const v2 = parseFloat(data?.v2);
+  const errors = [];
+
+  let siltPct = null;
+  let siltPctFmt = '';
+
+  if (!isNaN(v1) && !isNaN(v2)) {
+    if (v2 <= 0) {
+      errors.push('Total volume of sample (V₂) must be greater than 0.');
+    } else if (v1 < 0) {
+      errors.push('Volume of silt layer (V₁) cannot be negative.');
+    } else if (v1 > v2) {
+      errors.push('Volume of silt layer (V₁) cannot exceed total volume (V₂).');
+    } else {
+      siltPct = (v1 / v2) * 100;
+      siltPctFmt = fmt2(siltPct);
+    }
+  }
+
+  return { siltPct, siltPctFmt, errors };
+}
+

@@ -43,11 +43,19 @@ export const DEFAULT_CUBE_OBSERVATIONS = [
 ];
 
 /**
- * Sample test data strictly following the handwriting example in Page 1 and Page 2 of the PDF:
- * Trial 1: Footing, 150x150x150, Casting: 05-01-2026, Testing: 12-01-2026 (7 days), Weight: 8.372 kg, Load: 396.160 kN -> 17.50 N/mm², Satisfactory
- * Trial 2: Footing, 150x150x150, Casting: 05-01-2026, Testing: 12-01-2026 (7 days), Weight: 8.552 kg, Load: 433.236 kN -> 19.50 N/mm², Satisfactory
- * Trial 3: Footing, 150x150x150, Casting: 05-01-2026, Testing: 12-01-2026 (7 days), Weight: 8.396 kg, Load: 440.967 kN -> 19.50 N/mm², Satisfactory
- * Average = (17.50 + 19.50 + 19.50) / 3 = 18.833... -> rounded to nearest 0.5 = 19.0 N/mm²
+ * Sample test data strictly following the handwriting example in Page 1, Page 2 and Page 3 of the PDF:
+ * Specimen Batch: Slab Casting, 150x150x150, Area = 22500 mm²
+ * Date of Casting: 19-08-2026, Date of Testing: 11-09-2026 (Age = 23 days)
+ * Trial 1: Slab Casting, Weight: 8.416 kg, Failure Load: 537.680 kN -> 24.00 N/mm², Satisfactory
+ * Trial 2: Slab Casting, Weight: 8.425 kg, Failure Load: 450.433 kN -> 20.00 N/mm², Satisfactory
+ * Trial 3: Slab Casting, Weight: 8.102 kg, Failure Load: 749.686 kN -> 33.50 N/mm², Satisfactory
+ *
+ * Calculation per IS 516 (part 1/Sec 1): 2021 Clause 3.6:
+ * Initial 3-specimen mean: (24.00 + 20.00 + 33.50) / 3 = 25.833... N/mm² (~25.8 N/mm²)
+ * ±15% variation range: Lower = 21.93 to 21.96 N/mm², Upper = 29.67 to 29.71 N/mm²
+ * 20.00 < Lower Limit & 33.50 > Upper Limit (Individual variation exceeds ±15%)
+ * Two closest values: 20.00 and 24.00 N/mm²
+ * Average of two closest values: (20.00 + 24.00) / 2 = 22.00 N/mm² -> Rounded to nearest 0.5 = 22.0 N/mm²
  */
 export const SAMPLE_CUBE_TEST_DATA = {
   metadata: {
@@ -57,36 +65,36 @@ export const SAMPLE_CUBE_TEST_DATA = {
   },
   observations: [
     {
-      cubeId: 'Footing',
+      cubeId: 'Slab Casting',
       length: '150',
       breadth: '150',
       height: '150',
-      dateOfCasting: '2026-01-05',
-      dateOfTesting: '2026-01-12',
-      weightKg: '8.372',
-      failureLoadKn: '396.160',
+      dateOfCasting: '2026-08-19',
+      dateOfTesting: '2026-09-11',
+      weightKg: '8.416',
+      failureLoadKn: '537.680',
       failureType: 'Satisfactory',
     },
     {
-      cubeId: 'Footing',
+      cubeId: 'Slab Casting',
       length: '150',
       breadth: '150',
       height: '150',
-      dateOfCasting: '2026-01-05',
-      dateOfTesting: '2026-01-12',
-      weightKg: '8.552',
-      failureLoadKn: '433.236',
+      dateOfCasting: '2026-08-19',
+      dateOfTesting: '2026-09-11',
+      weightKg: '8.425',
+      failureLoadKn: '450.433',
       failureType: 'Satisfactory',
     },
     {
-      cubeId: 'Footing',
+      cubeId: 'Slab Casting',
       length: '150',
       breadth: '150',
       height: '150',
-      dateOfCasting: '2026-01-05',
-      dateOfTesting: '2026-01-12',
-      weightKg: '8.396',
-      failureLoadKn: '440.967',
+      dateOfCasting: '2026-08-19',
+      dateOfTesting: '2026-09-11',
+      weightKg: '8.102',
+      failureLoadKn: '749.686',
       failureType: 'Satisfactory',
     },
   ],
@@ -137,6 +145,241 @@ export function calculateAgeInDays(castingDate, testingDate) {
   } catch {
     return null;
   }
+}
+
+/**
+ * Format date string to DD/MM/YYYY
+ * Handles YYYY-MM-DD, YYYY/MM/DD, DD-MM-YYYY, DD/MM/YYYY and Date objects
+ * @param {string|Date} dateVal
+ * @returns {string} Formatted DD/MM/YYYY or '-' if empty/invalid
+ */
+export function formatDateDDMMYYYY(dateVal) {
+  if (!dateVal) return '-';
+  const str = String(dateVal).trim();
+  if (!str) return '-';
+
+  // Already DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+    return str;
+  }
+
+  // DD-MM-YYYY or DD.MM.YYYY
+  const dmyMatch = str.match(/^(\d{1,2})[-.](\d{1,2})[-.](\d{4})$/);
+  if (dmyMatch) {
+    const [, d, m, y] = dmyMatch;
+    return `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
+  }
+
+  // YYYY-MM-DD or YYYY/MM/DD
+  const ymdMatch = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (ymdMatch) {
+    const [, y, m, d] = ymdMatch;
+    return `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
+  }
+
+  const dt = new Date(str);
+  if (!isNaN(dt.getTime())) {
+    const day = String(dt.getDate()).padStart(2, '0');
+    const month = String(dt.getMonth() + 1).padStart(2, '0');
+    const year = dt.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  return str;
+}
+
+/**
+ * Calculates representative average compressive strength per IS 516 (part 1/Sec 1): 2021 Clause 3.6:
+ *
+ * Clause 3.6 Rule:
+ * 1. Average of three values shall be taken as the representative of the batch provided the individual
+ *    variation is not more than ±15 percent of the average.
+ * 2. Otherwise, the average of two closest values may be taken as the average result.
+ * 3. Strength values are rounded to the nearest 0.5 N/mm².
+ *
+ * @param {Array<number>} validStrengths Individual rounded compressive strengths
+ * @returns {Object} IS 516 Cl 3.6 calculation result
+ */
+export function calculateAverageCompressiveStrength(validStrengths = []) {
+  if (!validStrengths || validStrengths.length === 0) {
+    return {
+      rawAverageStrength: null,
+      averageStrength: null,
+      averageStrengthFormatted: '',
+      isOutlierClauseApplied: false,
+      initialAverageStrength: null,
+      lowerLimit15Percent: null,
+      upperLimit15Percent: null,
+      closestValues: [],
+      excludedValues: [],
+      clauseNote: '',
+    };
+  }
+
+  // 1 specimen
+  if (validStrengths.length === 1) {
+    const rounded = roundToNearestHalf(validStrengths[0]);
+    return {
+      rawAverageStrength: validStrengths[0],
+      averageStrength: rounded,
+      averageStrengthFormatted: rounded.toFixed(1),
+      isOutlierClauseApplied: false,
+      initialAverageStrength: validStrengths[0],
+      lowerLimit15Percent: validStrengths[0] * 0.85,
+      upperLimit15Percent: validStrengths[0] * 1.15,
+      closestValues: [validStrengths[0]],
+      excludedValues: [],
+      clauseNote: 'Single specimen tested.',
+    };
+  }
+
+  // 2 specimens
+  if (validStrengths.length === 2) {
+    const mean2 = (validStrengths[0] + validStrengths[1]) / 2;
+    const rounded = roundToNearestHalf(mean2);
+    return {
+      rawAverageStrength: mean2,
+      averageStrength: rounded,
+      averageStrengthFormatted: rounded.toFixed(1),
+      isOutlierClauseApplied: false,
+      initialAverageStrength: mean2,
+      lowerLimit15Percent: mean2 * 0.85,
+      upperLimit15Percent: mean2 * 1.15,
+      closestValues: [...validStrengths],
+      excludedValues: [],
+      clauseNote: 'Average of 2 specimens taken.',
+    };
+  }
+
+  // 3 specimens (Standard IS 516 batch)
+  if (validStrengths.length === 3) {
+    const sum3 = validStrengths[0] + validStrengths[1] + validStrengths[2];
+    const initialMean = sum3 / 3;
+    const lowerLimit = initialMean * 0.85;
+    const upperLimit = initialMean * 1.15;
+    const EPS = 1e-6;
+
+    const hasOutlier = validStrengths.some(
+      (s) => s < lowerLimit - EPS || s > upperLimit + EPS
+    );
+
+    if (!hasOutlier) {
+      const rounded = roundToNearestHalf(initialMean);
+      return {
+        rawAverageStrength: initialMean,
+        averageStrength: rounded,
+        averageStrengthFormatted: rounded.toFixed(1),
+        isOutlierClauseApplied: false,
+        initialAverageStrength: initialMean,
+        lowerLimit15Percent: lowerLimit,
+        upperLimit15Percent: upperLimit,
+        closestValues: [...validStrengths],
+        excludedValues: [],
+        clauseNote: 'IS 516 Cl 3.6: All individual strengths within ±15% of average.',
+      };
+    }
+
+    // Individual variation exceeds ±15% -> Average of two closest values per IS 516 Cl 3.6
+    const s0 = validStrengths[0];
+    const s1 = validStrengths[1];
+    const s2 = validStrengths[2];
+
+    const d01 = Math.abs(s0 - s1);
+    const d12 = Math.abs(s1 - s2);
+    const d02 = Math.abs(s0 - s2);
+
+    let closestPair = [];
+    let excluded = [];
+
+    const minDiff = Math.min(d01, d12, d02);
+    if (Math.abs(d01 - minDiff) < EPS) {
+      closestPair = [s0, s1];
+      excluded = [s2];
+    } else if (Math.abs(d12 - minDiff) < EPS) {
+      closestPair = [s1, s2];
+      excluded = [s0];
+    } else {
+      closestPair = [s0, s2];
+      excluded = [s1];
+    }
+
+    const closestMean = (closestPair[0] + closestPair[1]) / 2;
+    const rounded = roundToNearestHalf(closestMean);
+
+    return {
+      rawAverageStrength: closestMean,
+      averageStrength: rounded,
+      averageStrengthFormatted: rounded.toFixed(1),
+      isOutlierClauseApplied: true,
+      initialAverageStrength: initialMean,
+      lowerLimit15Percent: lowerLimit,
+      upperLimit15Percent: upperLimit,
+      closestValues: closestPair,
+      excludedValues: excluded,
+      clauseNote: `IS 516 Cl 3.6: Variation > ±15% of average (${initialMean.toFixed(1)} N/mm²); average of two closest values (${closestPair[0].toFixed(2)}, ${closestPair[1].toFixed(2)}) applied.`,
+    };
+  }
+
+  // More than 3 specimens
+  const sumN = validStrengths.reduce((acc, v) => acc + v, 0);
+  const initialMean = sumN / validStrengths.length;
+  const lowerLimit = initialMean * 0.85;
+  const upperLimit = initialMean * 1.15;
+  const EPS = 1e-6;
+
+  const hasOutlier = validStrengths.some(
+    (s) => s < lowerLimit - EPS || s > upperLimit + EPS
+  );
+
+  if (!hasOutlier) {
+    const rounded = roundToNearestHalf(initialMean);
+    return {
+      rawAverageStrength: initialMean,
+      averageStrength: rounded,
+      averageStrengthFormatted: rounded.toFixed(1),
+      isOutlierClauseApplied: false,
+      initialAverageStrength: initialMean,
+      lowerLimit15Percent: lowerLimit,
+      upperLimit15Percent: upperLimit,
+      closestValues: [...validStrengths],
+      excludedValues: [],
+      clauseNote: 'IS 516 Cl 3.6: All individual strengths within ±15% of average.',
+    };
+  }
+
+  // Find pair with minimal difference
+  let minDiff = Infinity;
+  let bestPair = [validStrengths[0], validStrengths[1]];
+  for (let i = 0; i < validStrengths.length; i++) {
+    for (let j = i + 1; j < validStrengths.length; j++) {
+      const diff = Math.abs(validStrengths[i] - validStrengths[j]);
+      if (diff < minDiff) {
+        minDiff = diff;
+        bestPair = [validStrengths[i], validStrengths[j]];
+      }
+    }
+  }
+
+  const closestMean = (bestPair[0] + bestPair[1]) / 2;
+  const rounded = roundToNearestHalf(closestMean);
+  const excluded = validStrengths.filter((v, idx) => {
+    const i1 = validStrengths.indexOf(bestPair[0]);
+    const i2 = validStrengths.lastIndexOf(bestPair[1]);
+    return idx !== i1 && idx !== i2;
+  });
+
+  return {
+    rawAverageStrength: closestMean,
+    averageStrength: rounded,
+    averageStrengthFormatted: rounded.toFixed(1),
+    isOutlierClauseApplied: true,
+    initialAverageStrength: initialMean,
+    lowerLimit15Percent: lowerLimit,
+    upperLimit15Percent: upperLimit,
+    closestValues: bestPair,
+    excludedValues: excluded,
+    clauseNote: `IS 516 Cl 3.6: Variation > ±15% of average (${initialMean.toFixed(1)} N/mm²); average of two closest values (${bestPair[0].toFixed(2)}, ${bestPair[1].toFixed(2)}) applied.`,
+  };
 }
 
 /**
@@ -236,6 +479,8 @@ export function calculateCubeTest(observations = [], metadata = {}) {
       areaFormatted,
       dateOfCasting: obs.dateOfCasting || '',
       dateOfTesting: obs.dateOfTesting || '',
+      dateOfCastingFormatted: formatDateDDMMYYYY(obs.dateOfCasting),
+      dateOfTestingFormatted: formatDateDDMMYYYY(obs.dateOfTesting),
       ageDays,
       ageFormatted,
       weightKg: obs.weightKg || '',
@@ -252,19 +497,21 @@ export function calculateCubeTest(observations = [], metadata = {}) {
     });
   });
 
-  // Average Compressive Strength Calculation (rounded to nearest 0.5 N/mm² as per PDF note)
-  let rawAverageStrength = null;
-  let averageStrength = null;
-  let averageStrengthFormatted = '';
+  // Representative Average Compressive Strength per IS 516 (part 1/Sec 1): 2021 Clause 3.6
+  const avgStrengthResult = calculateAverageCompressiveStrength(validStrengths);
 
-  if (validStrengths.length > 0) {
-    const sum = validStrengths.reduce((acc, v) => acc + v, 0);
-    rawAverageStrength = sum / validStrengths.length;
-    averageStrength = roundToNearestHalf(rawAverageStrength);
-    averageStrengthFormatted = averageStrength.toFixed(1); // e.g. "19.0" as on page 2
+  // Mark rows that were excluded from the representative average due to > ±15% variation
+  if (avgStrengthResult.isOutlierClauseApplied && avgStrengthResult.excludedValues.length > 0) {
+    rows.forEach((r) => {
+      r.isExcludedFromAverage = avgStrengthResult.excludedValues.includes(r.roundedStrength);
+    });
+  } else {
+    rows.forEach((r) => {
+      r.isExcludedFromAverage = false;
+    });
   }
 
-  // Average Weight
+  // Average Weight (testing data only - not required in final report)
   let averageWeightFormatted = '';
   if (validWeights.length > 0) {
     const sumW = validWeights.reduce((acc, v) => acc + v, 0);
@@ -287,11 +534,21 @@ export function calculateCubeTest(observations = [], metadata = {}) {
     rows,
     count: rows.length,
     validStrengthCount: validStrengths.length,
-    rawAverageStrength,
-    averageStrength,
-    averageStrengthFormatted,
+    rawAverageStrength: avgStrengthResult.rawAverageStrength,
+    averageStrength: avgStrengthResult.averageStrength,
+    averageStrengthFormatted: avgStrengthResult.averageStrengthFormatted,
+    isOutlierClauseApplied: avgStrengthResult.isOutlierClauseApplied,
+    initialAverageStrength: avgStrengthResult.initialAverageStrength,
+    lowerLimit15Percent: avgStrengthResult.lowerLimit15Percent,
+    upperLimit15Percent: avgStrengthResult.upperLimit15Percent,
+    closestValues: avgStrengthResult.closestValues,
+    excludedValues: avgStrengthResult.excludedValues,
+    calculationClauseNote: avgStrengthResult.clauseNote,
     averageWeightFormatted,
     averageAgeFormatted,
+    // Requirement 5: Average weight is for testing data only and not required in final report
+    reportExcludeAvgWeight: true,
+    includeAvgWeightInReport: false,
     generalErrors,
     gradeOfConcrete: metadata.gradeOfConcrete || 'M20',
     standard: metadata.standard || 'IS 516 (part 1/Sec 1): 2021',

@@ -22,11 +22,13 @@ import {
   Layers,
   Droplets,
   Weight,
+  TestTube2,
 } from 'lucide-react';
 import {
   FINE_AGG_SIEVES,
   DEFAULT_SIEVE_ANALYSIS,
   DEFAULT_FINER75,
+  DEFAULT_SILT_CONTENT,
   DEFAULT_SG_WA,
   DEFAULT_SG_TRIAL,
   DEFAULT_BULK_DENSITY,
@@ -36,6 +38,7 @@ import {
   calculateFiner75,
   calculateSgWa,
   calculateBulkDensity,
+  calculateSiltContent,
 } from '@/utils/fineAggregateTestCalculation';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -47,8 +50,8 @@ function deepClone(obj) {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 /**
- * Modal for Fine Aggregate Tests per IS 2386 (Parts 1 & 3): 1963 RA 2021
- * Tabs: Sieve Analysis | Finer <75µm | Specific Gravity & WA | Bulk Density
+ * Modal for Fine Aggregate Tests per IS 2386 (Parts 1, 2 & 3): 1963 RA 2021
+ * Tabs: Sieve Analysis | Specific Gravity & WA | Bulk Density | Silt Content (%) | Percentage finer than 75 micron
  */
 export default function FineAggregateTestModal({
   isOpen,
@@ -63,6 +66,7 @@ export default function FineAggregateTestModal({
   // ── State for each test ────────────────────────────────────────────────
   const [sieveData,    setSieveData]    = useState(deepClone(DEFAULT_SIEVE_ANALYSIS));
   const [finer75Data,  setFiner75Data]  = useState(deepClone(DEFAULT_FINER75));
+  const [siltData,     setSiltData]     = useState(deepClone(DEFAULT_SILT_CONTENT));
   const [sgWaData,     setSgWaData]     = useState(deepClone(DEFAULT_SG_WA));
   const [bulkData,     setBulkData]     = useState(deepClone(DEFAULT_BULK_DENSITY));
 
@@ -101,6 +105,11 @@ export default function FineAggregateTestModal({
       w2: initialData?.finer75?.w2 !== undefined ? String(initialData.finer75.w2) : DEFAULT_FINER75.w2,
     });
 
+    setSiltData({
+      v1: initialData?.siltContent?.v1 !== undefined ? String(initialData.siltContent.v1) : DEFAULT_SILT_CONTENT.v1,
+      v2: initialData?.siltContent?.v2 !== undefined ? String(initialData.siltContent.v2) : DEFAULT_SILT_CONTENT.v2,
+    });
+
     setSgWaData(
       initialData?.sgWa?.trials?.length > 0
         ? {
@@ -133,6 +142,7 @@ export default function FineAggregateTestModal({
   // ── Real-time calculations ─────────────────────────────────────────────
   const sieveResult  = useMemo(() => calculateSieveAnalysis(sieveData),  [sieveData]);
   const finer75Result= useMemo(() => calculateFiner75(finer75Data),       [finer75Data]);
+  const siltResult   = useMemo(() => calculateSiltContent(siltData),      [siltData]);
   const sgWaResult   = useMemo(() => calculateSgWa(sgWaData),             [sgWaData]);
   const bulkResult   = useMemo(() => calculateBulkDensity(bulkData),      [bulkData]);
 
@@ -179,6 +189,7 @@ export default function FineAggregateTestModal({
     if (!window.confirm('Are you sure you want to reset and clear all test data?')) return;
     setSieveData(deepClone(DEFAULT_SIEVE_ANALYSIS));
     setFiner75Data(deepClone(DEFAULT_FINER75));
+    setSiltData(deepClone(DEFAULT_SILT_CONTENT));
     setSgWaData(deepClone(DEFAULT_SG_WA));
     setBulkData(deepClone(DEFAULT_BULK_DENSITY));
   };
@@ -187,6 +198,7 @@ export default function FineAggregateTestModal({
   const handleFillSample = () => {
     setSieveData(deepClone(SAMPLE_FINE_AGG_DATA.sieveAnalysis));
     setFiner75Data(deepClone(SAMPLE_FINE_AGG_DATA.finer75));
+    setSiltData(deepClone(SAMPLE_FINE_AGG_DATA.siltContent));
     setSgWaData(deepClone(SAMPLE_FINE_AGG_DATA.sgWa));
     setBulkData(deepClone(SAMPLE_FINE_AGG_DATA.bulkDensity));
   };
@@ -206,6 +218,11 @@ export default function FineAggregateTestModal({
           pctPassing:               r.pctPassingFmt,
         })),
         finenessModulus: sieveResult.finenessModulusFmt,
+      },
+      siltContent: {
+        v1:      siltData.v1,
+        v2:      siltData.v2,
+        siltPct: siltResult.siltPctFmt,
       },
       finer75: {
         w1:      finer75Data.w1,
@@ -271,11 +288,11 @@ export default function FineAggregateTestModal({
                     Fine Aggregate Tests
                   </DialogTitle>
                   <Badge variant="outline" className="text-[11px] font-semibold bg-teal-50 text-teal-800 border-teal-300 dark:bg-teal-950/50 dark:text-teal-300 dark:border-teal-800">
-                    IS 2386 (Part 1 & 3): 1963 RA 2021
+                    IS 2386 (Parts 1, 2 & 3): 1963 RA 2021
                   </Badge>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-muted-foreground mt-0.5">
-                  Sieve Analysis · Finer &lt;75µm · Specific Gravity &amp; WA · Bulk Density
+                  Sieve Analysis · Specific Gravity &amp; WA · Bulk Density · Silt Content · Percentage finer than 75 micron
                   {jobCode    ? ` • Job: ${jobCode}`       : ''}
                   {sampleCode ? ` • Sample: ${sampleCode}` : ''}
                 </p>
@@ -297,10 +314,11 @@ export default function FineAggregateTestModal({
             {/* Tab bar */}
             <TabsList className="shrink-0 rounded-none border-b dark:border-border bg-transparent px-4 justify-start gap-1 h-auto py-0">
               {[
-                { value: 'sieve',   label: 'Sieve Analysis',          icon: <Layers   className="w-3.5 h-3.5" /> },
-                { value: 'finer75', label: 'Finer <75 µm',            icon: <FlaskConical className="w-3.5 h-3.5" /> },
-                { value: 'sgwa',    label: 'Specific Gravity & WA',   icon: <Droplets className="w-3.5 h-3.5" /> },
-                { value: 'bulk',    label: 'Bulk Density',            icon: <Weight   className="w-3.5 h-3.5" /> },
+                { value: 'sieve',   label: 'Sieve Analysis',                  icon: <Layers      className="w-3.5 h-3.5" /> },
+                { value: 'sgwa',    label: 'Specific Gravity & WA',           icon: <Droplets    className="w-3.5 h-3.5" /> },
+                { value: 'bulk',    label: 'Bulk Density',                    icon: <Weight      className="w-3.5 h-3.5" /> },
+                { value: 'silt',    label: 'Silt Content (%)',                icon: <TestTube2   className="w-3.5 h-3.5" /> },
+                { value: 'finer75', label: 'Percentage finer than 75 micron',  icon: <FlaskConical className="w-3.5 h-3.5" /> },
               ].map((t) => (
                 <TabsTrigger key={t.value} value={t.value}
                   className="relative px-4 py-3 rounded-none bg-transparent shadow-none text-xs font-medium text-muted-foreground hover:text-foreground gap-1.5
@@ -410,73 +428,7 @@ export default function FineAggregateTestModal({
               )}
             </TabsContent>
 
-            {/* ── Tab 2: Finer than 75 µm ──────────────────────────── */}
-            <TabsContent value="finer75" className="p-4 sm:p-6 space-y-5 outline-none mt-0">
-
-              <div className="p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 text-xs text-blue-900 dark:text-blue-300 flex items-start gap-2">
-                <Info className="w-4 h-4 mt-0.5 shrink-0 text-blue-500" />
-                <div>
-                  <span className="font-semibold">IS 2386 (Part 1) — Formula: </span>
-                  Finer than 75 µm (%) = ((W₁ − W₂) / W₂) × 100
-                  · W₁ = Sample taken (g) · W₂ = After wash oven-dry weight (g)
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-xl">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-gray-600 dark:text-muted-foreground">
-                    W₁ — Sample Taken (g)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={finer75Data.w1}
-                    onChange={(e) => setFiner75Data((p) => ({ ...p, w1: e.target.value }))}
-                    placeholder="500"
-                    className="h-9 text-sm font-mono"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-gray-600 dark:text-muted-foreground">
-                    W₂ — After Wash Oven-Dry Weight (g)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={finer75Data.w2}
-                    onChange={(e) => setFiner75Data((p) => ({ ...p, w2: e.target.value }))}
-                    placeholder="457"
-                    className="h-9 text-sm font-mono"
-                  />
-                </div>
-              </div>
-
-              {finer75Result.errors.length > 0 && (
-                <div className="p-3 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
-                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <div>{finer75Result.errors.join(' ')}</div>
-                </div>
-              )}
-
-              {finer75Result.finerPctFmt && (
-                <div className="p-4 rounded-xl bg-gradient-to-br from-teal-500/10 via-teal-500/5 to-transparent border border-teal-500/20 space-y-1 max-w-xs">
-                  <span className="text-[11px] font-bold text-teal-800 dark:text-teal-400 uppercase tracking-wider block">
-                    Finer than 75 µm
-                  </span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-teal-900 dark:text-teal-200 font-mono">
-                      {finer75Result.finerPctFmt}
-                    </span>
-                    <span className="text-sm font-bold text-teal-700 dark:text-teal-400">%</span>
-                  </div>
-                  <p className="text-[10px] text-gray-500 dark:text-muted-foreground">
-                    IS 2386 (Part 1): 1963 RA 2021
-                  </p>
-                </div>
-              )}
-            </TabsContent>
-
-            {/* ── Tab 3: Specific Gravity & Water Absorption ───────── */}
+            {/* ── Tab 2: Specific Gravity & Water Absorption ───────── */}
             <TabsContent value="sgwa" className="p-4 sm:p-6 space-y-5 outline-none mt-0">
 
               <div className="p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 text-xs text-blue-900 dark:text-blue-300 flex items-start gap-2">
@@ -763,13 +715,152 @@ export default function FineAggregateTestModal({
               </div>
             </TabsContent>
 
+            {/* ── Tab 4: Silt Content ─────────────────────────────── */}
+            <TabsContent value="silt" className="p-4 sm:p-6 space-y-5 outline-none mt-0">
+
+              <div className="p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 text-xs text-blue-900 dark:text-blue-300 flex items-start gap-2">
+                <Info className="w-4 h-4 mt-0.5 shrink-0 text-blue-500" />
+                <div>
+                  <span className="font-semibold">IS 2386 (Part 2) — Formula: </span>
+                  Percentage of Silt (%) = (V₁ / V₂) × 100
+                  · V₁ = Volume of silt layer (ml) (silt settled over the sand layer)
+                  · V₂ = Total volume of sample (ml)
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-xl">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-gray-600 dark:text-muted-foreground">
+                    V₁ — Volume of Silt Layer (ml)
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={siltData.v1}
+                    onChange={(e) => setSiltData((p) => ({ ...p, v1: e.target.value }))}
+                    placeholder="4"
+                    className="h-9 text-sm font-mono"
+                  />
+                  <p className="text-[11px] text-gray-400 dark:text-muted-foreground">
+                    Silt settled over the sand layer
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-gray-600 dark:text-muted-foreground">
+                    V₂ — Total Volume of Sample (ml)
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={siltData.v2}
+                    onChange={(e) => setSiltData((p) => ({ ...p, v2: e.target.value }))}
+                    placeholder="90"
+                    className="h-9 text-sm font-mono"
+                  />
+                  <p className="text-[11px] text-gray-400 dark:text-muted-foreground">
+                    Total volume of sample in cylinder
+                  </p>
+                </div>
+              </div>
+
+              {siltResult.errors.length > 0 && (
+                <div className="p-3 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <div>{siltResult.errors.join(' ')}</div>
+                </div>
+              )}
+
+              {siltResult.siltPctFmt && (
+                <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 space-y-1 max-w-xs">
+                  <span className="text-[11px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider block">
+                    Silt Content
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-amber-900 dark:text-amber-200 font-mono">
+                      {siltResult.siltPctFmt}
+                    </span>
+                    <span className="text-sm font-bold text-amber-700 dark:text-amber-400">%</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500 dark:text-muted-foreground">
+                    IS 2386 (Part 2): 1963 RA 2021
+                  </p>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* ── Tab 5: Percentage finer than 75 micron ───────────── */}
+            <TabsContent value="finer75" className="p-4 sm:p-6 space-y-5 outline-none mt-0">
+
+              <div className="p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 text-xs text-blue-900 dark:text-blue-300 flex items-start gap-2">
+                <Info className="w-4 h-4 mt-0.5 shrink-0 text-blue-500" />
+                <div>
+                  <span className="font-semibold">IS 2386 (Part 1) — Formula: </span>
+                  Percentage finer than 75 micron (%) = ((W₁ − W₂) / W₁) × 100
+                  · W₁ = Sample taken / Original dry weight (g) · W₂ = After wash oven-dry weight (g)
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-xl">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-gray-600 dark:text-muted-foreground">
+                    W₁ — Sample Taken / Original Dry Weight (g)
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={finer75Data.w1}
+                    onChange={(e) => setFiner75Data((p) => ({ ...p, w1: e.target.value }))}
+                    placeholder="500"
+                    className="h-9 text-sm font-mono"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-gray-600 dark:text-muted-foreground">
+                    W₂ — After Wash Oven-Dry Weight (g)
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={finer75Data.w2}
+                    onChange={(e) => setFiner75Data((p) => ({ ...p, w2: e.target.value }))}
+                    placeholder="457"
+                    className="h-9 text-sm font-mono"
+                  />
+                </div>
+              </div>
+
+              {finer75Result.errors.length > 0 && (
+                <div className="p-3 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <div>{finer75Result.errors.join(' ')}</div>
+                </div>
+              )}
+
+              {finer75Result.finerPctFmt && (
+                <div className="p-4 rounded-xl bg-gradient-to-br from-teal-500/10 via-teal-500/5 to-transparent border border-teal-500/20 space-y-1 max-w-xs">
+                  <span className="text-[11px] font-bold text-teal-800 dark:text-teal-400 uppercase tracking-wider block">
+                    Percentage finer than 75 micron
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-teal-900 dark:text-teal-200 font-mono">
+                      {finer75Result.finerPctFmt}
+                    </span>
+                    <span className="text-sm font-bold text-teal-700 dark:text-teal-400">%</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500 dark:text-muted-foreground">
+                    IS 2386 (Part 1): 1963 RA 2021
+                  </p>
+                </div>
+              )}
+            </TabsContent>
+
           </Tabs>
         </div>
 
         {/* ── Footer ──────────────────────────────────────────────────── */}
         <div className="shrink-0 p-4 border-t dark:border-border flex items-center justify-between gap-3 bg-gray-50/50 dark:bg-muted/20">
           <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
-            All four test results will be saved together.
+            All five test results will be saved together.
           </p>
           <div className="flex items-center gap-2">
             <Button

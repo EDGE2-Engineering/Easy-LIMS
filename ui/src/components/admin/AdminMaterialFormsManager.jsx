@@ -646,7 +646,7 @@ const AdminMaterialFormsManager = () => {
                             Sample Data Preview (IS 516 Specimen Batch)
                           </span>
                           <span className="text-xs font-mono font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
-                            Avg Strength: 19.0 N/mm² (Grade: M20)
+                            Avg Strength: 22.0 N/mm² (IS 516 Cl 3.6: 2 Closest Values)
                           </span>
                         </div>
                         <div className="overflow-x-auto">
@@ -656,11 +656,11 @@ const AdminMaterialFormsManager = () => {
                                 <th className="p-2 text-center">Trial</th>
                                 <th className="p-2">ID</th>
                                 <th className="p-2 text-center">Dimensions</th>
-                                <th className="p-2 text-center">Age</th>
+                                <th className="p-2 text-center">Age (days)</th>
                                 <th className="p-2 text-right">Weight (kg)</th>
                                 <th className="p-2 text-right">Failure Load (kN)</th>
                                 <th className="p-2 text-right bg-amber-50 text-amber-900 font-bold">
-                                  Strength (N/mm²)
+                                  Compressive strength (N/mm²)
                                 </th>
                                 <th className="p-2 text-center">Failure Mode</th>
                               </tr>
@@ -668,12 +668,12 @@ const AdminMaterialFormsManager = () => {
                             <tbody className="divide-y divide-gray-100 font-mono">
                               <tr>
                                 <td className="p-2 text-center font-bold text-gray-400">1</td>
-                                <td className="p-2 font-sans font-medium">Footing</td>
+                                <td className="p-2 font-sans font-medium">Slab Casting</td>
                                 <td className="p-2 text-center">150×150×150</td>
-                                <td className="p-2 text-center">7 days</td>
-                                <td className="p-2 text-right">8.372</td>
-                                <td className="p-2 text-right">396.160</td>
-                                <td className="p-2 text-right font-bold text-amber-900 bg-amber-50/50">17.50</td>
+                                <td className="p-2 text-center">23</td>
+                                <td className="p-2 text-right">8.416</td>
+                                <td className="p-2 text-right">537.680</td>
+                                <td className="p-2 text-right font-bold text-amber-900 bg-amber-50/50">24.00</td>
                                 <td className="p-2 text-center font-sans">
                                   <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
                                     Satisfactory
@@ -682,12 +682,12 @@ const AdminMaterialFormsManager = () => {
                               </tr>
                               <tr>
                                 <td className="p-2 text-center font-bold text-gray-400">2</td>
-                                <td className="p-2 font-sans font-medium">Footing</td>
+                                <td className="p-2 font-sans font-medium">Slab Casting</td>
                                 <td className="p-2 text-center">150×150×150</td>
-                                <td className="p-2 text-center">7 days</td>
-                                <td className="p-2 text-right">8.552</td>
-                                <td className="p-2 text-right">433.236</td>
-                                <td className="p-2 text-right font-bold text-amber-900 bg-amber-50/50">19.50</td>
+                                <td className="p-2 text-center">23</td>
+                                <td className="p-2 text-right">8.425</td>
+                                <td className="p-2 text-right">450.433</td>
+                                <td className="p-2 text-right font-bold text-amber-900 bg-amber-50/50">20.00</td>
                                 <td className="p-2 text-center font-sans">
                                   <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
                                     Satisfactory
@@ -696,12 +696,12 @@ const AdminMaterialFormsManager = () => {
                               </tr>
                               <tr>
                                 <td className="p-2 text-center font-bold text-gray-400">3</td>
-                                <td className="p-2 font-sans font-medium">Footing</td>
+                                <td className="p-2 font-sans font-medium">Slab Casting</td>
                                 <td className="p-2 text-center">150×150×150</td>
-                                <td className="p-2 text-center">7 days</td>
-                                <td className="p-2 text-right">8.396</td>
-                                <td className="p-2 text-right">440.967</td>
-                                <td className="p-2 text-right font-bold text-amber-900 bg-amber-50/50">19.50</td>
+                                <td className="p-2 text-center">23</td>
+                                <td className="p-2 text-right">8.102</td>
+                                <td className="p-2 text-right">749.686</td>
+                                <td className="p-2 text-right font-bold text-amber-900 bg-amber-50/50">33.50</td>
                                 <td className="p-2 text-center font-sans">
                                   <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
                                     Satisfactory
