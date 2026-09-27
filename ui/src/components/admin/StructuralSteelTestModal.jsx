@@ -24,7 +24,6 @@ import {
   Check,
   Info,
   Sparkles,
-  AlertTriangle,
   Zap,
   Tag,
   Receipt,
@@ -50,22 +49,6 @@ import {
  *  - W-Beam
  *  - Channels
  *  - Angles, Flats, Sections
- *
- * Highlights:
- *  1. Dedicated space to mention Sample Name or Type for each specimen (per IS 1608 specifications).
- *  2. 10 Columns:
- *     - C1: Width (mm) [Input]
- *     - C2: Thickness (mm) [Input]
- *     - C3: Area (mm²) [Auto-calculated = C1 × C2]
- *     - C4: Yield Load (kN) [Input]
- *     - C5: Yield Stress (N/mm²) [Auto-calculated, 2 decimals]
- *     - C6: Ultimate Load (kN) [Input]
- *     - C7: Ultimate Tensile Strength (N/mm²) [Auto-calculated, 2 decimals]
- *     - C8: Initial Gauge Length (mm) [Auto-calculated = 5.65 × √Area, 2 decimals]
- *     - C9: Final Gauge Length (mm) [Input]
- *     - C10: Elongation (%) [Auto-calculated, 2 decimals]
- *  3. Individual specimen results reported; averages displayed for testing data only.
- *  4. Client reference tracking (Heat/Lot No., Invoice No., Vehicle No.).
  */
 export default function StructuralSteelTestModal({
   isOpen,
@@ -268,7 +251,7 @@ export default function StructuralSteelTestModal({
     setVehicleInput('');
   };
 
-  // ── Load Sample Data (from the PDF reference sheet) ──────────────────────
+  // ── Load Sample Data ────────────────────────────────────────────────────
   const handleLoadSampleData = () => {
     setObservations(
       SAMPLE_STRUCTURAL_STEEL_TEST_DATA.observations.map((o) => ({ ...o }))
@@ -282,6 +265,7 @@ export default function StructuralSteelTestModal({
   };
 
   const handleReset = () => {
+    if (!window.confirm('Are you sure you want to reset all test data?')) return;
     setObservations(
       DEFAULT_STRUCTURAL_STEEL_OBSERVATIONS.map((o, i) => ({
         ...o,
@@ -347,35 +331,44 @@ export default function StructuralSteelTestModal({
     onClose();
   };
 
-  const thBase = 'p-2 text-center font-bold whitespace-nowrap text-xs border-r dark:border-border';
+  const thBase = 'p-2.5 text-center font-bold whitespace-nowrap text-xs border-r dark:border-border';
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[96vw] xl:max-w-7xl max-h-[92vh] overflow-y-auto bg-slate-50/50 dark:bg-card">
-        <DialogHeader className="border-b pb-3">
+      <DialogContent className="max-w-[98vw] 2xl:max-w-8xl max-h-[94vh] flex flex-col p-0 gap-0 overflow-hidden bg-white dark:bg-card border-gray-200 dark:border-border shadow-2xl rounded-2xl">
+        
+        {/* ── Fixed Header ─────────────────────────────────────────────── */}
+        <DialogHeader className="p-4 sm:p-5 border-b dark:border-border bg-gradient-to-r from-slate-50/80 via-indigo-50/30 to-transparent dark:from-slate-950/40 dark:via-indigo-950/20 dark:to-transparent shrink-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <DialogTitle className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-foreground">
-                <Building2 className="w-5 h-5 text-indigo-600" />
-                Structural Steel Test Data Entry
-              </DialogTitle>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-300 font-mono text-[11px]">
-                  IS 1608 (Part 1) : 2022
-                </Badge>
-                <span className="text-xs text-gray-500 dark:text-muted-foreground">
-                  Metallic materials — Tensile testing (MS Plates, W-Beam, Channels, Sections)
-                </span>
-                {jobCode && (
-                  <Badge variant="secondary" className="text-xs font-mono">
-                    Job: {jobCode}
+            <div className="flex items-center gap-2.5">
+              <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shadow-sm">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <DialogTitle className="text-base sm:text-lg font-bold text-gray-900 dark:text-foreground">
+                    Structural Steel Test Data Entry
+                  </DialogTitle>
+                  <Badge
+                    variant="outline"
+                    className="text-[11px] font-semibold bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-700 font-mono"
+                  >
+                    IS 1608 (Part 1) : 2022
                   </Badge>
-                )}
-                {sampleCode && (
-                  <Badge variant="secondary" className="text-xs font-mono">
-                    Sample: {sampleCode}
-                  </Badge>
-                )}
+                  {jobCode && (
+                    <Badge variant="secondary" className="text-xs font-mono">
+                      Job: {jobCode}
+                    </Badge>
+                  )}
+                  {sampleCode && (
+                    <Badge variant="secondary" className="text-xs font-mono">
+                      Sample: {sampleCode}
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-muted-foreground mt-0.5">
+                  Metallic materials — Tensile testing (MS Plates, W-Beam, Channels, Angles, Flats, Sections)
+                </p>
               </div>
             </div>
 
@@ -385,16 +378,16 @@ export default function StructuralSteelTestModal({
                 variant="outline"
                 size="sm"
                 onClick={handleLoadSampleData}
-                className="gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border-indigo-200"
+                className="hidden h-8 text-xs gap-1.5 border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100 dark:border-indigo-800 dark:text-indigo-300 dark:bg-indigo-950/40 font-medium"
               >
-                <Sparkles className="w-3.5 h-3.5" /> Load PDF Reference Data
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Fill Reference Sample Data
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={handleReset}
-                className="gap-1.5 text-xs text-gray-600 dark:text-gray-300"
+                className="h-8 text-xs gap-1.5 text-gray-600 dark:text-gray-300 hover:text-gray-900"
               >
                 <RotateCcw className="w-3.5 h-3.5" /> Reset
               </Button>
@@ -402,33 +395,33 @@ export default function StructuralSteelTestModal({
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        {/* ── Scrollable Body ──────────────────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 custom-scrollbar">
+          
           {/* Top Info Banner & Sample Types Shortcut */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             {/* Sample Name / Type space explanation */}
-            <div className="lg:col-span-2 p-3 rounded-xl bg-white dark:bg-card border border-indigo-100 dark:border-indigo-950/40 shadow-sm space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
-                    <Tag className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200">
-                      Sample Name / Type Specification
-                    </h4>
-                    <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
-                      Space provided to mention sample name or type (MS Plates, W-Beam, Channel, Angles, etc.)
-                    </p>
-                  </div>
+            <div className="lg:col-span-2 p-3.5 rounded-xl bg-slate-50/80 dark:bg-muted/30 border border-slate-200 dark:border-border shadow-sm space-y-2.5">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                  <Tag className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                    Sample Name / Type Specification
+                  </h4>
+                  <p className="text-[11px] text-gray-500 dark:text-muted-foreground">
+                    Space provided to mention sample name or type (MS Plates, W-Beam, Channel, Angles, etc.)
+                  </p>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-gray-100 dark:border-border">
+              <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-slate-200/70 dark:border-border">
                 <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Quick Preset:</span>
                 {COMMON_STRUCTURAL_STEEL_TYPES.map((type) => (
                   <Badge
                     key={type}
                     variant="outline"
-                    className="text-[11px] cursor-pointer hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 transition-colors py-0.5"
+                    className="text-[11px] cursor-pointer hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 dark:hover:bg-indigo-950/50 transition-colors py-0.5 px-2 bg-white dark:bg-card font-medium"
                     title={`Click to set "${type}" for all specimens`}
                     onClick={() => applySampleTypeToAll(type)}
                   >
@@ -439,39 +432,45 @@ export default function StructuralSteelTestModal({
             </div>
 
             {/* IS Standard Note */}
-            <div className="p-3 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 shadow-sm flex flex-col justify-between">
+            <div className="p-3.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 shadow-sm flex flex-col justify-between">
               <div className="flex items-start gap-2">
-                <Info className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
                 <div>
                   <h4 className="text-xs font-bold text-amber-900 dark:text-amber-300">
                     Calculation Rules (IS 1608: 2022)
                   </h4>
                   <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80 mt-0.5 leading-relaxed">
-                    Yield Stress &amp; Ultimate Tensile Strength formatted to <strong>2 decimal places</strong>.
+                    Yield Stress &amp; Tensile Strength formatted to <strong>2 decimal places</strong>.<br />
                     Initial Gauge Length = <strong>5.65 × √Area</strong> (Cl. D.2 / 3.1).
                   </p>
                 </div>
               </div>
-              <span className="text-[10px] font-semibold text-amber-900/80 dark:text-amber-300/70 pt-2 border-t border-amber-200/60 mt-2">
+              <span className="text-[10px] font-semibold text-amber-900/80 dark:text-amber-300/70 pt-2 border-t border-amber-200/60 dark:border-amber-800/60 mt-2">
                 * Averages are for testing data only and excluded from final report.
               </span>
             </div>
           </div>
 
           {/* Client Reference Options (Collapsible / Optional) */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-muted/30 border border-slate-200 dark:border-slate-800 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 uppercase tracking-wider">
-                <Layers className="w-3.5 h-3.5 text-blue-500" /> Client Reference Columns (Optional)
-              </span>
+          <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-muted/30 border border-slate-200 dark:border-border space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  Client Reference Columns (Optional)
+                </span>
+                <Badge variant="secondary" className="text-[10px] font-normal">
+                  Columns appear in report only if toggled on
+                </Badge>
+              </div>
               <span className="text-[11px] text-gray-500 dark:text-muted-foreground">
-                Toggles determine inclusion in final report table
+                Enter options below to populate dropdowns, or add new options directly in table rows.
               </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* Heat No */}
-              <div className="p-2.5 rounded-lg bg-white dark:bg-card border border-gray-200 dark:border-border space-y-2">
+              <div className="p-3 rounded-lg bg-white dark:bg-card border border-gray-200 dark:border-border space-y-2 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
                     <Tag className="w-3 h-3 text-blue-500" /> Heat / Lot No.
@@ -498,13 +497,13 @@ export default function StructuralSteelTestModal({
                     variant="outline"
                     size="sm"
                     onClick={handleAddHeatOptions}
-                    className="h-7 px-2 text-xs shrink-0"
+                    className="h-7 px-2.5 text-xs shrink-0 font-medium"
                   >
                     + Add
                   </Button>
                 </div>
                 {availableHeatNos.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-gray-100 dark:border-border">
+                  <div className="flex flex-wrap items-center gap-1 pt-1.5 border-t border-gray-100 dark:border-border">
                     <span className="text-[10px] text-gray-400">Pool:</span>
                     {availableHeatNos.map((val) => (
                       <Badge
@@ -522,7 +521,7 @@ export default function StructuralSteelTestModal({
               </div>
 
               {/* Invoice No */}
-              <div className="p-2.5 rounded-lg bg-white dark:bg-card border border-gray-200 dark:border-border space-y-2">
+              <div className="p-3 rounded-lg bg-white dark:bg-card border border-gray-200 dark:border-border space-y-2 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
                     <Receipt className="w-3 h-3 text-indigo-500" /> Invoice No.
@@ -549,13 +548,13 @@ export default function StructuralSteelTestModal({
                     variant="outline"
                     size="sm"
                     onClick={handleAddInvoiceOptions}
-                    className="h-7 px-2 text-xs shrink-0"
+                    className="h-7 px-2.5 text-xs shrink-0 font-medium"
                   >
                     + Add
                   </Button>
                 </div>
                 {availableInvoiceNos.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-gray-100 dark:border-border">
+                  <div className="flex flex-wrap items-center gap-1 pt-1.5 border-t border-gray-100 dark:border-border">
                     <span className="text-[10px] text-gray-400">Pool:</span>
                     {availableInvoiceNos.map((val) => (
                       <Badge
@@ -573,7 +572,7 @@ export default function StructuralSteelTestModal({
               </div>
 
               {/* Vehicle No */}
-              <div className="p-2.5 rounded-lg bg-white dark:bg-card border border-gray-200 dark:border-border space-y-2">
+              <div className="p-3 rounded-lg bg-white dark:bg-card border border-gray-200 dark:border-border space-y-2 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
                     <Truck className="w-3 h-3 text-emerald-500" /> Vehicle No.
@@ -600,13 +599,13 @@ export default function StructuralSteelTestModal({
                     variant="outline"
                     size="sm"
                     onClick={handleAddVehicleOptions}
-                    className="h-7 px-2 text-xs shrink-0"
+                    className="h-7 px-2.5 text-xs shrink-0 font-medium"
                   >
                     + Add
                   </Button>
                 </div>
                 {availableVehicleNos.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-gray-100 dark:border-border">
+                  <div className="flex flex-wrap items-center gap-1 pt-1.5 border-t border-gray-100 dark:border-border">
                     <span className="text-[10px] text-gray-400">Pool:</span>
                     {availableVehicleNos.map((val) => (
                       <Badge
@@ -626,13 +625,13 @@ export default function StructuralSteelTestModal({
           </div>
 
           {/* Observations Table */}
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
                   <Zap className="w-3.5 h-3.5 text-indigo-500" /> Structural Steel Observations
                 </h4>
-                <Badge variant="outline" className="text-[10px] font-mono">
+                <Badge variant="outline" className="text-[10px] font-mono bg-white dark:bg-card">
                   {observations.length} {observations.length === 1 ? 'specimen' : 'specimens'}
                 </Badge>
               </div>
@@ -641,9 +640,9 @@ export default function StructuralSteelTestModal({
                 variant="outline"
                 size="sm"
                 onClick={addRow}
-                className="h-7 text-xs gap-1 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                className="h-8 text-xs gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 font-semibold"
               >
-                <Plus className="w-3 h-3" /> Add Specimen
+                <Plus className="w-3.5 h-3.5" /> Add Specimen
               </Button>
             </div>
 
@@ -694,43 +693,43 @@ export default function StructuralSteelTestModal({
 
                     <tr className="bg-gray-50/90 dark:bg-muted/50 border-b dark:border-border text-gray-600 dark:text-gray-300">
                       {/* C1 Width */}
-                      <th className={`${thBase} border-l dark:border-border min-w-[85px]`}>
+                      <th className={`${thBase} border-l dark:border-border min-w-[90px]`}>
                         C1<span className="block text-[9px] font-normal text-gray-400">Width (mm)</span>
                       </th>
                       {/* C2 Thickness */}
-                      <th className={`${thBase} min-w-[85px]`}>
+                      <th className={`${thBase} min-w-[90px]`}>
                         C2<span className="block text-[9px] font-normal text-gray-400">Thickness (mm)</span>
                       </th>
                       {/* C3 Area */}
-                      <th className={`${thBase} bg-slate-100/80 dark:bg-slate-900/40 border-l dark:border-border min-w-[95px]`}>
+                      <th className={`${thBase} bg-slate-100/80 dark:bg-slate-900/40 border-l dark:border-border min-w-[100px]`}>
                         C3<span className="block text-[9px] font-normal text-slate-500">Area mm²</span>
                       </th>
                       {/* C4 Yield Load */}
-                      <th className={`${thBase} border-l dark:border-border min-w-[90px]`}>
+                      <th className={`${thBase} border-l dark:border-border min-w-[95px]`}>
                         C4<span className="block text-[9px] font-normal text-gray-400">Yield Load (kN)</span>
                       </th>
                       {/* C5 Yield Stress */}
-                      <th className={`${thBase} bg-amber-50/70 dark:bg-amber-950/30 min-w-[105px]`}>
+                      <th className={`${thBase} bg-amber-50/70 dark:bg-amber-950/30 min-w-[110px]`}>
                         C5<span className="block text-[9px] font-normal text-amber-600">Yield Stress N/mm²</span>
                       </th>
                       {/* C6 Ult Load */}
-                      <th className={`${thBase} border-l dark:border-border min-w-[90px]`}>
+                      <th className={`${thBase} border-l dark:border-border min-w-[95px]`}>
                         C6<span className="block text-[9px] font-normal text-gray-400">Ult. Load (kN)</span>
                       </th>
                       {/* C7 Tensile Str */}
-                      <th className={`${thBase} bg-orange-50/70 dark:bg-orange-950/30 min-w-[110px]`}>
+                      <th className={`${thBase} bg-orange-50/70 dark:bg-orange-950/30 min-w-[115px]`}>
                         C7<span className="block text-[9px] font-normal text-orange-600">Tensile Str. N/mm²</span>
                       </th>
                       {/* C8 IGL */}
-                      <th className={`${thBase} bg-emerald-50/50 dark:bg-emerald-950/20 border-l dark:border-border min-w-[90px]`}>
+                      <th className={`${thBase} bg-emerald-50/50 dark:bg-emerald-950/20 border-l dark:border-border min-w-[95px]`}>
                         C8<span className="block text-[9px] font-normal text-emerald-600">IGL (mm)</span>
                       </th>
                       {/* C9 FGL */}
-                      <th className={`${thBase} min-w-[85px]`}>
+                      <th className={`${thBase} min-w-[90px]`}>
                         C9<span className="block text-[9px] font-normal text-gray-400">FGL (mm)</span>
                       </th>
                       {/* C10 Elongation */}
-                      <th className={`${thBase} bg-emerald-50/70 dark:bg-emerald-950/30 min-w-[90px]`}>
+                      <th className={`${thBase} bg-emerald-50/70 dark:bg-emerald-950/30 min-w-[95px]`}>
                         C10<span className="block text-[9px] font-normal text-emerald-600">Elong. (%)</span>
                       </th>
                     </tr>
@@ -759,7 +758,7 @@ export default function StructuralSteelTestModal({
                               value={obs.sampleId}
                               onChange={(e) => change(i, 'sampleId', e.target.value)}
                               placeholder={`Sample ${i + 1}`}
-                              className="h-7 text-xs font-mono font-medium min-w-[100px]"
+                              className="h-8 text-xs font-mono font-medium min-w-[100px]"
                             />
                           </td>
 
@@ -771,7 +770,7 @@ export default function StructuralSteelTestModal({
                                 value={obs.sampleType}
                                 onChange={(e) => change(i, 'sampleType', e.target.value)}
                                 placeholder="e.g. MS Plate, W-Beam"
-                                className="h-7 text-xs font-sans font-medium border-indigo-200 focus:border-indigo-400"
+                                className="h-8 text-xs font-sans font-medium border-indigo-200 focus:border-indigo-400"
                               />
                               <datalist id={`types-list-${i}`}>
                                 {COMMON_STRUCTURAL_STEEL_TYPES.map((t) => (
@@ -788,7 +787,7 @@ export default function StructuralSteelTestModal({
                                 value={obs.heatNo}
                                 onChange={(e) => change(i, 'heatNo', e.target.value)}
                                 placeholder="Heat No."
-                                className="h-7 text-xs font-mono min-w-[90px]"
+                                className="h-8 text-xs font-mono min-w-[90px]"
                               />
                             </td>
                           )}
@@ -799,7 +798,7 @@ export default function StructuralSteelTestModal({
                                 value={obs.invoiceNo}
                                 onChange={(e) => change(i, 'invoiceNo', e.target.value)}
                                 placeholder="Invoice No."
-                                className="h-7 text-xs font-mono min-w-[90px]"
+                                className="h-8 text-xs font-mono min-w-[90px]"
                               />
                             </td>
                           )}
@@ -810,7 +809,7 @@ export default function StructuralSteelTestModal({
                                 value={obs.vehicleNo}
                                 onChange={(e) => change(i, 'vehicleNo', e.target.value)}
                                 placeholder="Vehicle No."
-                                className="h-7 text-xs font-mono min-w-[90px]"
+                                className="h-8 text-xs font-mono min-w-[90px]"
                               />
                             </td>
                           )}
@@ -823,7 +822,7 @@ export default function StructuralSteelTestModal({
                               value={obs.width}
                               onChange={(e) => change(i, 'width', e.target.value)}
                               placeholder="20.000"
-                              className="h-7 text-xs text-right font-mono min-w-[80px]"
+                              className="h-8 text-xs text-right font-mono min-w-[85px]"
                             />
                           </td>
 
@@ -835,7 +834,7 @@ export default function StructuralSteelTestModal({
                               value={obs.thickness}
                               onChange={(e) => change(i, 'thickness', e.target.value)}
                               placeholder="12.30"
-                              className="h-7 text-xs text-right font-mono min-w-[80px]"
+                              className="h-8 text-xs text-right font-mono min-w-[85px]"
                             />
                           </td>
 
@@ -852,12 +851,12 @@ export default function StructuralSteelTestModal({
                               value={obs.yieldLoad}
                               onChange={(e) => change(i, 'yieldLoad', e.target.value)}
                               placeholder="149.232"
-                              className="h-7 text-xs text-right font-mono min-w-[85px]"
+                              className="h-8 text-xs text-right font-mono min-w-[90px]"
                             />
                           </td>
 
                           {/* C5: Yield Stress (N/mm²) - Calculated */}
-                          <td className="p-2 text-right font-mono font-bold text-amber-900 dark:text-amber-300 bg-amber-50/40 dark:bg-amber-950/20 whitespace-nowrap">
+                          <td className="p-2 text-right font-mono font-bold text-amber-900 dark:text-amber-300 bg-amber-50/50 dark:bg-amber-950/20 whitespace-nowrap">
                             {r.yieldStressFmt || '—'}
                           </td>
 
@@ -869,17 +868,17 @@ export default function StructuralSteelTestModal({
                               value={obs.ultimateLoad}
                               onChange={(e) => change(i, 'ultimateLoad', e.target.value)}
                               placeholder="183.816"
-                              className="h-7 text-xs text-right font-mono min-w-[85px]"
+                              className="h-8 text-xs text-right font-mono min-w-[90px]"
                             />
                           </td>
 
                           {/* C7: Ultimate Tensile Strength (N/mm²) - Calculated */}
-                          <td className="p-2 text-right font-mono font-bold text-orange-900 dark:text-orange-300 bg-orange-50/40 dark:bg-orange-950/20 whitespace-nowrap">
+                          <td className="p-2 text-right font-mono font-bold text-orange-900 dark:text-orange-300 bg-orange-50/50 dark:bg-orange-950/20 whitespace-nowrap">
                             {r.tensileStrengthFmt || '—'}
                           </td>
 
                           {/* C8: Initial Gauge Length (mm) - Calculated */}
-                          <td className="p-2 text-right font-mono text-emerald-800 dark:text-emerald-300 bg-emerald-50/30 dark:bg-emerald-950/10 whitespace-nowrap">
+                          <td className="p-2 text-right font-mono text-emerald-800 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/10 whitespace-nowrap">
                             {r.iglFmt || '—'}
                           </td>
 
@@ -891,22 +890,22 @@ export default function StructuralSteelTestModal({
                               value={obs.finalGaugeLength}
                               onChange={(e) => change(i, 'finalGaugeLength', e.target.value)}
                               placeholder="111.25"
-                              className="h-7 text-xs text-right font-mono min-w-[85px]"
+                              className="h-8 text-xs text-right font-mono min-w-[85px]"
                             />
                           </td>
 
                           {/* C10: Elongation (%) - Calculated */}
-                          <td className="p-2 text-right font-mono font-bold text-emerald-900 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20 whitespace-nowrap">
+                          <td className="p-2 text-right font-mono font-bold text-emerald-900 dark:text-emerald-300 bg-emerald-50/60 dark:bg-emerald-950/20 whitespace-nowrap">
                             {r.elongationFmt ? `${r.elongationFmt}%` : '—'}
                           </td>
 
                           {/* Bend Test */}
-                          <td className="p-1.5 text-center min-w-[70px]">
+                          <td className="p-1.5 text-center min-w-[80px]">
                             <Select
                               value={obs.bendTest || 'NCO'}
                               onValueChange={(val) => change(i, 'bendTest', val)}
                             >
-                              <SelectTrigger className="h-7 text-[11px] px-1.5 w-full">
+                              <SelectTrigger className="h-8 text-[11px] px-2 w-full">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -927,7 +926,8 @@ export default function StructuralSteelTestModal({
                               size="sm"
                               disabled={observations.length <= 1}
                               onClick={() => removeRow(i)}
-                              className="h-7 w-7 p-0 text-gray-400 hover:text-red-600 disabled:opacity-30"
+                              className="h-8 w-8 p-0 text-gray-400 hover:text-red-600 disabled:opacity-30"
+                              title="Delete specimen"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>
@@ -942,14 +942,14 @@ export default function StructuralSteelTestModal({
           </div>
 
           {/* Testing Data Summary (Excluded from Final Report notice) */}
-          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-slate-100/70 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800">
-            <div className="flex flex-wrap items-center gap-6">
+          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <div className="flex flex-wrap items-center gap-8">
               {/* Avg Yield Stress */}
               <div title="Recorded for testing data only (excluded from final report)">
                 <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-400">
                   Avg Yield Stress
                 </span>
-                <div className="flex items-baseline gap-1">
+                <div className="flex items-baseline gap-1 mt-0.5">
                   <span className="text-xl font-black text-amber-900 dark:text-amber-300 font-mono">
                     {summary.avgYieldStressFmt || '—'}
                   </span>
@@ -962,7 +962,7 @@ export default function StructuralSteelTestModal({
                 <span className="text-[10px] uppercase font-bold text-orange-800 dark:text-orange-400">
                   Avg Tensile Strength
                 </span>
-                <div className="flex items-baseline gap-1">
+                <div className="flex items-baseline gap-1 mt-0.5">
                   <span className="text-xl font-black text-orange-900 dark:text-orange-300 font-mono">
                     {summary.avgTensileStrengthFmt || '—'}
                   </span>
@@ -975,7 +975,7 @@ export default function StructuralSteelTestModal({
                 <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-400">
                   Avg Elongation
                 </span>
-                <div className="flex items-baseline gap-1">
+                <div className="flex items-baseline gap-1 mt-0.5">
                   <span className="text-xl font-black text-emerald-900 dark:text-emerald-300 font-mono">
                     {summary.avgElongationFmt || '—'}
                   </span>
@@ -993,26 +993,43 @@ export default function StructuralSteelTestModal({
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="flex items-center justify-between border-t pt-3 mt-2">
+        {/* ── Fixed Footer Actions ─────────────────────────────────────── */}
+        <div className="shrink-0 p-4 border-t dark:border-border flex items-center justify-between gap-3 bg-gray-50/80 dark:bg-muted/20">
           <div className="text-xs text-gray-500 dark:text-muted-foreground flex items-center gap-1.5">
             <Check className="w-3.5 h-3.5 text-emerald-500" />
             <span>Formulas &amp; decimal precisions conform to IS 1608 (Part 1) : 2022</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" onClick={onClose} className="h-8 text-xs">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="h-9 px-3 text-xs gap-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900"
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> Reset
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              className="h-9 text-xs"
+            >
               Cancel
             </Button>
             <Button
               type="button"
+              size="sm"
               onClick={handleSave}
-              className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold gap-1.5 shadow-sm"
+              className="h-9 text-xs gap-1.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-bold shadow-sm"
             >
-              <Check className="w-3.5 h-3.5" /> Apply &amp; Save
+              <Check className="w-3.5 h-3.5" /> Save Structural Steel Test Data
             </Button>
           </div>
         </div>
+
       </DialogContent>
     </Dialog>
   );

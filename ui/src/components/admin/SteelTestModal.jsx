@@ -377,7 +377,7 @@ export default function SteelTestModal({
   // ─── Render ──────────────────────────────────────────────────────────────
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[96vw] xl:max-w-7xl max-h-[95vh] flex flex-col p-0 gap-0 overflow-hidden bg-white dark:bg-card border-gray-200 dark:border-border shadow-2xl rounded-2xl">
+      <DialogContent className="max-w-[99vw] xl:max-w-8xl max-h-[95vh] flex flex-col p-0 gap-0 overflow-hidden bg-white dark:bg-card border-gray-200 dark:border-border shadow-2xl rounded-2xl">
 
         {/* ── Header ───────────────────────────────────────────────────── */}
         <DialogHeader className="p-4 sm:p-5 border-b dark:border-border bg-gradient-to-r from-slate-50/80 via-zinc-50/40 to-transparent dark:from-slate-950/40 dark:via-zinc-950/20 dark:to-transparent shrink-0">
@@ -415,7 +415,7 @@ export default function SteelTestModal({
                 variant="outline"
                 size="sm"
                 onClick={handleFillSample}
-                className="h-8 text-xs gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-950/50"
+                className="hidden h-8 text-xs gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-950/50"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Fill Reference Sample Data
               </Button>

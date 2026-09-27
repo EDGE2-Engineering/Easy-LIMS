@@ -311,7 +311,7 @@ export default function AacBlockModal({
                 variant="outline"
                 size="sm"
                 onClick={handleFillSample}
-                className="h-8 text-xs gap-1.5 border-teal-200 text-teal-700 hover:bg-teal-50 dark:border-teal-800 dark:text-teal-300 dark:hover:bg-teal-950/50"
+                className="hidden h-8 text-xs gap-1.5 border-teal-200 text-teal-700 hover:bg-teal-50 dark:border-teal-800 dark:text-teal-300 dark:hover:bg-teal-950/50"
               >
                 <Sparkles className="w-3.5 h-3.5" /> Fill Sample Data
               </Button>

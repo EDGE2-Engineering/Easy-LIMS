@@ -136,7 +136,7 @@ export default function MoistureContentModal({
             <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-muted-foreground flex items-center gap-1.5">
               <Scale className="w-3.5 h-3.5 text-primary" /> Input Measurements
             </h4>
-            <div className="flex gap-1.5 text-xs">
+            <div className="hidden flex gap-1.5 text-xs">
               <button
                 type="button"
                 onClick={() => handleFillSample(1)}

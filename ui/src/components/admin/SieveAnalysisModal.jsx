@@ -392,7 +392,7 @@ export default function SieveAnalysisModal({
                 variant="outline"
                 size="sm"
                 onClick={handleFillPdfSample}
-                className="text-[11px] font-medium text-primary hover:text-primary-dark border-primary/30 bg-primary/5 hover:bg-primary/10 h-7"
+                className="hidden text-[11px] font-medium text-primary hover:text-primary-dark border-primary/30 bg-primary/5 hover:bg-primary/10 h-7"
                 title="Fill complete Sieve & Hydrometer test data from IS 2720 PDF (200g sample)"
               >
                 <Sparkles className="w-3.5 h-3.5 mr-1" />

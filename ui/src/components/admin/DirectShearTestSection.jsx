@@ -398,7 +398,7 @@ export default function DirectShearTestSection({
             variant="outline"
             size="sm"
             onClick={handleFillSampleData}
-            className="h-8 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/50"
+            className="hidden h-8 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/50"
             title="Load standard test data from the IS: 2720 PDF"
           >
             <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-600" />
