@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "npm --prefix ui run dev",
-    "build": "npm --prefix ui run build",
+    "build": "npm --prefix ui run build && node -e \"const fs=require('fs'); fs.mkdirSync('server/dist', {recursive: true}); fs.cpSync('ui/dist', 'server/dist', {recursive: true});\"",
     "preview": "npm --prefix ui run preview",
     "test": "python tests/run_tests.py --headed",
     "test:e2e": "python tests/run_tests.py --e2e",

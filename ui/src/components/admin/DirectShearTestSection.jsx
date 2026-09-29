@@ -1124,11 +1124,11 @@ export default function DirectShearTestSection({
             {/* Failure Envelope SVG Chart */}
             <div className="w-full">
               <DirectShearCurveChart
-                points={summary.points}
-                interceptC={summary.interceptC}
-                slopeTanPhi={summary.slopeTanPhi}
-                cValue={summary.cValue}
-                phiValue={summary.phiValue}
+                points={summary.points && summary.points.length > 0 ? summary.points : (sample?.stressReadings || [])}
+                interceptC={summary.interceptC !== null && summary.interceptC !== undefined ? summary.interceptC : (sample?.cValue ? parseFloat(sample.cValue) : null)}
+                slopeTanPhi={summary.slopeTanPhi !== null && summary.slopeTanPhi !== undefined ? summary.slopeTanPhi : (sample?.phiValue ? Math.tan((parseFloat(sample.phiValue) * Math.PI) / 180) : null)}
+                cValue={summary.cValue || sample?.cValue}
+                phiValue={summary.phiValue || sample?.phiValue}
                 width={520}
                 height={290}
               />

@@ -3,6 +3,23 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { TrendingUp } from 'lucide-react';
 
 /**
+ * Helper to compute "nice" step intervals for axes based on range
+ */
+function getNiceStep(range, targetTicks = 5) {
+  if (!range || range <= 0 || !isFinite(range)) return 1;
+  const roughStep = range / targetTicks;
+  const power = Math.floor(Math.log10(roughStep));
+  const magnitude = Math.pow(10, power);
+  const normalized = roughStep / magnitude;
+  let niceNorm;
+  if (normalized < 1.5) niceNorm = 1;
+  else if (normalized < 3) niceNorm = 2;
+  else if (normalized < 7) niceNorm = 5;
+  else niceNorm = 10;
+  return niceNorm * magnitude;
+}
+
+/**
  * Direct Shear Failure Envelope Chart (Normal Stress vs Shear Stress)
  * Plots experimental failure points and best-fit Coulomb failure envelope:
  * τ = C + σ * tan(φ)
@@ -18,7 +35,10 @@ export default function DirectShearCurveChart({
   height = 300,
 }) {
   const { isDark } = useTheme();
-  const clipId = useId();
+  const rawId = useId();
+  const safeId = String(rawId).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const clipId = `ds-clip-${safeId}`;
+  const areaGradientId = `ds-grad-${safeId}`;
 
   const validPoints = (points || []).filter(
     (p) =>
@@ -44,45 +64,55 @@ export default function DirectShearCurveChart({
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
 
+  // Extract numeric normal stresses and shear stresses safely
+  const normStresses = validPoints.map((p) => parseFloat(p.normalStress)).filter((v) => !isNaN(v));
+  const shearStresses = validPoints.map((p) => parseFloat(p.shearStress)).filter((v) => !isNaN(v));
+
+  const maxNorm = normStresses.length > 0 ? Math.max(0, ...normStresses) : 0;
+  const maxShear = shearStresses.length > 0 ? Math.max(0, ...shearStresses) : 0;
+
   // X range: Normal Stress (kg/cm²), starting from 0
-  const maxXValue = Math.max(
-    2.0,
-    ...validPoints.map((p) => parseFloat(p.normalStress)) + 0.3
-  );
+  const rawMaxX = Math.max(2.0, maxNorm * 1.15, maxNorm + 0.3);
+  const xStep = getNiceStep(rawMaxX, 5);
   const minX = 0;
-  const maxX = Math.ceil(maxXValue * 2) / 2; // snap to 0.5 increments
+  const maxX = Math.max(xStep * 2, Math.ceil(rawMaxX / xStep) * xStep);
   const rangeX = maxX - minX || 2.0;
 
   // Y range: Shear Stress (kg/cm²), starting from 0
-  const maxYValue = Math.max(
-    1.4,
-    ...validPoints.map((p) => parseFloat(p.shearStress)) + 0.3
-  );
+  const rawMaxY = Math.max(1.4, maxShear * 1.15, maxShear + 0.3);
+  const yStep = getNiceStep(rawMaxY, 5);
   const minY = 0;
-  const maxY = Math.ceil(maxYValue * 5) / 5; // snap to 0.2 increments
+  const maxY = Math.max(yStep * 2, Math.ceil(rawMaxY / yStep) * yStep);
   const rangeY = maxY - minY || 1.5;
 
   const getX = (val) => {
-    const clamped = Math.max(minX, Math.min(maxX, val));
+    const num = isFinite(val) ? val : 0;
+    const clamped = Math.max(minX, Math.min(maxX, num));
     return padding.left + ((clamped - minX) / rangeX) * plotWidth;
   };
 
   const getY = (val) => {
-    const clamped = Math.max(minY, Math.min(maxY, val));
+    const num = isFinite(val) ? val : 0;
+    const clamped = Math.max(minY, Math.min(maxY, num));
     return padding.top + plotHeight - ((clamped - minY) / rangeY) * plotHeight;
+  };
+
+  const getRawY = (val) => {
+    const num = isFinite(val) ? val : 0;
+    return padding.top + plotHeight - ((num - minY) / rangeY) * plotHeight;
   };
 
   // Generate grid ticks
   const xTicks = [];
-  const xStep = rangeX <= 2 ? 0.25 : 0.5;
-  for (let x = 0; x <= maxX + 1e-6; x += xStep) {
-    xTicks.push(Number(x.toFixed(2)));
+  const decimalsX = xStep < 1 ? (xStep < 0.1 ? 2 : 1) : 0;
+  for (let x = 0; x <= maxX + xStep * 0.01; x += xStep) {
+    xTicks.push(Number(x.toFixed(decimalsX + 1)));
   }
 
   const yTicks = [];
-  const yStep = rangeY <= 1.5 ? 0.2 : 0.4;
-  for (let y = 0; y <= maxY + 1e-6; y += yStep) {
-    yTicks.push(Number(y.toFixed(2)));
+  const decimalsY = yStep < 1 ? (yStep < 0.1 ? 2 : 1) : 0;
+  for (let y = 0; y <= maxY + yStep * 0.01; y += yStep) {
+    yTicks.push(Number(y.toFixed(decimalsY + 1)));
   }
 
   // Regression line points
@@ -96,7 +126,7 @@ export default function DirectShearCurveChart({
 
   if (cNum !== null && mNum !== null) {
     lineX1 = 0;
-    lineY1 = cNum;
+    lineY1 = Math.max(0, cNum);
     lineX2 = maxX;
     lineY2 = cNum + mNum * maxX;
   }
@@ -135,7 +165,7 @@ export default function DirectShearCurveChart({
               height={plotHeight}
             />
           </clipPath>
-          <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={areaGradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.18" />
             <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.01" />
           </linearGradient>
@@ -238,21 +268,21 @@ export default function DirectShearCurveChart({
           <g clipPath={`url(#${clipId})`}>
             <line
               x1={getX(lineX1)}
-              y1={getY(lineY1)}
+              y1={getRawY(lineY1)}
               x2={getX(lineX2)}
-              y2={getY(lineY2)}
+              y2={getRawY(lineY2)}
               stroke="#2563eb"
               strokeWidth="2.5"
             />
             {/* Shaded Area under regression line */}
             <polygon
               points={`
-                ${getX(lineX1)},${getY(lineY1)}
-                ${getX(lineX2)},${getY(lineY2)}
+                ${getX(lineX1)},${getRawY(lineY1)}
+                ${getX(lineX2)},${getRawY(lineY2)}
                 ${getX(lineX2)},${getY(0)}
                 ${getX(lineX1)},${getY(0)}
               `}
-              fill="url(#areaGradient)"
+              fill={`url(#${areaGradientId})`}
             />
           </g>
         )}
@@ -291,8 +321,12 @@ export default function DirectShearCurveChart({
 
         {/* Experimental Data Points */}
         {validPoints.map((pt, idx) => {
-          const px = getX(parseFloat(pt.normalStress));
-          const py = getY(parseFloat(pt.shearStress));
+          const normVal = parseFloat(pt.normalStress) || 0;
+          const shearVal = parseFloat(pt.shearStress) || 0;
+          const px = getX(normVal);
+          const py = getY(shearVal);
+          const labelAbove = py > padding.top + 26;
+
           return (
             <g key={`pt-${idx}`}>
               <circle
@@ -305,9 +339,9 @@ export default function DirectShearCurveChart({
                 className="transition-transform hover:scale-125"
               />
               <rect
-                x={px - 28}
-                y={py - 22}
-                width="56"
+                x={px - 32}
+                y={labelAbove ? py - 22 : py + 8}
+                width="64"
                 height="16"
                 rx="3"
                 fill={isDark ? '#1f2937' : '#ffffff'}
@@ -317,13 +351,13 @@ export default function DirectShearCurveChart({
               />
               <text
                 x={px}
-                y={py - 11}
+                y={labelAbove ? py - 11 : py + 19}
                 textAnchor="middle"
                 fontSize="9"
                 fontWeight="bold"
                 fill={isDark ? '#f3f4f6' : '#1f2937'}
               >
-                ({parseFloat(pt.normalStress).toFixed(1)}, {parseFloat(pt.shearStress).toFixed(2)})
+                ({normVal.toFixed(2)}, {shearVal.toFixed(2)})
               </text>
             </g>
           );

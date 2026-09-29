@@ -5041,12 +5041,19 @@ async def delete_report(report_id: int):
             raise HTTPException(status_code=404, detail="Report not found")
         return {"message": "Report deleted", "id": report_id}
 
-# Serve UI static files
-dist_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "dist"))
-if not os.path.exists(dist_path):
-    dist_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../ui/dist"))
-if not os.path.exists(dist_path):
-    dist_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../dist"))
+# Serve UI static files (prefer ui/dist if available in dev environment)
+ui_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "../ui/dist"))
+server_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "dist"))
+root_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "../dist"))
+
+if os.path.exists(ui_dist):
+    dist_path = ui_dist
+elif os.path.exists(server_dist):
+    dist_path = server_dist
+elif os.path.exists(root_dist):
+    dist_path = root_dist
+else:
+    dist_path = server_dist
 
 if os.path.exists(dist_path):
     app.mount("/assets", StaticFiles(directory=os.path.join(dist_path, "assets")), name="assets")
