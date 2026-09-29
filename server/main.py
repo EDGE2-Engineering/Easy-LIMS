@@ -4782,7 +4782,12 @@ async def upsert_app_setting(item: AppSettingCreate):
         raise HTTPException(status_code=500, detail="Database not connected")
     query = """
         INSERT INTO app_settings (setting_key, setting_value, description, created_at, updated_at)
-        VALUES ($1, $2, $3, NOW(), NOW()) RETURNING *
+        VALUES ($1, $2, $3, NOW(), NOW())
+        ON CONFLICT (setting_key) DO UPDATE
+        SET setting_value = EXCLUDED.setting_value,
+            description = COALESCE(EXCLUDED.description, app_settings.description),
+            updated_at = NOW()
+        RETURNING *
     """
     async with db_pool.acquire() as conn:
         rows = await fetch_with_coerced_params(conn, query, [item.setting_key, item.setting_value, item.description])

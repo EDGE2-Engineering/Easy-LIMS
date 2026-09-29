@@ -218,7 +218,7 @@ export function calculateUdsProperties({
 }
 
 /**
- * Calculate row outputs for a single row in the Direct Shear reading table (Page 8):
+ * Calculate row outputs for a single row in the Direct Shear reading table:
  * C1: Shear displacement dial reading
  * C2: Shear displacement (cm) = (C1 * leastCount) / 10
  * C3: Shear strain = C2 / mouldDimensionL

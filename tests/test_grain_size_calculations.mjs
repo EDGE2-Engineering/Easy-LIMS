@@ -37,7 +37,7 @@ assert.strictEqual(sieveResult.sumRetained, 198.85, 'Sum of retained weights sho
 assert(Math.abs(sieveResult.passing75um - 75.24) < 0.05, 'Passing 75µ should be approx 75.24%');
 assert.strictEqual(sieveResult.requiresHydrometer, true, 'Passing 75µ > 10% requires Hydrometer analysis');
 
-// Sand Bifurcation check (Page 4)
+// Sand Bifurcation check
 // Coarse: 98.80 - 95.37 = 3.43%
 // Medium: 95.37 - 90.69 = 4.68%
 // Fine: 90.69 - 75.24 = 15.45%
@@ -46,7 +46,7 @@ assert(Math.abs(sieveResult.sandBifurcation.coarse - 3.43) < 0.05, 'Coarse sand 
 assert(Math.abs(sieveResult.sandBifurcation.medium - 4.68) < 0.05, 'Medium sand should be approx 4.68%');
 assert(Math.abs(sieveResult.sandBifurcation.fine - 15.45) < 0.05, 'Fine sand should be approx 15.45%');
 
-// 2. Reference Tables Check (Page 15)
+// 2. Reference Tables Check
 // Density of water: 28°C -> 0.99616030, 26°C -> 0.99667180, 25°C -> 0.99692755
 assert(Math.abs(getWaterDensity(28) - 0.99616030) < 0.00001, 'Water density at 28°C should match Table 1');
 assert(Math.abs(getWaterDensity(26) - 0.99667180) < 0.00001, 'Water density at 26°C should match Table 1');
@@ -121,7 +121,7 @@ assert(Math.abs(r12.effectiveDepthHe - 17.96) < 0.05, 'Row 12 He should be appro
 assert(Math.abs(r12.diaParticleD - 0.002) < 0.001, 'Row 12 D should be approx 0.002 mm');
 assert(Math.abs(r12.combinedPercentageFiner - 21.22) < 0.1, 'Row 12 combined % finer should be approx 21.22%');
 
-// 4. Check Silt & Clay Bifurcation (Page 26)
+// 4. Check Silt & Clay Bifurcation
 // Silt: 51.5%, Clay: 23.7% (Clay is % finer at 0.002 mm)
 console.log('Silt & Clay Bifurcation:', hydroResult.bifurcation);
 assert(Math.abs(hydroResult.bifurcation.clay - 23.7) < 3.0, 'Clay fraction should be approx 21-24%');

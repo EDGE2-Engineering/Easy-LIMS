@@ -133,7 +133,7 @@ export function calculateGrainSizeFromSieve({ totalWeight, sieves = {}, includeC
   const sieve75umRow = sieveRows.find((r) => r.key === 'sieve9' || r.size === 0.075);
   const passing75um = sieve75umRow ? sieve75umRow.finesPassing : siltAndClayPct;
 
-  // Sand Bifurcation (Page 4):
+  // Sand Bifurcation:
   // Coarse: Passing 4.75mm - Passing 2.00mm
   // Medium: Passing 2.00mm - Passing 0.425mm
   // Fine: Passing 0.425mm - Passing 0.075mm
@@ -224,9 +224,9 @@ export const HYDROMETER_DEFAULTS = {
   meniscusCorrectionCm: 0.0005,    // Cm
   dispersingAgentCorrectionCd: 2.5,// Cd
   slope1: 0.3688,                  // Slope for He vs Rh calibration
-  intercept1: 19.303,              // Intercept for t <= 4 min (Page 11, 27)
+  intercept1: 19.303,              // Intercept for t <= 4 min 
   slope2: 0.3688,                  // Slope for He vs Rh calibration
-  intercept2: 20.723,              // Intercept for t > 4 min (Page 13, 27)
+  intercept2: 20.723,              // Intercept for t > 4 min 
 };
 
 export const DEFAULT_HYDROMETER_TIMES = [
@@ -368,9 +368,9 @@ export function calculateHydrometerAnalysis({
   const Cm = constants.meniscusCorrectionCm ?? HYDROMETER_DEFAULTS.meniscusCorrectionCm;
   const Cd = constants.dispersingAgentCorrectionCd ?? HYDROMETER_DEFAULTS.dispersingAgentCorrectionCd;
 
-  // Mass passed 75µ sieve: Md = (% Passing 75µ * Mw) / 100 (Page 9)
+  // Mass passed 75µ sieve: Md = (% Passing 75µ * Mw) / 100
   const samplePassed75um = Number(((numFines75 * numMw) / 100).toFixed(2));
-  // Mass retained on 75µ sieve = Mw - Md (Page 9)
+  // Mass retained on 75µ sieve = Mw - Md  
   const sampleRetained75um = Number(Math.max(0, numMw - samplePassed75um).toFixed(2));
 
   // Default times if readings empty
@@ -405,35 +405,35 @@ export function calculateHydrometerAnalysis({
     let combinedPercentageFiner = 0;
 
     if (!isNaN(rawReading) && rawReading > 0) {
-      // C6: Corrected HM Reading (Rh) = C3 + Cm (Page 21)
+      // C6: Corrected HM Reading (Rh) = C3 + Cm  
       correctedRh = rawReading + Cm;
 
-      // C7: Temperature Correction (Ct) = (C4 - density) * 1000 (Page 21)
+      // C7: Temperature Correction (Ct) = (C4 - density) * 1000  
       tempCrctnCt = (waterReading - waterDensity) * 1000;
 
-      // C8: Rh + Ct - Cd = ((Rh - 1) * 1000) + Ct - Cd (Page 22)
+      // C8: Rh + Ct - Cd = ((Rh - 1) * 1000) + Ct - Cd  
       const rhValue = (correctedRh - 1) * 1000;
       rhTotalCorrection = rhValue + tempCrctnCt - Cd;
 
-      // C9: Effective Depth He (cm) (Page 22 & 27)
+      // C9: Effective Depth He (cm)  
       effectiveDepthHe = calculateEffectiveDepth(time, correctedRh, constants);
 
-      // C10: Factor K (Page 22)
+      // C10: Factor K  
       factorK = calculateFactorK(viscosity, numGs, numGw);
       factorKDisplay = Math.round(factorK * 100000);
 
-      // C11: Particle Diameter D (mm) (Page 23)
+      // C11: Particle Diameter D (mm)  
       diaParticleD = calculateParticleDiameter(factorK, effectiveDepthHe, time);
 
-      // C12: % Finer than D, N (%) (Page 23)
+      // C12: % Finer than D, N (%)  
       const diffG = Math.max(0.01, numGs - numGw);
       const factorN = (100 * numGs) / (numWd * diffG);
       percentageFinerN = factorN * rhTotalCorrection;
 
-      // C13: Mass of 75µ Passing Soil (gm) = (N * Md) / 100 (Page 23 & 24)
+      // C13: Mass of 75µ Passing Soil (gm) = (N * Md) / 100 
       massPassed75um = (percentageFinerN * samplePassed75um) / 100;
 
-      // C14: Combined % Finer than D as % of Total Sample = (N * % Passing 75µ) / 100 (Page 24)
+      // C14: Combined % Finer than D as % of Total Sample = (N * % Passing 75µ) / 100 
       combinedPercentageFiner = (percentageFinerN * numFines75) / 100;
     }
 
@@ -458,7 +458,7 @@ export function calculateHydrometerAnalysis({
     };
   });
 
-  // Calculate Clay (< 0.002 mm) and Silt (0.075 mm - 0.002 mm) Fractions (Page 26)
+  // Calculate Clay (< 0.002 mm) and Silt (0.075 mm - 0.002 mm) Fractions 
   // Clay is the percentage finer than 0.002 mm.
   const validPoints = rows
     .filter((r) => typeof r.diaParticleD === 'number' && r.diaParticleD > 0 && typeof r.combinedPercentageFiner === 'number')

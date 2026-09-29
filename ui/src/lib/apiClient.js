@@ -189,6 +189,11 @@ class QueryBuilder {
     return this;
   }
 
+  upsert(data, options = {}) {
+    this._mutation = { type: 'upsert', data, options };
+    return this;
+  }
+
   update(data) {
     this._mutation = { type: 'update', data };
     return this;
@@ -210,7 +215,7 @@ class QueryBuilder {
         const idFilter = this._filters.find((f) => f.type === 'eq' && f.column === 'id');
         const entityId = idFilter ? idFilter.value : null;
 
-        if (mtype === 'insert') {
+        if (mtype === 'insert' || mtype === 'upsert') {
           if (Array.isArray(this._mutation.data)) {
             const results = await Promise.all(
               this._mutation.data.map(async (item) => {

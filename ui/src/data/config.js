@@ -208,6 +208,7 @@ export const SETTINGS_ITEM_IDS = {
   BEARING_CAPACITY: 'bearing_capacity',
   STATEMENTS: 'statements',
   VENDORS_SUPPLIERS: 'vendors_suppliers',
+  COMPACTION: 'compaction',
 };
 
 export const DOCUMENT_ITEM_TYPE_KEYS = {

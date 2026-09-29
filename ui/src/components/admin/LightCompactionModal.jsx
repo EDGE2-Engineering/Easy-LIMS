@@ -9,6 +9,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/ui/use-toast';
+import { useSettings } from '@/contexts/SettingsContext';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Calculator,
   RotateCcw,
@@ -24,7 +27,9 @@ import {
   MOULD_PRESETS,
   DEFAULT_COMPACTION_ROW,
   SAMPLE_LIGHT_COMPACTION_DATA,
+  COMPACTION_SETTING_KEYS,
   roundOmcByISCode,
+  toNum,
 } from '@/utils/compactionCalculation';
 import CompactionCurveChart from './CompactionCurveChart';
 
@@ -39,6 +44,19 @@ export default function LightCompactionModal({
   initialData = {},
   onApply,
 }) {
+  const { settings, updateSetting } = useSettings();
+  const { toast } = useToast();
+
+  const settingEmptyWeight = settings?.[COMPACTION_SETTING_KEYS.LIGHT_EMPTY_WEIGHT];
+  const defaultEmptyWeight =
+    settingEmptyWeight !== undefined && settingEmptyWeight !== ''
+      ? Number(settingEmptyWeight)
+      : MOULD_PRESETS.LIGHT_STANDARD.emptyWeight;
+
+  const [emptyMouldWeight, setEmptyMouldWeight] = useState(
+    initialData?.mould?.emptyWeight ?? defaultEmptyWeight
+  );
+
   const [trials, setTrials] = useState([
     { ...DEFAULT_COMPACTION_ROW },
     { ...DEFAULT_COMPACTION_ROW },
@@ -72,8 +90,15 @@ export default function LightCompactionModal({
       } else {
         setManualPeak({ enabled: false, mdd: '', omc: '' });
       }
+      if (initialData?.mould?.emptyWeight !== undefined) {
+        setEmptyMouldWeight(initialData.mould.emptyWeight);
+      } else if (settingEmptyWeight !== undefined && settingEmptyWeight !== '') {
+        setEmptyMouldWeight(Number(settingEmptyWeight));
+      } else {
+        setEmptyMouldWeight(MOULD_PRESETS.LIGHT_STANDARD.emptyWeight);
+      }
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, settingEmptyWeight]);
 
   const handleTrialChange = (trialIndex, field, val) => {
     setTrials((prev) => {
@@ -98,15 +123,54 @@ export default function LightCompactionModal({
     }
   };
 
+  const handleSetAsDefault = async () => {
+    const val = parseFloat(emptyMouldWeight);
+    if (isNaN(val) || val <= 0) {
+      toast({
+        title: 'Invalid Weight',
+        description: 'Please enter a valid positive number for empty mould weight.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    try {
+      await updateSetting(COMPACTION_SETTING_KEYS.LIGHT_EMPTY_WEIGHT, val);
+      toast({
+        title: 'Default Saved',
+        description: `Default Empty Mould weight set to ${val} g in Settings.`,
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: 'Error',
+        description: 'Failed to update default mould weight in settings.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const currentEmptyWeight = toNum(emptyMouldWeight);
+  const mould = useMemo(
+    () => ({
+      ...MOULD_PRESETS.LIGHT_STANDARD,
+      emptyWeight:
+        !isNaN(currentEmptyWeight) && currentEmptyWeight > 0
+          ? currentEmptyWeight
+          : MOULD_PRESETS.LIGHT_STANDARD.emptyWeight,
+    }),
+    [currentEmptyWeight]
+  );
+
   // Real-time calculations
   const calc = useMemo(() => {
     return calculateCompactionTest({
       mouldType: 'LIGHT_STANDARD',
+      customMould: mould,
       trials,
       manualMdd: manualPeak.enabled && manualPeak.mdd ? parseFloat(manualPeak.mdd) : null,
       manualOmc: manualPeak.enabled && manualPeak.omc ? parseFloat(manualPeak.omc) : null,
     });
-  }, [trials, manualPeak]);
+  }, [trials, manualPeak, mould]);
 
   const handleApply = () => {
     const finalMdd = calc.mdd || '';
@@ -127,7 +191,8 @@ export default function LightCompactionModal({
             omcFormatted: calc.omcFormatted,
             rawMdd: calc.rawMdd,
             rawOmc: calc.rawOmc,
-            mould: MOULD_PRESETS.LIGHT_STANDARD,
+            mould,
+            emptyMouldWeight: mould.emptyWeight,
             trials,
             calculatedTrials: calc.trials,
             manualPeak,
@@ -146,6 +211,7 @@ export default function LightCompactionModal({
       { ...DEFAULT_COMPACTION_ROW },
       { ...DEFAULT_COMPACTION_ROW },
     ]);
+    setEmptyMouldWeight(defaultEmptyWeight);
     setManualPeak({ enabled: false, mdd: '', omc: '' });
   };
 
@@ -153,8 +219,6 @@ export default function LightCompactionModal({
     setTrials(SAMPLE_LIGHT_COMPACTION_DATA.trials.map((t) => ({ ...t })));
     setManualPeak({ enabled: false, mdd: '', omc: '' });
   };
-
-  const mould = MOULD_PRESETS.LIGHT_STANDARD;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -202,10 +266,39 @@ export default function LightCompactionModal({
         </DialogHeader>
 
         {/* MOULD SPECIFICATIONS BANNER */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 p-2.5 rounded-xl bg-gray-50 dark:bg-muted/30 border border-gray-200 dark:border-border text-[11px]">
-          <div>
-            <span className="text-gray-400 block text-[10px]">Empty Wt (W₁)</span>
-            <span className="font-bold text-gray-800 dark:text-gray-200">{mould.emptyWeight} g</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 p-2.5 rounded-xl bg-gray-50 dark:bg-muted/30 border border-gray-200 dark:border-border text-[11px] items-center">
+          <div className="col-span-2 sm:col-span-1 md:col-span-1">
+            <span className="text-gray-500 dark:text-gray-400 block text-[10px] font-semibold leading-tight">
+              Empty Mould weight (W₁)
+            </span>
+            <div className="flex items-center gap-1 mt-0.5">
+              <Input
+                type="number"
+                step="any"
+                value={emptyMouldWeight}
+                onChange={(e) => setEmptyMouldWeight(e.target.value)}
+                className="h-6 w-16 text-xs font-bold text-gray-800 dark:text-gray-200 px-1 py-0 text-center bg-white dark:bg-card border-gray-300 dark:border-border shadow-none focus-visible:ring-1"
+                title="Enter empty mould weight (gms)"
+              />
+              <span className="text-[11px] font-medium text-gray-500">g</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSetAsDefault}
+                    className="h-6 px-1 text-[10px] font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 flex items-center gap-0.5"
+                  >
+                    <Check className="w-2.5 h-2.5" />
+                    <span>Default</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                  <p className="text-xs">Save {emptyMouldWeight} g as default in Settings</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
           <div>
             <span className="text-gray-400 block text-[10px]">Diameter</span>

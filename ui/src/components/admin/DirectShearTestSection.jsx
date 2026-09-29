@@ -574,14 +574,14 @@ export default function DirectShearTestSection({
             </div>
           </div>
 
-          {/* DISTURBED SAMPLE (DS) SPECIFIC INPUTS (PDF Page 01) */}
+          {/* DISTURBED SAMPLE (DS) SPECIFIC INPUTS  */}
           {sampleType === 'DS' && (
             <div className="border border-blue-100 dark:border-blue-950/60 bg-blue-50/20 dark:bg-blue-950/10 p-4 rounded-xl space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wide">
                   Disturbed Sample (DS) Physical Properties (Based on Compaction Testing)
                 </span>
-                <span className="text-[11px] text-blue-600 dark:text-blue-400">PDF Page 01</span>
+                <span className="text-[11px] text-blue-600 dark:text-blue-400"></span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
@@ -1089,7 +1089,7 @@ export default function DirectShearTestSection({
                   <div className="grid grid-cols-2 gap-3 pt-1">
                     <div className="bg-white dark:bg-card p-2.5 rounded-lg border border-blue-100 dark:border-blue-900/40">
                       <span className="text-[10px] text-gray-400 block">
-                        Cohesion Intercept, C (Page 07)
+                        Cohesion Intercept, C
                       </span>
                       <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 font-mono">
                         {summary.cValue ? `${summary.cValue} kg/cm²` : '-'}
@@ -1102,7 +1102,7 @@ export default function DirectShearTestSection({
                     </div>
                     <div className="bg-white dark:bg-card p-2.5 rounded-lg border border-blue-100 dark:border-blue-900/40">
                       <span className="text-[10px] text-gray-400 block">
-                        Angle of Internal Friction, φ (Page 07)
+                        Angle of Internal Friction, φ
                       </span>
                       <span className="text-sm font-bold text-indigo-700 dark:text-indigo-400 font-mono">
                         {summary.phiValue ? `${summary.phiValue}°` : '-'}

@@ -31,12 +31,14 @@ import {
   Mountain,
   Landmark,
   Truck,
+  Scale,
 } from 'lucide-react';
 
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import AdminUnitTypesManager from './AdminUnitTypesManager';
 import AdminHSNCodesManager from './AdminHSNCodesManager';
 import AdminSettingsManager from './AdminSettingsManager';
+import AdminCompactionSettingsManager from './AdminCompactionSettingsManager';
 import AdminTermsManager from './AdminTermsManager';
 import AdminTechnicalsManager from './AdminTechnicalsManager';
 import AdminPaymentTermsManager from './AdminPaymentTermsManager';
@@ -62,6 +64,7 @@ const TAB_COMPONENTS = {
   materials: <AdminMaterialsManager />,
   material_forms: <AdminMaterialFormsManager />,
   payment_settings: <AdminSettingsManager />,
+  compaction: <AdminCompactionSettingsManager />,
   collection_centers: <AdminCollectionCentersManager />,
   bearing_capacity: <AdminBearingCapacityManager />,
   vendors_suppliers: <AdminVendorsSuppliersManager />,
@@ -248,6 +251,22 @@ const AdminSystemSettings = ({ id }) => {
             </TabsTrigger>
 
             <TabsTrigger
+              value="compaction"
+              className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2">
+                    <Scale className="w-4 h-4" /> Compaction
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                  <p className="text-xs">Soil compaction mould specifications & empty mould weights</p>
+                </TooltipContent>
+              </Tooltip>
+            </TabsTrigger>
+
+            <TabsTrigger
               value="collection_centers"
               className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
             >
@@ -265,7 +284,7 @@ const AdminSystemSettings = ({ id }) => {
 
             <TabsTrigger
               value="bearing_capacity"
-              className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+              className="hidden px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
             >
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -352,6 +371,13 @@ const AdminSystemSettings = ({ id }) => {
           className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
         >
           <AdminSettingsManager />
+        </TabsContent>
+
+        <TabsContent
+          value="compaction"
+          className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
+        >
+          <AdminCompactionSettingsManager />
         </TabsContent>
 
         <TabsContent

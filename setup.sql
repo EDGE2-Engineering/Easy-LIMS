@@ -109,3 +109,15 @@ SELECT
     'Important Update from {{site_name}}',
     '<h2>Important Customer Update</h2><p>Dear Valued Partner,</p><p>We are writing to share an important announcement regarding our laboratory operations and technical testing services.</p><p>Please review the details below and reach out to our support team if you have any questions.</p><hr /><p>Sincerely,<br /><strong>Management Team - {{site_name}}</strong></p>'
 WHERE NOT EXISTS (SELECT 1 FROM email_templates WHERE name = 'General Communication Notice');
+
+-- 8. Application Settings Table
+CREATE TABLE IF NOT EXISTS app_settings (
+    id SERIAL PRIMARY KEY,
+    setting_key TEXT UNIQUE NOT NULL,
+    setting_value TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_app_settings_key ON app_settings(setting_key);
+

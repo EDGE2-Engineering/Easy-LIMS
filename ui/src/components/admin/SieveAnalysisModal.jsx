@@ -1231,7 +1231,7 @@ export default function SieveAnalysisModal({
               )}
             </div>
 
-            {/* COMPLETE SOIL BIFURCATION SUMMARY TABLE (Page 3 & 26) */}
+            {/* COMPLETE SOIL BIFURCATION SUMMARY TABLE */}
             <div className="border border-gray-200 dark:border-border rounded-xl bg-white dark:bg-card overflow-hidden shadow-sm">
               <div className="p-3 bg-gray-50 dark:bg-muted/40 border-b border-gray-200 dark:border-border font-bold text-xs text-gray-700 dark:text-foreground">
                 Complete Soil Classification & Bifurcation Summary (IS:1498)

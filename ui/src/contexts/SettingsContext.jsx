@@ -3,16 +3,33 @@ import { apiClient } from '@/lib/apiClient';
 import { logAudit } from '@/lib/auditLog';
 import { useAuth } from '@/contexts/AuthContext';
 
+const DEFAULT_SETTINGS = {
+  tax_cgst: 9,
+  tax_sgst: 9,
+  tax_igst: 18,
+  compaction_light_mould_empty_weight: 3989,
+  compaction_heavy_small_mould_empty_weight: 3989,
+  compaction_heavy_big_mould_empty_weight: 5774,
+};
+
+const getInitialSettings = () => {
+  try {
+    const cached = localStorage.getItem('easy_lims_settings_cache');
+    if (cached) {
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(cached) };
+    }
+  } catch (e) {
+    // ignore
+  }
+  return DEFAULT_SETTINGS;
+};
+
 const SettingsContext = createContext();
 
 const SettingsProvider = ({ children }) => {
   const { user } = useAuth();
   const currentUserId = user?.id;
-  const [settings, setSettings] = useState({
-    tax_cgst: 9,
-    tax_sgst: 9,
-    tax_igst: 18,
-  });
+  const [settings, setSettings] = useState(getInitialSettings);
   const [settingsMetadata, setSettingsMetadata] = useState({}); // Stores IDs and other metadata per key
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +52,15 @@ const SettingsProvider = ({ children }) => {
           newSettings[item.setting_key] = isNaN(numVal) ? item.setting_value : numVal;
           metadata[item.setting_key] = { id: item.id };
         });
-        setSettings((prev) => ({ ...prev, ...newSettings }));
+        setSettings((prev) => {
+          const merged = { ...prev, ...newSettings };
+          try {
+            localStorage.setItem('easy_lims_settings_cache', JSON.stringify(merged));
+          } catch (e) {
+            // ignore
+          }
+          return merged;
+        });
         setSettingsMetadata(metadata);
       }
     } catch (err) {
@@ -48,7 +73,15 @@ const SettingsProvider = ({ children }) => {
   const updateSetting = useCallback(
     async (key, value, userId = null) => {
       // Optimistic update
-      setSettings((prev) => ({ ...prev, [key]: value }));
+      setSettings((prev) => {
+        const updated = { ...prev, [key]: value };
+        try {
+          localStorage.setItem('easy_lims_settings_cache', JSON.stringify(updated));
+        } catch (e) {
+          // ignore
+        }
+        return updated;
+      });
 
       try {
         const payload = {

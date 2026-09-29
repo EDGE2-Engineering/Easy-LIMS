@@ -11,7 +11,7 @@ import {
 
 console.log('--- Testing Direct Shear Calculations per IS: 2720 Part 13 ---');
 
-// 1. Disturbed Sample (DS) Physical Properties (PDF Page 01)
+// 1. Disturbed Sample (DS) Physical Properties
 console.log('1. Testing DS Physical Properties...');
 const dsProps = calculateDsProperties({
   dryDensity: 1.54,

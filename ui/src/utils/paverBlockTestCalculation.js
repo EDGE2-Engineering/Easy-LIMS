@@ -99,7 +99,7 @@ export const SAMPLE_PAVER_BLOCK_TEST_DATA = {
 };
 
 /**
- * Sample test data for Chamfered Paver Block strictly following handwritten test sheet (Page 2 of PDF)
+ * Sample test data for Chamfered Paver Block strictly following handwritten test sheet 
  */
 export const SAMPLE_CHAMFERED_PAVER_BLOCK_TEST_DATA = {
   metadata: {

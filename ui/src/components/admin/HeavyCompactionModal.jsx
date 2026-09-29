@@ -9,6 +9,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/ui/use-toast';
+import { useSettings } from '@/contexts/SettingsContext';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Select,
   SelectContent,
@@ -31,7 +34,9 @@ import {
   MOULD_PRESETS,
   DEFAULT_COMPACTION_ROW,
   SAMPLE_HEAVY_COMPACTION_DATA,
+  COMPACTION_SETTING_KEYS,
   roundOmcByISCode,
+  toNum,
 } from '@/utils/compactionCalculation';
 import CompactionCurveChart from './CompactionCurveChart';
 
@@ -46,7 +51,27 @@ export default function HeavyCompactionModal({
   initialData = {},
   onApply,
 }) {
+  const { settings, updateSetting } = useSettings();
+  const { toast } = useToast();
+
+  const getDefaultEmptyWeight = (type) => {
+    if (type === 'HEAVY_BIG') {
+      const settingVal = settings?.[COMPACTION_SETTING_KEYS.HEAVY_BIG_EMPTY_WEIGHT];
+      return settingVal !== undefined && settingVal !== ''
+        ? Number(settingVal)
+        : MOULD_PRESETS.HEAVY_BIG.emptyWeight;
+    }
+    const settingVal = settings?.[COMPACTION_SETTING_KEYS.HEAVY_SMALL_EMPTY_WEIGHT];
+    return settingVal !== undefined && settingVal !== ''
+      ? Number(settingVal)
+      : MOULD_PRESETS.HEAVY_SMALL.emptyWeight;
+  };
+
   const [mouldType, setMouldType] = useState('HEAVY_SMALL'); // 'HEAVY_SMALL' or 'HEAVY_BIG'
+  const [emptyMouldWeight, setEmptyMouldWeight] = useState(
+    initialData?.mould?.emptyWeight ?? MOULD_PRESETS.HEAVY_SMALL.emptyWeight
+  );
+
   const [trials, setTrials] = useState([
     { ...DEFAULT_COMPACTION_ROW },
     { ...DEFAULT_COMPACTION_ROW },
@@ -64,10 +89,13 @@ export default function HeavyCompactionModal({
   // Load initialData when opening
   useEffect(() => {
     if (isOpen) {
-      if (initialData?.mouldType) {
-        setMouldType(initialData.mouldType);
+      const initialMould = initialData?.mouldType || 'HEAVY_SMALL';
+      setMouldType(initialMould);
+
+      if (initialData?.mould?.emptyWeight !== undefined) {
+        setEmptyMouldWeight(initialData.mould.emptyWeight);
       } else {
-        setMouldType('HEAVY_SMALL');
+        setEmptyMouldWeight(getDefaultEmptyWeight(initialMould));
       }
 
       if (initialData?.trials && Array.isArray(initialData.trials) && initialData.trials.length > 0) {
@@ -88,7 +116,12 @@ export default function HeavyCompactionModal({
         setManualPeak({ enabled: false, mdd: '', omc: '' });
       }
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, settings]);
+
+  const handleMouldTypeChange = (newType) => {
+    setMouldType(newType);
+    setEmptyMouldWeight(getDefaultEmptyWeight(newType));
+  };
 
   const handleTrialChange = (trialIndex, field, val) => {
     setTrials((prev) => {
@@ -113,15 +146,62 @@ export default function HeavyCompactionModal({
     }
   };
 
+  const handleSetAsDefault = async () => {
+    const val = parseFloat(emptyMouldWeight);
+    if (isNaN(val) || val <= 0) {
+      toast({
+        title: 'Invalid Weight',
+        description: 'Please enter a valid positive number for empty mould weight.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const key =
+      mouldType === 'HEAVY_BIG'
+        ? COMPACTION_SETTING_KEYS.HEAVY_BIG_EMPTY_WEIGHT
+        : COMPACTION_SETTING_KEYS.HEAVY_SMALL_EMPTY_WEIGHT;
+    const mouldName =
+      mouldType === 'HEAVY_BIG' ? 'Big Mould (2250 cm³)' : 'Small Mould (1000 cm³)';
+
+    try {
+      await updateSetting(key, val);
+      toast({
+        title: 'Default Saved',
+        description: `Default Empty Mould weight for ${mouldName} set to ${val} g in Settings.`,
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: 'Error',
+        description: 'Failed to update default mould weight in settings.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const baseMould = MOULD_PRESETS[mouldType] || MOULD_PRESETS.HEAVY_SMALL;
+  const currentEmptyWeight = toNum(emptyMouldWeight);
+  const mould = useMemo(
+    () => ({
+      ...baseMould,
+      emptyWeight:
+        !isNaN(currentEmptyWeight) && currentEmptyWeight > 0
+          ? currentEmptyWeight
+          : baseMould.emptyWeight,
+    }),
+    [baseMould, currentEmptyWeight]
+  );
+
   // Real-time calculations
   const calc = useMemo(() => {
     return calculateCompactionTest({
       mouldType,
+      customMould: mould,
       trials,
       manualMdd: manualPeak.enabled && manualPeak.mdd ? parseFloat(manualPeak.mdd) : null,
       manualOmc: manualPeak.enabled && manualPeak.omc ? parseFloat(manualPeak.omc) : null,
     });
-  }, [mouldType, trials, manualPeak]);
+  }, [mouldType, trials, manualPeak, mould]);
 
   const handleApply = () => {
     const finalMdd = calc.mdd || '';
@@ -143,7 +223,8 @@ export default function HeavyCompactionModal({
             omcFormatted: calc.omcFormatted,
             rawMdd: calc.rawMdd,
             rawOmc: calc.rawOmc,
-            mould: MOULD_PRESETS[mouldType],
+            mould,
+            emptyMouldWeight: mould.emptyWeight,
             trials,
             calculatedTrials: calc.trials,
             manualPeak,
@@ -162,16 +243,16 @@ export default function HeavyCompactionModal({
       { ...DEFAULT_COMPACTION_ROW },
       { ...DEFAULT_COMPACTION_ROW },
     ]);
+    setEmptyMouldWeight(getDefaultEmptyWeight(mouldType));
     setManualPeak({ enabled: false, mdd: '', omc: '' });
   };
 
   const handleFillSample = () => {
     setMouldType('HEAVY_SMALL');
+    setEmptyMouldWeight(getDefaultEmptyWeight('HEAVY_SMALL'));
     setTrials(SAMPLE_HEAVY_COMPACTION_DATA.trials.map((t) => ({ ...t })));
     setManualPeak({ enabled: false, mdd: '', omc: '' });
   };
-
-  const mould = MOULD_PRESETS[mouldType] || MOULD_PRESETS.HEAVY_SMALL;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -223,7 +304,7 @@ export default function HeavyCompactionModal({
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Select Mould:</span>
-              <Select value={mouldType} onValueChange={setMouldType}>
+              <Select value={mouldType} onValueChange={handleMouldTypeChange}>
                 <SelectTrigger className="w-[260px] h-8 text-xs bg-white dark:bg-card">
                   <SelectValue placeholder="Choose mould" />
                 </SelectTrigger>
@@ -238,10 +319,41 @@ export default function HeavyCompactionModal({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 pt-2 border-t border-gray-200/60 dark:border-border/60 text-[11px]">
-            <div>
-              <span className="text-gray-400 block text-[10px]">Empty Wt (W₁)</span>
-              <span className="font-bold text-gray-800 dark:text-gray-200">{mould.emptyWeight} g</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 pt-2 border-t border-gray-200/60 dark:border-border/60 text-[11px] items-center">
+            <div className="col-span-2 sm:col-span-1 md:col-span-1">
+              <span className="text-gray-500 dark:text-gray-400 block text-[10px] font-semibold leading-tight">
+                Empty Mould weight (W₁)
+              </span>
+              <div className="flex items-center gap-1 mt-0.5">
+                <Input
+                  type="number"
+                  step="any"
+                  value={emptyMouldWeight}
+                  onChange={(e) => setEmptyMouldWeight(e.target.value)}
+                  className="h-6 w-16 text-xs font-bold text-gray-800 dark:text-gray-200 px-1 py-0 text-center bg-white dark:bg-card border-gray-300 dark:border-border shadow-none focus-visible:ring-1"
+                  title="Enter empty mould weight (gms)"
+                />
+                <span className="text-[11px] font-medium text-gray-500">g</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSetAsDefault}
+                      className="h-6 px-1 text-[10px] font-medium text-purple-700 dark:text-purple-300 hover:bg-purple-500/10 flex items-center gap-0.5"
+                    >
+                      <Check className="w-2.5 h-2.5" />
+                      <span>Default</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                    <p className="text-xs">
+                      Save {emptyMouldWeight} g as default for {mouldType === 'HEAVY_BIG' ? 'Big Mould' : 'Small Mould'} in Settings
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </div>
             <div>
               <span className="text-gray-400 block text-[10px]">Diameter</span>

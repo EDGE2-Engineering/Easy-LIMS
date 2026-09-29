@@ -27,6 +27,12 @@
  *     - If > 10%: rounded to nearest whole number (1%)
  */
 
+export const COMPACTION_SETTING_KEYS = {
+  LIGHT_EMPTY_WEIGHT: 'compaction_light_mould_empty_weight',
+  HEAVY_SMALL_EMPTY_WEIGHT: 'compaction_heavy_small_mould_empty_weight',
+  HEAVY_BIG_EMPTY_WEIGHT: 'compaction_heavy_big_mould_empty_weight',
+};
+
 export const COMPACTION_TYPES = {
   LIGHT: 'light',
   HEAVY: 'heavy',
@@ -35,7 +41,7 @@ export const COMPACTION_TYPES = {
 export const MOULD_PRESETS = {
   LIGHT_STANDARD: {
     name: 'Standard Light Mould',
-    volume: 997.46, // cm3 (per IS 2720 Part 7, or 1000 cm3)
+    volume: 1000.0, // cm3 (per IS 2720 Part 7)
     emptyWeight: 3989, // g
     diameter: 10, // cm
     length: 12.7, // cm
