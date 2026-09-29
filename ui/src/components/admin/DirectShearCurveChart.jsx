@@ -119,16 +119,53 @@ export default function DirectShearCurveChart({
   const cNum = interceptC !== null && !isNaN(parseFloat(interceptC)) ? parseFloat(interceptC) : null;
   const mNum = slopeTanPhi !== null && !isNaN(parseFloat(slopeTanPhi)) ? parseFloat(slopeTanPhi) : null;
 
+  let effectiveC = cNum;
+  let effectiveM = mNum;
+
+  // Fallback: if slope or intercept are not provided, derive directly from validPoints
+  if ((effectiveC === null || effectiveM === null) && validPoints.length >= 2) {
+    const n = validPoints.length;
+    let sX = 0, sY = 0, sXY = 0, sXX = 0;
+    validPoints.forEach((p) => {
+      const x = parseFloat(p.normalStress);
+      const y = parseFloat(p.shearStress);
+      sX += x;
+      sY += y;
+      sXY += x * y;
+      sXX += x * x;
+    });
+    const denom = sXX - (sX * sX) / n;
+    if (Math.abs(denom) > 1e-9) {
+      const uM = (sXY - (sX * sY) / n) / denom;
+      const uC = (sY - uM * sX) / n;
+      if (uC < 0) {
+        effectiveC = 0;
+        effectiveM = sXX > 0 ? sXY / sXX : uM;
+      } else {
+        effectiveC = uC;
+        effectiveM = uM;
+      }
+    }
+  }
+
   let lineX1 = 0;
   let lineY1 = 0;
   let lineX2 = maxX;
   let lineY2 = 0;
 
-  if (cNum !== null && mNum !== null) {
-    lineX1 = 0;
-    lineY1 = Math.max(0, cNum);
-    lineX2 = maxX;
-    lineY2 = cNum + mNum * maxX;
+  if (effectiveC !== null && effectiveM !== null) {
+    if (effectiveC >= 0) {
+      lineX1 = 0;
+      lineY1 = effectiveC;
+      lineX2 = maxX;
+      lineY2 = effectiveC + effectiveM * maxX;
+    } else {
+      const xIntercept = effectiveM > 0 ? -effectiveC / effectiveM : 0;
+      lineX1 = Math.min(maxX, Math.max(0, xIntercept));
+      lineY1 = 0;
+      lineX2 = maxX;
+      lineY2 = effectiveC + effectiveM * maxX;
+    }
   }
 
   return (
@@ -328,16 +365,18 @@ export default function DirectShearCurveChart({
           const labelAbove = py > padding.top + 26;
 
           return (
-            <g key={`pt-${idx}`}>
+            <g key={`pt-${idx}`} className="group/pt">
               <circle
                 cx={px}
                 cy={py}
-                r="6"
+                r="5.5"
                 fill="#ef4444"
                 stroke="#ffffff"
                 strokeWidth="2"
-                className="transition-transform hover:scale-125"
-              />
+                className="cursor-pointer transition-colors duration-150 hover:fill-red-600 hover:stroke-red-100"
+              >
+                <title>{`σ = ${normVal.toFixed(2)} kg/cm², τ = ${shearVal.toFixed(2)} kg/cm²`}</title>
+              </circle>
               <rect
                 x={px - 32}
                 y={labelAbove ? py - 22 : py + 8}
@@ -348,6 +387,7 @@ export default function DirectShearCurveChart({
                 stroke={isDark ? '#374151' : '#e5e7eb'}
                 strokeWidth="1"
                 className="shadow-sm"
+                pointerEvents="none"
               />
               <text
                 x={px}
@@ -356,6 +396,7 @@ export default function DirectShearCurveChart({
                 fontSize="9"
                 fontWeight="bold"
                 fill={isDark ? '#f3f4f6' : '#1f2937'}
+                pointerEvents="none"
               >
                 ({normVal.toFixed(2)}, {shearVal.toFixed(2)})
               </text>

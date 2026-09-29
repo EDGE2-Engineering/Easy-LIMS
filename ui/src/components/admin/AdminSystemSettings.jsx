@@ -438,7 +438,7 @@ const AdminSystemSettings = ({ id }) => {
 
         <TabsContent
           value="bearing_capacity"
-          className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
+          className="hidden focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
         >
           <AdminBearingCapacityManager />
         </TabsContent>

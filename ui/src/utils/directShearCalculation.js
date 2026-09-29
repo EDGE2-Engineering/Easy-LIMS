@@ -407,8 +407,20 @@ export function calculateDirectShearSummary(loadsData = []) {
     };
   }
 
-  const slope = (sumXY - n * meanX * meanY) / denominator;
-  const intercept = meanY - slope * meanX;
+  const unconstrainedSlope = (sumXY - n * meanX * meanY) / denominator;
+  const unconstrainedIntercept = meanY - unconstrainedSlope * meanX;
+
+  let slope = unconstrainedSlope;
+  let intercept = unconstrainedIntercept;
+
+  // In geotechnical testing (IS: 2720 Part 13), cohesion cannot be negative (c >= 0).
+  // If unconstrained linear regression yields a negative intercept (c < 0),
+  // the failure envelope is constrained through the origin (c = 0),
+  // and the least-squares slope is recalculated through the origin: m = sum(x*y) / sum(x*x).
+  if (unconstrainedIntercept < 0) {
+    intercept = 0;
+    slope = sumXX > 0 ? sumXY / sumXX : unconstrainedSlope;
+  }
 
   const slope3 = Number(slope.toFixed(3));
   // Friction angle φ in degrees per PDF Page 7: φ = tan⁻¹(slope)
