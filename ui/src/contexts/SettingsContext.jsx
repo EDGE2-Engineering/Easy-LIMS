@@ -10,6 +10,21 @@ const DEFAULT_SETTINGS = {
   compaction_light_mould_empty_weight: 3989,
   compaction_heavy_small_mould_empty_weight: 3989,
   compaction_heavy_big_mould_empty_weight: 5774,
+  smtp_campaign_email: '',
+  smtp_campaign_password: '',
+  smtp_campaign_sender_name: '',
+  smtp_campaign_host: 'smtp.gmail.com',
+  smtp_campaign_port: 587,
+  smtp_campaign_security: 'tls',
+  smtp_campaign_enabled: 'true',
+  smtp_report_email: '',
+  smtp_report_password: '',
+  smtp_report_sender_name: '',
+  smtp_report_host: 'smtp.gmail.com',
+  smtp_report_port: 587,
+  smtp_report_security: 'tls',
+  smtp_report_reply_to: '',
+  smtp_report_enabled: 'true',
 };
 
 const getInitialSettings = () => {

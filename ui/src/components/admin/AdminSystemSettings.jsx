@@ -32,6 +32,7 @@ import {
   Landmark,
   Truck,
   Scale,
+  Mail,
 } from 'lucide-react';
 
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
@@ -49,6 +50,7 @@ import AdminUsersManager from './AdminUsersManager';
 import AdminBearingCapacityManager from './AdminBearingCapacityManager';
 import AdminBankStatementsManager from './AdminBankStatementsManager';
 import AdminVendorsSuppliersManager from './AdminVendorsSuppliersManager';
+import AdminEmailSettingsManager from './AdminEmailSettingsManager';
 
 import { enableInfoDiagramZoom, getSiteContent, ROLES, SETTINGS_ITEM_IDS } from '../../data/config';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -64,6 +66,7 @@ const TAB_COMPONENTS = {
   materials: <AdminMaterialsManager />,
   material_forms: <AdminMaterialFormsManager />,
   payment_settings: <AdminSettingsManager />,
+  email: <AdminEmailSettingsManager />,
   compaction: <AdminCompactionSettingsManager />,
   collection_centers: <AdminCollectionCentersManager />,
   bearing_capacity: <AdminBearingCapacityManager />,
@@ -251,6 +254,22 @@ const AdminSystemSettings = ({ id }) => {
             </TabsTrigger>
 
             <TabsTrigger
+              value="email"
+              className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4" /> Email
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                  <p className="text-xs">SMTP configuration for campaigns and client reports</p>
+                </TooltipContent>
+              </Tooltip>
+            </TabsTrigger>
+
+            <TabsTrigger
               value="compaction"
               className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
             >
@@ -373,6 +392,13 @@ const AdminSystemSettings = ({ id }) => {
           className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
         >
           <AdminSettingsManager />
+        </TabsContent>
+
+        <TabsContent
+          value="email"
+          className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
+        >
+          <AdminEmailSettingsManager />
         </TabsContent>
 
         <TabsContent

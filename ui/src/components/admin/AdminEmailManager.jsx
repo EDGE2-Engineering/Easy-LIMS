@@ -524,7 +524,7 @@ const AdminEmailManager = () => {
 
       toast({
         title: 'Email Sent Successfully',
-        description: `Communication dispatched to ${recipientsData.length} target contact email(s) across ${selectedClientsList.length} client(s).`,
+        description: `Email campaign dispatched to ${recipientsData.length} target contact email(s) across ${selectedClientsList.length} client(s).`,
       });
 
       // Clear compose form
@@ -558,9 +558,9 @@ const AdminEmailManager = () => {
             <Mail className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight">Email Communication</h1>
+            <h1 className="text-xl font-bold text-gray-900 tracking-tight">Email Campaign</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Send Email communication to clients, upload inline images, and track dispatch logs.
+              Create and send email campaigns to your clients, upload inline images, and track dispatch logs.
             </p>
           </div>
         </div>

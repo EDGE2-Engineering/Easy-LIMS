@@ -16,6 +16,9 @@ import asyncpg
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from urllib.parse import quote_plus
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Load dev.env from root or server directory if present, fallback to .env
 base_dir = os.path.dirname(__file__)
@@ -1146,6 +1149,25 @@ class EmailSendReq(BaseModel):
     sent_by: Optional[int] = None
     sent_by_name: Optional[str] = None
 
+class TestSmtpReq(BaseModel):
+    host: str
+    port: int = 587
+    security: str = "tls"
+    email: str
+    password: str
+    sender_name: Optional[str] = "Easy-LIMS"
+    test_recipient: Optional[str] = None
+
+class ReportEmailReq(BaseModel):
+    recipient_email: str
+    subject: str
+    body_html: str
+    recipient_name: Optional[str] = None
+    report_id: Optional[str] = None
+    job_id: Optional[str] = None
+    sent_by: Optional[int] = None
+    sent_by_name: Optional[str] = None
+
 class EmailTemplateReq(BaseModel):
     name: str
     subject: str
@@ -1275,11 +1297,58 @@ async def send_email(req: EmailSendReq):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
     rec_count = req.recipient_count if req.recipient_count is not None else len(req.recipients)
+
+    # Try sending via campaign SMTP if configured in app_settings
+    status_to_record = "SENT"
+    try:
+        async with db_pool.acquire() as conn:
+            settings_rows = await conn.fetch("SELECT setting_key, setting_value FROM app_settings WHERE setting_key LIKE 'smtp_campaign_%'")
+            s_dict = {r["setting_key"]: r["setting_value"] for r in settings_rows}
+            campaign_email = (s_dict.get("smtp_campaign_email") or "").strip()
+            campaign_password = (s_dict.get("smtp_campaign_password") or "").strip()
+            campaign_enabled = s_dict.get("smtp_campaign_enabled", "true").lower() != "false"
+
+            if campaign_email and campaign_password and campaign_enabled:
+                host = (s_dict.get("smtp_campaign_host") or "smtp.gmail.com").strip()
+                try:
+                    port = int(s_dict.get("smtp_campaign_port", 587))
+                except (ValueError, TypeError):
+                    port = 587
+                security = (s_dict.get("smtp_campaign_security") or "tls").lower().strip()
+                sender_display = (s_dict.get("smtp_campaign_sender_name") or req.sent_by_name or "Easy-LIMS").strip()
+                from_header = f"{sender_display} <{campaign_email}>" if sender_display else campaign_email
+
+                target_emails = []
+                for r in req.recipients:
+                    em = r.get("email") or r.get("contact_email")
+                    if em and "@" in str(em):
+                        target_emails.append(str(em).strip())
+
+                if target_emails:
+                    if security == "ssl" or port == 465:
+                        smtp_srv = smtplib.SMTP_SSL(host, port, timeout=15)
+                    else:
+                        smtp_srv = smtplib.SMTP(host, port, timeout=15)
+                        if security == "tls" or port == 587:
+                            smtp_srv.starttls()
+                    smtp_srv.login(campaign_email, campaign_password)
+
+                    for em in target_emails:
+                        msg = MIMEMultipart("alternative")
+                        msg["From"] = from_header
+                        msg["To"] = em
+                        msg["Subject"] = req.subject
+                        msg.attach(MIMEText(req.body_html, "html"))
+                        smtp_srv.sendmail(campaign_email, [em], msg.as_string())
+                    smtp_srv.quit()
+    except Exception as smtp_err:
+        logger.warning(f"Campaign SMTP dispatch exception: {smtp_err}")
+
     async with db_pool.acquire() as conn:
         rows = await conn.fetch(
             """
             INSERT INTO email_logs (subject, body_html, recipients, recipient_count, sent_by, sent_by_name, status)
-            VALUES ($1, $2, $3::jsonb, $4, $5, $6, 'SENT')
+            VALUES ($1, $2, $3::jsonb, $4, $5, $6, $7)
             RETURNING *
             """,
             req.subject,
@@ -1288,8 +1357,162 @@ async def send_email(req: EmailSendReq):
             rec_count,
             req.sent_by,
             req.sent_by_name,
+            status_to_record,
         )
         return sanitize_db_val(dict(rows[0]))
+
+@app.post("/api/email/send-report", tags=["Email"], status_code=201, summary="Send report to client using reports SMTP")
+async def send_report_email(req: ReportEmailReq):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    
+    async with db_pool.acquire() as conn:
+        settings_rows = await conn.fetch("SELECT setting_key, setting_value FROM app_settings WHERE setting_key LIKE 'smtp_report_%'")
+        s_dict = {r["setting_key"]: r["setting_value"] for r in settings_rows}
+        report_email = (s_dict.get("smtp_report_email") or "").strip()
+        report_password = (s_dict.get("smtp_report_password") or "").strip()
+        report_enabled = s_dict.get("smtp_report_enabled", "true").lower() != "false"
+
+        if not report_email or not report_password:
+            raise HTTPException(
+                status_code=400,
+                detail="Client Reports SMTP is not configured. Please configure it in Settings > System > Email."
+            )
+        if not report_enabled:
+            raise HTTPException(
+                status_code=400,
+                detail="Client Reports SMTP is currently disabled in System Settings."
+            )
+
+        host = (s_dict.get("smtp_report_host") or "smtp.gmail.com").strip()
+        try:
+            port = int(s_dict.get("smtp_report_port", 587))
+        except (ValueError, TypeError):
+            port = 587
+        security = (s_dict.get("smtp_report_security") or "tls").lower().strip()
+        sender_display = (s_dict.get("smtp_report_sender_name") or "Easy-LIMS Test Reports").strip()
+        reply_to = (s_dict.get("smtp_report_reply_to") or "").strip()
+        from_header = f"{sender_display} <{report_email}>" if sender_display else report_email
+
+        try:
+            if security == "ssl" or port == 465:
+                smtp_srv = smtplib.SMTP_SSL(host, port, timeout=15)
+            else:
+                smtp_srv = smtplib.SMTP(host, port, timeout=15)
+                if security == "tls" or port == 587:
+                    smtp_srv.starttls()
+            smtp_srv.login(report_email, report_password)
+
+            msg = MIMEMultipart("alternative")
+            msg["From"] = from_header
+            msg["To"] = req.recipient_email.strip()
+            if reply_to:
+                msg["Reply-To"] = reply_to
+            msg["Subject"] = req.subject
+            msg.attach(MIMEText(req.body_html, "html"))
+
+            smtp_srv.sendmail(report_email, [req.recipient_email.strip()], msg.as_string())
+            smtp_srv.quit()
+
+            # Record in email_logs
+            recipient_entry = [{"email": req.recipient_email.strip(), "name": req.recipient_name or req.recipient_email, "type": "REPORT"}]
+            await conn.execute(
+                """
+                INSERT INTO email_logs (subject, body_html, recipients, recipient_count, sent_by, sent_by_name, status)
+                VALUES ($1, $2, $3::jsonb, 1, $4, $5, 'SENT')
+                """,
+                req.subject,
+                req.body_html,
+                json.dumps(recipient_entry),
+                req.sent_by,
+                req.sent_by_name or "Report Dispatch System",
+            )
+            return {"success": True, "message": f"Report dispatched to {req.recipient_email} successfully."}
+        except Exception as e:
+            logger.error(f"Failed to dispatch client report email: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+
+@app.post("/api/email/test-smtp", tags=["Email"], summary="Test SMTP connection and credentials")
+async def test_smtp_connection(req: TestSmtpReq):
+    host = req.host.strip()
+    try:
+        port = int(req.port)
+    except (TypeError, ValueError):
+        port = 587
+    security = (req.security or "tls").lower().strip()
+    email_addr = req.email.strip()
+    password = req.password.strip()
+
+    if not host or not email_addr or not password:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "detail": "Host, Email, and Password are all required to test connection."}
+        )
+
+    try:
+        if security == "ssl" or port == 465:
+            server = smtplib.SMTP_SSL(host, port, timeout=12)
+        else:
+            server = smtplib.SMTP(host, port, timeout=12)
+            if security == "tls" or port == 587:
+                server.starttls()
+
+        server.login(email_addr, password)
+
+        if req.test_recipient and req.test_recipient.strip():
+            target_recipient = req.test_recipient.strip()
+            msg = MIMEMultipart("alternative")
+            sender_display = f"{req.sender_name.strip()} <{email_addr}>" if req.sender_name else email_addr
+            msg["From"] = sender_display
+            msg["To"] = target_recipient
+            msg["Subject"] = f"Easy-LIMS SMTP Test Successful ({datetime.datetime.now().strftime('%Y-%m-%d %H:%M')})"
+            
+            text_body = (
+                f"Hello,\n\n"
+                f"This is a confirmation test email from Easy-LIMS.\n"
+                f"Your SMTP configuration for '{email_addr}' is functioning properly!\n\n"
+                f"Server: {host}:{port}\n"
+                f"Security: {security.upper()}\n"
+                f"Timestamp: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}\n\n"
+                f"Regards,\nEasy-LIMS Quality System"
+            )
+            html_body = f"""
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+                <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 6px 0; font-size: 16px; font-weight: 700;">Easy-LIMS SMTP Verification Successful</h3>
+                    <p style="margin: 0; font-size: 13px; color: #047857;">Your SMTP configuration for <strong>{email_addr}</strong> has authenticated successfully and can dispatch outbound mail.</p>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #374151;">
+                    <tr style="border-bottom: 1px solid #f3f4f6;"><td style="padding: 8px 0; font-weight: 600; width: 130px; color: #6b7280;">SMTP Host:</td><td>{host}:{port}</td></tr>
+                    <tr style="border-bottom: 1px solid #f3f4f6;"><td style="padding: 8px 0; font-weight: 600; color: #6b7280;">Security / TLS:</td><td>{security.upper()}</td></tr>
+                    <tr style="border-bottom: 1px solid #f3f4f6;"><td style="padding: 8px 0; font-weight: 600; color: #6b7280;">Sender Account:</td><td>{email_addr}</td></tr>
+                    <tr><td style="padding: 8px 0; font-weight: 600; color: #6b7280;">Dispatched At:</td><td>{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}</td></tr>
+                </table>
+                <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; text-align: center;">
+                    Generated automatically by Easy-LIMS System Administration
+                </div>
+            </div>
+            """
+            msg.attach(MIMEText(text_body, "plain"))
+            msg.attach(MIMEText(html_body, "html"))
+            server.sendmail(email_addr, [target_recipient], msg.as_string())
+
+        server.quit()
+        msg_suffix = f" A test verification email was sent to '{req.test_recipient.strip()}'." if req.test_recipient and req.test_recipient.strip() else ""
+        return {"success": True, "message": f"SMTP connection & authentication successful!{msg_suffix}"}
+    except smtplib.SMTPAuthenticationError as e:
+        err_detail = e.smtp_error.decode() if hasattr(e, "smtp_error") and isinstance(e.smtp_error, bytes) else str(e)
+        logger.warning(f"SMTP Auth error: {err_detail}")
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "detail": f"SMTP Authentication failed: Invalid username or password / App Password. ({err_detail})"}
+        )
+    except Exception as e:
+        logger.error(f"SMTP connection error: {e}")
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "detail": f"SMTP Connection failed: {str(e)}"}
+        )
 
 @app.get("/api/email/templates", tags=["Email"], summary="Get all email templates")
 @app.get("/api/email-templates", tags=["Email"], summary="Get all email templates alias")
