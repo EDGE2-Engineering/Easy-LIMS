@@ -282,9 +282,10 @@ const AdminSystemSettings = ({ id }) => {
               </Tooltip>
             </TabsTrigger>
 
+            {/* Bearing Capacity tab - uncomment when needed
             <TabsTrigger
               value="bearing_capacity"
-              className="hidden px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+              className="px-2 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
             >
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -299,6 +300,7 @@ const AdminSystemSettings = ({ id }) => {
                 </TooltipContent>
               </Tooltip>
             </TabsTrigger>
+            */}
 
             <TabsTrigger
               value="vendors_suppliers"
