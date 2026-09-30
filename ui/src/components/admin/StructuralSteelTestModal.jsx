@@ -28,6 +28,7 @@ import {
   Tag,
   Receipt,
   Truck,
+  Award,
   Building2,
   Layers,
 } from 'lucide-react';
@@ -35,6 +36,7 @@ import {
   DEFAULT_STRUCTURAL_STEEL_OBSERVATION,
   DEFAULT_STRUCTURAL_STEEL_OBSERVATIONS,
   BEND_OPTIONS,
+  REBEND_OPTIONS,
   COMMON_STRUCTURAL_STEEL_TYPES,
   SAMPLE_STRUCTURAL_STEEL_TEST_DATA,
   calculateStructuralSteelTest,
@@ -66,16 +68,24 @@ export default function StructuralSteelTestModal({
   const [heatNoOptions, setHeatNoOptions] = useState([]);
   const [invoiceNoOptions, setInvoiceNoOptions] = useState([]);
   const [vehicleNoOptions, setVehicleNoOptions] = useState([]);
+  const [brandOptions, setBrandOptions] = useState([]);
+  const [gradeOptions, setGradeOptions] = useState([]);
 
   // Report column toggles
   const [includeHeatNoInReport, setIncludeHeatNoInReport] = useState(false);
   const [includeInvoiceNoInReport, setIncludeInvoiceNoInReport] = useState(false);
   const [includeVehicleNoInReport, setIncludeVehicleNoInReport] = useState(false);
+  const [includeBrandInReport, setIncludeBrandInReport] = useState(true);
+  const [includeGradeInReport, setIncludeGradeInReport] = useState(true);
+  const [includeBendInReport, setIncludeBendInReport] = useState(false);
+  const [includeRebendInReport, setIncludeRebendInReport] = useState(false);
 
   // Quick inputs
   const [heatInput, setHeatInput] = useState('');
   const [invoiceInput, setInvoiceInput] = useState('');
   const [vehicleInput, setVehicleInput] = useState('');
+  const [brandInput, setBrandInput] = useState('');
+  const [gradeInput, setGradeInput] = useState('');
 
   // ── Load initial data ───────────────────────────────────────────────────
   useEffect(() => {
@@ -90,12 +100,15 @@ export default function StructuralSteelTestModal({
           heatNo:           o.heatNo           !== undefined ? String(o.heatNo)           : '',
           invoiceNo:        o.invoiceNo        !== undefined ? String(o.invoiceNo)        : '',
           vehicleNo:        o.vehicleNo        !== undefined ? String(o.vehicleNo)        : '',
+          brand:            o.brand            !== undefined ? String(o.brand)            : '',
+          grade:            o.grade            !== undefined ? String(o.grade)            : '',
           width:            o.width            !== undefined ? String(o.width)            : '',
           thickness:        o.thickness        !== undefined ? String(o.thickness)        : '',
           yieldLoad:        o.yieldLoad        !== undefined ? String(o.yieldLoad)        : '',
           ultimateLoad:     o.ultimateLoad     !== undefined ? String(o.ultimateLoad)     : '',
           finalGaugeLength: o.finalGaugeLength !== undefined ? String(o.finalGaugeLength) : '',
           bendTest:         o.bendTest         || 'NCO',
+          rebendTest:       o.rebendTest       || 'NCO',
         }))
       );
 
@@ -111,10 +124,20 @@ export default function StructuralSteelTestModal({
         ...(initialData.vehicleNoOptions || []),
         ...initialData.observations.map((o) => o.vehicleNo).filter(Boolean),
       ];
+      const existingBrands = [
+        ...(initialData.brandOptions || []),
+        ...initialData.observations.map((o) => o.brand).filter(Boolean),
+      ];
+      const existingGrades = [
+        ...(initialData.gradeOptions || []),
+        ...initialData.observations.map((o) => o.grade).filter(Boolean),
+      ];
 
       setHeatNoOptions([...new Set(existingHeats.map((s) => String(s).trim()))]);
       setInvoiceNoOptions([...new Set(existingInvoices.map((s) => String(s).trim()))]);
       setVehicleNoOptions([...new Set(existingVehicles.map((s) => String(s).trim()))]);
+      setBrandOptions([...new Set(existingBrands.map((s) => String(s).trim()))]);
+      setGradeOptions([...new Set(existingGrades.map((s) => String(s).trim()))]);
 
       setIncludeHeatNoInReport(
         initialData.includeHeatNoInReport ??
@@ -131,6 +154,28 @@ export default function StructuralSteelTestModal({
           initialData.clientReferenceColumns?.vehicleNo ??
           existingVehicles.length > 0
       );
+      setIncludeBrandInReport(
+        initialData.includeBrandInReport ??
+          initialData.clientReferenceColumns?.brand ??
+          true
+      );
+      setIncludeGradeInReport(
+        initialData.includeGradeInReport ??
+          initialData.clientReferenceColumns?.grade ??
+          true
+      );
+      setIncludeBendInReport(
+        initialData.includeBendInReport ??
+          initialData.customOptions?.includeBendInReport ??
+          initialData.clientReferenceColumns?.bend ??
+          false
+      );
+      setIncludeRebendInReport(
+        initialData.includeRebendInReport ??
+          initialData.customOptions?.includeRebendInReport ??
+          initialData.clientReferenceColumns?.rebend ??
+          false
+      );
     } else {
       setObservations(
         DEFAULT_STRUCTURAL_STEEL_OBSERVATIONS.map((o, i) => ({
@@ -141,9 +186,15 @@ export default function StructuralSteelTestModal({
       setHeatNoOptions([]);
       setInvoiceNoOptions([]);
       setVehicleNoOptions([]);
+      setBrandOptions([]);
+      setGradeOptions([]);
       setIncludeHeatNoInReport(false);
       setIncludeInvoiceNoInReport(false);
       setIncludeVehicleNoInReport(false);
+      setIncludeBrandInReport(true);
+      setIncludeGradeInReport(true);
+      setIncludeBendInReport(false);
+      setIncludeRebendInReport(false);
     }
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -163,6 +214,16 @@ export default function StructuralSteelTestModal({
     return [...new Set([...vehicleNoOptions, ...fromObs].map((s) => String(s).trim()))].filter(Boolean);
   }, [vehicleNoOptions, observations]);
 
+  const availableBrands = useMemo(() => {
+    const fromObs = observations.map((o) => o.brand).filter(Boolean);
+    return [...new Set([...brandOptions, ...fromObs].map((s) => String(s).trim()))].filter(Boolean);
+  }, [brandOptions, observations]);
+
+  const availableGrades = useMemo(() => {
+    const fromObs = observations.map((o) => o.grade).filter(Boolean);
+    return [...new Set([...gradeOptions, ...fromObs].map((s) => String(s).trim()))].filter(Boolean);
+  }, [gradeOptions, observations]);
+
   // ── Calculation ─────────────────────────────────────────────────────────
   const { rows, summary } = useMemo(
     () =>
@@ -170,11 +231,24 @@ export default function StructuralSteelTestModal({
         includeHeatNoInReport,
         includeInvoiceNoInReport,
         includeVehicleNoInReport,
+        includeBrandInReport,
+        includeGradeInReport,
+        includeBendInReport,
+        includeRebendInReport,
       }),
-    [observations, includeHeatNoInReport, includeInvoiceNoInReport, includeVehicleNoInReport]
+    [
+      observations,
+      includeHeatNoInReport,
+      includeInvoiceNoInReport,
+      includeVehicleNoInReport,
+      includeBrandInReport,
+      includeGradeInReport,
+      includeBendInReport,
+      includeRebendInReport,
+    ]
   );
 
-  // ── Handlers ────────────────────────────────────────────────────────────
+  // ── Handlers ────────────────────────────────────────────────────
   const change = (i, field, val) =>
     setObservations((prev) => {
       const c = [...prev];
@@ -196,6 +270,10 @@ export default function StructuralSteelTestModal({
         heatNo: availableHeatNos.length === 1 ? availableHeatNos[0] : '',
         invoiceNo: availableInvoiceNos.length === 1 ? availableInvoiceNos[0] : '',
         vehicleNo: availableVehicleNos.length === 1 ? availableVehicleNos[0] : '',
+        brand: availableBrands.length === 1 ? availableBrands[0] : '',
+        grade: availableGrades.length === 1 ? availableGrades[0] : '',
+        bendTest: 'NCO',
+        rebendTest: 'NCO',
       },
     ]);
 
@@ -227,6 +305,18 @@ export default function StructuralSteelTestModal({
     setIncludeVehicleNoInReport(true);
   };
 
+  const applyBrandToAll = (val) => {
+    if (!val) return;
+    setObservations((prev) => prev.map((o) => ({ ...o, brand: val })));
+    setIncludeBrandInReport(true);
+  };
+
+  const applyGradeToAll = (val) => {
+    if (!val) return;
+    setObservations((prev) => prev.map((o) => ({ ...o, grade: val })));
+    setIncludeGradeInReport(true);
+  };
+
   const handleAddHeatOptions = () => {
     if (!heatInput.trim()) return;
     const parts = heatInput.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
@@ -251,6 +341,22 @@ export default function StructuralSteelTestModal({
     setVehicleInput('');
   };
 
+  const handleAddBrandOptions = () => {
+    if (!brandInput.trim()) return;
+    const parts = brandInput.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+    setBrandOptions((prev) => [...new Set([...prev, ...parts])]);
+    setIncludeBrandInReport(true);
+    setBrandInput('');
+  };
+
+  const handleAddGradeOptions = () => {
+    if (!gradeInput.trim()) return;
+    const parts = gradeInput.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+    setGradeOptions((prev) => [...new Set([...prev, ...parts])]);
+    setIncludeGradeInReport(true);
+    setGradeInput('');
+  };
+
   // ── Load Sample Data ────────────────────────────────────────────────────
   const handleLoadSampleData = () => {
     setObservations(
@@ -259,9 +365,15 @@ export default function StructuralSteelTestModal({
     setHeatNoOptions([...SAMPLE_STRUCTURAL_STEEL_TEST_DATA.heatNoOptions]);
     setInvoiceNoOptions([...SAMPLE_STRUCTURAL_STEEL_TEST_DATA.invoiceNoOptions]);
     setVehicleNoOptions([...SAMPLE_STRUCTURAL_STEEL_TEST_DATA.vehicleNoOptions]);
+    setBrandOptions([...(SAMPLE_STRUCTURAL_STEEL_TEST_DATA.brandOptions || [])]);
+    setGradeOptions([...(SAMPLE_STRUCTURAL_STEEL_TEST_DATA.gradeOptions || [])]);
     setIncludeHeatNoInReport(false);
     setIncludeInvoiceNoInReport(false);
     setIncludeVehicleNoInReport(false);
+    setIncludeBrandInReport(SAMPLE_STRUCTURAL_STEEL_TEST_DATA.includeBrandInReport ?? true);
+    setIncludeGradeInReport(SAMPLE_STRUCTURAL_STEEL_TEST_DATA.includeGradeInReport ?? true);
+    setIncludeBendInReport(SAMPLE_STRUCTURAL_STEEL_TEST_DATA.includeBendInReport ?? false);
+    setIncludeRebendInReport(SAMPLE_STRUCTURAL_STEEL_TEST_DATA.includeRebendInReport ?? false);
   };
 
   const handleReset = () => {
@@ -275,15 +387,23 @@ export default function StructuralSteelTestModal({
     setHeatNoOptions([]);
     setInvoiceNoOptions([]);
     setVehicleNoOptions([]);
+    setBrandOptions([]);
+    setGradeOptions([]);
     setIncludeHeatNoInReport(false);
     setIncludeInvoiceNoInReport(false);
     setIncludeVehicleNoInReport(false);
+    setIncludeBrandInReport(true);
+    setIncludeGradeInReport(true);
+    setIncludeBendInReport(false);
+    setIncludeRebendInReport(false);
   };
 
   const handleSave = () => {
     const hasHeatVal = observations.some((o) => o.heatNo && String(o.heatNo).trim() !== '');
     const hasInvoiceVal = observations.some((o) => o.invoiceNo && String(o.invoiceNo).trim() !== '');
     const hasVehicleVal = observations.some((o) => o.vehicleNo && String(o.vehicleNo).trim() !== '');
+    const hasBrandVal = observations.some((o) => o.brand && String(o.brand).trim() !== '');
+    const hasGradeVal = observations.some((o) => o.grade && String(o.grade).trim() !== '');
 
     const payload = {
       standard: 'IS 1608 (Part 1) : 2022',
@@ -295,34 +415,56 @@ export default function StructuralSteelTestModal({
           sampleId:         o.sampleId || `Sample ${i + 1}`,
           sampleType:       o.sampleType || o.sampleName || '',
           sampleName:       o.sampleType || o.sampleName || '',
+          heatNo:           o.heatNo || '',
+          invoiceNo:        o.invoiceNo || '',
+          vehicleNo:        o.vehicleNo || '',
+          brand:            o.brand || '',
+          grade:            o.grade || '',
           area:             computed.areaFmt || '',
           yieldStress:      computed.yieldStressFmt || '',
           tensileStrength:  computed.tensileStrengthFmt || '',
+          ultimateTensileStrength: computed.tensileStrengthFmt || '',
           initialGaugeLength: computed.iglFmt || '',
           finalGaugeLength: o.finalGaugeLength || '',
           elongation:       computed.elongationFmt || '',
           bendTest:         o.bendTest || 'NCO',
+          rebendTest:       o.rebendTest || 'NCO',
         };
       }),
       heatNoOptions,
       invoiceNoOptions,
       vehicleNoOptions,
+      brandOptions,
+      gradeOptions,
       includeHeatNoInReport:   includeHeatNoInReport && (hasHeatVal || heatNoOptions.length > 0),
       includeInvoiceNoInReport: includeInvoiceNoInReport && (hasInvoiceVal || invoiceNoOptions.length > 0),
       includeVehicleNoInReport: includeVehicleNoInReport && (hasVehicleVal || vehicleNoOptions.length > 0),
+      includeBrandInReport:   includeBrandInReport && (hasBrandVal || brandOptions.length > 0),
+      includeGradeInReport:   includeGradeInReport && (hasGradeVal || gradeOptions.length > 0),
+      includeBendInReport:    Boolean(includeBendInReport),
+      includeRebendInReport:  Boolean(includeRebendInReport),
       clientReferenceColumns: {
         heatNo:    includeHeatNoInReport && (hasHeatVal || heatNoOptions.length > 0),
         invoiceNo: includeInvoiceNoInReport && (hasInvoiceVal || invoiceNoOptions.length > 0),
         vehicleNo: includeVehicleNoInReport && (hasVehicleVal || vehicleNoOptions.length > 0),
+        brand:     includeBrandInReport && (hasBrandVal || brandOptions.length > 0),
+        grade:     includeGradeInReport && (hasGradeVal || gradeOptions.length > 0),
+        bend:      Boolean(includeBendInReport),
+        rebend:    Boolean(includeRebendInReport),
       },
-      avgYieldStress:     summary.avgYieldStressFmt,
-      avgTensileStrength: summary.avgTensileStrengthFmt,
-      avgElongation:      summary.avgElongationFmt,
-      reportExcludeAverages: true,
-      reportExcludeAvgYieldStress: true,
+      customOptions: {
+        includeBendInReport:   Boolean(includeBendInReport),
+        includeRebendInReport: Boolean(includeRebendInReport),
+      },
+      avgYieldStress:                 summary.avgYieldStressFmt,
+      avgTensileStrength:             summary.avgTensileStrengthFmt,
+      avgUltimateTensileStrength:     summary.avgUltimateTensileStrengthFmt || summary.avgTensileStrengthFmt,
+      avgElongation:                  summary.avgElongationFmt,
+      reportExcludeAverages:          true,
+      reportExcludeAvgYieldStress:    true,
       reportExcludeAvgTensileStrength: true,
-      reportExcludeAvgElongation: true,
-      includeAveragesInReport: false,
+      reportExcludeAvgElongation:     true,
+      includeAveragesInReport:        false,
       reportClauseNote:
         'Avg. yield stress, avg. tensile strength, and avg. elongation are for testing data only and shall not appear in the final report; only individual specimen results are required.',
     };
@@ -468,7 +610,7 @@ export default function StructuralSteelTestModal({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
               {/* Heat No */}
               <div className="p-3 rounded-lg bg-white dark:bg-card border border-gray-200 dark:border-border space-y-2 shadow-2xs">
                 <div className="flex items-center justify-between">
@@ -621,6 +763,144 @@ export default function StructuralSteelTestModal({
                   </div>
                 )}
               </div>
+
+              {/* Brand Options */}
+              <div className="p-3 rounded-lg bg-white dark:bg-card border border-gray-200 dark:border-border space-y-2 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                    <Award className="w-3 h-3 text-purple-500" /> Brand Options
+                  </Label>
+                  <label className="flex items-center gap-1.5 text-[11px] cursor-pointer text-gray-600 dark:text-gray-400">
+                    <Checkbox
+                      checked={includeBrandInReport}
+                      onCheckedChange={setIncludeBrandInReport}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span>Include in Report</span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    value={brandInput}
+                    onChange={(e) => setBrandInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddBrandOptions())}
+                    placeholder="e.g. TATA Structura"
+                    className="h-7 text-xs font-sans"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddBrandOptions}
+                    className="h-7 px-2.5 text-xs shrink-0 font-medium"
+                  >
+                    + Add
+                  </Button>
+                </div>
+                {availableBrands.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1 pt-1.5 border-t border-gray-100 dark:border-border">
+                    <span className="text-[10px] text-gray-400">Pool:</span>
+                    {availableBrands.map((val) => (
+                      <Badge
+                        key={val}
+                        variant="secondary"
+                        className="text-[10px] py-0 px-1.5 font-sans cursor-pointer hover:bg-purple-50 hover:text-purple-700 dark:hover:bg-purple-950/40"
+                        title="Click to apply to all rows"
+                        onClick={() => applyBrandToAll(val)}
+                      >
+                        {val}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Grade Options */}
+              <div className="p-3 rounded-lg bg-white dark:bg-card border border-gray-200 dark:border-border space-y-2 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                    <Layers className="w-3 h-3 text-amber-500" /> Grade Options
+                  </Label>
+                  <label className="flex items-center gap-1.5 text-[11px] cursor-pointer text-gray-600 dark:text-gray-400">
+                    <Checkbox
+                      checked={includeGradeInReport}
+                      onCheckedChange={setIncludeGradeInReport}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span>Include in Report</span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    value={gradeInput}
+                    onChange={(e) => setGradeInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddGradeOptions())}
+                    placeholder="e.g. IS 2062 E250"
+                    className="h-7 text-xs font-sans"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddGradeOptions}
+                    className="h-7 px-2.5 text-xs shrink-0 font-medium"
+                  >
+                    + Add
+                  </Button>
+                </div>
+                {availableGrades.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1 pt-1.5 border-t border-gray-100 dark:border-border">
+                    <span className="text-[10px] text-gray-400">Pool:</span>
+                    {availableGrades.map((val) => (
+                      <Badge
+                        key={val}
+                        variant="secondary"
+                        className="text-[10px] py-0 px-1.5 font-sans cursor-pointer hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-950/40"
+                        title="Click to apply to all rows"
+                        onClick={() => applyGradeToAll(val)}
+                      >
+                        {val}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Final Report Custom Options (Bend & Rebend Tests) */}
+          <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-muted/30 border border-slate-200 dark:border-border space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
+                  <RotateCcw className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  Report Custom Options: Bend &amp; Rebend Tests
+                </span>
+                <Badge variant="outline" className="text-[10px] font-normal border-emerald-300 text-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/40">
+                  Custom Option • Included only when required
+                </Badge>
+              </div>
+              <span className="text-[11px] text-gray-500 dark:text-muted-foreground">
+                Bend and Rebend are excluded from final report by default unless toggled ON below.
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-6 pt-1">
+              <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer text-gray-700 dark:text-gray-300 hover:text-indigo-600 transition-colors">
+                <Checkbox
+                  checked={includeBendInReport}
+                  onCheckedChange={setIncludeBendInReport}
+                  className="h-4 w-4"
+                />
+                <span>Include Bend Test in Final Report</span>
+              </label>
+              <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer text-gray-700 dark:text-gray-300 hover:text-indigo-600 transition-colors">
+                <Checkbox
+                  checked={includeRebendInReport}
+                  onCheckedChange={setIncludeRebendInReport}
+                  className="h-4 w-4"
+                />
+                <span>Include Rebend Test in Final Report</span>
+              </label>
             </div>
           </div>
 
@@ -676,18 +956,40 @@ export default function StructuralSteelTestModal({
                           Vehicle No.
                         </th>
                       )}
+                      {(availableBrands.length > 0 || includeBrandInReport) && (
+                        <th className={`${thBase} bg-purple-50/60 dark:bg-purple-950/20 text-purple-900 dark:text-purple-300`} rowSpan={2}>
+                          Brand
+                        </th>
+                      )}
+                      {(availableGrades.length > 0 || includeGradeInReport) && (
+                        <th className={`${thBase} bg-amber-50/60 dark:bg-amber-950/20 text-amber-900 dark:text-amber-300`} rowSpan={2}>
+                          Grade
+                        </th>
+                      )}
                       {/* Inputs */}
                       <th className={`${thBase} border-l dark:border-border`} colSpan={2}>Dimensions (Inputs)</th>
                       {/* Derived Area */}
                       <th className={`${thBase} bg-slate-100/80 dark:bg-slate-900/40 border-l dark:border-border`}>Derived</th>
                       {/* Yield */}
                       <th className={`${thBase} border-l dark:border-border`} colSpan={2}>Yield</th>
-                      {/* Tensile */}
-                      <th className={`${thBase} border-l dark:border-border`} colSpan={2}>Tensile</th>
+                      {/* Ultimate Tensile */}
+                      <th className={`${thBase} border-l dark:border-border`} colSpan={2}>Ultimate Tensile</th>
                       {/* Gauge & Elongation */}
                       <th className={`${thBase} bg-emerald-50/60 dark:bg-emerald-950/20 border-l dark:border-border`} colSpan={3}>Gauge / Elongation</th>
                       {/* Bend */}
-                      <th className={`${thBase} border-l dark:border-border`} rowSpan={2}>Bend</th>
+                      <th className={`${thBase} border-l dark:border-border`} rowSpan={2}>
+                        Bend
+                        <span className="block text-[9px] font-normal text-gray-400">
+                          {includeBendInReport ? '(In Report)' : '(Testing Only)'}
+                        </span>
+                      </th>
+                      {/* Rebend */}
+                      <th className={`${thBase} border-l dark:border-border`} rowSpan={2}>
+                        Rebend
+                        <span className="block text-[9px] font-normal text-gray-400">
+                          {includeRebendInReport ? '(In Report)' : '(Testing Only)'}
+                        </span>
+                      </th>
                       <th className={thBase} rowSpan={2}></th>
                     </tr>
 
@@ -716,9 +1018,9 @@ export default function StructuralSteelTestModal({
                       <th className={`${thBase} border-l dark:border-border min-w-[95px]`}>
                         C6<span className="block text-[9px] font-normal text-gray-400">Ult. Load (kN)</span>
                       </th>
-                      {/* C7 Tensile Str */}
+                      {/* C7 Ultimate Tensile Strength */}
                       <th className={`${thBase} bg-orange-50/70 dark:bg-orange-950/30 min-w-[115px]`}>
-                        C7<span className="block text-[9px] font-normal text-orange-600">Tensile Str. N/mm²</span>
+                        C7<span className="block text-[9px] font-normal text-orange-600">Ultimate Tensile Strength N/mm²</span>
                       </th>
                       {/* C8 IGL */}
                       <th className={`${thBase} bg-emerald-50/50 dark:bg-emerald-950/20 border-l dark:border-border min-w-[95px]`}>
@@ -814,6 +1116,46 @@ export default function StructuralSteelTestModal({
                             </td>
                           )}
 
+                          {/* Brand */}
+                          {(availableBrands.length > 0 || includeBrandInReport) && (
+                            <td className="p-1.5 bg-purple-50/20 dark:bg-purple-950/10">
+                              <div className="relative min-w-[110px]">
+                                <Input
+                                  list={`brands-list-${i}`}
+                                  value={obs.brand}
+                                  onChange={(e) => change(i, 'brand', e.target.value)}
+                                  placeholder="Brand"
+                                  className="h-8 text-xs font-sans min-w-[100px]"
+                                />
+                                <datalist id={`brands-list-${i}`}>
+                                  {availableBrands.map((b) => (
+                                    <option key={b} value={b} />
+                                  ))}
+                                </datalist>
+                              </div>
+                            </td>
+                          )}
+
+                          {/* Grade */}
+                          {(availableGrades.length > 0 || includeGradeInReport) && (
+                            <td className="p-1.5 bg-amber-50/20 dark:bg-amber-950/10">
+                              <div className="relative min-w-[110px]">
+                                <Input
+                                  list={`grades-list-${i}`}
+                                  value={obs.grade}
+                                  onChange={(e) => change(i, 'grade', e.target.value)}
+                                  placeholder="Grade"
+                                  className="h-8 text-xs font-sans min-w-[100px]"
+                                />
+                                <datalist id={`grades-list-${i}`}>
+                                  {availableGrades.map((g) => (
+                                    <option key={g} value={g} />
+                                  ))}
+                                </datalist>
+                              </div>
+                            </td>
+                          )}
+
                           {/* C1: Width (mm) */}
                           <td className="p-1.5">
                             <Input
@@ -874,7 +1216,7 @@ export default function StructuralSteelTestModal({
 
                           {/* C7: Ultimate Tensile Strength (N/mm²) - Calculated */}
                           <td className="p-2 text-right font-mono font-bold text-orange-900 dark:text-orange-300 bg-orange-50/50 dark:bg-orange-950/20 whitespace-nowrap">
-                            {r.tensileStrengthFmt || '—'}
+                            {r.ultimateTensileStrengthFmt || r.tensileStrengthFmt || '—'}
                           </td>
 
                           {/* C8: Initial Gauge Length (mm) - Calculated */}
@@ -910,6 +1252,25 @@ export default function StructuralSteelTestModal({
                               </SelectTrigger>
                               <SelectContent>
                                 {BEND_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                    {opt.value}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+
+                          {/* Rebend Test */}
+                          <td className="p-1.5 text-center min-w-[80px]">
+                            <Select
+                              value={obs.rebendTest || 'NCO'}
+                              onValueChange={(val) => change(i, 'rebendTest', val)}
+                            >
+                              <SelectTrigger className="h-8 text-[11px] px-2 w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {REBEND_OPTIONS.map((opt) => (
                                   <SelectItem key={opt.value} value={opt.value} className="text-xs">
                                     {opt.value}
                                   </SelectItem>
@@ -957,14 +1318,14 @@ export default function StructuralSteelTestModal({
                 </div>
               </div>
 
-              {/* Avg Tensile Strength */}
+              {/* Avg Ultimate Tensile Strength */}
               <div title="Recorded for testing data only (excluded from final report)">
                 <span className="text-[10px] uppercase font-bold text-orange-800 dark:text-orange-400">
-                  Avg Tensile Strength
+                  Avg Ultimate Tensile Strength
                 </span>
                 <div className="flex items-baseline gap-1 mt-0.5">
                   <span className="text-xl font-black text-orange-900 dark:text-orange-300 font-mono">
-                    {summary.avgTensileStrengthFmt || '—'}
+                    {summary.avgUltimateTensileStrengthFmt || summary.avgTensileStrengthFmt || '—'}
                   </span>
                   <span className="text-xs font-bold text-orange-700 dark:text-orange-400">N/mm²</span>
                 </div>

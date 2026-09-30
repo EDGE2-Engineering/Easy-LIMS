@@ -38,6 +38,11 @@ export const BEND_OPTIONS = [
   { value: 'CO',  label: 'CO – Cracks Observed'    },
 ];
 
+export const REBEND_OPTIONS = [
+  { value: 'NCO', label: 'NCO – No Cracks Observed' },
+  { value: 'CO',  label: 'CO – Cracks Observed'    },
+];
+
 export const COMMON_STRUCTURAL_STEEL_TYPES = [
   'MS Plate',
   'W-Beam',
@@ -58,12 +63,15 @@ export const DEFAULT_STRUCTURAL_STEEL_OBSERVATION = {
   heatNo:           '',   // Heat / Lot No.
   invoiceNo:        '',   // Invoice No.
   vehicleNo:        '',   // Vehicle No.
+  brand:            '',   // Brand
+  grade:            '',   // Grade
   width:            '',   // C1 (mm) - input
   thickness:        '',   // C2 (mm) - input
   yieldLoad:        '',   // C4 (kN) - input
   ultimateLoad:     '',   // C6 (kN) - input
   finalGaugeLength: '',   // C9 (mm) - input
   bendTest:         'NCO',// Bend test
+  rebendTest:       'NCO',// Rebend test
 };
 
 export const DEFAULT_STRUCTURAL_STEEL_OBSERVATIONS = [
@@ -78,14 +86,24 @@ export const SAMPLE_STRUCTURAL_STEEL_TEST_DATA = {
   heatNoOptions: ['HT-2026-9081'],
   invoiceNoOptions: ['INV/2026/0442'],
   vehicleNoOptions: ['MH-12-RN-5521'],
+  brandOptions: ['TATA Structura', 'SAIL', 'JSW Steel'],
+  gradeOptions: ['IS 2062 E250', 'Fe 410', 'E350'],
   clientReferenceColumns: {
     heatNo: false,
     invoiceNo: false,
     vehicleNo: false,
+    brand: true,
+    grade: true,
+    bend: false,
+    rebend: false,
   },
   includeHeatNoInReport: false,
   includeInvoiceNoInReport: false,
   includeVehicleNoInReport: false,
+  includeBrandInReport: true,
+  includeGradeInReport: true,
+  includeBendInReport: false,
+  includeRebendInReport: false,
   observations: [
     {
       sampleId:         'Sample 1',
@@ -94,12 +112,15 @@ export const SAMPLE_STRUCTURAL_STEEL_TEST_DATA = {
       heatNo:           '',
       invoiceNo:        '',
       vehicleNo:        '',
+      brand:            'TATA Structura',
+      grade:            'IS 2062 E250',
       width:            '20.000',
       thickness:        '12.3',
       yieldLoad:        '149.232',
       ultimateLoad:     '183.816',
       finalGaugeLength: '111.25',
       bendTest:         'NCO',
+      rebendTest:       'NCO',
     },
     {
       sampleId:         'Sample 2',
@@ -108,12 +129,15 @@ export const SAMPLE_STRUCTURAL_STEEL_TEST_DATA = {
       heatNo:           '',
       invoiceNo:        '',
       vehicleNo:        '',
+      brand:            'TATA Structura',
+      grade:            'IS 2062 E250',
       width:            '20.000',
       thickness:        '12.1',
       yieldLoad:        '159.816',
       ultimateLoad:     '195.864',
       finalGaugeLength: '110.89',
       bendTest:         'NCO',
+      rebendTest:       'NCO',
     },
     {
       sampleId:         'Sample 3',
@@ -122,12 +146,15 @@ export const SAMPLE_STRUCTURAL_STEEL_TEST_DATA = {
       heatNo:           '',
       invoiceNo:        '',
       vehicleNo:        '',
+      brand:            'TATA Structura',
+      grade:            'IS 2062 E250',
       width:            '20.000',
       thickness:        '16.01',
       yieldLoad:        '165.96',
       ultimateLoad:     '205.8',
       finalGaugeLength: '125.36',
       bendTest:         'NCO',
+      rebendTest:       'NCO',
     },
     {
       sampleId:         'Sample 4',
@@ -136,12 +163,15 @@ export const SAMPLE_STRUCTURAL_STEEL_TEST_DATA = {
       heatNo:           '',
       invoiceNo:        '',
       vehicleNo:        '',
+      brand:            'TATA Structura',
+      grade:            'IS 2062 E250',
       width:            '20.000',
       thickness:        '22.4',
       yieldLoad:        '297.528',
       ultimateLoad:     '297.552',
       finalGaugeLength: '148.96',
       bendTest:         'NCO',
+      rebendTest:       'NCO',
     },
     {
       sampleId:         'Sample 5',
@@ -150,12 +180,15 @@ export const SAMPLE_STRUCTURAL_STEEL_TEST_DATA = {
       heatNo:           '',
       invoiceNo:        '',
       vehicleNo:        '',
+      brand:            'TATA Structura',
+      grade:            'IS 2062 E250',
       width:            '20.000',
       thickness:        '25.1',
       yieldLoad:        '264.144',
       ultimateLoad:     '319.32',
       finalGaugeLength: '159.63',
       bendTest:         'NCO',
+      rebendTest:       'NCO',
     },
   ],
 };
@@ -191,6 +224,8 @@ export function calculateStructuralSteelTest(observations = [], metadata = {}) {
     const heatNo     = obs.heatNo !== undefined && obs.heatNo !== null ? String(obs.heatNo).trim() : '';
     const invoiceNo  = obs.invoiceNo !== undefined && obs.invoiceNo !== null ? String(obs.invoiceNo).trim() : '';
     const vehicleNo  = obs.vehicleNo !== undefined && obs.vehicleNo !== null ? String(obs.vehicleNo).trim() : '';
+    const brand      = obs.brand !== undefined && obs.brand !== null ? String(obs.brand).trim() : '';
+    const grade      = obs.grade !== undefined && obs.grade !== null ? String(obs.grade).trim() : '';
 
     const width     = parseFloat(obs.width);            // C1 (mm)
     const thickness = parseFloat(obs.thickness);        // C2 (mm)
@@ -261,6 +296,8 @@ export function calculateStructuralSteelTest(observations = [], metadata = {}) {
       heatNo,
       invoiceNo,
       vehicleNo,
+      brand,
+      grade,
       width:            obs.width || '',
       widthFmt:         !isNaN(width) && width > 0 ? fmt(width, 3) : '',
       thickness:        obs.thickness || '',
@@ -270,11 +307,14 @@ export function calculateStructuralSteelTest(observations = [], metadata = {}) {
       yieldStress,      yieldStressFmt,           // C5 (N/mm²)
       ultimateLoad:     obs.ultimateLoad || '',   // C6 (kN)
       tensileStrength,  tensileStrengthFmt,       // C7 (N/mm²)
+      ultimateTensileStrength: tensileStrength,
+      ultimateTensileStrengthFmt: tensileStrengthFmt,
       igl,              iglFmt,                  // C8 (mm)
       finalGaugeLength: obs.finalGaugeLength || '', // C9 (mm)
       finalGaugeLengthFmt: !isNaN(fgl) && fgl > 0 ? fmt(fgl, 2) : '',
       elongation,       elongationFmt,            // C10 (%)
       bendTest:         obs.bendTest || 'NCO',
+      rebendTest:       obs.rebendTest || 'NCO',
       errors,
     });
   });
@@ -290,34 +330,57 @@ export function calculateStructuralSteelTest(observations = [], metadata = {}) {
   const hasHeatNo    = rows.some((r) => r.heatNo && r.heatNo.length > 0);
   const hasInvoiceNo = rows.some((r) => r.invoiceNo && r.invoiceNo.length > 0);
   const hasVehicleNo = rows.some((r) => r.vehicleNo && r.vehicleNo.length > 0);
+  const hasBrand     = rows.some((r) => r.brand && r.brand.length > 0);
+  const hasGrade     = rows.some((r) => r.grade && r.grade.length > 0);
+  const hasBend      = rows.some((r) => r.bendTest && r.bendTest.length > 0);
+  const hasRebend    = rows.some((r) => r.rebendTest && r.rebendTest.length > 0);
+
+  const includeBendInReport = metadata?.includeBendInReport ?? (metadata?.customOptions?.includeBendInReport ?? (metadata?.clientReferenceColumns?.bend ?? false));
+  const includeRebendInReport = metadata?.includeRebendInReport ?? (metadata?.customOptions?.includeRebendInReport ?? (metadata?.clientReferenceColumns?.rebend ?? false));
 
   const clientReferenceColumns = {
     heatNo:    metadata?.includeHeatNoInReport ?? (metadata?.clientReferenceColumns?.heatNo ?? hasHeatNo),
     invoiceNo: metadata?.includeInvoiceNoInReport ?? (metadata?.clientReferenceColumns?.invoiceNo ?? hasInvoiceNo),
     vehicleNo: metadata?.includeVehicleNoInReport ?? (metadata?.clientReferenceColumns?.vehicleNo ?? hasVehicleNo),
+    brand:     metadata?.includeBrandInReport ?? (metadata?.clientReferenceColumns?.brand ?? hasBrand),
+    grade:     metadata?.includeGradeInReport ?? (metadata?.clientReferenceColumns?.grade ?? hasGrade),
+    bend:      includeBendInReport,
+    rebend:    includeRebendInReport,
   };
 
   return {
     rows,
     summary: {
       avgYieldStress,
-      avgYieldStressFmt:     fmt(avgYieldStress, 2),
+      avgYieldStressFmt:             fmt(avgYieldStress, 2),
       avgTensileStrength,
-      avgTensileStrengthFmt: fmt(avgTensileStrength, 2),
+      avgTensileStrengthFmt:         fmt(avgTensileStrength, 2),
+      avgUltimateTensileStrength:     avgTensileStrength,
+      avgUltimateTensileStrengthFmt: fmt(avgTensileStrength, 2),
       avgElongation,
-      avgElongationFmt:      fmt(avgElongation, 2),
-      count:                 rows.length,
-      standard:              'IS 1608 (Part 1) : 2022',
-      reportExcludeAverages: true,
-      reportExcludeAvgYieldStress: true,
+      avgElongationFmt:              fmt(avgElongation, 2),
+      count:                         rows.length,
+      standard:                      'IS 1608 (Part 1) : 2022',
+      reportExcludeAverages:         true,
+      reportExcludeAvgYieldStress:   true,
       reportExcludeAvgTensileStrength: true,
-      reportExcludeAvgElongation: true,
-      includeAveragesInReport: false,
+      reportExcludeAvgElongation:    true,
+      includeAveragesInReport:       false,
       reportClauseNote:
         'Avg. yield stress, avg. tensile strength, and avg. elongation are for testing data only and shall not appear in the final report; only individual specimen results are required.',
       hasHeatNo,
       hasInvoiceNo,
       hasVehicleNo,
+      hasBrand,
+      hasGrade,
+      hasBend,
+      hasRebend,
+      includeBendInReport,
+      includeRebendInReport,
+      customOptions: {
+        includeBendInReport,
+        includeRebendInReport,
+      },
       clientReferenceColumns,
     },
   };

@@ -35,7 +35,85 @@ export const BEND_REBEND_OPTIONS = [
   { value: 'CO',  label: 'CO – Cracks Observed'    },
 ];
 
-export const NOMINAL_DIAMETERS = ['8', '10', '12', '16', '20', '25', '32'];
+/**
+ * IS 1786: 2008 Table 1: Nominal Cross-Sectional Area and Mass (Clause 6.2)
+ * Table 2: Tolerances on Nominal Mass (Clauses 6.2 and 7.2.2)
+ * Individual Sample Tolerance:
+ *   - Up to and including 10 mm: -8%
+ *   - Over 10 up to and including 16 mm: -6%
+ *   - Over 16 mm: -4%
+ */
+export const IS_1786_NOMINAL_PROPERTIES = {
+  '4':  { dia: 4,  nominalArea: 12.6,   nominalMass: 0.099, tolerancePercent: -8 },
+  '5':  { dia: 5,  nominalArea: 19.6,   nominalMass: 0.154, tolerancePercent: -8 },
+  '6':  { dia: 6,  nominalArea: 28.3,   nominalMass: 0.222, tolerancePercent: -8 },
+  '8':  { dia: 8,  nominalArea: 50.3,   nominalMass: 0.395, tolerancePercent: -8 },
+  '10': { dia: 10, nominalArea: 78.6,   nominalMass: 0.617, tolerancePercent: -8 },
+  '12': { dia: 12, nominalArea: 113.1,  nominalMass: 0.888, tolerancePercent: -6 },
+  '16': { dia: 16, nominalArea: 201.2,  nominalMass: 1.58,  tolerancePercent: -6 },
+  '20': { dia: 20, nominalArea: 314.3,  nominalMass: 2.47,  tolerancePercent: -4 },
+  '25': { dia: 25, nominalArea: 491.1,  nominalMass: 3.85,  tolerancePercent: -4 },
+  '28': { dia: 28, nominalArea: 615.8,  nominalMass: 4.83,  tolerancePercent: -4 },
+  '32': { dia: 32, nominalArea: 804.6,  nominalMass: 6.31,  tolerancePercent: -4 },
+  '36': { dia: 36, nominalArea: 1018.3, nominalMass: 7.99,  tolerancePercent: -4 },
+  '40': { dia: 40, nominalArea: 1257.2, nominalMass: 9.86,  tolerancePercent: -4 },
+};
+
+export const NOMINAL_DIAMETERS = [
+  '4', '5', '6', '8', '10', '12', '16', '20', '25', '28', '32', '36', '40'
+];
+
+/**
+ * Retrieve IS 1786 nominal mass, area, individual sample tolerance %, and minimum allowable mass per metre.
+ *
+ * @param {string|number} diaInput Nominal diameter in mm
+ * @returns {Object|null}
+ */
+export function getSteelToleranceInfo(diaInput) {
+  const dia = parseFloat(diaInput);
+  if (isNaN(dia) || dia <= 0) return null;
+
+  const key = String(dia);
+  let nominalMass = null;
+  let nominalArea = null;
+
+  if (IS_1786_NOMINAL_PROPERTIES[key]) {
+    nominalMass = IS_1786_NOMINAL_PROPERTIES[key].nominalMass;
+    nominalArea = IS_1786_NOMINAL_PROPERTIES[key].nominalArea;
+  } else {
+    nominalArea = (Math.PI * dia * dia) / 4;
+    nominalMass = (dia * dia) / 162.28;
+  }
+
+  // Tolerance on nominal mass for individual sample per Table 2 (IS 1786: 2008):
+  // i) Up to and including 10 mm: -8%
+  // ii) Over 10 up to and including 16 mm: -6%
+  // iii) Over 16 mm: -4%
+  let tolerancePercent = -4;
+  let clause = 'Over 16 mm';
+  if (dia <= 10) {
+    tolerancePercent = -8;
+    clause = 'Up to and including 10 mm';
+  } else if (dia <= 16) {
+    tolerancePercent = -6;
+    clause = 'Over 10 up to and including 16 mm';
+  }
+
+  // Minimum allowable mass per metre (lower limit tolerance)
+  const minMassPerMeter = nominalMass * (1 + tolerancePercent / 100);
+
+  return {
+    dia,
+    nominalMass,
+    nominalMassFmt: fmt(nominalMass, 3),
+    nominalArea,
+    nominalAreaFmt: fmt(nominalArea, 2),
+    tolerancePercent,
+    clause,
+    minMassPerMeter,
+    minMassPerMeterFmt: fmt(minMassPerMeter, 3),
+  };
+}
 
 // ─── Default shapes ──────────────────────────────────────────────────────────
 
@@ -45,9 +123,12 @@ export const DEFAULT_STEEL_OBSERVATION = {
   heatNo:          '',   // "Heat/ Lot No."
   invoiceNo:       '',   // "Invoice No."
   vehicleNo:       '',   // "Vehicle No."
+  brand:           '',   // "Brand"
+  grade:           '',   // "Grade"
   nominalDia:      '',   // C1
   weight:          '',   // C2 kg
   length:          '',   // C3 m
+  massPerMeter:    '',   // C4 kg/m (can be entered or computed)
   yieldLoad:       '',   // C6 kN
   ultimateLoad:    '',   // C8 kN
   finalGaugeLength:'',   // C11 mm
@@ -67,14 +148,20 @@ export const SAMPLE_STEEL_TEST_DATA = {
   heatNoOptions: ['72142090'],
   invoiceNoOptions: ['CREDIT/2780', 'CREDIT/2778'],
   vehicleNoOptions: [],
+  brandOptions: ['TATA Tiscon'],
+  gradeOptions: ['Fe 550D'],
   clientReferenceColumns: {
     heatNo: true,
     invoiceNo: true,
     vehicleNo: false,
+    brand: true,
+    grade: true,
   },
   includeHeatNoInReport: true,
   includeInvoiceNoInReport: true,
   includeVehicleNoInReport: false,
+  includeBrandInReport: true,
+  includeGradeInReport: true,
   observations: [
     {
       sampleId:        'EESIPL/01/389(A)',
@@ -82,6 +169,8 @@ export const SAMPLE_STEEL_TEST_DATA = {
       heatNo:          '72142090',
       invoiceNo:       'CREDIT/2780',
       vehicleNo:       '',
+      brand:           'TATA Tiscon',
+      grade:           'Fe 550D',
       nominalDia:      '8',
       weight:          '0.396',
       length:          '1',
@@ -97,6 +186,8 @@ export const SAMPLE_STEEL_TEST_DATA = {
       heatNo:          '72142090',
       invoiceNo:       'CREDIT/2778',
       vehicleNo:       '',
+      brand:           'TATA Tiscon',
+      grade:           'Fe 550D',
       nominalDia:      '10',
       weight:          '0.614',
       length:          '1',
@@ -112,6 +203,8 @@ export const SAMPLE_STEEL_TEST_DATA = {
       heatNo:          '72142090',
       invoiceNo:       'CREDIT/2780',
       vehicleNo:       '',
+      brand:           'TATA Tiscon',
+      grade:           'Fe 550D',
       nominalDia:      '12',
       weight:          '0.879',
       length:          '1',
@@ -127,6 +220,8 @@ export const SAMPLE_STEEL_TEST_DATA = {
       heatNo:          '72142090',
       invoiceNo:       'CREDIT/2778',
       vehicleNo:       '',
+      brand:           'TATA Tiscon',
+      grade:           'Fe 550D',
       nominalDia:      '16',
       weight:          '1.545',
       length:          '1',
@@ -142,6 +237,8 @@ export const SAMPLE_STEEL_TEST_DATA = {
       heatNo:          '72142090',
       invoiceNo:       'CREDIT/2780',
       vehicleNo:       '',
+      brand:           'TATA Tiscon',
+      grade:           'Fe 550D',
       nominalDia:      '20',
       weight:          '2.472',
       length:          '1',
@@ -157,6 +254,8 @@ export const SAMPLE_STEEL_TEST_DATA = {
       heatNo:          '72142090',
       invoiceNo:       'CREDIT/2778',
       vehicleNo:       '',
+      brand:           'TATA Tiscon',
+      grade:           'Fe 550D',
       nominalDia:      '25',
       weight:          '3.827',
       length:          '1',
@@ -199,6 +298,8 @@ export function calculateSteelTest(observations = [], metadata = {}) {
     const heatNo   = obs.heatNo !== undefined && obs.heatNo !== null ? String(obs.heatNo).trim() : '';
     const invoiceNo= obs.invoiceNo !== undefined && obs.invoiceNo !== null ? String(obs.invoiceNo).trim() : '';
     const vehicleNo= obs.vehicleNo !== undefined && obs.vehicleNo !== null ? String(obs.vehicleNo).trim() : '';
+    const brand    = obs.brand !== undefined && obs.brand !== null ? String(obs.brand).trim() : '';
+    const grade    = obs.grade !== undefined && obs.grade !== null ? String(obs.grade).trim() : '';
 
     const weight   = parseFloat(obs.weight);    // C2 kg
     const length   = parseFloat(obs.length);    // C3 m
@@ -209,18 +310,38 @@ export function calculateSteelTest(observations = [], metadata = {}) {
     // C4 Mass per Meter = C2 / C3   (3 dec)
     let massPerMeter = null;
     let massPerMeterFmt = '';
+    const directMass = parseFloat(obs.massPerMeter);
+
     if (!isNaN(weight) && weight > 0 && !isNaN(length) && length > 0) {
       massPerMeter = weight / length;
       massPerMeterFmt = fmt(massPerMeter, 3);
-    } else if (obs.weight !== '' || obs.length !== '') {
-      errors.push('Weight and Length must be positive numbers.');
+    } else if (!isNaN(directMass) && directMass > 0) {
+      massPerMeter = directMass;
+      massPerMeterFmt = fmt(massPerMeter, 3);
+    } else if (obs.weight !== '' || obs.length !== '' || (obs.massPerMeter !== undefined && obs.massPerMeter !== '')) {
+      errors.push('Weight and Length (or Mass per Meter) must be positive numbers.');
+    }
+
+    // Tolerance verification per IS 1786: 2008 Table 1 & Table 2
+    const toleranceInfo = getSteelToleranceInfo(obs.nominalDia);
+    let isBelowMassTolerance = false;
+    let massToleranceWarning = '';
+
+    if (toleranceInfo && massPerMeter !== null) {
+      // Check if massPerMeter is below lower limit tolerance per Table 2 Individual Sample
+      if (massPerMeter < toleranceInfo.minMassPerMeter - 1e-6) {
+        isBelowMassTolerance = true;
+        massToleranceWarning = `Mass per meter (${massPerMeterFmt} kg/m) is below IS 1786: 2008 lower limit tolerance (${toleranceInfo.minMassPerMeterFmt} kg/m, ${toleranceInfo.tolerancePercent}% tolerance on nominal ${toleranceInfo.nominalMassFmt} kg/m for dia ${toleranceInfo.dia} mm).`;
+        errors.push(massToleranceWarning);
+      }
     }
 
     // C5 Area = C4 / (0.00785 × C3)   (2 dec)
     let area = null;
     let areaFmt = '';
-    if (massPerMeter !== null && !isNaN(length) && length > 0) {
-      area = massPerMeter / (STEEL_DENSITY_FACTOR * length);
+    const effLength = (!isNaN(length) && length > 0) ? length : 1;
+    if (massPerMeter !== null) {
+      area = massPerMeter / (STEEL_DENSITY_FACTOR * effLength);
       areaFmt = fmt(area, 2);
     }
 
@@ -276,10 +397,20 @@ export function calculateSteelTest(observations = [], metadata = {}) {
       heatNo,
       invoiceNo,
       vehicleNo,
+      brand,
+      grade,
       nominalDia:         obs.nominalDia || '',
       weight:             obs.weight || '',
       length:             obs.length || '',
       massPerMeter,       massPerMeterFmt,         // C4
+      toleranceInfo,
+      isBelowMassTolerance,
+      massToleranceWarning,
+      minMassPerMeter:    toleranceInfo ? toleranceInfo.minMassPerMeter : null,
+      minMassPerMeterFmt: toleranceInfo ? toleranceInfo.minMassPerMeterFmt : '',
+      nominalMass:        toleranceInfo ? toleranceInfo.nominalMass : null,
+      nominalMassFmt:     toleranceInfo ? toleranceInfo.nominalMassFmt : '',
+      massTolerancePercent: toleranceInfo ? toleranceInfo.tolerancePercent : null,
       area,               areaFmt,                 // C5
       yieldLoad:          obs.yieldLoad || '',      // C6 (input)
       yieldStress,        yieldStressFmt,           // C7
@@ -302,15 +433,22 @@ export function calculateSteelTest(observations = [], metadata = {}) {
   const avgTensileStrength   = avg(validTensileStrengths);
   const avgElongation        = avg(validElongations);
 
+  const belowMassToleranceRows = rows.filter((r) => r.isBelowMassTolerance);
+  const hasBelowMassTolerance = belowMassToleranceRows.length > 0;
+
   // Client reference presence
   const hasHeatNo = rows.some((r) => r.heatNo && r.heatNo.length > 0);
   const hasInvoiceNo = rows.some((r) => r.invoiceNo && r.invoiceNo.length > 0);
   const hasVehicleNo = rows.some((r) => r.vehicleNo && r.vehicleNo.length > 0);
+  const hasBrand = rows.some((r) => r.brand && r.brand.length > 0);
+  const hasGrade = rows.some((r) => r.grade && r.grade.length > 0);
 
   const clientReferenceColumns = {
     heatNo: metadata?.includeHeatNoInReport ?? (metadata?.clientReferenceColumns?.heatNo ?? hasHeatNo),
     invoiceNo: metadata?.includeInvoiceNoInReport ?? (metadata?.clientReferenceColumns?.invoiceNo ?? hasInvoiceNo),
     vehicleNo: metadata?.includeVehicleNoInReport ?? (metadata?.clientReferenceColumns?.vehicleNo ?? hasVehicleNo),
+    brand: metadata?.includeBrandInReport ?? (metadata?.clientReferenceColumns?.brand ?? hasBrand),
+    grade: metadata?.includeGradeInReport ?? (metadata?.clientReferenceColumns?.grade ?? hasGrade),
   };
 
   return {
@@ -323,6 +461,8 @@ export function calculateSteelTest(observations = [], metadata = {}) {
       avgElongation,
       avgElongationFmt:       fmt(avgElongation,      2),
       count: rows.length,
+      hasBelowMassTolerance,
+      belowMassToleranceRows,
       // Requirement 1: Averages shall not appear in final report, only individual results
       reportExcludeAverages: true,
       reportExcludeAvgYieldStress: true,
@@ -334,6 +474,8 @@ export function calculateSteelTest(observations = [], metadata = {}) {
       hasHeatNo,
       hasInvoiceNo,
       hasVehicleNo,
+      hasBrand,
+      hasGrade,
       clientReferenceColumns,
     },
   };

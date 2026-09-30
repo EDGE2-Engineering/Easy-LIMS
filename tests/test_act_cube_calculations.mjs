@@ -124,4 +124,72 @@ assert.strictEqual(sampleResult.averagePredictedStrength, 34.0);
 assert.strictEqual(sampleResult.averagePredictedStrengthFormatted, '34.0');
 console.log('✅ Sample ACT Cube test calculation passed!');
 
+console.log('\n=== Test 6: IS 516 (Part 1/Sec 1): 2021 Clause 3.6 Outlier Rule (User Screenshot Batch) ===');
+// Exact batch from user request:
+// Row 1: TM 045, Load: 280 kN, Weight: 8.250 kg -> ACT Strength: 12.50 N/mm², Predicted 28d: 28.50 N/mm²
+// Row 2: TM 045, Load: 378 kN, Weight: 8.350 kg -> ACT Strength: 17.0 N/mm², Predicted 28d: 36.0 N/mm²
+// Row 3: TM 045, Load: 389 kN, Weight: 8.296 kg -> ACT Strength: 17.50 N/mm², Predicted 28d: 37.0 N/mm²
+const outlierBatchResult = calculateActCubeTest([
+  {
+    cubeId: 'TM 045',
+    length: '150',
+    breadth: '150',
+    height: '150',
+    dateOfCasting: '2026-09-21',
+    dateOfTesting: '2026-09-22',
+    weightKg: '8.250',
+    failureLoadKn: '280',
+    failureType: 'Satisfactory',
+  },
+  {
+    cubeId: 'TM 045',
+    length: '150',
+    breadth: '150',
+    height: '150',
+    dateOfCasting: '2026-09-21',
+    dateOfTesting: '2026-09-22',
+    weightKg: '8.350',
+    failureLoadKn: '378',
+    failureType: 'Satisfactory',
+  },
+  {
+    cubeId: 'TM 045',
+    length: '150',
+    breadth: '150',
+    height: '150',
+    dateOfCasting: '2026-09-21',
+    dateOfTesting: '2026-09-22',
+    weightKg: '8.296',
+    failureLoadKn: '389',
+    failureType: 'Satisfactory',
+  },
+]);
+
+// 1. Initial 3-specimen mean: (28.50 + 36.0 + 37.0) / 3 = 33.833... N/mm²
+assert(Math.abs(outlierBatchResult.initialAveragePredictedStrength - 33.833333333333336) < 1e-6);
+
+// 2. ±15% variation range: Lower = 28.758 N/mm², Upper = 38.908 N/mm²
+// 28.50 < 28.758 -> Individual variation exceeds ±15%!
+assert.strictEqual(outlierBatchResult.isOutlierClauseApplied, true, 'Outlier clause must be applied');
+
+// 3. Row 1 must be excluded from representative average
+assert.strictEqual(outlierBatchResult.rows[0].isExcludedFromAverage, true, 'Row 1 (28.50) must be excluded');
+assert.strictEqual(outlierBatchResult.rows[1].isExcludedFromAverage, false, 'Row 2 (36.0) must not be excluded');
+assert.strictEqual(outlierBatchResult.rows[2].isExcludedFromAverage, false, 'Row 3 (37.0) must not be excluded');
+
+// 4. Two closest values: 36.0 and 37.0 N/mm²
+assert.deepStrictEqual(outlierBatchResult.closestValues, [36.0, 37.0]);
+assert.deepStrictEqual(outlierBatchResult.excludedValues, [28.5]);
+
+// 5. Representative average = (36.0 + 37.0) / 2 = 36.50 N/mm² (instead of simple mean 34.0 N/mm²)
+assert.strictEqual(outlierBatchResult.averagePredictedStrength, 36.5);
+assert.strictEqual(outlierBatchResult.averagePredictedStrengthFormatted, '36.50');
+assert.strictEqual(outlierBatchResult.finalReportResult, '36.50');
+
+// 6. Closest ACT strengths: 17.0 and 17.50 -> Mean = 17.25 -> rounded = 17.50 N/mm²
+assert.strictEqual(outlierBatchResult.averageStrength, 17.5);
+assert.strictEqual(outlierBatchResult.averageStrengthFormatted, '17.50');
+
+console.log('✅ IS 516 Clause 3.6 ACT Cube outlier tests passed successfully!');
+
 console.log('\nALL ACT CUBE TESTS PASSED SUCCESSFULLY! 🚀');

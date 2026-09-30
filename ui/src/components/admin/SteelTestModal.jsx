@@ -30,13 +30,26 @@ import {
   Receipt,
   Truck,
   CheckSquare,
+  Award,
+  Layers,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 import {
   DEFAULT_STEEL_OBSERVATION,
   DEFAULT_STEEL_OBSERVATIONS,
   BEND_REBEND_OPTIONS,
   NOMINAL_DIAMETERS,
   SAMPLE_STEEL_TEST_DATA,
+  getSteelToleranceInfo,
   calculateSteelTest,
 } from '@/utils/steelTestCalculation';
 
@@ -68,16 +81,22 @@ export default function SteelTestModal({
   const [heatNoOptions, setHeatNoOptions] = useState([]);
   const [invoiceNoOptions, setInvoiceNoOptions] = useState([]);
   const [vehicleNoOptions, setVehicleNoOptions] = useState([]);
+  const [brandOptions, setBrandOptions] = useState([]);
+  const [gradeOptions, setGradeOptions] = useState([]);
 
   // Report column toggles (default true when data is present)
   const [includeHeatNoInReport, setIncludeHeatNoInReport] = useState(true);
   const [includeInvoiceNoInReport, setIncludeInvoiceNoInReport] = useState(true);
   const [includeVehicleNoInReport, setIncludeVehicleNoInReport] = useState(true);
+  const [includeBrandInReport, setIncludeBrandInReport] = useState(true);
+  const [includeGradeInReport, setIncludeGradeInReport] = useState(true);
 
   // Quick inputs for adding options
   const [heatInput, setHeatInput] = useState('');
   const [invoiceInput, setInvoiceInput] = useState('');
   const [vehicleInput, setVehicleInput] = useState('');
+  const [brandInput, setBrandInput] = useState('');
+  const [gradeInput, setGradeInput] = useState('');
 
   // ── Load initial data ───────────────────────────────────────────────────
   useEffect(() => {
@@ -91,9 +110,12 @@ export default function SteelTestModal({
           heatNo:           o.heatNo           !== undefined ? String(o.heatNo)           : '',
           invoiceNo:        o.invoiceNo        !== undefined ? String(o.invoiceNo)        : '',
           vehicleNo:        o.vehicleNo        !== undefined ? String(o.vehicleNo)        : '',
+          brand:            o.brand            !== undefined ? String(o.brand)            : '',
+          grade:            o.grade            !== undefined ? String(o.grade)            : '',
           nominalDia:       o.nominalDia       !== undefined ? String(o.nominalDia)       : '',
           weight:           o.weight           !== undefined ? String(o.weight)           : '',
           length:           o.length           !== undefined ? String(o.length)           : '',
+          massPerMeter:     o.massPerMeter     !== undefined ? String(o.massPerMeter)     : '',
           yieldLoad:        o.yieldLoad        !== undefined ? String(o.yieldLoad)        : '',
           ultimateLoad:     o.ultimateLoad     !== undefined ? String(o.ultimateLoad)     : '',
           finalGaugeLength: o.finalGaugeLength !== undefined ? String(o.finalGaugeLength) : '',
@@ -115,10 +137,20 @@ export default function SteelTestModal({
         ...(initialData.vehicleNoOptions || []),
         ...initialData.observations.map((o) => o.vehicleNo).filter(Boolean),
       ];
+      const existingBrands = [
+        ...(initialData.brandOptions || []),
+        ...initialData.observations.map((o) => o.brand).filter(Boolean),
+      ];
+      const existingGrades = [
+        ...(initialData.gradeOptions || []),
+        ...initialData.observations.map((o) => o.grade).filter(Boolean),
+      ];
 
       setHeatNoOptions([...new Set(existingHeats.map((s) => String(s).trim()))]);
       setInvoiceNoOptions([...new Set(existingInvoices.map((s) => String(s).trim()))]);
       setVehicleNoOptions([...new Set(existingVehicles.map((s) => String(s).trim()))]);
+      setBrandOptions([...new Set(existingBrands.map((s) => String(s).trim()))]);
+      setGradeOptions([...new Set(existingGrades.map((s) => String(s).trim()))]);
 
       setIncludeHeatNoInReport(
         initialData.includeHeatNoInReport ??
@@ -135,6 +167,16 @@ export default function SteelTestModal({
           initialData.clientReferenceColumns?.vehicleNo ??
           existingVehicles.length > 0
       );
+      setIncludeBrandInReport(
+        initialData.includeBrandInReport ??
+          initialData.clientReferenceColumns?.brand ??
+          existingBrands.length > 0
+      );
+      setIncludeGradeInReport(
+        initialData.includeGradeInReport ??
+          initialData.clientReferenceColumns?.grade ??
+          existingGrades.length > 0
+      );
     } else {
       setObservations(
         DEFAULT_STEEL_OBSERVATIONS.map((o, i) => ({
@@ -146,9 +188,13 @@ export default function SteelTestModal({
       setHeatNoOptions([]);
       setInvoiceNoOptions([]);
       setVehicleNoOptions([]);
+      setBrandOptions([]);
+      setGradeOptions([]);
       setIncludeHeatNoInReport(true);
       setIncludeInvoiceNoInReport(true);
       setIncludeVehicleNoInReport(false);
+      setIncludeBrandInReport(true);
+      setIncludeGradeInReport(true);
     }
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -168,6 +214,16 @@ export default function SteelTestModal({
     return [...new Set([...vehicleNoOptions, ...fromObs].map((s) => String(s).trim()))].filter(Boolean);
   }, [vehicleNoOptions, observations]);
 
+  const availableBrands = useMemo(() => {
+    const fromObs = observations.map((o) => o.brand).filter(Boolean);
+    return [...new Set([...brandOptions, ...fromObs].map((s) => String(s).trim()))].filter(Boolean);
+  }, [brandOptions, observations]);
+
+  const availableGrades = useMemo(() => {
+    const fromObs = observations.map((o) => o.grade).filter(Boolean);
+    return [...new Set([...gradeOptions, ...fromObs].map((s) => String(s).trim()))].filter(Boolean);
+  }, [gradeOptions, observations]);
+
   // ── Real-time calculation ───────────────────────────────────────────────
   const { rows, summary } = useMemo(
     () =>
@@ -175,20 +231,69 @@ export default function SteelTestModal({
         includeHeatNoInReport,
         includeInvoiceNoInReport,
         includeVehicleNoInReport,
+        includeBrandInReport,
+        includeGradeInReport,
       }),
-    [observations, includeHeatNoInReport, includeInvoiceNoInReport, includeVehicleNoInReport]
+    [observations, includeHeatNoInReport, includeInvoiceNoInReport, includeVehicleNoInReport, includeBrandInReport, includeGradeInReport]
   );
+
+  // ── Tolerance Alert State (IS 1786: 2008 Table 2) ─────────────────────────
+  const [toleranceAlert, setToleranceAlert] = useState(null);
 
   // ── Cell change ─────────────────────────────────────────────────────────
   const change = (i, field, val) =>
     setObservations((prev) => {
       const c = [...prev];
-      c[i] = { ...c[i], [field]: val };
+      const updated = { ...c[i], [field]: val };
       if (field === 'sampleId') {
-        c[i].barId = val; // keep barId synced for backward compatibility
+        updated.barId = val; // keep barId synced for backward compatibility
       }
+      if (field === 'weight' || field === 'length') {
+        // When weight or length is modified, clear direct massPerMeter override so weight/length is used
+        updated.massPerMeter = '';
+      }
+      c[i] = updated;
       return c;
     });
+
+  // ── Check tolerance and trigger pop-up if below IS 1786 limit ────────────
+  const checkRowTolerance = (idx, overrides = {}, forceShow = false) => {
+    const obs = { ...observations[idx], ...overrides };
+    const dia = obs.nominalDia;
+    if (!dia) return;
+
+    const tol = getSteelToleranceInfo(dia);
+    if (!tol) return;
+
+    const w = parseFloat(obs.weight);
+    const l = parseFloat(obs.length);
+    const dm = parseFloat(obs.massPerMeter);
+
+    let mpm = null;
+    let mpmFmt = '';
+    if (!isNaN(w) && w > 0 && !isNaN(l) && l > 0) {
+      mpm = w / l;
+      mpmFmt = mpm.toFixed(3);
+    } else if (!isNaN(dm) && dm > 0) {
+      mpm = dm;
+      mpmFmt = mpm.toFixed(3);
+    }
+
+    if (mpm !== null && (mpm < tol.minMassPerMeter - 1e-6 || forceShow)) {
+      const dev = (((mpm - tol.nominalMass) / tol.nominalMass) * 100).toFixed(2);
+      setToleranceAlert({
+        rowIndex: idx,
+        sampleId: obs.sampleId || obs.barId || `Sample ${idx + 1}`,
+        nominalDia: dia,
+        nominalMassFmt: tol.nominalMassFmt,
+        tolerancePercent: tol.tolerancePercent,
+        clause: tol.clause,
+        minMassPerMeterFmt: tol.minMassPerMeterFmt,
+        massPerMeterFmt: mpmFmt,
+        deviationPercent: dev,
+      });
+    }
+  };
 
   // ── Add / remove row ────────────────────────────────────────────────────
   const addRow = () =>
@@ -201,6 +306,8 @@ export default function SteelTestModal({
         heatNo: availableHeatNos.length === 1 ? availableHeatNos[0] : '',
         invoiceNo: availableInvoiceNos.length === 1 ? availableInvoiceNos[0] : '',
         vehicleNo: availableVehicleNos.length === 1 ? availableVehicleNos[0] : '',
+        brand: availableBrands.length === 1 ? availableBrands[0] : '',
+        grade: availableGrades.length === 1 ? availableGrades[0] : '',
       },
     ]);
   const removeRow = (i) =>
@@ -240,6 +347,28 @@ export default function SteelTestModal({
     setVehicleInput('');
   };
 
+  const handleAddBrandOptions = () => {
+    if (!brandInput.trim()) return;
+    const parts = brandInput
+      .split(/[,;\n]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    setBrandOptions((prev) => [...new Set([...prev, ...parts])]);
+    setIncludeBrandInReport(true);
+    setBrandInput('');
+  };
+
+  const handleAddGradeOptions = () => {
+    if (!gradeInput.trim()) return;
+    const parts = gradeInput
+      .split(/[,;\n]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    setGradeOptions((prev) => [...new Set([...prev, ...parts])]);
+    setIncludeGradeInReport(true);
+    setGradeInput('');
+  };
+
   // ── Quick Apply to All Rows ─────────────────────────────────────────────
   const applyHeatToAll = (val) => {
     if (!val) return;
@@ -259,12 +388,26 @@ export default function SteelTestModal({
     setIncludeVehicleNoInReport(true);
   };
 
+  const applyBrandToAll = (val) => {
+    if (!val) return;
+    setObservations((prev) => prev.map((o) => ({ ...o, brand: val })));
+    setIncludeBrandInReport(true);
+  };
+
+  const applyGradeToAll = (val) => {
+    if (!val) return;
+    setObservations((prev) => prev.map((o) => ({ ...o, grade: val })));
+    setIncludeGradeInReport(true);
+  };
+
   // ── Inline Prompt to Add New Option ─────────────────────────────────────
   const handlePromptNewOption = (field) => {
     const labels = {
       heatNo: 'Heat/ Lot No.',
       invoiceNo: 'Invoice No.',
       vehicleNo: 'Vehicle No.',
+      brand: 'Brand',
+      grade: 'Grade',
     };
     const val = window.prompt(`Enter new ${labels[field]}:`);
     if (val && val.trim()) {
@@ -278,6 +421,12 @@ export default function SteelTestModal({
       } else if (field === 'vehicleNo') {
         setVehicleNoOptions((p) => [...new Set([...p, clean])]);
         setIncludeVehicleNoInReport(true);
+      } else if (field === 'brand') {
+        setBrandOptions((p) => [...new Set([...p, clean])]);
+        setIncludeBrandInReport(true);
+      } else if (field === 'grade') {
+        setGradeOptions((p) => [...new Set([...p, clean])]);
+        setIncludeGradeInReport(true);
       }
       return clean;
     }
@@ -291,9 +440,13 @@ export default function SteelTestModal({
     setHeatNoOptions([]);
     setInvoiceNoOptions([]);
     setVehicleNoOptions([]);
+    setBrandOptions([]);
+    setGradeOptions([]);
     setIncludeHeatNoInReport(true);
     setIncludeInvoiceNoInReport(true);
     setIncludeVehicleNoInReport(false);
+    setIncludeBrandInReport(true);
+    setIncludeGradeInReport(true);
   };
 
   // ── Fill sample ─────────────────────────────────────────────────────────
@@ -302,20 +455,37 @@ export default function SteelTestModal({
     setHeatNoOptions(SAMPLE_STEEL_TEST_DATA.heatNoOptions || []);
     setInvoiceNoOptions(SAMPLE_STEEL_TEST_DATA.invoiceNoOptions || []);
     setVehicleNoOptions(SAMPLE_STEEL_TEST_DATA.vehicleNoOptions || []);
+    setBrandOptions(SAMPLE_STEEL_TEST_DATA.brandOptions || []);
+    setGradeOptions(SAMPLE_STEEL_TEST_DATA.gradeOptions || []);
     setIncludeHeatNoInReport(SAMPLE_STEEL_TEST_DATA.includeHeatNoInReport ?? true);
     setIncludeInvoiceNoInReport(SAMPLE_STEEL_TEST_DATA.includeInvoiceNoInReport ?? true);
     setIncludeVehicleNoInReport(SAMPLE_STEEL_TEST_DATA.includeVehicleNoInReport ?? false);
+    setIncludeBrandInReport(SAMPLE_STEEL_TEST_DATA.includeBrandInReport ?? true);
+    setIncludeGradeInReport(SAMPLE_STEEL_TEST_DATA.includeGradeInReport ?? true);
   };
 
   // ── Apply & save ────────────────────────────────────────────────────────
   const handleApply = () => {
+    if (summary.hasBelowMassTolerance) {
+      const proceed = window.confirm(
+        `Notice: One or more steel specimens have Mass per Metre below the IS 1786: 2008 lower limit tolerance.\n\n` +
+        summary.belowMassToleranceRows.map(r => `• ${r.sampleId} (${r.nominalDia} mm): ${r.massPerMeterFmt} kg/m (Min allowable: ${r.minMassPerMeterFmt} kg/m)`).join('\n') +
+        `\n\nDo you want to proceed and save?`
+      );
+      if (!proceed) return;
+    }
+
     const hasHeatVal = rows.some((r) => r.heatNo && r.heatNo.length > 0);
     const hasInvoiceVal = rows.some((r) => r.invoiceNo && r.invoiceNo.length > 0);
     const hasVehicleVal = rows.some((r) => r.vehicleNo && r.vehicleNo.length > 0);
+    const hasBrandVal = rows.some((r) => r.brand && r.brand.length > 0);
+    const hasGradeVal = rows.some((r) => r.grade && r.grade.length > 0);
 
     const isHeatActive = includeHeatNoInReport && (hasHeatVal || heatNoOptions.length > 0);
     const isInvoiceActive = includeInvoiceNoInReport && (hasInvoiceVal || invoiceNoOptions.length > 0);
     const isVehicleActive = includeVehicleNoInReport && (hasVehicleVal || vehicleNoOptions.length > 0);
+    const isBrandActive = includeBrandInReport && (hasBrandVal || brandOptions.length > 0);
+    const isGradeActive = includeGradeInReport && (hasGradeVal || gradeOptions.length > 0);
 
     const payload = {
       observations: rows.map((r) => ({
@@ -325,10 +495,16 @@ export default function SteelTestModal({
         heatNo:             r.heatNo || '',
         invoiceNo:          r.invoiceNo || '',
         vehicleNo:          r.vehicleNo || '',
+        brand:              r.brand || '',
+        grade:              r.grade || '',
         nominalDia:         r.nominalDia,
         weight:             r.weight,
         length:             r.length,
         massPerMeter:       r.massPerMeterFmt,
+        isBelowMassTolerance: r.isBelowMassTolerance,
+        minMassPerMeter:    r.minMassPerMeterFmt,
+        nominalMass:        r.nominalMassFmt,
+        massTolerancePercent: r.massTolerancePercent,
         area:               r.areaFmt,
         yieldLoad:          r.yieldLoad,
         yieldStress:        r.yieldStressFmt,
@@ -344,18 +520,26 @@ export default function SteelTestModal({
       heatNoOptions:      availableHeatNos,
       invoiceNoOptions:   availableInvoiceNos,
       vehicleNoOptions:   availableVehicleNos,
+      brandOptions:       availableBrands,
+      gradeOptions:       availableGrades,
       includeHeatNoInReport:   isHeatActive,
       includeInvoiceNoInReport: isInvoiceActive,
       includeVehicleNoInReport: isVehicleActive,
+      includeBrandInReport:   isBrandActive,
+      includeGradeInReport:   isGradeActive,
       clientReferenceColumns: {
         heatNo:    isHeatActive,
         invoiceNo: isInvoiceActive,
         vehicleNo: isVehicleActive,
+        brand:     isBrandActive,
+        grade:     isGradeActive,
       },
       // Summary averages (Internal Testing Data Only)
       avgYieldStress:     summary.avgYieldStressFmt,
       avgTensileStrength: summary.avgTensileStrengthFmt,
       avgElongation:      summary.avgElongationFmt,
+      hasBelowMassTolerance: summary.hasBelowMassTolerance,
+      belowMassToleranceCount: summary.belowMassToleranceRows.length,
       // Requirement 1 flags: averages must NOT appear in final report
       reportExcludeAverages:           true,
       reportExcludeAvgYieldStress:     true,
@@ -627,6 +811,134 @@ export default function SteelTestModal({
                   </p>
                 )}
               </div>
+
+              {/* Brand Options */}
+              <div className="p-2.5 rounded-lg bg-white dark:bg-card border border-gray-200 dark:border-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                    <Award className="w-3 h-3 text-purple-500" /> Brand Options
+                  </Label>
+                  <label className="flex items-center gap-1.5 text-[11px] cursor-pointer text-gray-600 dark:text-gray-400">
+                    <Checkbox
+                      checked={includeBrandInReport}
+                      onCheckedChange={setIncludeBrandInReport}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span>Include in Report</span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    value={brandInput}
+                    onChange={(e) => setBrandInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddBrandOptions())}
+                    placeholder="e.g. TATA Tiscon, JSW Neosteel"
+                    className="h-7 text-xs font-mono"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddBrandOptions}
+                    className="h-7 px-2 text-xs shrink-0"
+                  >
+                    + Add
+                  </Button>
+                </div>
+                {availableBrands.length > 0 ? (
+                  <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-gray-100 dark:border-border">
+                    <span className="text-[10px] text-gray-400">Pool:</span>
+                    {availableBrands.map((val) => (
+                      <Badge
+                        key={val}
+                        variant="secondary"
+                        className="text-[10px] py-0 px-1.5 font-mono cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors"
+                        title="Click to apply to all rows"
+                        onClick={() => applyBrandToAll(val)}
+                      >
+                        {val}
+                      </Badge>
+                    ))}
+                    {availableBrands.length === 1 && (
+                      <button
+                        type="button"
+                        onClick={() => applyBrandToAll(availableBrands[0])}
+                        className="text-[10px] text-purple-600 hover:underline ml-auto"
+                      >
+                        Apply all
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-gray-400 italic pt-1">
+                    (Absent — will not appear in final report if left unpopulated)
+                  </p>
+                )}
+              </div>
+
+              {/* Grade Options */}
+              <div className="p-2.5 rounded-lg bg-white dark:bg-card border border-gray-200 dark:border-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                    <Layers className="w-3 h-3 text-amber-500" /> Grade Options
+                  </Label>
+                  <label className="flex items-center gap-1.5 text-[11px] cursor-pointer text-gray-600 dark:text-gray-400">
+                    <Checkbox
+                      checked={includeGradeInReport}
+                      onCheckedChange={setIncludeGradeInReport}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span>Include in Report</span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    value={gradeInput}
+                    onChange={(e) => setGradeInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddGradeOptions())}
+                    placeholder="e.g. Fe 500, Fe 500D, Fe 550D"
+                    className="h-7 text-xs font-mono"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddGradeOptions}
+                    className="h-7 px-2 text-xs shrink-0"
+                  >
+                    + Add
+                  </Button>
+                </div>
+                {availableGrades.length > 0 ? (
+                  <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-gray-100 dark:border-border">
+                    <span className="text-[10px] text-gray-400">Pool:</span>
+                    {availableGrades.map((val) => (
+                      <Badge
+                        key={val}
+                        variant="secondary"
+                        className="text-[10px] py-0 px-1.5 font-mono cursor-pointer hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                        title="Click to apply to all rows"
+                        onClick={() => applyGradeToAll(val)}
+                      >
+                        {val}
+                      </Badge>
+                    ))}
+                    {availableGrades.length === 1 && (
+                      <button
+                        type="button"
+                        onClick={() => applyGradeToAll(availableGrades[0])}
+                        className="text-[10px] text-amber-600 hover:underline ml-auto"
+                      >
+                        Apply all
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-gray-400 italic pt-1">
+                    (Absent — will not appear in final report if left unpopulated)
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -634,12 +946,29 @@ export default function SteelTestModal({
           <div className="p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 text-xs text-blue-900 dark:text-blue-300 flex items-start gap-2">
             <Info className="w-4 h-4 mt-0.5 shrink-0 text-blue-500" />
             <div className="space-y-0.5">
-              <span className="font-semibold block">Auto-calculated columns (shaded):</span>
+              <span className="font-semibold block">Auto-calculated columns &amp; IS 1786: 2008 Mass Tolerances (Table 2 Individual Sample):</span>
               <span className="text-[11px] text-blue-800/80 dark:text-blue-300/80">
-                C4 = C2/C3 · C5 = C4/(0.00785×C3) · C7 = (C6/C5)×1000 · C9 = (C8/C5)×1000 · C10 = 5.65×√C5 · C12 = ((C11−C10)/C10)×100
+                C4 = Weight / Length · Lower Limits: ≤10 mm: -8% (e.g. 8mm min 0.363 kg/m, 10mm min 0.568 kg/m) · &gt;10 to 16 mm: -6% (e.g. 12mm min 0.835 kg/m, 16mm min 1.485 kg/m) · &gt;16 mm: -4% (e.g. 20mm min 2.371 kg/m, 25mm min 3.696 kg/m, 32mm min 6.058 kg/m) · C5 = C4/(0.00785×Length) · C7 = (C6/C5)×1000 · C9 = (C8/C5)×1000 · C10 = 5.65×√C5 · C12 = ((C11−C10)/C10)×100
               </span>
             </div>
           </div>
+
+          {/* IS 1786 Mass Tolerance Alert Banner */}
+          {summary.hasBelowMassTolerance && (
+            <div className="p-3 bg-red-50/90 dark:bg-red-950/40 border border-red-300 dark:border-red-800/70 rounded-xl flex items-start gap-2.5 text-xs text-red-900 dark:text-red-300 shadow-sm animate-in fade-in-50">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-red-600 dark:text-red-400" />
+              <div className="space-y-1">
+                <span className="font-bold block">IS 1786: 2008 Mass per Meter Lower Limit Tolerance Exceeded:</span>
+                <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                  {summary.belowMassToleranceRows.map((r, i) => (
+                    <li key={i}>
+                      <strong>Row {r.slNo} ({r.sampleId}):</strong> Entered/calculated {r.massPerMeterFmt} kg/m is below the IS 1786 permissible lower limit of <strong>{r.minMassPerMeterFmt} kg/m</strong> ({r.massTolerancePercent}% tolerance on nominal {r.nominalMassFmt} kg/m for {r.nominalDia} mm dia).
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
 
           {/* Observations Table */}
           <div className="space-y-2">
@@ -672,7 +1001,7 @@ export default function SteelTestModal({
                       <th className={thBase} rowSpan={2}>#</th>
                       <th className={thBase} rowSpan={2}>Sample ID</th>
                       {/* Client References */}
-                      <th className={`${thBase} bg-blue-50/60 dark:bg-blue-950/20 border-l dark:border-border`} colSpan={3}>
+                      <th className={`${thBase} bg-blue-50/60 dark:bg-blue-950/20 border-l dark:border-border`} colSpan={5}>
                         Client References (Dropdown)
                       </th>
                       {/* Inputs */}
@@ -682,7 +1011,7 @@ export default function SteelTestModal({
                       {/* Yield */}
                       <th className={`${thBase} border-l dark:border-border`} colSpan={2}>Yield</th>
                       {/* Tensile */}
-                      <th className={`${thBase} border-l dark:border-border`} colSpan={2}>Tensile</th>
+                      <th className={`${thBase} border-l dark:border-border`} colSpan={2}>Ultimate Tensile</th>
                       {/* Gauge & Elongation */}
                       <th className={`${thBase} bg-emerald-50/60 dark:bg-emerald-950/20 border-l dark:border-border`} colSpan={3}>Gauge / Elongation</th>
                       {/* Bend */}
@@ -703,6 +1032,14 @@ export default function SteelTestModal({
                         Vehicle No.
                         <span className="block text-[9px] font-normal text-blue-600 dark:text-blue-400">Dropdown</span>
                       </th>
+                      <th className={`${thBase} bg-blue-50/40 dark:bg-blue-950/10 min-w-[130px]`}>
+                        Brand
+                        <span className="block text-[9px] font-normal text-blue-600 dark:text-blue-400">Dropdown</span>
+                      </th>
+                      <th className={`${thBase} bg-blue-50/40 dark:bg-blue-950/10 min-w-[130px]`}>
+                        Grade
+                        <span className="block text-[9px] font-normal text-blue-600 dark:text-blue-400">Dropdown</span>
+                      </th>
                       {/* C1 */}
                       <th className={`${thBase} border-l dark:border-border min-w-[80px]`}>
                         C1<span className="block text-[9px] font-normal text-gray-400">Dia (mm)</span>
@@ -715,9 +1052,9 @@ export default function SteelTestModal({
                       <th className={`${thBase} min-w-[75px]`}>
                         C3<span className="block text-[9px] font-normal text-gray-400">Length (m)</span>
                       </th>
-                      {/* C4 — calc */}
-                      <th className={`${thBase} bg-slate-50/80 dark:bg-slate-900/40 border-l dark:border-border min-w-[90px]`}>
-                        C4<span className="block text-[9px] font-normal text-slate-400">kg/m</span>
+                      {/* C4 — calc / input */}
+                      <th className={`${thBase} bg-slate-50/80 dark:bg-slate-900/40 border-l dark:border-border min-w-[110px]`}>
+                        C4<span className="block text-[9px] font-normal text-slate-400">Mass (kg/m)</span>
                       </th>
                       {/* C5 — calc */}
                       <th className={`${thBase} bg-slate-50/80 dark:bg-slate-900/40 min-w-[80px]`}>
@@ -736,8 +1073,8 @@ export default function SteelTestModal({
                         C8<span className="block text-[9px] font-normal text-gray-400">Ult. Load (kN)</span>
                       </th>
                       {/* C9 — calc */}
-                      <th className={`${thBase} bg-orange-50/60 dark:bg-orange-950/20 min-w-[105px]`}>
-                        C9<span className="block text-[9px] font-normal text-orange-500">Tensile Str. N/mm²</span>
+                      <th className={`${thBase} bg-orange-50/60 dark:bg-orange-950/20 min-w-[120px]`}>
+                        C9<span className="block text-[9px] font-normal text-orange-500">Ult. Tensile Str. N/mm²</span>
                       </th>
                       {/* C10 — calc */}
                       <th className={`${thBase} bg-emerald-50/60 dark:bg-emerald-950/20 border-l dark:border-border min-w-[85px]`}>
@@ -905,11 +1242,94 @@ export default function SteelTestModal({
                           </Select>
                         </td>
 
+                        {/* Brand Dropdown */}
+                        <td className={`${tdBase} bg-blue-50/20 dark:bg-blue-950/10`}>
+                          <Select
+                            value={observations[idx].brand || '_NONE_'}
+                            onValueChange={(v) => {
+                              if (v === '_NONE_') {
+                                change(idx, 'brand', '');
+                              } else if (v === '_ADD_NEW_') {
+                                const newOpt = handlePromptNewOption('brand');
+                                if (newOpt) change(idx, 'brand', newOpt);
+                              } else {
+                                change(idx, 'brand', v);
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-7 text-xs min-w-[125px]">
+                              <SelectValue placeholder="— None —" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_NONE_" className="text-xs text-muted-foreground italic">
+                                — None / Absent —
+                              </SelectItem>
+                              {availableBrands.map((val) => (
+                                <SelectItem key={val} value={val} className="text-xs">
+                                  {val}
+                                </SelectItem>
+                              ))}
+                              {observations[idx].brand &&
+                                !availableBrands.includes(observations[idx].brand) && (
+                                  <SelectItem value={observations[idx].brand} className="text-xs">
+                                    {observations[idx].brand}
+                                  </SelectItem>
+                                )}
+                              <SelectItem value="_ADD_NEW_" className="text-xs font-bold text-purple-600 border-t">
+                                + Add new Brand...
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+
+                        {/* Grade Dropdown */}
+                        <td className={`${tdBase} bg-blue-50/20 dark:bg-blue-950/10`}>
+                          <Select
+                            value={observations[idx].grade || '_NONE_'}
+                            onValueChange={(v) => {
+                              if (v === '_NONE_') {
+                                change(idx, 'grade', '');
+                              } else if (v === '_ADD_NEW_') {
+                                const newOpt = handlePromptNewOption('grade');
+                                if (newOpt) change(idx, 'grade', newOpt);
+                              } else {
+                                change(idx, 'grade', v);
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-7 text-xs min-w-[125px]">
+                              <SelectValue placeholder="— None —" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_NONE_" className="text-xs text-muted-foreground italic">
+                                — None / Absent —
+                              </SelectItem>
+                              {availableGrades.map((val) => (
+                                <SelectItem key={val} value={val} className="text-xs">
+                                  {val}
+                                </SelectItem>
+                              ))}
+                              {observations[idx].grade &&
+                                !availableGrades.includes(observations[idx].grade) && (
+                                  <SelectItem value={observations[idx].grade} className="text-xs">
+                                    {observations[idx].grade}
+                                  </SelectItem>
+                                )}
+                              <SelectItem value="_ADD_NEW_" className="text-xs font-bold text-amber-600 border-t">
+                                + Add new Grade...
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+
                         {/* C1 Nominal Dia */}
                         <td className={`${tdBase} border-l dark:border-border`}>
                           <Select
                             value={observations[idx].nominalDia || ''}
-                            onValueChange={(v) => change(idx, 'nominalDia', v)}
+                            onValueChange={(v) => {
+                              change(idx, 'nominalDia', v);
+                              checkRowTolerance(idx, { nominalDia: v });
+                            }}
                           >
                             <SelectTrigger className="h-7 text-xs w-[72px]">
                               <SelectValue placeholder="–" />
@@ -930,6 +1350,8 @@ export default function SteelTestModal({
                             value={observations[idx].weight || ''}
                             placeholder="0.396"
                             onChange={(e) => change(idx, 'weight', e.target.value)}
+                            onBlur={() => checkRowTolerance(idx)}
+                            onKeyDown={(e) => e.key === 'Enter' && checkRowTolerance(idx)}
                             className="h-7 text-xs text-right font-mono w-[76px]"
                           />
                         </td>
@@ -942,17 +1364,51 @@ export default function SteelTestModal({
                             value={observations[idx].length || ''}
                             placeholder="1"
                             onChange={(e) => change(idx, 'length', e.target.value)}
+                            onBlur={() => checkRowTolerance(idx)}
+                            onKeyDown={(e) => e.key === 'Enter' && checkRowTolerance(idx)}
                             className="h-7 text-xs text-right font-mono w-[68px]"
                           />
                         </td>
 
-                        {/* C4 Mass/m — calc */}
-                        <td className={`${calcCell} bg-slate-50/60 dark:bg-slate-900/30 border-l dark:border-border`}>
-                          {row.massPerMeterFmt ? (
-                            <span className="text-slate-700 dark:text-slate-300">{row.massPerMeterFmt}</span>
-                          ) : (
-                            <span className="text-gray-300 dark:text-gray-600">–</span>
-                          )}
+                        {/* C4 Mass/m — calc & direct entry with tolerance check */}
+                        <td className={`${tdBase} bg-slate-50/60 dark:bg-slate-900/30 border-l dark:border-border ${
+                          row.isBelowMassTolerance ? 'bg-red-50/80 dark:bg-red-950/30' : ''
+                        }`}>
+                          <div className="flex flex-col items-end gap-0.5">
+                            <div className="flex items-center justify-end gap-1 w-full">
+                              <Input
+                                type="number"
+                                step="0.001"
+                                value={observations[idx].massPerMeter !== undefined && observations[idx].massPerMeter !== '' ? observations[idx].massPerMeter : (row.massPerMeterFmt || '')}
+                                placeholder={row.nominalMassFmt || '0.000'}
+                                onChange={(e) => change(idx, 'massPerMeter', e.target.value)}
+                                onBlur={() => checkRowTolerance(idx)}
+                                onKeyDown={(e) => e.key === 'Enter' && checkRowTolerance(idx)}
+                                className={`h-7 text-xs text-right font-mono w-[78px] ${
+                                  row.isBelowMassTolerance
+                                    ? 'bg-red-50 text-red-700 border-red-400 font-bold focus:ring-red-400 dark:bg-red-950/60 dark:text-red-300 dark:border-red-800'
+                                    : ''
+                                }`}
+                              />
+                              {row.isBelowMassTolerance && (
+                                <button
+                                  type="button"
+                                  title={`Mass per metre (${row.massPerMeterFmt} kg/m) is below IS 1786 lower limit (${row.minMassPerMeterFmt} kg/m). Click for details.`}
+                                  onClick={() => checkRowTolerance(idx, {}, true)}
+                                  className="text-red-600 hover:text-red-800 dark:text-red-400 p-0.5 shrink-0"
+                                >
+                                  <AlertTriangle className="w-3.5 h-3.5 animate-pulse text-red-600" />
+                                </button>
+                              )}
+                            </div>
+                            {row.minMassPerMeterFmt && (
+                              <span className={`text-[9px] font-mono leading-none ${
+                                row.isBelowMassTolerance ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-400 dark:text-gray-500'
+                              }`}>
+                                {row.isBelowMassTolerance ? `Min: ${row.minMassPerMeterFmt} (Fail)` : `Min: ${row.minMassPerMeterFmt}`}
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* C5 Area — calc */}
@@ -1157,7 +1613,7 @@ export default function SteelTestModal({
               <div className="p-4 rounded-xl bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent border border-orange-500/20 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-orange-800 dark:text-orange-400 uppercase tracking-wider block">
-                    Avg Tensile Strength (C9)
+                    Avg Ultimate Tensile Strength (C9)
                   </span>
                   <Badge variant="secondary" className="text-[9px] py-0 px-1 text-gray-500">
                     Testing Only
@@ -1253,6 +1709,95 @@ export default function SteelTestModal({
             </Button>
           </div>
         </div>
+
+        {/* ── IS 1786: 2008 Mass per Meter Tolerance Pop-up ────────────── */}
+        <AlertDialog open={!!toleranceAlert} onOpenChange={(open) => !open && setToleranceAlert(null)}>
+          <AlertDialogContent className="max-w-md md:max-w-lg z-[80] bg-white dark:bg-card border-red-200 dark:border-red-900 shadow-2xl rounded-2xl p-5">
+            <AlertDialogHeader className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-xl bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 shrink-0">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div className="space-y-1 text-left">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <AlertDialogTitle className="text-base font-bold text-red-700 dark:text-red-400">
+                      Mass per Meter Below Tolerance Limit
+                    </AlertDialogTitle>
+                    <Badge variant="outline" className="text-[10px] font-semibold text-red-700 border-red-300 bg-red-50 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800">
+                      IS 1786: 2008
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-muted-foreground">
+                    Table 2: Tolerances on Nominal Mass (Individual Sample)
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3 text-left pt-2">
+                <div className="p-3 bg-red-50/80 dark:bg-red-950/30 border border-red-200 dark:border-red-900/60 rounded-xl text-xs space-y-1.5 text-red-900 dark:text-red-200">
+                  <div className="font-semibold flex items-center justify-between">
+                    <span>Sample: {toleranceAlert?.sampleId || `Row ${(toleranceAlert?.rowIndex || 0) + 1}`}</span>
+                    <span className="font-mono">Nominal Dia: {toleranceAlert?.nominalDia} mm</span>
+                  </div>
+                  <p className="text-[11px] text-red-800 dark:text-red-300 leading-relaxed">
+                    The mass per meter of <strong className="underline font-bold text-red-700 dark:text-red-300">{toleranceAlert?.massPerMeterFmt} kg/m</strong> is below the minimum allowable limit of <strong>{toleranceAlert?.minMassPerMeterFmt} kg/m</strong> as per IS 1786: 2008 specifications.
+                  </p>
+                </div>
+
+                {/* Comparison stats table */}
+                <div className="border border-gray-200 dark:border-border rounded-xl overflow-hidden text-xs">
+                  <table className="w-full text-left">
+                    <tbody className="divide-y divide-gray-100 dark:divide-border font-mono text-[11px]">
+                      <tr className="bg-gray-50/50 dark:bg-muted/30">
+                        <td className="p-2 text-gray-600 dark:text-gray-400 font-sans">Nominal Diameter</td>
+                        <td className="p-2 font-bold text-right text-gray-900 dark:text-gray-100">{toleranceAlert?.nominalDia} mm</td>
+                      </tr>
+                      <tr>
+                        <td className="p-2 text-gray-600 dark:text-gray-400 font-sans">Table 1 Nominal Mass</td>
+                        <td className="p-2 font-bold text-right text-gray-900 dark:text-gray-100">{toleranceAlert?.nominalMassFmt} kg/m</td>
+                      </tr>
+                      <tr className="bg-gray-50/50 dark:bg-muted/30">
+                        <td className="p-2 text-gray-600 dark:text-gray-400 font-sans">Table 2 Individual Tolerance</td>
+                        <td className="p-2 font-bold text-right text-amber-600 dark:text-amber-400">
+                          {toleranceAlert?.tolerancePercent}% ({toleranceAlert?.clause})
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="p-2 text-gray-600 dark:text-gray-400 font-sans">Minimum Allowable Lower Limit</td>
+                        <td className="p-2 font-bold text-right text-emerald-600 dark:text-emerald-400">{toleranceAlert?.minMassPerMeterFmt} kg/m</td>
+                      </tr>
+                      <tr className="bg-red-50/60 dark:bg-red-950/40">
+                        <td className="p-2 font-bold text-red-800 dark:text-red-300 font-sans">Entered / Calculated Value</td>
+                        <td className="p-2 font-bold text-right text-red-600 dark:text-red-400 text-xs">
+                          {toleranceAlert?.massPerMeterFmt} kg/m ({toleranceAlert?.deviationPercent}%)
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <p className="text-[11px] text-gray-500 dark:text-muted-foreground italic">
+                  Note: Clause 6.2 &amp; 7.2.2 footnote 1 states that plus tolerance is not specified for individual samples. Values below the lower limit indicate non-conformance for nominal mass per metre.
+                </p>
+              </div>
+            </AlertDialogHeader>
+
+            <AlertDialogFooter className="mt-4 gap-2 sm:justify-between">
+              <AlertDialogCancel
+                onClick={() => setToleranceAlert(null)}
+                className="h-8 text-xs border-gray-300"
+              >
+                Re-enter / Correct Value
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => setToleranceAlert(null)}
+                className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white font-bold"
+              >
+                Acknowledge Warning
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
       </DialogContent>
     </Dialog>

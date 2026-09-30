@@ -212,6 +212,8 @@ export function calculateAverageCompressiveStrength(validStrengths = []) {
       upperLimit15Percent: null,
       closestValues: [],
       excludedValues: [],
+      closestIndices: [],
+      excludedIndices: [],
       clauseNote: '',
     };
   }
@@ -229,6 +231,8 @@ export function calculateAverageCompressiveStrength(validStrengths = []) {
       upperLimit15Percent: validStrengths[0] * 1.15,
       closestValues: [validStrengths[0]],
       excludedValues: [],
+      closestIndices: [0],
+      excludedIndices: [],
       clauseNote: 'Single specimen tested.',
     };
   }
@@ -247,6 +251,8 @@ export function calculateAverageCompressiveStrength(validStrengths = []) {
       upperLimit15Percent: mean2 * 1.15,
       closestValues: [...validStrengths],
       excludedValues: [],
+      closestIndices: [0, 1],
+      excludedIndices: [],
       clauseNote: 'Average of 2 specimens taken.',
     };
   }
@@ -275,6 +281,8 @@ export function calculateAverageCompressiveStrength(validStrengths = []) {
         upperLimit15Percent: upperLimit,
         closestValues: [...validStrengths],
         excludedValues: [],
+        closestIndices: [0, 1, 2],
+        excludedIndices: [],
         clauseNote: 'IS 516 Cl 3.6: All individual strengths within ±15% of average.',
       };
     }
@@ -290,17 +298,25 @@ export function calculateAverageCompressiveStrength(validStrengths = []) {
 
     let closestPair = [];
     let excluded = [];
+    let closestIndices = [];
+    let excludedIndices = [];
 
     const minDiff = Math.min(d01, d12, d02);
     if (Math.abs(d01 - minDiff) < EPS) {
       closestPair = [s0, s1];
       excluded = [s2];
+      closestIndices = [0, 1];
+      excludedIndices = [2];
     } else if (Math.abs(d12 - minDiff) < EPS) {
       closestPair = [s1, s2];
       excluded = [s0];
+      closestIndices = [1, 2];
+      excludedIndices = [0];
     } else {
       closestPair = [s0, s2];
       excluded = [s1];
+      closestIndices = [0, 2];
+      excludedIndices = [1];
     }
 
     const closestMean = (closestPair[0] + closestPair[1]) / 2;
@@ -316,6 +332,8 @@ export function calculateAverageCompressiveStrength(validStrengths = []) {
       upperLimit15Percent: upperLimit,
       closestValues: closestPair,
       excludedValues: excluded,
+      closestIndices,
+      excludedIndices,
       clauseNote: `IS 516 Cl 3.6: Variation > ±15% of average (${initialMean.toFixed(1)} N/mm²); average of two closest values (${closestPair[0].toFixed(2)}, ${closestPair[1].toFixed(2)}) applied.`,
     };
   }
@@ -343,6 +361,8 @@ export function calculateAverageCompressiveStrength(validStrengths = []) {
       upperLimit15Percent: upperLimit,
       closestValues: [...validStrengths],
       excludedValues: [],
+      closestIndices: validStrengths.map((_, idx) => idx),
+      excludedIndices: [],
       clauseNote: 'IS 516 Cl 3.6: All individual strengths within ±15% of average.',
     };
   }
@@ -350,23 +370,24 @@ export function calculateAverageCompressiveStrength(validStrengths = []) {
   // Find pair with minimal difference
   let minDiff = Infinity;
   let bestPair = [validStrengths[0], validStrengths[1]];
+  let closestIndices = [0, 1];
   for (let i = 0; i < validStrengths.length; i++) {
     for (let j = i + 1; j < validStrengths.length; j++) {
       const diff = Math.abs(validStrengths[i] - validStrengths[j]);
       if (diff < minDiff) {
         minDiff = diff;
         bestPair = [validStrengths[i], validStrengths[j]];
+        closestIndices = [i, j];
       }
     }
   }
 
   const closestMean = (bestPair[0] + bestPair[1]) / 2;
   const rounded = roundToNearestHalf(closestMean);
-  const excluded = validStrengths.filter((v, idx) => {
-    const i1 = validStrengths.indexOf(bestPair[0]);
-    const i2 = validStrengths.lastIndexOf(bestPair[1]);
-    return idx !== i1 && idx !== i2;
-  });
+  const excludedIndices = validStrengths
+    .map((_, idx) => idx)
+    .filter((idx) => !closestIndices.includes(idx));
+  const excluded = excludedIndices.map((idx) => validStrengths[idx]);
 
   return {
     rawAverageStrength: closestMean,
@@ -378,6 +399,8 @@ export function calculateAverageCompressiveStrength(validStrengths = []) {
     upperLimit15Percent: upperLimit,
     closestValues: bestPair,
     excludedValues: excluded,
+    closestIndices,
+    excludedIndices,
     clauseNote: `IS 516 Cl 3.6: Variation > ±15% of average (${initialMean.toFixed(1)} N/mm²); average of two closest values (${bestPair[0].toFixed(2)}, ${bestPair[1].toFixed(2)}) applied.`,
   };
 }

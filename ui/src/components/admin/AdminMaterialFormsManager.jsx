@@ -89,7 +89,7 @@ const FORM_TYPES = [
     id: 'structuralsteel',
     name: 'Structural Steel Inputs',
     description:
-      'Applicable for material type "Structural Steel" (MS Plates, W-Beam, Channels, Angles, Sections). Includes IS 1608 (Part 1): 2022 tensile testing with Sample Name / Type, Width, Thickness, Area, Yield Load, Yield Stress (2 dec), Ultimate Load, Tensile Strength (2 dec), Initial Gauge Length (5.65×√Area), Final Gauge Length, and Elongation (2 dec).',
+      'Applicable for material type "Structural Steel" (MS Plates, W-Beam, Channels, Angles, Sections). Includes IS 1608 (Part 1): 2022 tensile testing with Sample Name / Type, client Heat/Lot No., Invoice No., Vehicle No., Brand, Grade, Width, Thickness, Area, Yield Load, Yield Stress (2 dec), Ultimate Load, Ultimate Tensile Strength (2 dec), Initial Gauge Length (5.65×√Area), Final Gauge Length, Elongation (2 dec), Bend and Rebend tests.',
   },
 ];
 

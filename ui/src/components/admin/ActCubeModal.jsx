@@ -210,6 +210,7 @@ export default function ActCubeModal({
         predicted28DayStrength: r.predicted28DayFormatted,
         density: r.densityFormatted,
         failureType: r.failureType,
+        isExcludedFromAverage: r.isExcludedFromAverage,
       })),
       avgCompressiveStrength: calcResult.averageStrengthFormatted,
       avgPredicted28DayStrength: calcResult.averagePredictedStrengthFormatted,
@@ -221,6 +222,14 @@ export default function ActCubeModal({
       finalReportResult: calcResult.averagePredictedStrengthFormatted,
       finalReportResultLabel: 'Predicted 28 days Compressive Strength',
       finalReportResultUnit: 'N/mm²',
+      isOutlierClauseApplied: calcResult.isOutlierClauseApplied,
+      closestValues: calcResult.closestValues,
+      excludedValues: calcResult.excludedValues,
+      initialAverageStrength: calcResult.initialAverageStrength,
+      initialAveragePredictedStrength: calcResult.initialAveragePredictedStrength,
+      lowerLimit15Percent: calcResult.lowerLimit15Percent,
+      upperLimit15Percent: calcResult.upperLimit15Percent,
+      calculationClauseNote: calcResult.calculationClauseNote,
       reportExcludeAvgWeight: true,
       reportExcludeAvgActStrength: true,
       reportExcludeAvgStrength: true,
@@ -585,13 +594,45 @@ export default function ActCubeModal({
                       </td>
 
                       {/* C11: Compressive Strength (N/mm²) */}
-                      <td className="p-2.5 text-right font-mono font-bold text-teal-800 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-950/20">
-                        {row.strengthFormatted || '-'}
+                      <td
+                        className={`p-2.5 text-right font-mono font-bold ${
+                          row.isExcludedFromAverage
+                            ? 'text-gray-400 line-through bg-gray-50/80 dark:bg-muted/30'
+                            : 'text-teal-800 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-950/20'
+                        }`}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>{row.strengthFormatted || '-'}</span>
+                          {row.isExcludedFromAverage && (
+                            <span
+                              className="no-underline inline-block text-[10px] text-amber-600 dark:text-amber-400 font-bold cursor-help"
+                              title="Excluded from batch representative average per IS 516 Cl 3.6 (> ±15% variation from mean)"
+                            >
+                              *
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* C12: Predicted 28-day ACT Compressive Strength (N/mm²) */}
-                      <td className="p-2.5 text-right font-mono font-black text-emerald-800 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20">
-                        {row.predicted28DayFormatted || '-'}
+                      <td
+                        className={`p-2.5 text-right font-mono font-black ${
+                          row.isExcludedFromAverage
+                            ? 'text-gray-400 line-through bg-gray-50/80 dark:bg-muted/30'
+                            : 'text-emerald-800 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20'
+                        }`}
+                      >
+                        <div className="flex items-center justify-end gap-1">
+                          <span>{row.predicted28DayFormatted || '-'}</span>
+                          {row.isExcludedFromAverage && (
+                            <span
+                              className="no-underline inline-block text-[10px] text-amber-600 dark:text-amber-400 font-bold cursor-help"
+                              title="Excluded from batch representative average per IS 516 Cl 3.6 (> ±15% variation from mean)"
+                            >
+                              *
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* C13: Type of Failure */}
@@ -659,6 +700,18 @@ export default function ActCubeModal({
             </div>
           </div>
 
+          {/* IS 516 Clause 3.6 Outlier Rule Notice Banner */}
+          {calcResult.isOutlierClauseApplied && (
+            <div className="p-3.5 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200 shadow-sm">
+              <Info className="w-4 h-4 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div>
+                <span className="font-bold">IS 516 (part 1/Sec 1): 2021 Clause 3.6 Applied: </span>
+                Individual compressive strength variation exceeds &plusmn;15% of the average ({calcResult.initialAveragePredictedStrength?.toFixed(1) || calcResult.initialAverageStrength?.toFixed(1)} N/mm²; acceptable range: {calcResult.lowerLimit15Percent?.toFixed(2)} to {calcResult.upperLimit15Percent?.toFixed(2)} N/mm²).
+                As per Clause 3.6, the average of the two closest values ({calcResult.closestValues?.map((v) => (typeof v === 'number' ? v.toFixed(2) : v)).join(', ')} N/mm²) is taken as the batch representative average ({calcResult.averagePredictedStrengthFormatted} N/mm²).
+              </div>
+            </div>
+          )}
+
           {/* Validation Errors */}
           {calcResult.generalErrors?.length > 0 && (
             <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2">
@@ -682,7 +735,9 @@ export default function ActCubeModal({
                 <span className="text-xs font-bold text-emerald-800 dark:text-emerald-400">N/mm²</span>
               </div>
               <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400/80">
-                Final report result • Rounded to nearest 0.5 N/mm²
+                {calcResult.isOutlierClauseApplied
+                  ? 'Average of 2 closest values (IS 516 Cl 3.6)'
+                  : 'Final report result • Rounded to nearest 0.5 N/mm²'}
               </p>
             </div>
 
@@ -698,7 +753,9 @@ export default function ActCubeModal({
                 <span className="text-xs font-semibold text-gray-500 dark:text-muted-foreground">N/mm²</span>
               </div>
               <p className="text-[11px] text-gray-400 dark:text-muted-foreground">
-                Testing data only • Excluded from final report
+                {calcResult.isOutlierClauseApplied
+                  ? 'Average of 2 closest values (IS 516 Cl 3.6) • Excluded from final report'
+                  : 'Testing data only • Excluded from final report'}
               </p>
             </div>
 

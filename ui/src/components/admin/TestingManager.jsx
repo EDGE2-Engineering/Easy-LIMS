@@ -986,6 +986,13 @@ const TestingManager = ({
                         const displayAvgWeight =
                           testResults[cat]?.ActCubeData?.avgWeight ||
                           actCubeCalc?.averageWeightFormatted;
+                        const isOutlierApplied = Boolean(
+                          actCubeCalc?.isOutlierClauseApplied ?? testResults[cat]?.ActCubeData?.isOutlierClauseApplied
+                        );
+                        const closestVals =
+                          actCubeCalc?.closestValues || testResults[cat]?.ActCubeData?.closestValues || [];
+                        const clauseNote =
+                          actCubeCalc?.calculationClauseNote || testResults[cat]?.ActCubeData?.calculationClauseNote || '';
 
                         return (
                           <div className="space-y-8 mt-4">
@@ -1016,6 +1023,7 @@ const TestingManager = ({
                                     const rowCalc = actCubeCalc?.rows?.[idx];
                                     const rawAge = obs.ageDays !== undefined && obs.ageDays !== null && obs.ageDays !== '' ? obs.ageDays : rowCalc?.ageFormatted;
                                     const cleanAge = rawAge ? String(rawAge).replace(/d$/i, '').trim() : '-';
+                                    const isExcluded = Boolean(rowCalc?.isExcludedFromAverage ?? obs.isExcludedFromAverage);
                                     const predVal =
                                       rowCalc?.predicted28DayFormatted ||
                                       (obs.predicted28DayStrength
@@ -1056,11 +1064,27 @@ const TestingManager = ({
                                         <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">
                                           {obs.failureLoadKn || rowCalc?.loadFormatted || '-'}
                                         </td>
-                                        <td className="p-2.5 text-right font-mono font-bold text-teal-900 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-950/30">
-                                          {rowCalc?.strengthFormatted || obs.compressiveStrength || '-'}
+                                        <td className={`p-2.5 text-right font-mono font-bold text-teal-900 dark:text-teal-300 bg-teal-50/40 dark:bg-teal-950/30 ${isExcluded ? 'line-through text-gray-400' : ''}`}>
+                                          <span>{rowCalc?.strengthFormatted || obs.compressiveStrength || '-'}</span>
+                                          {isExcluded && (
+                                            <span
+                                              className="no-underline ml-1 text-[10px] text-amber-600 font-normal cursor-help"
+                                              title="Excluded from batch representative average per IS 516 Cl 3.6 (> ±15% variation from mean)"
+                                            >
+                                              *
+                                            </span>
+                                          )}
                                         </td>
-                                        <td className="p-2.5 text-right font-mono font-black text-emerald-900 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/30">
-                                          {predVal}
+                                        <td className={`p-2.5 text-right font-mono font-black text-emerald-900 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/30 ${isExcluded ? 'line-through text-gray-400' : ''}`}>
+                                          <span>{predVal}</span>
+                                          {isExcluded && (
+                                            <span
+                                              className="no-underline ml-1 text-[10px] text-amber-600 font-normal cursor-help"
+                                              title="Excluded from batch representative average per IS 516 Cl 3.6 (> ±15% variation from mean)"
+                                            >
+                                              *
+                                            </span>
+                                          )}
                                         </td>
                                         <td className="p-2.5 text-center">
                                           <Badge
@@ -1129,7 +1153,18 @@ const TestingManager = ({
                                 )}
                               </div>
                               <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground">
-                                IS 9013 Clause 9: R₂₈ = 1.64 × Rₐ + 8.09 (Round up nearest 0.5)
+                                {isOutlierApplied ? (
+                                  <span
+                                    className="text-amber-800 dark:text-amber-400 font-semibold"
+                                    title={clauseNote}
+                                  >
+                                    IS 516 Cl 3.6: Variation &gt; &plusmn;15% &bull; Avg of 2 closest values applied ({
+                                      closestVals.map((v) => (typeof v === 'number' ? v.toFixed(2) : v)).join(', ')
+                                    } N/mm&sup2;)
+                                  </span>
+                                ) : (
+                                  'IS 9013 Clause 9: R₂₈ = 1.64 × Rₐ + 8.09 (Round up nearest 0.5)'
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1475,7 +1510,7 @@ const TestingManager = ({
                               {testResults[cat].SteelData.avgTensileStrength && (
                                 <div title="Recorded for testing data only (excluded from final report; only individual results are required)">
                                   <span className="text-[10px] uppercase font-bold text-orange-800 dark:text-orange-400">
-                                    Avg Tensile Strength
+                                    Avg Ultimate Tensile Strength
                                   </span>
                                   <div className="flex items-baseline gap-1.5">
                                     <span className="text-xl font-black text-orange-900 dark:text-orange-300 font-mono">
@@ -1526,6 +1561,14 @@ const TestingManager = ({
                               steelData.includeVehicleNoInReport ??
                               steelObs.some((o) => o.vehicleNo && String(o.vehicleNo).trim() !== '')
                             );
+                            const showBrand = clientRefCols.brand ?? (
+                              steelData.includeBrandInReport ??
+                              steelObs.some((o) => o.brand && String(o.brand).trim() !== '')
+                            );
+                            const showGrade = clientRefCols.grade ?? (
+                              steelData.includeGradeInReport ??
+                              steelObs.some((o) => o.grade && String(o.grade).trim() !== '')
+                            );
 
                             return (
                               <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden w-full">
@@ -1549,10 +1592,19 @@ const TestingManager = ({
                                           Vehicle No.
                                         </th>
                                       )}
+                                      {showBrand && (
+                                        <th className="p-2.5 font-bold whitespace-nowrap bg-blue-50/50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-300">
+                                          Brand
+                                        </th>
+                                      )}
+                                      {showGrade && (
+                                        <th className="p-2.5 font-bold whitespace-nowrap bg-blue-50/50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-300">
+                                          Grade
+                                        </th>
+                                      )}
                                       <th className="p-2.5 font-bold text-center whitespace-nowrap">Dia (mm)</th>
-                                      <th className="p-2.5 font-bold text-right whitespace-nowrap">Area (mm²)</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">Yield Stress (N/mm²)</th>
-                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-orange-50 dark:bg-orange-950/30 text-orange-900 dark:text-orange-300">Tensile Str. (N/mm²)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-orange-50 dark:bg-orange-950/30 text-orange-900 dark:text-orange-300">Ultimate Tensile Strength (N/mm²)</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300">Elongation (%)</th>
                                       <th className="p-2.5 font-bold text-center whitespace-nowrap">Bend</th>
                                       <th className="p-2.5 font-bold text-center whitespace-nowrap">Rebend</th>
@@ -1578,8 +1630,17 @@ const TestingManager = ({
                                             {obs.vehicleNo || '-'}
                                           </td>
                                         )}
+                                        {showBrand && (
+                                          <td className="p-2.5 font-medium text-gray-700 dark:text-foreground bg-blue-50/20 dark:bg-blue-950/10 whitespace-nowrap">
+                                            {obs.brand || '-'}
+                                          </td>
+                                        )}
+                                        {showGrade && (
+                                          <td className="p-2.5 font-medium text-gray-700 dark:text-foreground bg-blue-50/20 dark:bg-blue-950/10 whitespace-nowrap">
+                                            {obs.grade || '-'}
+                                          </td>
+                                        )}
                                         <td className="p-2.5 text-center font-mono text-gray-600 dark:text-muted-foreground">{obs.nominalDia || '-'}</td>
-                                        <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.area || '-'}</td>
                                         <td className="p-2.5 text-right font-mono font-bold text-amber-900 dark:text-amber-300 bg-amber-50/40 dark:bg-amber-950/20">{obs.yieldStress || '-'}</td>
                                         <td className="p-2.5 text-right font-mono font-bold text-orange-900 dark:text-orange-300 bg-orange-50/40 dark:bg-orange-950/20">{obs.tensileStrength || '-'}</td>
                                         <td className="p-2.5 text-right font-mono font-bold text-emerald-900 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20">{obs.elongation || '-'}</td>
@@ -1653,11 +1714,11 @@ const TestingManager = ({
                               {testResults[cat].StructuralSteelData.avgTensileStrength && (
                                 <div title="Recorded for testing data only (excluded from final report; only individual results are required)">
                                   <span className="text-[10px] uppercase font-bold text-orange-800 dark:text-orange-400">
-                                    Avg Tensile Strength
+                                    Avg Ultimate Tensile Strength
                                   </span>
                                   <div className="flex items-baseline gap-1.5">
                                     <span className="text-xl font-black text-orange-900 dark:text-orange-300 font-mono">
-                                      {testResults[cat].StructuralSteelData.avgTensileStrength}
+                                      {testResults[cat].StructuralSteelData.avgUltimateTensileStrength || testResults[cat].StructuralSteelData.avgTensileStrength}
                                     </span>
                                     <span className="text-xs font-bold text-orange-700 dark:text-orange-400">N/mm²</span>
                                   </div>
@@ -1679,6 +1740,11 @@ const TestingManager = ({
                             </div>
 
                             <div className="text-right text-[11px] text-gray-500 dark:text-muted-foreground self-end ml-auto flex flex-col items-end gap-1">
+                              {(testResults[cat].StructuralSteelData.includeBendInReport || testResults[cat].StructuralSteelData.includeRebendInReport) && (
+                                <span className="text-[10px] font-semibold text-emerald-800 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-800">
+                                  Report includes: {[testResults[cat].StructuralSteelData.includeBendInReport && 'Bend', testResults[cat].StructuralSteelData.includeRebendInReport && 'Rebend'].filter(Boolean).join(' & ')}
+                                </span>
+                              )}
                               <span className="text-[10px] font-semibold text-amber-800 dark:text-amber-400 bg-amber-100/70 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-800">
                                 Testing Data Only • Excluded from final report (individual results only)
                               </span>
@@ -1703,6 +1769,14 @@ const TestingManager = ({
                             const showVehicleNo = clientRefCols.vehicleNo ?? (
                               data.includeVehicleNoInReport ??
                               obsList.some((o) => o.vehicleNo && String(o.vehicleNo).trim() !== '')
+                            );
+                            const showBrand = clientRefCols.brand ?? (
+                              data.includeBrandInReport ??
+                              obsList.some((o) => o.brand && String(o.brand).trim() !== '')
+                            );
+                            const showGrade = clientRefCols.grade ?? (
+                              data.includeGradeInReport ??
+                              obsList.some((o) => o.grade && String(o.grade).trim() !== '')
                             );
 
                             return (
@@ -1730,15 +1804,26 @@ const TestingManager = ({
                                           Vehicle No.
                                         </th>
                                       )}
+                                      {showBrand && (
+                                        <th className="p-2.5 font-bold whitespace-nowrap bg-purple-50/50 dark:bg-purple-950/20 text-purple-900 dark:text-purple-300">
+                                          Brand
+                                        </th>
+                                      )}
+                                      {showGrade && (
+                                        <th className="p-2.5 font-bold whitespace-nowrap bg-amber-50/50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-300">
+                                          Grade
+                                        </th>
+                                      )}
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap">Width (mm)</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap">Thickness (mm)</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap">Area (mm²)</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">Yield Stress (N/mm²)</th>
-                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-orange-50 dark:bg-orange-950/30 text-orange-900 dark:text-orange-300">Tensile Str. (N/mm²)</th>
+                                      <th className="p-2.5 font-bold text-right whitespace-nowrap bg-orange-50 dark:bg-orange-950/30 text-orange-900 dark:text-orange-300">Ultimate Tensile Strength (N/mm²)</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300">IGL (mm)</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap">FGL (mm)</th>
                                       <th className="p-2.5 font-bold text-right whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300">Elongation (%)</th>
                                       <th className="p-2.5 font-bold text-center whitespace-nowrap">Bend</th>
+                                      <th className="p-2.5 font-bold text-center whitespace-nowrap">Rebend</th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-gray-100 dark:divide-border text-xs">
@@ -1766,17 +1851,32 @@ const TestingManager = ({
                                             {obs.vehicleNo || '-'}
                                           </td>
                                         )}
+                                        {showBrand && (
+                                          <td className="p-2.5 font-medium text-gray-700 dark:text-foreground bg-purple-50/20 dark:bg-purple-950/10 whitespace-nowrap">
+                                            {obs.brand || '-'}
+                                          </td>
+                                        )}
+                                        {showGrade && (
+                                          <td className="p-2.5 font-medium text-gray-700 dark:text-foreground bg-amber-50/20 dark:bg-amber-950/10 whitespace-nowrap">
+                                            {obs.grade || '-'}
+                                          </td>
+                                        )}
                                         <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.width || '-'}</td>
                                         <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.thickness || '-'}</td>
                                         <td className="p-2.5 text-right font-mono font-medium text-gray-800 dark:text-foreground">{obs.area || '-'}</td>
                                         <td className="p-2.5 text-right font-mono font-bold text-amber-900 dark:text-amber-300 bg-amber-50/40 dark:bg-amber-950/20">{obs.yieldStress || '-'}</td>
-                                        <td className="p-2.5 text-right font-mono font-bold text-orange-900 dark:text-orange-300 bg-orange-50/40 dark:bg-orange-950/20">{obs.tensileStrength || '-'}</td>
+                                        <td className="p-2.5 text-right font-mono font-bold text-orange-900 dark:text-orange-300 bg-orange-50/40 dark:bg-orange-950/20">{obs.ultimateTensileStrength || obs.tensileStrength || '-'}</td>
                                         <td className="p-2.5 text-right font-mono text-emerald-800 dark:text-emerald-300 bg-emerald-50/20 dark:bg-emerald-950/10">{obs.initialGaugeLength || '-'}</td>
                                         <td className="p-2.5 text-right font-mono text-gray-700 dark:text-foreground">{obs.finalGaugeLength || '-'}</td>
                                         <td className="p-2.5 text-right font-mono font-bold text-emerald-900 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20">{obs.elongation ? `${obs.elongation}%` : '-'}</td>
                                         <td className="p-2.5 text-center">
                                           <Badge variant="outline" className={`text-[10px] ${obs.bendTest === 'NCO' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800'}`}>
                                             {obs.bendTest || 'NCO'}
+                                          </Badge>
+                                        </td>
+                                        <td className="p-2.5 text-center">
+                                          <Badge variant="outline" className={`text-[10px] ${obs.rebendTest === 'NCO' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800'}`}>
+                                            {obs.rebendTest || 'NCO'}
                                           </Badge>
                                         </td>
                                       </tr>

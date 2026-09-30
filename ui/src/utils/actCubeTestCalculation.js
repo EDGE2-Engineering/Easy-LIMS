@@ -1,6 +1,6 @@
-import { formatDateDDMMYYYY } from './cubeTestCalculation.js';
+import { formatDateDDMMYYYY, calculateAverageCompressiveStrength } from './cubeTestCalculation.js';
 
-export { formatDateDDMMYYYY };
+export { formatDateDDMMYYYY, calculateAverageCompressiveStrength };
 
 /**
  * Utility functions for ACT (Accelerated Curing Test) Cube Compressive Strength Calculation
@@ -282,31 +282,51 @@ export function calculateActCubeTest(observations = [], metadata = {}) {
     });
   });
 
-  // Average ACT Compressive Strength (Ra)
-  let rawAverageStrength = null;
-  let averageStrength = null;
-  let averageStrengthFormatted = '';
+  // Helper for formatting strengths to nearest 0.5: integer -> 1 decimal (e.g. 34.0), half -> 2 decimals (e.g. 36.50, 15.50)
+  const formatStrength = (val) => {
+    if (val === null || val === undefined || isNaN(val)) return '';
+    return val % 1 === 0 ? val.toFixed(1) : val.toFixed(2);
+  };
 
-  if (validStrengths.length > 0) {
-    const sum = validStrengths.reduce((acc, v) => acc + v, 0);
-    rawAverageStrength = sum / validStrengths.length;
-    averageStrength = roundToNearestHalf(rawAverageStrength);
-    averageStrengthFormatted = averageStrength % 1 === 0 ? averageStrength.toFixed(1) : averageStrength.toFixed(2);
-  }
+  // Representative Average Compressive Strength per IS 516 (part 1/Sec 1): 2021 Clause 3.6:
+  // 1. Evaluate Predicted 28-day Compressive Strength (Primary report result)
+  const avgPredictedResult = calculateAverageCompressiveStrength(validPredictedStrengths);
 
-  // Average Predicted 28-day ACT Compressive Strength (CR)
-  // Rounded to nearest 0.5
-  let rawAveragePredictedStrength = null;
-  let averagePredictedStrength = null;
-  let averagePredictedStrengthFormatted = '';
+  // 2. Evaluate ACT Compressive Strength (Ra)
+  const avgActResult = calculateAverageCompressiveStrength(validStrengths);
 
-  if (validPredictedStrengths.length > 0) {
-    const sumP = validPredictedStrengths.reduce((acc, v) => acc + v, 0);
-    rawAveragePredictedStrength = sumP / validPredictedStrengths.length;
-    averagePredictedStrength = roundToNearestHalf(rawAveragePredictedStrength);
-    averagePredictedStrengthFormatted = averagePredictedStrength % 1 === 0
-      ? averagePredictedStrength.toFixed(1)
-      : averagePredictedStrength.toFixed(2);
+  const isOutlierClauseApplied = Boolean(
+    avgPredictedResult.isOutlierClauseApplied || avgActResult.isOutlierClauseApplied
+  );
+
+  const rawAveragePredictedStrength = avgPredictedResult.rawAverageStrength;
+  const averagePredictedStrength = avgPredictedResult.averageStrength;
+  const averagePredictedStrengthFormatted = formatStrength(averagePredictedStrength);
+
+  const rawAverageStrength = avgActResult.rawAverageStrength;
+  const averageStrength = avgActResult.averageStrength;
+  const averageStrengthFormatted = formatStrength(averageStrength);
+
+  // Determine excluded indices: combine from both predicted strengths and ACT strengths
+  const excludedPredictedIndices = avgPredictedResult.excludedIndices || [];
+  const excludedActIndices = avgActResult.excludedIndices || [];
+  const excludedIndices = Array.from(new Set([...excludedPredictedIndices, ...excludedActIndices]));
+
+  // Mark rows that were excluded from the representative average due to > ±15% variation per IS 516 Cl 3.6
+  if (isOutlierClauseApplied) {
+    rows.forEach((r, idx) => {
+      if (excludedIndices.length > 0) {
+        r.isExcludedFromAverage = excludedIndices.includes(idx);
+      } else {
+        r.isExcludedFromAverage =
+          Boolean(avgPredictedResult.excludedValues?.includes(r.predicted28DayStrength)) ||
+          Boolean(avgActResult.excludedValues?.includes(r.roundedStrength));
+      }
+    });
+  } else {
+    rows.forEach((r) => {
+      r.isExcludedFromAverage = false;
+    });
   }
 
   // Average Weight
@@ -338,6 +358,18 @@ export function calculateActCubeTest(observations = [], metadata = {}) {
     rawAveragePredictedStrength,
     averagePredictedStrength,
     averagePredictedStrengthFormatted,
+    isOutlierClauseApplied,
+    initialAverageStrength: avgActResult.initialAverageStrength,
+    initialAveragePredictedStrength: avgPredictedResult.initialAverageStrength,
+    lowerLimit15Percent: avgPredictedResult.lowerLimit15Percent,
+    upperLimit15Percent: avgPredictedResult.upperLimit15Percent,
+    lowerLimitAct15Percent: avgActResult.lowerLimit15Percent,
+    upperLimitAct15Percent: avgActResult.upperLimit15Percent,
+    closestValues: avgPredictedResult.closestValues,
+    excludedValues: avgPredictedResult.excludedValues,
+    closestActValues: avgActResult.closestValues,
+    excludedActValues: avgActResult.excludedValues,
+    calculationClauseNote: avgPredictedResult.clauseNote || avgActResult.clauseNote,
     averageWeightFormatted,
     averageAgeFormatted,
     // Requirement 7: Average weight and average ACT strength are testing data only, excluded from final report.
