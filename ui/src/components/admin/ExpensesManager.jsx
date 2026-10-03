@@ -20,7 +20,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useExpenses } from '@/contexts/ExpensesContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient, authFetch } from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AppDatePicker } from '@/components/ui/AppDatePicker';
@@ -76,6 +76,8 @@ const ExpensesManager = ({ id }) => {
 
   const [records, setRecords] = React.useState([]);
   const [totalRecords, setTotalRecords] = React.useState(0);
+  const [totalAmount, setTotalAmount] = React.useState(0);
+  const [summaryRefresh, setSummaryRefresh] = React.useState(0);
   const [loadingRecords, setLoadingRecords] = React.useState(false);
   const [usersList, setUsersList] = React.useState([]);
 
@@ -214,6 +216,31 @@ const ExpensesManager = ({ id }) => {
     fetchRecords();
   }, [fetchRecords]);
 
+  React.useEffect(() => {
+    let isCurrent = true;
+    const params = new URLSearchParams();
+    if (searchTerm) params.set('q', searchTerm);
+    if (filterDateStart) params.set('date_from', filterDateStart);
+    if (filterDateEnd) params.set('date_to', filterDateEnd);
+    if (filterByCreator && filterByCreator !== 'all') params.set('created_by', filterByCreator);
+
+    authFetch(`/api/expenses/summary?${params.toString()}`)
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+        return response.json();
+      })
+      .then(({ total_amount }) => {
+        if (isCurrent) setTotalAmount(Number(total_amount) || 0);
+      })
+      .catch((error) => {
+        console.error('Fetch Expenses Summary Error:', error);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [searchTerm, filterDateStart, filterDateEnd, filterByCreator, summaryRefresh]);
+
   const resetFilters = () => {
     setFilterByCreator('all');
     setFilterDateStart('');
@@ -281,6 +308,7 @@ const ExpensesManager = ({ id }) => {
       setEditingExpense(null);
       setIsAddingNew(false);
       fetchRecords();
+      setSummaryRefresh((value) => value + 1);
     } catch (error) {
       toast({
         title: 'Error',
@@ -310,6 +338,7 @@ const ExpensesManager = ({ id }) => {
           variant: 'destructive',
         });
         fetchRecords();
+        setSummaryRefresh((value) => value + 1);
       } catch (error) {
         toast({
           title: 'Error',
@@ -643,9 +672,9 @@ const ExpensesManager = ({ id }) => {
           </div>
 
           <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">
-            Total Page Sum:{' '}
+            Total Sum:{' '}
             <span className="text-primary">
-              ₹{records.reduce((sum, e) => sum + Number(e.amount), 0).toLocaleString()}
+              ₹{totalAmount.toLocaleString('en-IN')}
             </span>
           </div>
         </div>

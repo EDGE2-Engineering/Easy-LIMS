@@ -53,7 +53,6 @@ import { themedReactSelectStyles } from '@/lib/reactSelectStyles';
 
 const DocumentsManager = () => {
   const [documents, setDocuments] = useState([]);
-  const [totalRecords, setTotalRecords] = useState(0);
   const [clients, setClients] = useState([]);
   const [usersList, setUsersList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -133,14 +132,10 @@ const DocumentsManager = () => {
   const fetchDocuments = async () => {
     setLoading(true);
     try {
-      const from = (currentPage - 1) * itemsPerPage;
-      const to = from + itemsPerPage - 1;
-
       let query = apiClient
         .from('documents')
         .select('*')
-        .order(sortField === 'date' ? 'created_at' : sortField, { ascending: sortOrder === 'asc' })
-        .range(from, to);
+        .order(sortField === 'date' ? 'created_at' : sortField, { ascending: sortOrder === 'asc' });
 
       if (isStandard()) {
         query = query.eq('created_by', user.id);
@@ -168,11 +163,10 @@ const DocumentsManager = () => {
         query = query.lte('created_at', toDate);
       }
 
-      const { data: rawData, count, error } = await query;
+      const { data: rawData, error } = await query;
       if (error) throw error;
 
       setDocuments(rawData || []);
-      setTotalRecords(count != null ? count : (rawData ? rawData.length : 0));
     } catch (error) {
       console.error('Error fetching documents:', error);
       toast({
@@ -188,8 +182,6 @@ const DocumentsManager = () => {
   useEffect(() => {
     fetchDocuments();
   }, [
-    currentPage,
-    itemsPerPage,
     sortField,
     sortOrder,
     searchTerm,
@@ -394,11 +386,11 @@ const DocumentsManager = () => {
     return 0;
   });
 
-  // Server-side Pagination calculations
+  const totalRecords = sortedDocuments.length;
   const totalPages = Math.ceil(totalRecords / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedDocuments = documents;
+  const paginatedDocuments = sortedDocuments.slice(startIndex, endIndex);
 
   // Reset to page 1 when filters change
   useEffect(() => {

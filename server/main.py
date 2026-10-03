@@ -2023,24 +2023,7 @@ class ExpenseUpdate(BaseModel):
     paid_by: Optional[str] = None
     remarks: Optional[str] = None
 
-@app.get("/api/expenses", tags=["Expenses"], summary="List, search & filter expenses with pagination")
-async def list_expenses(
-    page: Optional[int] = None,
-    limit: Optional[int] = None,
-    q: Optional[str] = None,
-    id: Optional[str] = None,
-    created_by: Optional[str] = None,
-    paid_by: Optional[str] = None,
-    date_from: Optional[str] = None,
-    date_to: Optional[str] = None,
-    sort_by: str = "date",
-    order: str = "desc"
-):
-    if not db_pool:
-        raise HTTPException(status_code=500, detail="Database not connected")
-    safe_sort = safe_identifier(sort_by) if sort_by in ["id", "amount", "date", "created_at", "paid_by", "project_name"] else "date"
-    sort_order = "ASC" if order.lower() == "asc" else "DESC"
-
+def build_expense_where(id, created_by, paid_by, date_from, date_to, q):
     where_parts, params = [], []
     if id is not None:
         parsed = parse_id_list(id)
@@ -2074,6 +2057,28 @@ async def list_expenses(
         where_parts.append(f"(description ILIKE ${idx} OR remarks ILIKE ${idx} OR project_name ILIKE ${idx} OR site_address ILIKE ${idx})")
 
     where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
+    return where_sql, params
+
+
+@app.get("/api/expenses", tags=["Expenses"], summary="List, search & filter expenses with pagination")
+async def list_expenses(
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
+    q: Optional[str] = None,
+    id: Optional[str] = None,
+    created_by: Optional[str] = None,
+    paid_by: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    sort_by: str = "date",
+    order: str = "desc"
+):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    safe_sort = safe_identifier(sort_by) if sort_by in ["id", "amount", "date", "created_at", "paid_by", "project_name"] else "date"
+    sort_order = "ASC" if order.lower() == "asc" else "DESC"
+
+    where_sql, params = build_expense_where(id, created_by, paid_by, date_from, date_to, q)
 
     async with db_pool.acquire() as conn:
         try:
@@ -2098,6 +2103,30 @@ async def list_expenses(
             return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
         except Exception as e:
             logger.error(f"Error listing expenses: {e}")
+            raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/expenses/summary", tags=["Expenses"], summary="Get filtered expense total")
+async def get_expenses_summary(
+    q: Optional[str] = None,
+    id: Optional[str] = None,
+    created_by: Optional[str] = None,
+    paid_by: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    where_sql, params = build_expense_where(id, created_by, paid_by, date_from, date_to, q)
+    async with db_pool.acquire() as conn:
+        try:
+            rows = await fetch_with_coerced_params(
+                conn,
+                f"SELECT COALESCE(SUM(amount), 0) AS total_amount FROM expenses {where_sql}",
+                params,
+            )
+            return {"total_amount": float(rows[0]["total_amount"] or 0)}
+        except Exception as e:
+            logger.error(f"Error calculating expenses total: {e}")
             raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/api/expenses/{expense_id}", tags=["Expenses"], summary="Get expense by ID")
