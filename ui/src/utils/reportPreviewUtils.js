@@ -150,6 +150,7 @@ export const LAB_COLUMNS = [
   { key: 'lightCompaction', label: 'Light Compaction' },
   { key: 'heavyCompaction', label: 'Heavy Compaction' },
   { key: 'labCbr', label: 'Lab CBR' },
+  { key: 'fieldCbr', label: 'Field CBR' },
   { key: 'pointLoadIndex', label: 'Point Load Index' },
   { key: 'ucs', label: 'UCS of Rock' },
 ];
@@ -189,6 +190,10 @@ export const getLabCell = (row, col) => {
     case 'labCbr':
       return row.labCbr?.reportedCbr
         ? `${row.labCbr.reportedCbr}% (${row.labCbr.condition || 'Soaked'})`
+        : '-';
+    case 'fieldCbr':
+      return row.fieldCbr?.reportedCbr
+        ? `${row.fieldCbr.reportedCbr}% (${row.fieldCbr.condition || 'Soaked'})`
         : '-';
     case 'pointLoadIndex':
       return row.pointLoadIndex?.reportedPli

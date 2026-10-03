@@ -2823,9 +2823,14 @@ const TestingManager = ({
                                                 Compaction (MDD/OMC)
                                               </th>
                                               {showSoilCbr && (
-                                                <th className="p-2.5 font-bold whitespace-nowrap">
-                                                  Lab CBR (%)
-                                                </th>
+                                                <>
+                                                  <th className="p-2.5 font-bold whitespace-nowrap">
+                                                    Lab CBR (%)
+                                                  </th>
+                                                  <th className="p-2.5 font-bold whitespace-nowrap">
+                                                    Field CBR (%)
+                                                  </th>
+                                                </>
                                               )}
                                               {showRockTests && (
                                                 <>
@@ -2942,20 +2947,36 @@ const TestingManager = ({
                                                     </div>
                                                   </td>
                                                   {showSoilCbr && (
-                                                    <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
-                                                      {d.labCbr?.reportedCbr ? (
-                                                        <div className="text-blue-700 dark:text-blue-300 font-medium">
-                                                          <span>{d.labCbr.reportedCbr}%</span>
-                                                          {d.labCbr.condition && (
-                                                            <span className="text-[10px] text-gray-400 block">
-                                                              ({d.labCbr.condition})
-                                                            </span>
-                                                          )}
-                                                        </div>
-                                                      ) : (
-                                                        '-'
-                                                      )}
-                                                    </td>
+                                                    <>
+                                                      <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
+                                                        {d.labCbr?.reportedCbr ? (
+                                                          <div className="text-blue-700 dark:text-blue-300 font-medium">
+                                                            <span>{d.labCbr.reportedCbr}%</span>
+                                                            {d.labCbr.condition && (
+                                                              <span className="text-[10px] text-gray-400 block">
+                                                                ({d.labCbr.condition})
+                                                              </span>
+                                                            )}
+                                                          </div>
+                                                        ) : (
+                                                          '-'
+                                                        )}
+                                                      </td>
+                                                      <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
+                                                        {d.fieldCbr?.reportedCbr ? (
+                                                          <div className="text-emerald-700 dark:text-emerald-300 font-medium">
+                                                            <span>{d.fieldCbr.reportedCbr}%</span>
+                                                            {d.fieldCbr.condition && (
+                                                              <span className="text-[10px] text-gray-400 block">
+                                                                ({d.fieldCbr.condition})
+                                                              </span>
+                                                            )}
+                                                          </div>
+                                                        ) : (
+                                                          '-'
+                                                        )}
+                                                      </td>
+                                                    </>
                                                   )}
                                                   {showRockTests && (
                                                     <>
