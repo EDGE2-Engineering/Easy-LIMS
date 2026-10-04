@@ -30,7 +30,7 @@ def load_environment():
                     key, val = line.split("=", 1)
                     key = key.strip()
                     val = val.strip().strip("'\"")
-                    if key and key not in os.environ:
+                    if key:
                         os.environ[key] = val
             except Exception:
                 pass

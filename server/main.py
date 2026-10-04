@@ -22,10 +22,17 @@ from email.mime.multipart import MIMEMultipart
 
 # Load dev.env from root or server directory if present, fallback to .env
 base_dir = os.path.dirname(__file__)
+loaded_env_path = None
 for env_name in ["dev.env", ".env"]:
-    load_dotenv(os.path.join(base_dir, "..", env_name))
-    load_dotenv(os.path.join(base_dir, env_name))
-load_dotenv()
+    for candidate in [os.path.join(base_dir, "..", env_name), os.path.join(base_dir, env_name)]:
+        if os.path.exists(candidate):
+            load_dotenv(candidate, override=True)
+            loaded_env_path = os.path.abspath(candidate)
+            break
+    if loaded_env_path:
+        break
+if not loaded_env_path:
+    load_dotenv(override=True)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("server")
@@ -62,7 +69,8 @@ if not (has_database_url or has_custom_db_config):
     raise RuntimeError(error_msg)
 
 if has_database_url:
-    logger.info("Using DATABASE_URL from environment.")
+    safe_target = re.sub(r':([^:@]+)@', ':***@', DATABASE_URL)
+    logger.info(f"Loaded database configuration from '{loaded_env_path or 'environment'}': {safe_target}")
 else:
     db_user = os.getenv("DB_USER") or os.getenv("POSTGRES_USER")
     db_pass = os.getenv("DB_PASSWORD") or os.getenv("POSTGRES_PASSWORD") or ""
@@ -2181,6 +2189,219 @@ async def delete_expense(expense_id: int):
         if not rows:
             raise HTTPException(status_code=404, detail="Expense not found")
         return {"message": "Expense deleted", "id": expense_id}
+
+# ============================================================================
+# Dedicated Employee Payslips REST API Endpoints
+# ============================================================================
+
+class EmployeePayslipCreate(BaseModel):
+    user_id: int
+    amount: float
+    month: int
+    year: int
+    employee_name: Optional[str] = None
+    status: Optional[str] = "Generated"
+    payment_date: Optional[str] = None
+    notes: Optional[str] = None
+    created_by: Optional[int] = None
+
+class EmployeePayslipUpdate(BaseModel):
+    user_id: Optional[int] = None
+    amount: Optional[float] = None
+    month: Optional[int] = None
+    year: Optional[int] = None
+    employee_name: Optional[str] = None
+    status: Optional[str] = None
+    payment_date: Optional[str] = None
+    notes: Optional[str] = None
+
+@app.get("/api/employee-payslips", tags=["Payslips"], summary="List and filter employee payslips")
+async def list_employee_payslips(
+    page: Optional[int] = None,
+    limit: Optional[int] = None,
+    user_id: Optional[int] = None,
+    month: Optional[int] = None,
+    year: Optional[int] = None,
+    q: Optional[str] = None,
+    sort_by: Optional[str] = "created_at",
+    order: Optional[str] = "desc"
+):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    
+    where_parts, params = [], []
+    if user_id is not None:
+        params.append(user_id)
+        where_parts.append(f"p.user_id = ${len(params)}")
+    if month is not None:
+        params.append(month)
+        where_parts.append(f"p.month = ${len(params)}")
+    if year is not None:
+        params.append(year)
+        where_parts.append(f"p.year = ${len(params)}")
+    if q:
+        params.append(f"%{q}%")
+        idx = len(params)
+        where_parts.append(f"(p.employee_name ILIKE ${idx} OR u.full_name ILIKE ${idx} OR u.username ILIKE ${idx} OR p.notes ILIKE ${idx})")
+        
+    where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
+    
+    allowed_sort_fields = {
+        "id": "p.id",
+        "amount": "p.amount",
+        "month": "p.month",
+        "year": "p.year",
+        "created_at": "p.created_at",
+        "employee_name": "p.employee_name"
+    }
+    safe_sort = allowed_sort_fields.get(sort_by, "p.created_at")
+    sort_order = "ASC" if order and order.lower() == "asc" else "DESC"
+    
+    async with db_pool.acquire() as conn:
+        count_rows = await fetch_with_coerced_params(
+            conn, 
+            f"SELECT COUNT(*) FROM employee_payslips p LEFT JOIN users u ON p.user_id = u.id {where_sql}", 
+            params
+        )
+        total = int(count_rows[0]["count"]) if count_rows else 0
+        
+        limit_sql = ""
+        query_params = list(params)
+        if limit is not None:
+            p_val = max(1, page or 1)
+            l_val = max(1, min(limit, 500))
+            offset = (p_val - 1) * l_val
+            query_params.extend([l_val, offset])
+            limit_sql = f"LIMIT ${len(query_params)-1} OFFSET ${len(query_params)}"
+            
+        query = f"""
+            SELECT 
+                p.*,
+                CASE WHEN u.id IS NOT NULL THEN 
+                    jsonb_build_object(
+                        'id', u.id, 
+                        'full_name', u.full_name, 
+                        'username', u.username, 
+                        'role', u.role, 
+                        'employee_id', u.employee_id
+                    ) 
+                ELSE NULL END AS users
+            FROM employee_payslips p
+            LEFT JOIN users u ON p.user_id = u.id
+            {where_sql}
+            ORDER BY {safe_sort} {sort_order}
+            {limit_sql}
+        """
+        rows = await fetch_with_coerced_params(conn, query, query_params)
+        result = []
+        for r in rows:
+            doc = dict(r)
+            if isinstance(doc.get("users"), str):
+                try:
+                    doc["users"] = json.loads(doc["users"])
+                except Exception:
+                    pass
+            result.append(doc)
+            
+        if page is not None or limit is not None:
+            return {"data": result, "total": total, "page": page or 1, "limit": limit or total}
+        return result
+
+@app.get("/api/employee-payslips/{payslip_id}", tags=["Payslips"], summary="Get employee payslip by ID")
+async def get_employee_payslip(payslip_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    query = """
+        SELECT 
+            p.*,
+            CASE WHEN u.id IS NOT NULL THEN 
+                jsonb_build_object(
+                    'id', u.id, 
+                    'full_name', u.full_name, 
+                    'username', u.username, 
+                    'role', u.role, 
+                    'employee_id', u.employee_id
+                ) 
+            ELSE NULL END AS users
+        FROM employee_payslips p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.id = $1
+    """
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, query, [payslip_id])
+        if not rows:
+            raise HTTPException(status_code=404, detail="Payslip not found")
+        doc = dict(rows[0])
+        if isinstance(doc.get("users"), str):
+            try:
+                doc["users"] = json.loads(doc["users"])
+            except Exception:
+                pass
+        return doc
+
+@app.post("/api/employee-payslips", tags=["Payslips"], status_code=201, summary="Create employee payslip")
+async def create_employee_payslip(payload: EmployeePayslipCreate):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        emp_name = payload.employee_name
+        if not emp_name:
+            u_row = await fetch_with_coerced_params(conn, "SELECT full_name, username FROM users WHERE id = $1", [payload.user_id])
+            if u_row:
+                emp_name = u_row[0].get("full_name") or u_row[0].get("username")
+                
+        query = """
+            INSERT INTO employee_payslips (
+                user_id, employee_name, amount, month, year, status, payment_date, notes, created_by, created_at, updated_at
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()
+            ) RETURNING *
+        """
+        params = [
+            payload.user_id,
+            emp_name,
+            payload.amount,
+            payload.month,
+            payload.year,
+            payload.status or "Generated",
+            payload.payment_date,
+            payload.notes,
+            payload.created_by
+        ]
+        rows = await fetch_with_coerced_params(conn, query, params)
+        if not rows:
+            raise HTTPException(status_code=400, detail="Failed to create employee payslip")
+        return dict(rows[0])
+
+@app.put("/api/employee-payslips/{payslip_id}", tags=["Payslips"], summary="Update employee payslip")
+async def update_employee_payslip(payslip_id: int, payload: EmployeePayslipUpdate):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    fields, params = [], []
+    for k, v in payload.dict(exclude_unset=True).items():
+        if v is not None:
+            params.append(v)
+            fields.append(f"{k} = ${len(params)}")
+    if not fields:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    fields.append("updated_at = NOW()")
+    params.append(payslip_id)
+    query = f"UPDATE employee_payslips SET {', '.join(fields)} WHERE id = ${len(params)} RETURNING *"
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, query, params)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Payslip not found")
+        return dict(rows[0])
+
+@app.delete("/api/employee-payslips/{payslip_id}", tags=["Payslips"], summary="Delete employee payslip")
+async def delete_employee_payslip(payslip_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, "DELETE FROM employee_payslips WHERE id = $1 RETURNING id", [payslip_id])
+        if not rows:
+            raise HTTPException(status_code=404, detail="Employee payslip not found")
+        return {"message": "Payslip deleted", "id": payslip_id}
 
 # ============================================================================
 # Dedicated Approvals & Leaves REST API Endpoints

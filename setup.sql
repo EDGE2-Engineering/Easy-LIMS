@@ -121,3 +121,22 @@ CREATE TABLE IF NOT EXISTS app_settings (
 );
 CREATE INDEX IF NOT EXISTS idx_app_settings_key ON app_settings(setting_key);
 
+-- 9. Employee Payslips Table & Indexes
+CREATE TABLE IF NOT EXISTS employee_payslips (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    employee_name TEXT,
+    amount NUMERIC(12, 2) NOT NULL,
+    month INTEGER NOT NULL,
+    year INTEGER NOT NULL,
+    status TEXT DEFAULT 'Generated',
+    payment_date DATE,
+    notes TEXT,
+    created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_employee_payslips_user_id ON employee_payslips(user_id);
+CREATE INDEX IF NOT EXISTS idx_employee_payslips_year_month ON employee_payslips(year, month);
+
+

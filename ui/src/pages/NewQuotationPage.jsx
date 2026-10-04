@@ -197,6 +197,8 @@ const NewQuotationPage = () => {
   const [loadedDocumentType, setLoadedDocumentType] = useState(null);
   const [isLoadingDoc, setIsLoadingDoc] = useState(!!(pathId || searchParams.get('id') || searchParams.get('jobId')));
   const [isSavingRecord, setIsSavingRecord] = useState(false);
+  const [savingMessage, setSavingMessage] = useState('Saving document…');
+  const isSavingRef = useRef(false);
   const [lastSavedData, setLastSavedData] = useState(null);
   const [currentVersion, setCurrentVersion] = useState(1);
   const [docVersions, setDocVersions] = useState([]);
@@ -858,13 +860,20 @@ const NewQuotationPage = () => {
   }, [searchParams, savedRecordId, clients, navigate]);
 
   const handleSaveToDatabase = async () => {
+    if (isSavingRef.current || isSavingRecord) return false;
+    isSavingRef.current = true;
+    setIsSavingRecord(true);
+    setSavingMessage(savedRecordId ? `Updating ${documentType}…` : `Saving ${documentType}…`);
+
     if (!user) {
+      isSavingRef.current = false;
+      setIsSavingRecord(false);
       toast({
         title: 'Authentication Required',
         description: 'You must be logged in to save to the database.',
         variant: 'destructive',
       });
-      return;
+      return false;
     }
 
     // Prevent ACCOUNTS role from updating others' documents
@@ -876,15 +885,16 @@ const NewQuotationPage = () => {
       documentCreatorId &&
       documentCreatorId !== user.id
     ) {
+      isSavingRef.current = false;
+      setIsSavingRecord(false);
       toast({
         title: 'Permission Denied',
         description: 'You cannot update a document created by another user.',
         variant: 'destructive',
       });
-      return;
+      return false;
     }
 
-    setIsSavingRecord(true);
     try {
       // Detect if the document type has changed from what was loaded
       const isTypeChanged =
@@ -901,6 +911,7 @@ const NewQuotationPage = () => {
       const clientId = selectedClient?.id || null;
 
       if (!clientId && !savedRecordId) {
+        isSavingRef.current = false;
         setIsSavingRecord(false);
         toast({
           title: 'Valid Client Required',
@@ -908,7 +919,7 @@ const NewQuotationPage = () => {
             "A job cannot be created without a registered client. Please select a client from the list instead of using 'Other'.",
           variant: 'destructive',
         });
-        return;
+        return false;
       }
 
       // Robustly determine the integer user ID for bigint columns
@@ -934,9 +945,10 @@ const NewQuotationPage = () => {
       let resolvedJobId = linkedJobId || (searchParams.get('jobId') ? decodeId(searchParams.get('jobId')) : null);
 
       if (!resolvedJobId && !bypassJobCheckRef.current) {
+        isSavingRef.current = false;
         setIsSavingRecord(false);
         setShowAutoJobDialog(true);
-        return;
+        return false;
       }
 
       if (!resolvedJobId) {
@@ -1129,6 +1141,7 @@ const NewQuotationPage = () => {
       });
       return false;
     } finally {
+      isSavingRef.current = false;
       setIsSavingRecord(false);
       // Reset the navigation ref after a delay to ensure the URL has changed in the browser
       setTimeout(() => {
@@ -1138,7 +1151,14 @@ const NewQuotationPage = () => {
   };
 
   const handleSaveAsNewVersion = async () => {
+    if (isSavingRef.current || isSavingRecord) return false;
+    isSavingRef.current = true;
+    setIsSavingRecord(true);
+    setSavingMessage('Saving as new version…');
+
     if (!user) {
+      isSavingRef.current = false;
+      setIsSavingRecord(false);
       toast({
         title: 'Authentication Required',
         description: 'You must be logged in to save to the database.',
@@ -1146,9 +1166,6 @@ const NewQuotationPage = () => {
       });
       return false;
     }
-
-    if (isSavingRecord) return false;
-    setIsSavingRecord(true);
 
     try {
       const { data: existingVersions, error: versionErr } = await apiClient
@@ -1266,6 +1283,7 @@ const NewQuotationPage = () => {
       });
       return false;
     } finally {
+      isSavingRef.current = false;
       setIsSavingRecord(false);
     }
   };
@@ -2245,6 +2263,19 @@ const NewQuotationPage = () => {
           </p>
         </div>
       )}
+      {isSavingRecord && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm select-none transition-colors cursor-wait">
+          <div className="bg-white/95 dark:bg-card/95 shadow-2xl border border-gray-200 dark:border-border rounded-2xl p-6 flex flex-col items-center max-w-sm text-center">
+            <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
+            <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+              {savingMessage || 'Saving document…'}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Please wait while changes are being saved.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="shrink-0">
         <Navbar isDirty={isDirty} isSaving={isSavingRecord} />
       </div>
@@ -2283,6 +2314,7 @@ const NewQuotationPage = () => {
                 )}
                 <Button
                   onClick={() => {
+                    if (isSavingRef.current || isSavingRecord) return;
                     if (documentType === 'Quotation' && savedRecordId) {
                       setShowUpdateConfirm(true);
                     } else {
@@ -2301,7 +2333,10 @@ const NewQuotationPage = () => {
                 </Button>
                 {documentType === 'Quotation' && savedRecordId && (
                   <Button
-                    onClick={() => setShowSaveAsNewConfirm(true)}
+                    onClick={() => {
+                      if (isSavingRef.current || isSavingRecord) return;
+                      setShowSaveAsNewConfirm(true);
+                    }}
                     disabled={isSavingRecord}
                     className="bg-emerald-700 hover:bg-emerald-800 text-white"
                   >
@@ -4483,6 +4518,7 @@ const NewQuotationPage = () => {
                 Discard & Switch
               </Button>
               <Button
+                disabled={isSavingRecord}
                 className="bg-green-800 hover:bg-green-900 text-white"
                 onClick={handleSaveAndSwitch}
               >
@@ -4504,11 +4540,19 @@ const NewQuotationPage = () => {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setShowSaveAsNewConfirm(false)}>
+              <AlertDialogCancel
+                disabled={isSavingRecord}
+                onClick={() => setShowSaveAsNewConfirm(false)}
+              >
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => {
+                disabled={isSavingRecord}
+                onClick={(e) => {
+                  if (isSavingRef.current || isSavingRecord) {
+                    e.preventDefault();
+                    return;
+                  }
                   setShowSaveAsNewConfirm(false);
                   handleSaveAsNewVersion();
                 }}
@@ -4532,11 +4576,19 @@ const NewQuotationPage = () => {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setShowUpdateConfirm(false)}>
+              <AlertDialogCancel
+                disabled={isSavingRecord}
+                onClick={() => setShowUpdateConfirm(false)}
+              >
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => {
+                disabled={isSavingRecord}
+                onClick={(e) => {
+                  if (isSavingRef.current || isSavingRecord) {
+                    e.preventDefault();
+                    return;
+                  }
                   setShowUpdateConfirm(false);
                   handleSaveToDatabase();
                 }}
@@ -4564,6 +4616,7 @@ const NewQuotationPage = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel
+              disabled={isSavingRecord}
               onClick={() => {
                 bypassJobCheckRef.current = false;
               }}
@@ -4571,8 +4624,13 @@ const NewQuotationPage = () => {
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
+              disabled={isSavingRecord}
               className="bg-primary hover:bg-primary-dark"
-              onClick={() => {
+              onClick={(e) => {
+                if (isSavingRef.current || isSavingRecord) {
+                  e.preventDefault();
+                  return;
+                }
                 bypassJobCheckRef.current = true;
                 handleSaveToDatabase();
               }}

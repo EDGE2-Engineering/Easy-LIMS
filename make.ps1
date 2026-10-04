@@ -71,23 +71,50 @@ function Invoke-Clean {
     if (Test-Path node_modules) { Remove-Item -Recurse -Force node_modules }
 }
 
+function Get-SystemPython {
+    if (Get-Command py -ErrorAction SilentlyContinue) { return "py" }
+    try {
+        $out = & python --version 2>&1
+        if ($LASTEXITCODE -eq 0) { return "python" }
+    } catch {}
+    $known = "$env:LOCALAPPDATA\Programs\Python\Python314\python.exe"
+    if (Test-Path $known) { return $known }
+    return "python"
+}
+
+function Ensure-Venv {
+    $venvPy = "$PSScriptRoot\.venv\Scripts\python.exe"
+    if (-not (Test-Path $venvPy)) {
+        Write-Host "Virtual environment not found. Creating .venv..." -ForegroundColor Green
+        $sysPy = Get-SystemPython
+        & $sysPy -m venv "$PSScriptRoot\.venv"
+        if (-not (Test-Path $venvPy)) {
+            Write-Error "Failed to create .venv. Please make sure Python is installed."
+            exit 1
+        }
+    }
+    return $venvPy
+}
+
 function Invoke-Dev {
     Invoke-Build
+    $py = Ensure-Venv
     Write-Host "Installing Python dependencies..." -ForegroundColor Green
-    & ".venv\Scripts\python.exe" -m pip install -r server/requirements.txt uvicorn
+    & $py -m pip install -r server/requirements.txt uvicorn
     Write-Host "Starting FastAPI server on http://0.0.0.0:8000..." -ForegroundColor Green
     Push-Location server
-    & "..\.venv\Scripts\python.exe" -m uvicorn main:app --host 0.0.0.0 --reload --port 8000
+    & $py -m uvicorn main:app --host 0.0.0.0 --reload --port 8000
     Pop-Location
 }
 
 function Invoke-Preview {
     Invoke-Build
+    $py = Ensure-Venv
     Write-Host "Installing Python dependencies..." -ForegroundColor Green
-    & ".venv\Scripts\python.exe" -m pip install -r server/requirements.txt uvicorn
+    & $py -m pip install -r server/requirements.txt uvicorn
     Write-Host "Starting FastAPI server on http://0.0.0.0:8000..." -ForegroundColor Green
     Push-Location server
-    & "..\.venv\Scripts\python.exe" -m uvicorn main:app --host 0.0.0.0 --port 8000
+    & $py -m uvicorn main:app --host 0.0.0.0 --port 8000
     Pop-Location
 }
 
@@ -122,12 +149,7 @@ function Invoke-Android {
 }
 
 function Get-PythonPath {
-    if (Test-Path "$PSScriptRoot\.venv\Scripts\python.exe") {
-        return "$PSScriptRoot\.venv\Scripts\python.exe"
-    } elseif (Test-Path ".venv\Scripts\python.exe") {
-        return ".venv\Scripts\python.exe"
-    }
-    return "python"
+    return (Ensure-Venv)
 }
 
 function Invoke-InitTest {
@@ -220,8 +242,9 @@ function Invoke-DockerRun {
 }
 
 function Invoke-DbSetup {
+    $py = Ensure-Venv
     Write-Host "Applying setup.sql to PostgreSQL database..." -ForegroundColor Green
-    python scripts/apply_sql.py setup.sql
+    & $py scripts/apply_sql.py setup.sql
 }
 
 switch ($Target) {

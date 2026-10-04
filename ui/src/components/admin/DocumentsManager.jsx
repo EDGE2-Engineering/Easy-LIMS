@@ -742,10 +742,6 @@ const DocumentsManager = () => {
                 </th>
 
                 <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
-                  Document Date
-                </th>
-
-                <th className="text-left py-3 px-3 font-bold text-gray-400 uppercase tracking-widest text-[10px] whitespace-nowrap">
                   Created On
                 </th>
 
@@ -767,7 +763,7 @@ const DocumentsManager = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="py-20 text-center">
+                  <td colSpan={8} className="py-20 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
                       <p className="text-gray-500">Loading documents...</p>
@@ -776,7 +772,7 @@ const DocumentsManager = () => {
                 </tr>
               ) : paginatedDocuments.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-10 text-center text-gray-500">
+                  <td colSpan={8} className="py-10 text-center text-gray-500">
                     No documents found.
                   </td>
                 </tr>
@@ -837,10 +833,6 @@ const DocumentsManager = () => {
                         <Rupee />
                         {Math.floor(calculateRecordTotal(record)).toLocaleString('en-IN')}
                       </span>
-                    </td>
-
-                    <td className="py-4 px-3 whitespace-nowrap text-gray-600">
-                      {safeFormatDate(record.content?.quoteDetails?.date)}
                     </td>
 
                     <td className="py-4 px-3 whitespace-nowrap text-gray-600">
@@ -912,7 +904,7 @@ const DocumentsManager = () => {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7"
+                                className="h-7 w-7 hidden"
                                 onClick={() => handleDeleteClick(record)}
                               >
                                 <Trash2 className="h-4 w-4 text-red-500" />

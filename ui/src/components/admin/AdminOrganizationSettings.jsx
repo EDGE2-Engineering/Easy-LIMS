@@ -2,12 +2,13 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { IndianRupee, ClipboardCheck, CheckCircle2, ShieldCheck, Calendar, TrendingUp } from 'lucide-react';
+import { IndianRupee, ClipboardCheck, CheckCircle2, ShieldCheck, Calendar, TrendingUp, Banknote } from 'lucide-react';
 
 import { usePermissions } from '@/hooks/usePermissions';
 import { VIEWS } from '@/data/config';
 
 import ExpensesManager from './ExpensesManager';
+import PaySlipsManager from './PaySlipsManager';
 import BusinessInsightsManager from './BusinessInsightsManager';
 import LeavesManager from './LeavesManager';
 import ApprovalsManager from './ApprovalsManager';
@@ -26,6 +27,14 @@ const AdminOrganizationSettings = ({ id }) => {
       view: VIEWS.EXPENSES,
       component: ExpensesManager,
       description: 'Manage company expenses',
+    },
+    {
+      id: 'payslips',
+      label: 'Pay Slips',
+      icon: Banknote,
+      view: VIEWS.EXPENSES,
+      component: PaySlipsManager,
+      description: 'Manage and generate employee pay slips',
     },
     {
       id: 'insights',
