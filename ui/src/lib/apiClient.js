@@ -83,7 +83,6 @@ const ENDPOINT_MAP = {
   technician_capabilities: '/api/technician-capabilities',
   vendors_suppliers: '/api/vendors-suppliers',
   email_templates: '/api/email-templates',
-  employee_payslips: '/api/employee-payslips',
 };
 
 class QueryBuilder {
