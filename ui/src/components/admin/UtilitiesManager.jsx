@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Calculator,
   RotateCcw,
@@ -10,7 +11,11 @@ import {
   Briefcase,
   Calendar,
   ChevronRight,
+  FileText,
+  Award,
 } from 'lucide-react';
+import RelievingLetterGenerator from './RelievingLetterGenerator';
+import OfferLetterGenerator from './OfferLetterGenerator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,9 +31,42 @@ import { useToast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
-const UtilitiesManager = () => {
+const UtilitiesManager = ({ id }) => {
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('wage_calculator');
+
+  const TABS_CONFIG = [
+    {
+      id: 'wage_calculator',
+      label: 'Wage Calculator',
+      icon: Calculator,
+      description: 'Calculate monthly wages and pro-rata deductions',
+    },
+    {
+      id: 'relieving_letter',
+      label: 'Relieving Letter Generator',
+      icon: FileText,
+      description: 'Generate, customize, and print formal employee relieving letters',
+    },
+    {
+      id: 'offer_letter',
+      label: 'Offer Letter Generator',
+      icon: Award,
+      description: 'Generate, customize, and print formal employment offer letters',
+    },
+  ];
+
+  const activeTab = id && TABS_CONFIG.find((t) => t.id === id) ? id : TABS_CONFIG[0].id;
+
+  useEffect(() => {
+    if (!id && TABS_CONFIG.length > 0) {
+      navigate(`/settings/utilities/${TABS_CONFIG[0].id}`, { replace: true });
+    }
+  }, [id, navigate]);
+
+  const handleTabChange = (value) => {
+    navigate(`/settings/utilities/${value}`);
+  };
 
   // Wage Calculator State
   const [formData, setFormData] = useState({
@@ -118,27 +156,34 @@ const UtilitiesManager = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-black text-gray-900 tracking-tight">Utilities</h1>
-        <p className="text-gray-500 text-sm font-medium">
-          Helpful tools and calculators for daily operations
-        </p>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-muted/60 p-1 rounded-2xl border border-border flex self-start">
-          <TabsTrigger
-            value="wage_calculator"
-            className="rounded-xl px-6 py-2 font-black text-xs text-muted-foreground hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"
-          >
-            <Calculator className="w-3.5 h-3.5 mr-2" /> Wage Calculator
-          </TabsTrigger>
-        </TabsList>
+    <div className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <div className="flex justify-center mb-6">
+          <TabsList className="bg-white p-1 border border-gray-200 rounded-xl shadow-sm h-auto inline-flex flex-wrap justify-center">
+            {TABS_CONFIG.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="px-4 py-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white transition-all flex items-center gap-2"
+              >
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2 text-xs sm:text-sm">
+                      <tab.icon className="w-4 h-4" /> {tab.label}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                    <p className="text-xs">{tab.description}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
         <TabsContent
           value="wage_calculator"
-          className="animate-in fade-in slide-in-from-bottom-4 duration-500"
+          className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Input Section */}
@@ -342,6 +387,20 @@ const UtilitiesManager = () => {
               )}
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent
+          value="relieving_letter"
+          className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
+        >
+          <RelievingLetterGenerator />
+        </TabsContent>
+
+        <TabsContent
+          value="offer_letter"
+          className="focus-visible:outline-none animate-in fade-in slide-in-from-bottom-2 duration-300"
+        >
+          <OfferLetterGenerator />
         </TabsContent>
       </Tabs>
     </div>

@@ -190,7 +190,11 @@
 .dark .a4-container,
 .dark .a4-page,
 .dark #printable-payslip-root,
-.dark #printable-payslip-root .a4-container {
+.dark #printable-relieving-root,
+.dark #printable-offer-root,
+.dark #printable-payslip-root .a4-container,
+.dark #printable-relieving-root .a4-container,
+.dark #printable-offer-root .a4-container {
   background: white !important;
   color: #111827 !important;
   border-color: #e1e4e8 !important;
@@ -198,31 +202,66 @@
 
 .dark .a4-container .bg-white,
 .dark .a4-page .bg-white,
-.dark #printable-payslip-root .bg-white {
+.dark #printable-payslip-root .bg-white,
+.dark #printable-relieving-root .bg-white,
+.dark #printable-offer-root .bg-white {
   background-color: white !important;
 }
 
 .dark .a4-container .bg-gray-50,
+.dark .a4-container .bg-gray-50\/80,
+.dark .a4-container .bg-gray-50\/70,
+.dark .a4-container .bg-gray-50\/50,
+.dark .a4-container .bg-gray-50\/40,
+.dark .a4-container .bg-gray-50\/30,
 .dark .a4-page .bg-gray-50,
-.dark #printable-payslip-root .bg-gray-50 {
+.dark .a4-page .bg-gray-50\/80,
+.dark .a4-page .bg-gray-50\/70,
+.dark .a4-page .bg-gray-50\/50,
+.dark .a4-page .bg-gray-50\/40,
+.dark .a4-page .bg-gray-50\/30,
+.dark #printable-payslip-root .bg-gray-50,
+.dark #printable-payslip-root .bg-gray-50\/80,
+.dark #printable-payslip-root .bg-gray-50\/70,
+.dark #printable-payslip-root .bg-gray-50\/50,
+.dark #printable-payslip-root .bg-gray-50\/40,
+.dark #printable-payslip-root .bg-gray-50\/30,
+.dark #printable-relieving-root .bg-gray-50,
+.dark #printable-relieving-root .bg-gray-50\/80,
+.dark #printable-relieving-root .bg-gray-50\/70,
+.dark #printable-relieving-root .bg-gray-50\/50,
+.dark #printable-relieving-root .bg-gray-50\/40,
+.dark #printable-relieving-root .bg-gray-50\/30,
+.dark #printable-offer-root .bg-gray-50,
+.dark #printable-offer-root .bg-gray-50\/80,
+.dark #printable-offer-root .bg-gray-50\/70,
+.dark #printable-offer-root .bg-gray-50\/50,
+.dark #printable-offer-root .bg-gray-50\/40,
+.dark #printable-offer-root .bg-gray-50\/30 {
   background-color: #f9fafb !important;
 }
 
 .dark .a4-container .bg-gray-100,
 .dark .a4-page .bg-gray-100,
-.dark #printable-payslip-root .bg-gray-100 {
+.dark #printable-payslip-root .bg-gray-100,
+.dark #printable-relieving-root .bg-gray-100,
+.dark #printable-offer-root .bg-gray-100 {
   background-color: #f3f4f6 !important;
 }
 
 .dark .a4-container .bg-gray-200,
 .dark .a4-page .bg-gray-200,
-.dark #printable-payslip-root .bg-gray-200 {
+.dark #printable-payslip-root .bg-gray-200,
+.dark #printable-relieving-root .bg-gray-200,
+.dark #printable-offer-root .bg-gray-200 {
   background-color: #e5e7eb !important;
 }
 
 .dark .a4-container .bg-gray-300,
 .dark .a4-page .bg-gray-300,
-.dark #printable-payslip-root .bg-gray-300 {
+.dark #printable-payslip-root .bg-gray-300,
+.dark #printable-relieving-root .bg-gray-300,
+.dark #printable-offer-root .bg-gray-300 {
   background-color: #d1d5db !important;
 }
 
@@ -232,7 +271,13 @@
 .dark .a4-page .text-gray-800,
 .dark #printable-payslip-root .text-gray-900,
 .dark #printable-payslip-root .text-gray-800,
-.dark #printable-payslip-root .text-gray-950 {
+.dark #printable-payslip-root .text-gray-950,
+.dark #printable-relieving-root .text-gray-900,
+.dark #printable-relieving-root .text-gray-800,
+.dark #printable-relieving-root .text-gray-950,
+.dark #printable-offer-root .text-gray-900,
+.dark #printable-offer-root .text-gray-800,
+.dark #printable-offer-root .text-gray-950 {
   color: #111827 !important;
 }
 
@@ -241,7 +286,11 @@
 .dark .a4-page .text-gray-700,
 .dark .a4-page .text-gray-600,
 .dark #printable-payslip-root .text-gray-700,
-.dark #printable-payslip-root .text-gray-600 {
+.dark #printable-payslip-root .text-gray-600,
+.dark #printable-relieving-root .text-gray-700,
+.dark #printable-relieving-root .text-gray-600,
+.dark #printable-offer-root .text-gray-700,
+.dark #printable-offer-root .text-gray-600 {
   color: #4b5563 !important;
 }
 
@@ -250,13 +299,19 @@
 .dark .a4-page .text-gray-500,
 .dark .a4-page .text-gray-400,
 .dark #printable-payslip-root .text-gray-500,
-.dark #printable-payslip-root .text-gray-400 {
+.dark #printable-payslip-root .text-gray-400,
+.dark #printable-relieving-root .text-gray-500,
+.dark #printable-relieving-root .text-gray-400,
+.dark #printable-offer-root .text-gray-500,
+.dark #printable-offer-root .text-gray-400 {
   color: #6b7280 !important;
 }
 
 .dark .a4-container .text-black,
 .dark .a4-page .text-black,
-.dark #printable-payslip-root .text-black {
+.dark #printable-payslip-root .text-black,
+.dark #printable-relieving-root .text-black,
+.dark #printable-offer-root .text-black {
   color: #000000 !important;
 }
 
@@ -273,7 +328,17 @@
 .dark #printable-payslip-root .border-gray-100,
 .dark #printable-payslip-root .border-gray-200,
 .dark #printable-payslip-root .border-gray-300,
-.dark #printable-payslip-root .border {
+.dark #printable-payslip-root .border,
+.dark #printable-relieving-root .border-gray-50,
+.dark #printable-relieving-root .border-gray-100,
+.dark #printable-relieving-root .border-gray-200,
+.dark #printable-relieving-root .border-gray-300,
+.dark #printable-relieving-root .border,
+.dark #printable-offer-root .border-gray-50,
+.dark #printable-offer-root .border-gray-100,
+.dark #printable-offer-root .border-gray-200,
+.dark #printable-offer-root .border-gray-300,
+.dark #printable-offer-root .border {
   border-color: #e5e7eb !important;
 }
 
@@ -387,7 +452,9 @@
   /* Key fix: Hide everything except the print root */
   #printable-quote-root,
   #printable-report-root,
-  #printable-payslip-root {
+  #printable-payslip-root,
+  #printable-relieving-root,
+  #printable-offer-root {
     visibility: visible;
     position: static !important;
     left: auto !important;
@@ -405,7 +472,9 @@
   /* Ensure children are visible and stay within the page width */
   #printable-quote-root *,
   #printable-report-root *,
-  #printable-payslip-root * {
+  #printable-payslip-root *,
+  #printable-relieving-root *,
+  #printable-offer-root * {
     visibility: visible;
     box-sizing: border-box;
   }
