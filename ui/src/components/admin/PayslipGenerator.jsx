@@ -609,31 +609,31 @@ const PayslipGenerator = () => {
                 className="a4-scale-wrapper mx-auto"
                 style={{
                   width: `${794 * previewScale}px`,
-                  height: `${1123 * previewScale}px`,
+                  height: `${1122.5 * previewScale}px`,
+                  marginBottom: `${48 * previewScale}px`,
                 }}
               >
                 <div
-                  className="a4-container bg-white relative flex flex-col justify-between"
+                  className="a4-container"
                   style={{
-                    width: '794px',
-                    minHeight: '1123px',
-                    height: '1123px',
                     transform: `scale(${previewScale})`,
                     transformOrigin: 'top left',
-                    backgroundColor: '#ffffff',
-                    color: '#111827',
+                    margin: 0,
                   }}
                 >
-                  {/* Subtle Watermark */}
+                  {/* Watermark — matches NewQuotationPage & Relieving Letter standard */}
                   <div
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
-                    style={{ transform: 'rotate(-55deg)', zIndex: 0 }}
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    style={{
+                      transform: 'rotate(-55deg)',
+                      zIndex: 0,
+                    }}
                   >
                     <span
                       style={{
-                        fontSize: '36pt',
+                        fontSize: '42pt',
                         fontWeight: 700,
-                        color: 'rgba(0,0,0,0.025)',
+                        color: 'rgba(0,0,0,0.02)',
                         whiteSpace: 'nowrap',
                       }}
                     >
@@ -641,127 +641,129 @@ const PayslipGenerator = () => {
                     </span>
                   </div>
 
-                  <div className="a4-page-content flex flex-col justify-between h-full relative z-10 p-10">
+                  <div className="a4-page-content flex flex-col justify-between relative z-10">
                     <div>
-                      {/* 1. Header Row */}
+                      {/* 1. Header — standardized layout from Relieving and Offer Letter generators */}
                       {formData.includeLetterhead ? (
-                        <div className="border-b border-gray-200 pb-4 mb-4">
-                          <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-4">
-                              <img
-                                src={`${import.meta.env.BASE_URL}edge2-logo.png`}
-                                alt="Company Logo"
-                                className="w-16 h-16 object-contain shrink-0"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                              <div>
-                                <h1 className="text-lg font-bold text-[#111827] tracking-tight">
-                                  {COMPANY_INFO.name}
-                                </h1>
-                                <p className="text-xs text-gray-600 mt-0.5">
-                                  {COMPANY_INFO.addressLine1} {COMPANY_INFO.addressLine2}
-                                </p>
-                                <p className="text-xs text-gray-600">
-                                  Phone: {COMPANY_INFO.phone} | Email: {COMPANY_INFO.email}
-                                </p>
-                                <p className="text-[11px] text-gray-500">
-                                  GSTIN: <span className="font-semibold text-gray-700">{COMPANY_INFO.gstin}</span> | PAN: <span className="font-semibold text-gray-700">{COMPANY_INFO.pan}</span>
-                                </p>
-                              </div>
-                            </div>
+                        <div className="flex justify-between items-start gap-2 border-b pb-4 mb-4 min-w-0 max-w-full overflow-hidden">
+                          <div className="w-[35%] min-w-0 shrink">
+                            <h3 className="text-lg font-bold text-gray-900 tracking-tight">
+                              PAYSLIP
+                            </h3>
+                            <p className="text-gray-500 mt-1 text-xs">
+                              Ref: {formData.refNumber || 'Pending'}
+                            </p>
+                            <p className="text-gray-500 mt-1 text-xs">
+                              Date: {formatDateDisplay(formData.issueDate)}
+                            </p>
+                          </div>
 
-                            <div className="text-right shrink-0">
-                              <h2 className="text-xl font-extrabold text-[#3B71CA] tracking-wider uppercase">
-                                PAYSLIP
+                          <div className="w-[65%] min-w-0 shrink flex items-center gap-2 text-right">
+                            <div className="text-right min-w-0 flex-1">
+                              <h2 className="font-bold text-sm sm:text-base text-gray-900">
+                                {COMPANY_INFO.name}
                               </h2>
-                              <p className="text-[11px] text-gray-500 mt-0.5">
-                                Ref: {formData.refNumber}
+                              <p className="text-gray-600 text-[10.5px]">
+                                {COMPANY_INFO.addressLine1}
+                              </p>
+                              <p className="text-gray-600 text-[10.5px]">
+                                {COMPANY_INFO.addressLine2}
+                              </p>
+                              <p className="text-gray-600 text-[10.5px]">
+                                <span className="font-bold">PAN:</span> {COMPANY_INFO.pan},{' '}
+                                <span className="font-bold">GSTIN:</span> {COMPANY_INFO.gstin}
+                              </p>
+                              <p className="text-gray-600 text-[10.5px]">
+                                <span className="font-bold">Phone:</span> {COMPANY_INFO.phone}
+                              </p>
+                              <p className="text-gray-600 text-[10.5px] flex justify-end gap-3">
+                                <span>
+                                  <span className="font-bold">Email:</span> {COMPANY_INFO.email}
+                                </span>
+                                <span>
+                                  <span className="font-bold">Website:</span> {COMPANY_INFO.website}
+                                </span>
                               </p>
                             </div>
+                            <img
+                              src={`${import.meta.env.BASE_URL}edge2-logo.png`}
+                              alt="Company Logo"
+                              className="w-16 h-16 object-contain flex-shrink-0"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
                           </div>
                         </div>
                       ) : (
-                        <div className="h-14 flex justify-between items-start text-xs text-gray-500 border-b pb-2 mb-4">
+                        <div className="h-16 flex justify-between items-start text-xs text-gray-500 border-b pb-2 mb-4">
                           <span>Ref: {formData.refNumber}</span>
-                          <span className="font-bold text-gray-700 uppercase">PAYSLIP</span>
                           <span>Date: {formatDateDisplay(formData.issueDate)}</span>
                         </div>
                       )}
 
-                      {/* 2. Top Grid: Employee Information & Pay Info Block */}
-                      <div className="grid grid-cols-2 gap-4 mb-4 text-xs">
-                        {/* Left: Employee Information */}
+                      {/* 2. Employee Details Block — matches Relieving and Offer letters */}
+                      <div
+                        className="grid grid-cols-2 gap-4 mb-4 text-xs p-3.5 bg-white border border-gray-200 rounded-lg"
+                        style={{ backgroundColor: '#ffffff', color: '#111827' }}
+                      >
                         <div>
-                          <div className="bg-[#5B9BD5] text-white font-bold text-[11px] uppercase tracking-wider px-3 py-1.5">
-                            EMPLOYEE INFORMATION
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                            Employee Details
+                          </span>
+                          <span className="font-bold text-gray-900 text-sm block mt-0.5">
+                            {formData.salutation} {formData.employeeName || '[Employee Name]'}
+                          </span>
+                          {formData.employeeId && (
+                            <span className="text-gray-600 block mt-0.5">
+                              Emp ID: <span className="font-mono font-semibold text-gray-800">{formData.employeeId}</span>
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                            Designation & Department
+                          </span>
+                          <span className="font-semibold text-gray-900 text-sm block mt-0.5">
+                            {formData.designation || '[Designation]'}
+                          </span>
+                          {formData.department && (
+                            <span className="text-gray-600 block mt-0.5">
+                              Dept: <span className="font-medium text-gray-800">{formData.department}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Pay Details Matrix Bar */}
+                      <div className="mb-4">
+                        <div className="border border-gray-300 rounded-lg overflow-hidden" style={{ backgroundColor: '#ffffff' }}>
+                          {/* Header Row */}
+                          <div className="grid grid-cols-5 bg-gray-50 text-gray-700 font-bold text-[10px] text-center uppercase tracking-wider divide-x divide-gray-200 border-b border-gray-200 py-1.5">
+                            <div>PAY PERIOD</div>
+                            <div>PAY DATE</div>
+                            <div>WORKING DAYS</div>
+                            <div>DAYS WORKED</div>
+                            <div>STATUS</div>
                           </div>
+                          {/* Values Row */}
                           <div
-                            className="p-3 bg-white border-l border-r border-b border-gray-200 space-y-1"
+                            className="grid grid-cols-5 text-center text-xs divide-x divide-gray-200 bg-white py-1.5"
                             style={{ backgroundColor: '#ffffff', color: '#111827' }}
                           >
-                            <div className="text-sm font-bold text-gray-900">
-                              {formData.salutation} {formData.employeeName || '[Employee Name]'}
+                            <div className="font-semibold">
+                              {MONTHS[parseInt(formData.month, 10)]} {formData.year}
                             </div>
-                            <div className="text-gray-700 font-medium">
-                              Designation: <span className="font-semibold">{formData.designation || '[Designation]'}</span>
-                            </div>
-                            {formData.employeeId && (
-                              <div className="text-gray-600">
-                                Employee ID: <span className="font-mono font-semibold">{formData.employeeId}</span>
-                              </div>
-                            )}
-                            {formData.department && (
-                              <div className="text-gray-600">
-                                Department: {formData.department}
-                              </div>
-                            )}
+                            <div className="font-medium">{formatDateDisplay(formData.paymentDate) || '-'}</div>
+                            <div className="font-mono font-medium">{formData.totalWorkingDays} Days</div>
+                            <div className="font-mono font-bold text-gray-900">{formData.daysWorked} Days</div>
+                            <div className="font-bold text-emerald-700">{formData.status}</div>
                           </div>
                         </div>
 
-                        {/* Right: Pay Details Matrix Table */}
-                        <div>
-                          <div className="border border-gray-300 overflow-hidden" style={{ backgroundColor: '#ffffff' }}>
-                            {/* Header Row 1 */}
-                            <div className="grid grid-cols-3 bg-[#5B9BD5] text-white font-bold text-[10px] text-center uppercase tracking-wider divide-x divide-white/20">
-                              <div className="py-1">PAY DATE</div>
-                              <div className="py-1">PAY TYPE</div>
-                              <div className="py-1">PAY PERIOD</div>
-                            </div>
-                            {/* Values Row 1 */}
-                            <div
-                              className="grid grid-cols-3 text-center text-xs divide-x divide-gray-300 border-b border-gray-300 bg-white"
-                              style={{ backgroundColor: '#ffffff', color: '#111827' }}
-                            >
-                              <div className="py-1.5 font-medium">{formatDateDisplay(formData.paymentDate) || '-'}</div>
-                              <div className="py-1.5 font-medium">Monthly</div>
-                              <div className="py-1.5 font-semibold">
-                                {MONTHS[parseInt(formData.month, 10)]} {formData.year}
-                              </div>
-                            </div>
-
-                            {/* Header Row 2 */}
-                            <div className="grid grid-cols-3 bg-[#5B9BD5] text-white font-bold text-[10px] text-center uppercase tracking-wider divide-x divide-white/20">
-                              <div className="py-1">WORKING DAYS</div>
-                              <div className="py-1">DAYS WORKED</div>
-                              <div className="py-1">STATUS</div>
-                            </div>
-                            {/* Values Row 2 */}
-                            <div
-                              className="grid grid-cols-3 text-center text-xs divide-x divide-gray-300 bg-white"
-                              style={{ backgroundColor: '#ffffff', color: '#111827' }}
-                            >
-                              <div className="py-1.5 font-mono font-medium">{formData.totalWorkingDays} Days</div>
-                              <div className="py-1.5 font-mono font-bold text-gray-900">{formData.daysWorked} Days</div>
-                              <div className="py-1.5 font-semibold text-emerald-700">{formData.status}</div>
-                            </div>
-                          </div>
-
-                          <div className="mt-2 text-xs text-gray-700 flex items-center justify-between px-1">
-                            <span>Payment Method: <strong className="text-gray-900">{formData.paymentMethod}</strong></span>
-                            <span className="text-[11px] text-gray-500">Currency: <strong className="text-gray-700">INR (₹)</strong></span>
-                          </div>
+                        <div className="mt-1.5 text-xs text-gray-600 flex items-center justify-between px-1">
+                          <span>Payment Method: <strong className="text-gray-900">{formData.paymentMethod}</strong></span>
+                          <span className="text-[11px] text-gray-500">Currency: <strong className="text-gray-700">INR (₹)</strong></span>
                         </div>
                       </div>
 
@@ -905,7 +907,7 @@ const PayslipGenerator = () => {
                     </div>
 
                     {/* 6. Footer Notes */}
-                    <div className="text-center pt-4 border-t border-gray-200 space-y-1 text-xs text-gray-600 mt-auto">
+                    <div className="text-center pt-3 border-t border-gray-200 space-y-0.5 text-xs text-gray-600 mt-auto">
                       <p className="font-semibold text-gray-800">
                         For any queries regarding salary or attendance, please contact the HR & Accounts Department:
                       </p>
@@ -915,9 +917,17 @@ const PayslipGenerator = () => {
                       <p className="text-[11px] text-gray-500">
                         Email: {COMPANY_INFO.email} | Phone: {COMPANY_INFO.phone} | Website: {COMPANY_INFO.website}
                       </p>
-                      <p className="text-[10px] text-gray-400 pt-1 italic">
+                      <p className="text-[10px] text-gray-400 pt-0.5 italic">
                         This is a computer-generated pay slip and does not require a physical signature.
                       </p>
+                    </div>
+
+                    {/* 7. Page Footer — matches a4-page-footer in Relieving and Offer letters */}
+                    <div className="a4-page-footer">
+                      <span>{COMPANY_INFO.name}</span>
+                      <span>
+                        Payslip {formData.refNumber ? `(${formData.refNumber})` : ''} | Page 1 of 1
+                      </span>
                     </div>
                   </div>
                 </div>
