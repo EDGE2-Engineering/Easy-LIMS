@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useReactToPrint } from 'react-to-print';
+import { A4_PRINT_PAGE_STYLE } from '@/utils/a4PrintStyles';
+import '../ReportPreview.css';
 import {
   Plus,
   Trash2,
@@ -127,7 +130,21 @@ const PaySlipsManager = () => {
     documentTitle: viewingPayslip
       ? `Payslip_${(viewingPayslip.employee_name || 'Employee').replace(/\s+/g, '_')}_${viewingPayslip.month}_${viewingPayslip.year}`
       : 'Payslip',
+    pageStyle: A4_PRINT_PAGE_STYLE,
   });
+
+  useEffect(() => {
+    if (!viewingPayslip) return;
+    document.body.classList.add('report-preview-open');
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setViewingPayslip(null);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.classList.remove('report-preview-open');
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [viewingPayslip]);
 
   // Delete State
   const [deleteConfirmation, setDeleteConfirmation] = useState({
@@ -946,16 +963,36 @@ const PaySlipsManager = () => {
         const payrollNum = `PS-${String(viewingPayslip.id).padStart(6, '0')}`;
         const employeeIdStr = empObj?.employee_id || `EMP-${viewingPayslip.user_id}`;
 
-        return (
-          <Dialog open={!!viewingPayslip} onOpenChange={() => setViewingPayslip(null)}>
-            <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto rounded-2xl p-0 bg-gray-100 dark:bg-card">
+        const handleBackdropClick = (e) => {
+          if (e.target === e.currentTarget) setViewingPayslip(null);
+        };
+
+        return createPortal(
+          <div
+            className="report-preview-overlay bg-black/60 dark:bg-black/80"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Pay Slip preview"
+            onClick={handleBackdropClick}
+          >
+            <div
+              className="report-preview-modal bg-card text-card-foreground border border-border shadow-2xl dark:shadow-black/50"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Top Modal Action Bar */}
-              <div className="sticky top-0 z-10 bg-white/95 dark:bg-card/95 backdrop-blur-sm border-b border-gray-200 dark:border-border px-6 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Banknote className="w-5 h-5 text-primary" />
-                  <span className="font-bold text-sm text-gray-900 dark:text-gray-100">
-                    Pay Slip Preview — {displayName} ({payPeriodStr})
-                  </span>
+              <div className="report-preview-toolbar no-print bg-card border-b border-border">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                    <Banknote className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-foreground leading-tight">
+                      Pay Slip Preview
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      {displayName} · {payPeriodStr}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -965,316 +1002,332 @@ const PaySlipsManager = () => {
                     <Printer className="w-4 h-4" /> Print / Save PDF
                   </Button>
                   <Button
-                    variant="outline"
-                    size="sm"
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setViewingPayslip(null)}
-                    className="rounded-xl h-9"
+                    className="rounded-xl h-9 w-9 text-muted-foreground hover:text-foreground"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-5 h-5" />
                   </Button>
                 </div>
               </div>
 
-              {/* Printable Area - Designed Exactly as Uploaded Template */}
-              <div className="p-4 sm:p-8 flex justify-center bg-gray-100 dark:bg-muted/30">
-                <div
-                  ref={printRef}
-                  id="printable-payslip-root"
-                  className="w-full max-w-[210mm] min-h-[297mm] bg-white text-gray-900 p-8 sm:p-12 shadow-xl border border-gray-200 print:shadow-none print:border-none print:p-8 font-sans"
-                  style={{
-                    backgroundColor: '#ffffff',
-                    color: '#111827',
-                  }}
-                >
-                  {/* Print Styles Injection */}
-                  <style dangerouslySetInnerHTML={{
-                    __html: `
-                      @media print {
-                        body {
-                          background: white !important;
-                          -webkit-print-color-adjust: exact !important;
-                          print-color-adjust: exact !important;
+              {/* Scrollable Workspace with Isolated A4 Paper Sheet */}
+              <div className="a4-preview-wrapper report-preview-scroll">
+                <div ref={printRef} id="printable-payslip-root">
+                  <div
+                    className="a4-container bg-white relative flex flex-col justify-between"
+                    style={{
+                      margin: '0 auto 2rem auto',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                    }}
+                  >
+                    {/* Dark-mode isolation styles scoped to printable-payslip-root */}
+                    <style dangerouslySetInnerHTML={{
+                      __html: `
+                        #printable-payslip-root,
+                        #printable-payslip-root * {
+                          color-scheme: light !important;
                         }
-                        #printable-payslip-root {
-                          padding: 10mm !important;
-                          box-shadow: none !important;
-                          border: none !important;
-                          width: 100% !important;
-                          max-width: 100% !important;
+                        .dark #printable-payslip-root,
+                        .dark #printable-payslip-root .a4-container,
+                        .dark #printable-payslip-root .bg-white {
+                          background-color: #ffffff !important;
                         }
-                      }
-                    `
-                  }} />
+                        .dark #printable-payslip-root .bg-gray-50 {
+                          background-color: #f9fafb !important;
+                        }
+                        .dark #printable-payslip-root .text-gray-900,
+                        .dark #printable-payslip-root .text-gray-800,
+                        .dark #printable-payslip-root .text-gray-950 {
+                          color: #111827 !important;
+                        }
+                        .dark #printable-payslip-root .text-gray-700,
+                        .dark #printable-payslip-root .text-gray-600 {
+                          color: #4b5563 !important;
+                        }
+                        .dark #printable-payslip-root .text-gray-500 {
+                          color: #6b7280 !important;
+                        }
+                        .dark #printable-payslip-root .border-gray-200,
+                        .dark #printable-payslip-root .border-gray-300,
+                        .dark #printable-payslip-root .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+                        .dark #printable-payslip-root .divide-gray-300 > :not([hidden]) ~ :not([hidden]) {
+                          border-color: #e5e7eb !important;
+                        }
+                      `
+                    }} />
 
-                  {/* 1. Header Row: Company Info (left) & PAYSLIP (right) */}
-                  <div className="flex justify-between items-start border-b border-gray-200 pb-5 mb-6">
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={`${import.meta.env.BASE_URL}edge2-logo.png`}
-                        alt="Company Logo"
-                        className="w-16 h-16 object-contain shrink-0"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
+                    {/* Subtle Watermark */}
+                    <div
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+                      style={{ transform: 'rotate(-55deg)', zIndex: 0 }}
+                    >
+                      <span
+                        style={{
+                          fontSize: '40pt',
+                          fontWeight: 700,
+                          color: 'rgba(0,0,0,0.02)',
+                          whiteSpace: 'nowrap',
                         }}
-                      />
+                      >
+                        {COMPANY_INFO.name}
+                      </span>
+                    </div>
+
+                    <div className="a4-page-content flex flex-col justify-between h-full relative z-10">
                       <div>
-                        <h1 className="text-xl sm:text-2xl font-black text-[#2B6CB0] tracking-tight">
-                          {COMPANY_INFO.name}
-                        </h1>
-                        <p className="text-xs text-gray-600 mt-0.5">
-                          {COMPANY_INFO.addressLine1} {COMPANY_INFO.addressLine2}
+                        {/* 1. Header Row: Company Info (left) & PAYSLIP (right) */}
+                        <div className="flex justify-between items-start border-b border-gray-200 pb-4 mb-4">
+                          <div className="flex items-center gap-4">
+                            <img
+                              src={`${import.meta.env.BASE_URL}edge2-logo.png`}
+                              alt="Company Logo"
+                              className="w-16 h-16 object-contain shrink-0"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                            <div>
+                              <h1 className="text-lg sm:text-xl font-bold text-[#111827] tracking-tight">
+                                {COMPANY_INFO.name}
+                              </h1>
+                              <p className="text-xs text-gray-600 mt-0.5">
+                                {COMPANY_INFO.addressLine1} {COMPANY_INFO.addressLine2}
+                              </p>
+                              <p className="text-xs text-gray-600">
+                                Phone: {COMPANY_INFO.phone} | Email: {COMPANY_INFO.email}
+                              </p>
+                              <p className="text-[11px] text-gray-500">
+                                GSTIN: <span className="font-semibold text-gray-700">{COMPANY_INFO.gstin}</span> | PAN: <span className="font-semibold text-gray-700">{COMPANY_INFO.pan}</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <h2 className="text-xl sm:text-xl font-extrabold text-[#3B71CA] tracking-wider uppercase">
+                              PAYSLIP
+                            </h2>
+                          </div>
+                        </div>
+
+                        {/* 2. Top Grid: Employee Information (left) & Pay Info Block (right) */}
+                        <div className="grid grid-cols-2 gap-4 mb-5 text-xs">
+                          {/* Left: Employee Information */}
+                          <div>
+                            <div className="bg-[#5B9BD5] text-white font-bold text-[11px] uppercase tracking-wider px-3 py-1.5">
+                              EMPLOYEE INFORMATION
+                            </div>
+                            <div className="p-3 bg-white border-l border-r border-b border-gray-200 space-y-1">
+                              <div className="text-sm font-bold text-gray-900">
+                                {displayName}
+                              </div>
+                              {empObj?.role && (
+                                <div className="text-gray-700 font-medium">
+                                  Designation: <span className="font-semibold">{empObj.role}</span>
+                                </div>
+                              )}
+                              {employeeIdStr && (
+                                <div className="text-gray-600">
+                                  Employee ID: <span className="font-mono font-semibold">{employeeIdStr}</span>
+                                </div>
+                              )}
+                              {Array.isArray(empObj?.departments) && empObj.departments.length > 0 && (
+                                <div className="text-gray-600">
+                                  Department: {empObj.departments.join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Right: Pay Details Matrix Table */}
+                          <div>
+                            <div className="border border-gray-300 overflow-hidden">
+                              {/* Header Row 1 */}
+                              <div className="grid grid-cols-3 bg-[#5B9BD5] text-white font-bold text-[10px] text-center uppercase tracking-wider divide-x divide-white/20">
+                                <div className="py-1">PAY DATE</div>
+                                <div className="py-1">PAY TYPE</div>
+                                <div className="py-1">PERIOD</div>
+                              </div>
+                              {/* Values Row 1 */}
+                              <div className="grid grid-cols-3 text-center text-xs divide-x divide-gray-300 border-b border-gray-300 bg-gray-50">
+                                <div className="py-1.5 font-medium text-gray-900">{payDateStr}</div>
+                                <div className="py-1.5 font-medium text-gray-900">Monthly</div>
+                                <div className="py-1.5 font-semibold text-gray-900">{payPeriodStr}</div>
+                              </div>
+
+                              {/* Header Row 2 */}
+                              <div className="grid grid-cols-3 bg-[#5B9BD5] text-white font-bold text-[10px] text-center uppercase tracking-wider divide-x divide-white/20">
+                                <div className="py-1">PAYROLL #</div>
+                                <div className="py-1">EMPLOYEE ID</div>
+                                <div className="py-1">STATUS</div>
+                              </div>
+                              {/* Values Row 2 */}
+                              <div className="grid grid-cols-3 text-center text-xs divide-x divide-gray-300 bg-gray-50">
+                                <div className="py-1.5 font-mono text-gray-900">{payrollNum}</div>
+                                <div className="py-1.5 font-mono text-gray-900">{employeeIdStr}</div>
+                                <div className="py-1.5 font-semibold text-emerald-700">{viewingPayslip.status || 'Paid'}</div>
+                              </div>
+                            </div>
+
+                            <div className="mt-2 text-xs text-gray-700 flex items-center justify-between px-1">
+                              <span>Payment Method: <strong className="text-gray-900">Bank Transfer</strong></span>
+                              <span className="text-[11px] text-gray-500">Currency: <strong className="text-gray-700">INR (₹)</strong></span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 3. EARNINGS Section */}
+                        <div className="mb-4">
+                          <table className="w-full text-xs border-collapse">
+                            <thead>
+                              <tr className="bg-[#BFBFBF] text-gray-900 font-bold uppercase tracking-wider text-[11px]">
+                                <th className="py-1.5 px-3 text-left w-2/5">EARNINGS</th>
+                                <th className="py-1.5 px-3 text-center w-1/6">HOURS / DAYS</th>
+                                <th className="py-1.5 px-3 text-center w-1/6">RATE</th>
+                                <th className="py-1.5 px-3 text-right w-1/6">CURRENT (₹)</th>
+                                <th className="py-1.5 px-3 text-right w-1/6">YTD (₹)</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 text-gray-800 bg-white">
+                              <tr>
+                                <td className="py-1.5 px-3 font-medium">Basic Pay</td>
+                                <td className="py-1.5 px-3 text-center">30 Days</td>
+                                <td className="py-1.5 px-3 text-center">-</td>
+                                <td className="py-1.5 px-3 text-right font-mono font-medium">
+                                  {breakdown.basicPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="py-1.5 px-3 text-right font-mono font-medium">
+                                  {breakdown.basicPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className="py-1.5 px-3 font-medium">House Rent Allowance (HRA)</td>
+                                <td className="py-1.5 px-3 text-center">-</td>
+                                <td className="py-1.5 px-3 text-center">-</td>
+                                <td className="py-1.5 px-3 text-right font-mono font-medium">
+                                  {breakdown.hra.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="py-1.5 px-3 text-right font-mono font-medium">
+                                  {breakdown.hra.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className="py-1.5 px-3 font-medium">Special / Conveyance Allowance</td>
+                                <td className="py-1.5 px-3 text-center">-</td>
+                                <td className="py-1.5 px-3 text-center">-</td>
+                                <td className="py-1.5 px-3 text-right font-mono font-medium">
+                                  {breakdown.specialAllowance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="py-1.5 px-3 text-right font-mono font-medium">
+                                  {breakdown.specialAllowance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                              {viewingPayslip.notes && (
+                                <tr className="bg-gray-50">
+                                  <td colSpan={5} className="py-1.5 px-3 text-[11px] text-gray-600 italic">
+                                    Remarks / Bonus / Adjustments: {viewingPayslip.notes}
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                            <tfoot>
+                              <tr className="bg-[#BFBFBF] text-gray-900 font-bold uppercase tracking-wider text-xs">
+                                <td colSpan={3} className="py-1.5 px-3 text-right font-extrabold">
+                                  GROSS PAY
+                                </td>
+                                <td className="py-1.5 px-3 text-right font-mono font-black text-xs sm:text-sm">
+                                  ₹{breakdown.grossPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="py-1.5 px-3 text-right font-mono font-black text-xs sm:text-sm">
+                                  ₹{breakdown.grossPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+
+                        {/* 4. DEDUCTIONS Section */}
+                        <div className="mb-4">
+                          <table className="w-full text-xs border-collapse">
+                            <thead>
+                              <tr className="bg-[#BFBFBF] text-gray-900 font-bold uppercase tracking-wider text-[11px]">
+                                <th className="py-1.5 px-3 text-left w-3/5">DEDUCTIONS</th>
+                                <th className="py-1.5 px-3 text-right w-1/5">CURRENT (₹)</th>
+                                <th className="py-1.5 px-3 text-right w-1/5">YTD (₹)</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 text-gray-800 bg-white">
+                              <tr>
+                                <td className="py-1.5 px-3 font-medium">Provident Fund (PF)</td>
+                                <td className="py-1.5 px-3 text-right font-mono font-medium">0.00</td>
+                                <td className="py-1.5 px-3 text-right font-mono font-medium">0.00</td>
+                              </tr>
+                              <tr>
+                                <td className="py-1.5 px-3 font-medium">Professional Tax (PT)</td>
+                                <td className="py-1.5 px-3 text-right font-mono font-medium">0.00</td>
+                                <td className="py-1.5 px-3 text-right font-mono font-medium">0.00</td>
+                              </tr>
+                              <tr>
+                                <td className="py-1.5 px-3 font-medium">Income Tax (TDS)</td>
+                                <td className="py-1.5 px-3 text-right font-mono font-medium">0.00</td>
+                                <td className="py-1.5 px-3 text-right font-mono font-medium">0.00</td>
+                              </tr>
+                            </tbody>
+                            <tfoot>
+                              <tr className="bg-[#BFBFBF] text-gray-900 font-bold uppercase tracking-wider text-xs">
+                                <td className="py-1.5 px-3 text-right font-extrabold">
+                                  TOTAL DEDUCTIONS
+                                </td>
+                                <td className="py-1.5 px-3 text-right font-mono font-black text-xs sm:text-sm">
+                                  ₹0.00
+                                </td>
+                                <td className="py-1.5 px-3 text-right font-mono font-black text-xs sm:text-sm">
+                                  ₹0.00
+                                </td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+
+                        {/* 5. NET PAY Highlight Bar */}
+                        <div className="flex justify-end mb-6">
+                          <div className="w-full sm:w-1/2 bg-[#A6A6A6] text-gray-900 font-extrabold flex justify-between items-center py-2 px-4 text-xs sm:text-sm tracking-wider uppercase shadow-sm">
+                            <span className="font-black">NET PAY</span>
+                            <div className="text-right flex items-center gap-6">
+                              <span className="font-mono font-black text-gray-950">
+                                ₹{breakdown.netPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                              </span>
+                              <span className="font-mono font-bold text-gray-800 hidden sm:inline">
+                                ₹{breakdown.netPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 6. Footer Notes */}
+                      <div className="text-center pt-4 border-t border-gray-200 space-y-1 text-xs text-gray-600 mt-auto">
+                        <p className="font-semibold text-gray-800">
+                          If you have any questions about this payslip, please contact:
                         </p>
-                        <p className="text-xs text-gray-600">
-                          Phone: {COMPANY_INFO.phone} | Email: {COMPANY_INFO.email}
+                        <p className="font-medium text-gray-900">
+                          Accounts & HR Department — {COMPANY_INFO.name}
                         </p>
                         <p className="text-[11px] text-gray-500">
-                          GSTIN: <span className="font-semibold text-gray-700">{COMPANY_INFO.gstin}</span> | PAN: <span className="font-semibold text-gray-700">{COMPANY_INFO.pan}</span>
+                          Email: {COMPANY_INFO.email} | Phone: {COMPANY_INFO.phone} | Website: {COMPANY_INFO.website}
+                        </p>
+                        <p className="text-[10px] text-gray-400 pt-1 italic">
+                          This is a system-generated document and does not require an authorized signature.
                         </p>
                       </div>
                     </div>
-
-                    <div className="text-right shrink-0">
-                      <h2 className="text-3xl sm:text-4xl font-extrabold text-[#3B71CA] tracking-wider uppercase">
-                        PAYSLIP
-                      </h2>
-                    </div>
-                  </div>
-
-                  {/* 2. Top Grid: Employee Information (left) & Pay Info Block (right) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-xs">
-                    {/* Left: Employee Information */}
-                    <div>
-                      <div className="bg-[#5B9BD5] text-white font-bold text-[11px] uppercase tracking-wider px-3 py-1.5">
-                        EMPLOYEE INFORMATION
-                      </div>
-                      <div className="p-3 bg-white border-l border-r border-b border-gray-200 space-y-1">
-                        <div className="text-sm font-bold text-gray-900">
-                          {displayName}
-                        </div>
-                        {empObj?.role && (
-                          <div className="text-gray-700 font-medium">
-                            Designation: <span className="font-semibold">{empObj.role}</span>
-                          </div>
-                        )}
-                        {employeeIdStr && (
-                          <div className="text-gray-600">
-                            Employee ID: <span className="font-mono font-semibold">{employeeIdStr}</span>
-                          </div>
-                        )}
-                        {Array.isArray(empObj?.departments) && empObj.departments.length > 0 && (
-                          <div className="text-gray-600">
-                            Department: {empObj.departments.join(', ')}
-                          </div>
-                        )}
-                        {empObj?.username && (
-                          <div className="text-gray-500 text-[11px]">
-                            Username / System ID: {empObj.username}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Right: Pay Details Matrix Table */}
-                    <div>
-                      <div className="border border-gray-300 overflow-hidden">
-                        {/* Header Row 1 */}
-                        <div className="grid grid-cols-3 bg-[#5B9BD5] text-white font-bold text-[10px] text-center uppercase tracking-wider divide-x divide-white/20">
-                          <div className="py-1">PAY DATE</div>
-                          <div className="py-1">PAY TYPE</div>
-                          <div className="py-1">PERIOD</div>
-                        </div>
-                        {/* Values Row 1 */}
-                        <div className="grid grid-cols-3 text-center text-xs divide-x divide-gray-300 border-b border-gray-300 bg-gray-50/40">
-                          <div className="py-1.5 font-medium">{payDateStr}</div>
-                          <div className="py-1.5 font-medium">Monthly</div>
-                          <div className="py-1.5 font-semibold text-gray-900">{payPeriodStr}</div>
-                        </div>
-
-                        {/* Header Row 2 */}
-                        <div className="grid grid-cols-3 bg-[#5B9BD5] text-white font-bold text-[10px] text-center uppercase tracking-wider divide-x divide-white/20">
-                          <div className="py-1">PAYROLL #</div>
-                          <div className="py-1">EMPLOYEE ID</div>
-                          <div className="py-1">STATUS</div>
-                        </div>
-                        {/* Values Row 2 */}
-                        <div className="grid grid-cols-3 text-center text-xs divide-x divide-gray-300 bg-gray-50/40">
-                          <div className="py-1.5 font-mono">{payrollNum}</div>
-                          <div className="py-1.5 font-mono">{employeeIdStr}</div>
-                          <div className="py-1.5 font-semibold text-emerald-700">{viewingPayslip.status || 'Paid'}</div>
-                        </div>
-                      </div>
-
-                      <div className="mt-2 text-xs text-gray-700 flex items-center justify-between px-1">
-                        <span>Payment Method: <strong className="text-gray-900">Bank Transfer</strong></span>
-                        <span className="text-[11px] text-gray-500">Currency: <strong className="text-gray-700">INR (₹)</strong></span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 3. EARNINGS Section */}
-                  <div className="mb-6">
-                    <table className="w-full text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-[#BFBFBF] text-gray-900 font-bold uppercase tracking-wider text-[11px]">
-                          <th className="py-2 px-3 text-left w-2/5">EARNINGS</th>
-                          <th className="py-2 px-3 text-center w-1/6">HOURS / DAYS</th>
-                          <th className="py-2 px-3 text-center w-1/6">RATE</th>
-                          <th className="py-2 px-3 text-right w-1/6">CURRENT (₹)</th>
-                          <th className="py-2 px-3 text-right w-1/6">YTD (₹)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 text-gray-800">
-                        <tr>
-                          <td className="py-2 px-3 font-medium">Basic Pay</td>
-                          <td className="py-2 px-3 text-center">30 Days</td>
-                          <td className="py-2 px-3 text-center">-</td>
-                          <td className="py-2 px-3 text-right font-mono font-medium">
-                            {breakdown.basicPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </td>
-                          <td className="py-2 px-3 text-right font-mono font-medium">
-                            {breakdown.basicPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="py-2 px-3 font-medium">House Rent Allowance (HRA)</td>
-                          <td className="py-2 px-3 text-center">-</td>
-                          <td className="py-2 px-3 text-center">-</td>
-                          <td className="py-2 px-3 text-right font-mono font-medium">
-                            {breakdown.hra.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </td>
-                          <td className="py-2 px-3 text-right font-mono font-medium">
-                            {breakdown.hra.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="py-2 px-3 font-medium">Special / Conveyance Allowance</td>
-                          <td className="py-2 px-3 text-center">-</td>
-                          <td className="py-2 px-3 text-center">-</td>
-                          <td className="py-2 px-3 text-right font-mono font-medium">
-                            {breakdown.specialAllowance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </td>
-                          <td className="py-2 px-3 text-right font-mono font-medium">
-                            {breakdown.specialAllowance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </td>
-                        </tr>
-                        {viewingPayslip.notes && (
-                          <tr className="bg-gray-50/60">
-                            <td colSpan={5} className="py-1.5 px-3 text-[11px] text-gray-600 italic">
-                              Remarks / Bonus / Adjustments: {viewingPayslip.notes}
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                      <tfoot>
-                        <tr className="bg-[#BFBFBF] text-gray-900 font-bold uppercase tracking-wider text-xs">
-                          <td colSpan={3} className="py-2 px-3 text-right font-extrabold">
-                            GROSS PAY
-                          </td>
-                          <td className="py-2 px-3 text-right font-mono font-black text-sm">
-                            ₹{breakdown.grossPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </td>
-                          <td className="py-2 px-3 text-right font-mono font-black text-sm">
-                            ₹{breakdown.grossPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-
-                  {/* 4. DEDUCTIONS Section */}
-                  <div className="mb-6">
-                    <table className="w-full text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-[#BFBFBF] text-gray-900 font-bold uppercase tracking-wider text-[11px]">
-                          <th className="py-2 px-3 text-left w-3/5">DEDUCTIONS</th>
-                          <th className="py-2 px-3 text-right w-1/5">CURRENT (₹)</th>
-                          <th className="py-2 px-3 text-right w-1/5">YTD (₹)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 text-gray-800">
-                        <tr>
-                          <td className="py-2 px-3 font-medium">Provident Fund (PF)</td>
-                          <td className="py-2 px-3 text-right font-mono font-medium">0.00</td>
-                          <td className="py-2 px-3 text-right font-mono font-medium">0.00</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2 px-3 font-medium">Professional Tax (PT)</td>
-                          <td className="py-2 px-3 text-right font-mono font-medium">0.00</td>
-                          <td className="py-2 px-3 text-right font-mono font-medium">0.00</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2 px-3 font-medium">Income Tax (TDS)</td>
-                          <td className="py-2 px-3 text-right font-mono font-medium">0.00</td>
-                          <td className="py-2 px-3 text-right font-mono font-medium">0.00</td>
-                        </tr>
-                      </tbody>
-                      <tfoot>
-                        <tr className="bg-[#BFBFBF] text-gray-900 font-bold uppercase tracking-wider text-xs">
-                          <td className="py-2 px-3 text-right font-extrabold">
-                            TOTAL DEDUCTIONS
-                          </td>
-                          <td className="py-2 px-3 text-right font-mono font-black text-sm">
-                            ₹0.00
-                          </td>
-                          <td className="py-2 px-3 text-right font-mono font-black text-sm">
-                            ₹0.00
-                          </td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-
-                  {/* 5. NET PAY Highlight Bar (Right-Aligned like in template) */}
-                  <div className="flex justify-end mb-10">
-                    <div className="w-full sm:w-1/2 bg-[#A6A6A6] text-gray-900 font-extrabold flex justify-between items-center py-2.5 px-4 text-sm tracking-wider uppercase shadow-sm">
-                      <span className="text-base font-black">NET PAY</span>
-                      <div className="text-right flex items-center gap-6">
-                        <span className="font-mono text-base font-black text-gray-950">
-                          ₹{breakdown.netPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </span>
-                        <span className="font-mono text-sm font-bold text-gray-800 hidden sm:inline">
-                          ₹{breakdown.netPay.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 6. Footer Notes */}
-                  <div className="text-center pt-8 border-t border-gray-200 space-y-1.5 text-xs text-gray-600">
-                    <p className="font-semibold text-gray-800">
-                      If you have any questions about this payslip, please contact:
-                    </p>
-                    <p className="font-medium text-gray-900">
-                      Accounts & HR Department — {COMPANY_INFO.name}
-                    </p>
-                    <p className="text-[11px] text-gray-500">
-                      Email: {COMPANY_INFO.email} | Phone: {COMPANY_INFO.phone} | Website: {COMPANY_INFO.website}
-                    </p>
-                    <p className="text-[10px] text-gray-400 pt-3 italic">
-                      This is a system-generated document and does not require an authorized signature.
-                    </p>
                   </div>
                 </div>
               </div>
-
-              {/* Bottom Sticky Action Bar */}
-              <div className="sticky bottom-0 z-10 bg-white/95 dark:bg-card/95 backdrop-blur-sm border-t border-gray-200 dark:border-border px-6 py-3 flex justify-end gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setViewingPayslip(null)}
-                  className="rounded-xl"
-                >
-                  Close
-                </Button>
-                <Button
-                  onClick={() => handlePrint()}
-                  className="rounded-xl gap-2 bg-primary hover:bg-primary-dark text-white font-semibold shadow-sm"
-                >
-                  <Printer className="w-4 h-4" /> Print / Save PDF
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+            </div>
+          </div>,
+          document.body
         );
       })()}
 

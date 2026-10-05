@@ -188,55 +188,75 @@
 }
 
 .dark .a4-container,
-.dark .a4-page {
+.dark .a4-page,
+.dark #printable-payslip-root,
+.dark #printable-payslip-root .a4-container {
   background: white !important;
   color: #111827 !important;
   border-color: #e1e4e8 !important;
 }
 
 .dark .a4-container .bg-white,
-.dark .a4-page .bg-white {
+.dark .a4-page .bg-white,
+.dark #printable-payslip-root .bg-white {
   background-color: white !important;
 }
 
 .dark .a4-container .bg-gray-50,
-.dark .a4-page .bg-gray-50 {
+.dark .a4-page .bg-gray-50,
+.dark #printable-payslip-root .bg-gray-50 {
   background-color: #f9fafb !important;
 }
 
 .dark .a4-container .bg-gray-100,
-.dark .a4-page .bg-gray-100 {
+.dark .a4-page .bg-gray-100,
+.dark #printable-payslip-root .bg-gray-100 {
   background-color: #f3f4f6 !important;
 }
 
 .dark .a4-container .bg-gray-200,
-.dark .a4-page .bg-gray-200 {
+.dark .a4-page .bg-gray-200,
+.dark #printable-payslip-root .bg-gray-200 {
   background-color: #e5e7eb !important;
+}
+
+.dark .a4-container .bg-gray-300,
+.dark .a4-page .bg-gray-300,
+.dark #printable-payslip-root .bg-gray-300 {
+  background-color: #d1d5db !important;
 }
 
 .dark .a4-container .text-gray-900,
 .dark .a4-container .text-gray-800,
 .dark .a4-page .text-gray-900,
-.dark .a4-page .text-gray-800 {
+.dark .a4-page .text-gray-800,
+.dark #printable-payslip-root .text-gray-900,
+.dark #printable-payslip-root .text-gray-800,
+.dark #printable-payslip-root .text-gray-950 {
   color: #111827 !important;
 }
 
 .dark .a4-container .text-gray-700,
 .dark .a4-container .text-gray-600,
 .dark .a4-page .text-gray-700,
-.dark .a4-page .text-gray-600 {
+.dark .a4-page .text-gray-600,
+.dark #printable-payslip-root .text-gray-700,
+.dark #printable-payslip-root .text-gray-600 {
   color: #4b5563 !important;
 }
 
 .dark .a4-container .text-gray-500,
 .dark .a4-container .text-gray-400,
 .dark .a4-page .text-gray-500,
-.dark .a4-page .text-gray-400 {
+.dark .a4-page .text-gray-400,
+.dark #printable-payslip-root .text-gray-500,
+.dark #printable-payslip-root .text-gray-400 {
   color: #6b7280 !important;
 }
 
 .dark .a4-container .text-black,
-.dark .a4-page .text-black {
+.dark .a4-page .text-black,
+.dark #printable-payslip-root .text-black {
   color: #000000 !important;
 }
 
@@ -248,13 +268,28 @@
 .dark .a4-page .border-gray-100,
 .dark .a4-page .border-gray-200,
 .dark .a4-page .border-gray-300,
-.dark .a4-page .border {
+.dark .a4-page .border,
+.dark #printable-payslip-root .border-gray-50,
+.dark #printable-payslip-root .border-gray-100,
+.dark #printable-payslip-root .border-gray-200,
+.dark #printable-payslip-root .border-gray-300,
+.dark #printable-payslip-root .border {
   border-color: #e5e7eb !important;
 }
 
 .dark .a4-container .border-black,
-.dark .a4-page .border-black {
+.dark .a4-page .border-black,
+.dark #printable-payslip-root .border-black {
   border-color: #000000 !important;
+}
+
+.dark .a4-container .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+.dark .a4-container .divide-gray-300 > :not([hidden]) ~ :not([hidden]),
+.dark .a4-container .divide-x > :not([hidden]) ~ :not([hidden]),
+.dark #printable-payslip-root .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+.dark #printable-payslip-root .divide-gray-300 > :not([hidden]) ~ :not([hidden]),
+.dark #printable-payslip-root .divide-x > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e5e7eb !important;
 }
 
 /* Ensure high-contrast text selection highlight inside white A4 sheets in dark mode */
@@ -351,7 +386,8 @@
 
   /* Key fix: Hide everything except the print root */
   #printable-quote-root,
-  #printable-report-root {
+  #printable-report-root,
+  #printable-payslip-root {
     visibility: visible;
     position: static !important;
     left: auto !important;
@@ -368,7 +404,8 @@
 
   /* Ensure children are visible and stay within the page width */
   #printable-quote-root *,
-  #printable-report-root * {
+  #printable-report-root *,
+  #printable-payslip-root * {
     visibility: visible;
     box-sizing: border-box;
   }

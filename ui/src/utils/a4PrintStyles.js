@@ -20,7 +20,8 @@ export const A4_PRINT_PAGE_STYLE = `
   }
 
   #printable-quote-root,
-  #printable-report-root {
+  #printable-report-root,
+  #printable-payslip-root {
     position: static !important;
     visibility: visible !important;
     width: 210mm !important;
@@ -32,7 +33,8 @@ export const A4_PRINT_PAGE_STYLE = `
   }
 
   #printable-quote-root *,
-  #printable-report-root * {
+  #printable-report-root *,
+  #printable-payslip-root * {
     box-sizing: border-box !important;
   }
 
