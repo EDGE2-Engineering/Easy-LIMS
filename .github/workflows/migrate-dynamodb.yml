@@ -83,7 +83,8 @@ jobs:
         run: |
           set +x
           echo "Dumping source PostgreSQL database schema '${{ inputs.schema }}'..."
-          PGDATABASE="$SOURCE_PG_CONN_STR" pg_dump \
+          pg_dump \
+            --dbname="$SOURCE_PG_CONN_STR" \
             --format=custom \
             --no-owner \
             --no-acl \
@@ -98,14 +99,15 @@ jobs:
         run: |
           set +x
           echo "Dropping and recreating '${{ inputs.schema }}' schema on target database..."
-          PGDATABASE="$TARGET_PG_CONN_STR" psql -c "DROP SCHEMA IF EXISTS ${{ inputs.schema }} CASCADE; CREATE SCHEMA ${{ inputs.schema }};"
+          psql "$TARGET_PG_CONN_STR" -c "DROP SCHEMA IF EXISTS ${{ inputs.schema }} CASCADE; CREATE SCHEMA ${{ inputs.schema }};"
           echo "Target schema reset."
 
       - name: Restore Database to Target PostgreSQL
         run: |
           set +x
           echo "Restoring database to target..."
-          PGDATABASE="$TARGET_PG_CONN_STR" pg_restore \
+          pg_restore \
+            --dbname="$TARGET_PG_CONN_STR" \
             --no-owner \
             --no-acl \
             backup.dump || true
@@ -115,9 +117,9 @@ jobs:
         run: |
           set +x
           echo "Verifying restored tables in schema '${{ inputs.schema }}'..."
-          PGDATABASE="$TARGET_PG_CONN_STR" psql -c "SELECT table_name FROM information_schema.tables WHERE table_schema = '${{ inputs.schema }}' ORDER BY table_name;"
+          psql "$TARGET_PG_CONN_STR" -c "SELECT table_name FROM information_schema.tables WHERE table_schema = '${{ inputs.schema }}' ORDER BY table_name;"
 
-          TABLE_COUNT=$(PGDATABASE="$TARGET_PG_CONN_STR" psql -t -A -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = '${{ inputs.schema }}';")
+          TABLE_COUNT=$(psql "$TARGET_PG_CONN_STR" -t -A -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = '${{ inputs.schema }}';")
           echo "Total restored tables in '${{ inputs.schema }}' schema: $TABLE_COUNT"
 
           if [ "$TABLE_COUNT" -eq 0 ]; then
