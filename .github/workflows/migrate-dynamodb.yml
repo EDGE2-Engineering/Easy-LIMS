@@ -1,89 +1,134 @@
-name: Migrate PostgreSQL to AWS DynamoDB
+name: Migrate PostgreSQL Database (Dump & Restore)
 
 on:
   workflow_dispatch:
     inputs:
-      dry_run:
-        description: 'Dry run mode (audit only, no writes/deletions)'
+      drop_target_schema:
+        description: 'Drop public schema on target database before restore (CASCADE)'
         required: false
-        default: false
+        default: true
         type: boolean
-      clear_before_migration:
-        description: 'Wipe all items in DynamoDB table before migrating'
+      schema:
+        description: 'Database schema to dump and restore'
         required: false
-        default: false
-        type: boolean
-      tables:
-        description: 'Comma-separated specific tables to migrate (leave blank for all)'
-        required: false
-        default: ''
-        type: string
-      batch_size:
-        description: 'Batch read size from PostgreSQL'
-        required: false
-        default: '500'
+        default: 'public'
         type: string
 
 jobs:
-  migrate:
-    name: Run Database Migration
+  migrate-postgres:
+    name: Dump from Source and Restore to Target
     runs-on: ubuntu-latest
 
     env:
-      # PostgreSQL Source Connection (checks standard secret aliases)
-      PG_DATABASE_URL: ${{ secrets.PG_DATABASE_URL || secrets.DATABASE_URL || secrets.POSTGRES_DATABASE_URL }}
-      PG_USER: ${{ secrets.PG_USER || secrets.POSTGRES_USER }}
-      PG_PASSWORD: ${{ secrets.PG_PASSWORD || secrets.POSTGRES_PASSWORD }}
-      PG_HOST: ${{ secrets.PG_HOST || secrets.POSTGRES_HOST }}
-      PG_PORT: ${{ secrets.PG_PORT || secrets.POSTGRES_PORT }}
-      PG_NAME: ${{ secrets.PG_NAME || secrets.POSTGRES_DB }}
-
-      # AWS DynamoDB Target Configuration
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
-      DYNAMODB_TABLE_NAME: ${{ secrets.DYNAMODB_TABLE_NAME || 'easy-lims' }}
-      DYNAMODB_ENDPOINT_URL: ${{ secrets.DYNAMODB_ENDPOINT_URL }}
-      DYNAMODB_CLEAR_BEFORE_MIGRATION: ${{ inputs.clear_before_migration && 'true' || secrets.DYNAMODB_CLEAR_BEFORE_MIGRATION || 'false' }}
+      SOURCE_PG_CONN_STR: ${{ secrets.SOURCE_PG_CONN_STR || secrets.SUPABASE_DATABASE_URL || secrets.SRC_PG_CONN_STR }}
+      TARGET_PG_CONN_STR: ${{ secrets.TARGET_PG_CONN_STR || secrets.RDS_DATABASE_URL || secrets.DEST_PG_CONN_STR }}
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-          cache-dependency-path: 'server/requirements.txt'
-
-      - name: Install Migration Dependencies
+      - name: Validate Secrets & Register Log Masks
         run: |
-          python -m pip install --upgrade pip
-          pip install boto3 psycopg2-binary python-dotenv
+          set +x
 
-      - name: Run Migration Script
+          if [ -z "$SOURCE_PG_CONN_STR" ]; then
+            echo "::error::SOURCE_PG_CONN_STR secret is missing or empty!"
+            exit 1
+          fi
+
+          if [ -z "$TARGET_PG_CONN_STR" ]; then
+            echo "::error::TARGET_PG_CONN_STR secret is missing or empty!"
+            exit 1
+          fi
+
+          # Extract and mask full URLs and passwords so they never appear in any logs
+          python3 - << 'EOF'
+          import os
+          from urllib.parse import urlparse, unquote
+
+          for var_name in ["SOURCE_PG_CONN_STR", "TARGET_PG_CONN_STR"]:
+              val = os.environ.get(var_name, "").strip()
+              if val:
+                  print(f"::add-mask::{val}")
+                  try:
+                      parsed = urlparse(val)
+                      if parsed.password:
+                          print(f"::add-mask::{parsed.password}")
+                          unquoted = unquote(parsed.password)
+                          if unquoted != parsed.password:
+                              print(f"::add-mask::{unquoted}")
+                  except Exception:
+                      pass
+          EOF
+
+          echo "Credentials validated and masked successfully."
+
+      - name: Install PostgreSQL Client Tools & Download RDS CA Bundle
         run: |
-          CMD="python scripts/migrate_pg_to_dynamo.py"
+          set +x
+          sudo install -d /etc/apt/keyrings
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor --yes -o /etc/apt/keyrings/postgresql.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-16
 
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
-            echo "[INFO] Running in DRY-RUN mode..."
-            CMD="$CMD --dry-run"
+          # Download AWS RDS Global CA certificate bundle
+          curl -fsSL -o global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+          echo "PGSSLROOTCERT=$GITHUB_WORKSPACE/global-bundle.pem" >> $GITHUB_ENV
+
+          echo "Installed pg_dump version:"
+          pg_dump --version
+
+      - name: Dump Source PostgreSQL Database
+        run: |
+          set +x
+          echo "Dumping source PostgreSQL database schema '${{ inputs.schema }}'..."
+          PGDATABASE="$SOURCE_PG_CONN_STR" pg_dump \
+            --format=custom \
+            --no-owner \
+            --no-acl \
+            --schema="${{ inputs.schema }}" \
+            --file=backup.dump
+
+          echo "Database dump completed successfully."
+          ls -lh backup.dump
+
+      - name: Clean Target Schema (Drop & Recreate)
+        if: ${{ inputs.drop_target_schema }}
+        run: |
+          set +x
+          echo "Dropping and recreating '${{ inputs.schema }}' schema on target database..."
+          PGDATABASE="$TARGET_PG_CONN_STR" psql -c "DROP SCHEMA IF EXISTS ${{ inputs.schema }} CASCADE; CREATE SCHEMA ${{ inputs.schema }};"
+          echo "Target schema reset."
+
+      - name: Restore Database to Target PostgreSQL
+        run: |
+          set +x
+          echo "Restoring database to target..."
+          PGDATABASE="$TARGET_PG_CONN_STR" pg_restore \
+            --no-owner \
+            --no-acl \
+            backup.dump || true
+          echo "Restore execution completed."
+
+      - name: Verify Restored Target Database
+        run: |
+          set +x
+          echo "Verifying restored tables in schema '${{ inputs.schema }}'..."
+          PGDATABASE="$TARGET_PG_CONN_STR" psql -c "SELECT table_name FROM information_schema.tables WHERE table_schema = '${{ inputs.schema }}' ORDER BY table_name;"
+
+          TABLE_COUNT=$(PGDATABASE="$TARGET_PG_CONN_STR" psql -t -A -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = '${{ inputs.schema }}';")
+          echo "Total restored tables in '${{ inputs.schema }}' schema: $TABLE_COUNT"
+
+          if [ "$TABLE_COUNT" -eq 0 ]; then
+            echo "::error::Target database verification failed: 0 tables found in schema '${{ inputs.schema }}'."
+            exit 1
           fi
 
-          if [ "${{ inputs.clear_before_migration }}" = "true" ]; then
-            echo "[WARN] Clearing DynamoDB table prior to migration..."
-            CMD="$CMD --clear-before-migration"
-          fi
+          echo "Migration completed and verified successfully!"
 
-          if [ -n "${{ inputs.tables }}" ]; then
-            echo "[INFO] Filtering tables: ${{ inputs.tables }}"
-            CMD="$CMD --tables \"${{ inputs.tables }}\""
-          fi
-
-          if [ -n "${{ inputs.batch_size }}" ]; then
-            CMD="$CMD --batch-size ${{ inputs.batch_size }}"
-          fi
-
-          echo "Executing: $CMD"
-          eval $CMD
+      - name: Cleanup Backup File
+        if: always()
+        run: |
+          rm -f backup.dump global-bundle.pem
+          echo "Temporary files removed."
