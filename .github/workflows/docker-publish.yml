@@ -7,18 +7,10 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch name to checkout and build Docker image from'
-        required: true
-        default: 'main'
-        type: string
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN || secrets.DOCKERHUB_TOKEN || secrets.DOCKER_HUB_PASSWORD }}
-  DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER || secrets.DOCKERHUB_USER || secrets.DOCKER_HUB_USERNAME || github.repository_owner }}
 
 jobs:
   build-and-push:
@@ -30,8 +22,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.branch || github.ref }}
 
       - name: Set up QEMU (for multi-architecture builds)
         uses: docker/setup-qemu-action@v3
@@ -47,23 +37,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Log in to Docker Hub
-        if: github.event_name != 'pull_request' && env.DOCKER_HUB_TOKEN != ''
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DOCKER_HUB_USER }}
-          password: ${{ env.DOCKER_HUB_TOKEN }}
-
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-            ${{ env.DOCKER_HUB_USER }}/easy-lims
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable=${{ (inputs.branch || github.ref_name) == 'main' }}
-            type=raw,value=${{ inputs.branch }},enable=${{ inputs.branch != '' && inputs.branch != 'main' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha,format=short
             type=ref,event=branch
             type=semver,pattern={{version}}
