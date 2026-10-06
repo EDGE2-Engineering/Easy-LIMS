@@ -50,6 +50,14 @@ const router = createHashRouter(
       ),
     },
     {
+      path: '/doc/',
+      element: (
+        <ProtectedRoute>
+          <NewQuotationPage />
+        </ProtectedRoute>
+      ),
+    },
+    {
       path: '/doc/:id',
       element: (
         <ProtectedRoute>

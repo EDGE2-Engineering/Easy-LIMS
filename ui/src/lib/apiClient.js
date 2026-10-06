@@ -231,7 +231,8 @@ class QueryBuilder {
                 return await r.json();
               })
             );
-            const finalResult = { data: results, count: results.length, error: null };
+            const finalData = (this._single || this._maybeSingle) ? (results[0] || null) : results;
+            const finalResult = { data: finalData, count: results.length, error: null };
             return onfulfilled ? onfulfilled(finalResult) : finalResult;
           } else {
             res = await authFetch(apiPath, {
@@ -274,7 +275,9 @@ class QueryBuilder {
         }
 
         resData = await res.json();
-        const resultData = (mtype === 'insert' && Array.isArray(this._mutation.data)) ? [resData] : resData;
+        const resultData = (mtype === 'insert' && Array.isArray(this._mutation.data))
+          ? ((this._single || this._maybeSingle) ? (resData[0] || resData) : [resData])
+          : resData;
         const finalResult = { data: resultData, count: null, error: null };
         return onfulfilled ? onfulfilled(finalResult) : finalResult;
       }
@@ -282,6 +285,13 @@ class QueryBuilder {
       // Handle GET (SELECT) Queries
       const idFilter = this._filters.find((f) => f.type === 'eq' && f.column === 'id');
       if (idFilter && (this._single || this._maybeSingle)) {
+        if (!idFilter.value || idFilter.value === 'undefined' || idFilter.value === 'null') {
+          if (this._maybeSingle) {
+            const finalResult = { data: null, count: 0, error: null };
+            return onfulfilled ? onfulfilled(finalResult) : finalResult;
+          }
+          throw new Error('Invalid ID provided for fetch');
+        }
         // Direct GET by ID endpoint
         res = await authFetch(`${apiPath}/${idFilter.value}`);
         if (!res.ok) {

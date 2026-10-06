@@ -208,8 +208,7 @@ const NewQuotationPage = () => {
   const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
   const [linkedJobId, setLinkedJobId] = useState(decodeId(searchParams.get('jobId')) || null);
   const [documentCreatorId, setDocumentCreatorId] = useState(null);
-  const [showAutoJobDialog, setShowAutoJobDialog] = useState(false);
-  const bypassJobCheckRef = useRef(false);
+  const lastLoadedDocIdRef = useRef(null);
   const isNavigatingRef = useRef(false);
   const isReadOnly = useMemo(() => {
     const restrictedRoles = [ROLES.ACCOUNTS.slug, ROLES.MRO.slug];
@@ -367,6 +366,7 @@ const NewQuotationPage = () => {
   );
 
   const handleReset = React.useCallback(() => {
+    lastLoadedDocIdRef.current = null;
     setQuoteDetails(defaultQuoteDetails);
     setItems([]);
     setNewItemType(DOCUMENT_ITEM_TYPE_KEYS.FIELD_TESTS);
@@ -432,6 +432,23 @@ const NewQuotationPage = () => {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
+
+  // Block all user keyboard interaction and page scrolling while saving/creating
+  useEffect(() => {
+    if (!isSavingRecord) return;
+    const handleKeyDown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isSavingRecord]);
 
   // Path-based logic: handle reset via /doc/new or forceReset state
   useEffect(() => {
@@ -571,159 +588,168 @@ const NewQuotationPage = () => {
   }, [clients, quoteDetails.clientName, clientNameSelection, contactSelectionIdx]);
 
   // Load record from API if ID is present
-  useEffect(() => {
-    const loadFromApi = async (id) => {
-      setIsLoadingDoc(true);
-      try {
-        const { data: rawData, error } = await apiClient
-          .from('documents')
-          .select('*')
-          .eq('id', id)
-          .single();
+  const loadFromApi = React.useCallback(async (id, options = { showToast: true }) => {
+    if (!id || id === 'undefined' || id === 'null') {
+      console.warn('loadFromApi skipped: invalid id', id);
+      return;
+    }
+    setIsLoadingDoc(true);
+    try {
+      const { data: rawData, error } = await apiClient
+        .from('documents')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-        if (error) throw error;
+      if (error) throw error;
 
-        let data = rawData;
-        if (data) {
-          if (data.client_id) {
-            const { data: cData } = await apiClient.from('clients').select('*').eq('id', data.client_id).maybeSingle();
-            if (cData) data = { ...data, clients: cData };
+      let data = rawData;
+      if (data) {
+        if (data.client_id) {
+          const { data: cData } = await apiClient.from('clients').select('*').eq('id', data.client_id).maybeSingle();
+          if (cData) data = { ...data, clients: cData };
+        }
+        if (data.job_id) {
+          const { data: jData } = await apiClient.from('jobs').select('*').eq('id', data.job_id).maybeSingle();
+          if (jData) data = { ...data, jobs: jData };
+        }
+      }
+
+      if (data && data.content) {
+        const content = data.content;
+        const loadedQuoteDetails = { ...(content.quoteDetails || {}) };
+
+        // Always use/refresh client details from the joined client record (clients table) if it exists
+        if (data.clients) {
+          loadedQuoteDetails.clientName = data.clients.client_name || '';
+          loadedQuoteDetails.clientAddress = data.clients.client_address || '';
+          loadedQuoteDetails.gstin = data.clients.gstin || '';
+
+          // Find matching contact or fallback
+          const contacts = Array.isArray(data.clients.contacts) ? data.clients.contacts : [];
+          let matchedContact = null;
+
+          // Try matching by name
+          const savedContactName = (loadedQuoteDetails.name || '').trim().toLowerCase();
+          if (savedContactName) {
+            matchedContact = contacts.find(
+              (c) => (c.contact_person || '').trim().toLowerCase() === savedContactName
+            );
           }
-          if (data.job_id) {
-            const { data: jData } = await apiClient.from('jobs').select('*').eq('id', data.job_id).maybeSingle();
-            if (jData) data = { ...data, jobs: jData };
+          // Try matching by email
+          if (!matchedContact && loadedQuoteDetails.email) {
+            matchedContact = contacts.find(
+              (c) =>
+                (c.contact_email || '').trim().toLowerCase() ===
+                loadedQuoteDetails.email.trim().toLowerCase()
+            );
+          }
+          // Try matching by phone
+          if (!matchedContact && loadedQuoteDetails.phone) {
+            matchedContact = contacts.find(
+              (c) =>
+                (c.contact_phone || '').trim().toLowerCase() ===
+                loadedQuoteDetails.phone.trim().toLowerCase()
+            );
+          }
+          // Fallback to primary contact or first contact
+          if (!matchedContact) {
+            matchedContact = contacts.find((c) => c.is_primary) || contacts[0];
+          }
+
+          if (matchedContact) {
+            loadedQuoteDetails.name = matchedContact.contact_person || '';
+            loadedQuoteDetails.email = matchedContact.contact_email || '';
+            loadedQuoteDetails.phone = matchedContact.contact_phone || '';
+          } else {
+            loadedQuoteDetails.name = '';
+            loadedQuoteDetails.email = '';
+            loadedQuoteDetails.phone = '';
           }
         }
 
-        if (data && data.content) {
-          const content = data.content;
-          const loadedQuoteDetails = { ...(content.quoteDetails || {}) };
+        // Always use/refresh project details from the joined job record (jobs table) if it exists
+        if (data.jobs) {
+          loadedQuoteDetails.projectName = data.jobs.project_name || '';
+          loadedQuoteDetails.projectAddress = data.jobs.project_address || '';
+        }
 
-          // Always use/refresh client details from the joined client record (clients table) if it exists
-          if (data.clients) {
-            loadedQuoteDetails.clientName = data.clients.client_name || '';
-            loadedQuoteDetails.clientAddress = data.clients.client_address || '';
-            loadedQuoteDetails.gstin = data.clients.gstin || '';
+        const loadedItems = content.items || [];
+        const loadedDocType = data.document_type || 'Quotation';
+        const loadedDiscount = content.discount || 0;
+        const loadedDiscountShow =
+          content.discountShow !== undefined ? String(content.discountShow) === 'true' : true;
+        const loadedDaysShow =
+          content.daysShow !== undefined ? String(content.daysShow) === 'true' : true;
+        const loadedSealShow =
+          content.sealShow !== undefined ? String(content.sealShow) === 'true' : true;
+        const loadedSealType = content.sealType || 'auto';
+        const loadedIsInterstate =
+          content.isInterstate !== undefined ? String(content.isInterstate) === 'true' : false;
 
-            // Find matching contact or fallback
-            const contacts = Array.isArray(data.clients.contacts) ? data.clients.contacts : [];
-            let matchedContact = null;
+        // Ensure quoteNumber is synced from the top-level column if it's missing or empty in JSON content
+        const finalQuoteNumber = data.quote_number || loadedQuoteDetails.quoteNumber;
+        if (finalQuoteNumber) {
+          loadedQuoteDetails.quoteNumber = finalQuoteNumber;
+        }
 
-            // Try matching by name
-            const savedContactName = (loadedQuoteDetails.name || '').trim().toLowerCase();
-            if (savedContactName) {
-              matchedContact = contacts.find(
-                (c) => (c.contact_person || '').trim().toLowerCase() === savedContactName
-              );
-            }
-            // Try matching by email
-            if (!matchedContact && loadedQuoteDetails.email) {
-              matchedContact = contacts.find(
-                (c) =>
-                  (c.contact_email || '').trim().toLowerCase() ===
-                  loadedQuoteDetails.email.trim().toLowerCase()
-              );
-            }
-            // Try matching by phone
-            if (!matchedContact && loadedQuoteDetails.phone) {
-              matchedContact = contacts.find(
-                (c) =>
-                  (c.contact_phone || '').trim().toLowerCase() ===
-                  loadedQuoteDetails.phone.trim().toLowerCase()
-              );
-            }
-            // Fallback to primary contact or first contact
-            if (!matchedContact) {
-              matchedContact = contacts.find((c) => c.is_primary) || contacts[0];
-            }
+        setQuoteDetails(loadedQuoteDetails);
+        setItems(loadedItems);
+        setDocumentType(loadedDocType);
+        setLoadedDocumentType(loadedDocType);
+        setDiscount(loadedDiscount);
+        setDiscountShow(loadedDiscountShow);
+        setDaysShow(loadedDaysShow);
+        setSealShow(loadedSealShow);
+        setSealType(loadedSealType);
+        setIsInterstate(loadedIsInterstate);
+        setSavedRecordId(data.id);
+        lastLoadedDocIdRef.current = String(data.id);
+        setDocumentCreatorId(data.created_by);
+        if (data.job_id) setLinkedJobId(data.job_id);
+        setCurrentVersion(data.version || 1);
 
-            if (matchedContact) {
-              loadedQuoteDetails.name = matchedContact.contact_person || '';
-              loadedQuoteDetails.email = matchedContact.contact_email || '';
-              loadedQuoteDetails.phone = matchedContact.contact_phone || '';
-            } else {
-              loadedQuoteDetails.name = '';
-              loadedQuoteDetails.email = '';
-              loadedQuoteDetails.phone = '';
-            }
-          }
+        const snapshot = {
+          quoteDetails: loadedQuoteDetails,
+          items: loadedItems,
+          documentType: loadedDocType,
+          discount: loadedDiscount,
+          discountShow: loadedDiscountShow,
+          daysShow: loadedDaysShow,
+          sealShow: loadedSealShow,
+          sealType: loadedSealType,
+          isInterstate: loadedIsInterstate,
+        };
+        setLastSavedData(JSON.stringify(snapshot));
 
-          // Always use/refresh project details from the joined job record (jobs table) if it exists
-          if (data.jobs) {
-            loadedQuoteDetails.projectName = data.jobs.project_name || '';
-            loadedQuoteDetails.projectAddress = data.jobs.project_address || '';
-          }
-
-          const loadedItems = content.items || [];
-          const loadedDocType = data.document_type || 'Quotation';
-          const loadedDiscount = content.discount || 0;
-          const loadedDiscountShow =
-            content.discountShow !== undefined ? String(content.discountShow) === 'true' : true;
-          const loadedDaysShow =
-            content.daysShow !== undefined ? String(content.daysShow) === 'true' : true;
-          const loadedSealShow =
-            content.sealShow !== undefined ? String(content.sealShow) === 'true' : true;
-          const loadedSealType = content.sealType || 'auto';
-          const loadedIsInterstate =
-            content.isInterstate !== undefined ? String(content.isInterstate) === 'true' : false;
-
-          // Ensure quoteNumber is synced from the top-level column if it's missing or empty in JSON content
-          const finalQuoteNumber = data.quote_number || loadedQuoteDetails.quoteNumber;
-          if (finalQuoteNumber) {
-            loadedQuoteDetails.quoteNumber = finalQuoteNumber;
-          }
-
-          setQuoteDetails(loadedQuoteDetails);
-          setItems(loadedItems);
-          setDocumentType(loadedDocType);
-          setLoadedDocumentType(loadedDocType);
-          setDiscount(loadedDiscount);
-          setDiscountShow(loadedDiscountShow);
-          setDaysShow(loadedDaysShow);
-          setSealShow(loadedSealShow);
-          setSealType(loadedSealType);
-          setIsInterstate(loadedIsInterstate);
-          setSavedRecordId(data.id);
-          setDocumentCreatorId(data.created_by);
-          if (data.job_id) setLinkedJobId(data.job_id);
-          setCurrentVersion(data.version || 1);
-
-          const snapshot = {
-            quoteDetails: loadedQuoteDetails,
-            items: loadedItems,
-            documentType: loadedDocType,
-            discount: loadedDiscount,
-            discountShow: loadedDiscountShow,
-            daysShow: loadedDaysShow,
-            sealShow: loadedSealShow,
-            sealType: loadedSealType,
-            isInterstate: loadedIsInterstate,
-          };
-          setLastSavedData(JSON.stringify(snapshot));
-
+        if (options?.showToast) {
           toast({
             title: `${data.document_type} Loaded`,
             description: `Loaded ${data.document_type} ${data.quote_number}`,
           });
         }
-      } catch (err) {
-        console.error('Error loading record:', err);
-        toast({
-          title: 'Error',
-          description: 'Failed to load record from database.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoadingDoc(false);
       }
-    };
+    } catch (err) {
+      console.error('Error loading record:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to load record from database.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingDoc(false);
+    }
+  }, [toast]);
 
+  useEffect(() => {
     const rawDocId = searchParams.get('id') || pathId;
     const id = rawDocId ? decodeId(rawDocId) : null;
-    if (id && !isSavingRecord) {
-      loadFromApi(id);
+    if (id && id !== 'undefined' && id !== 'null' && !isSavingRecord) {
+      if (lastLoadedDocIdRef.current !== String(id)) {
+        loadFromApi(id);
+      }
     }
-  }, [searchParams, pathId, isSavingRecord]); // Removed clients from dependencies to break loop
+  }, [searchParams, pathId, isSavingRecord, loadFromApi]); // Removed clients from dependencies to break loop
 
   const loadDocVersions = async (quoteNumber) => {
     if (!quoteNumber) {
@@ -863,7 +889,17 @@ const NewQuotationPage = () => {
     if (isSavingRef.current || isSavingRecord) return false;
     isSavingRef.current = true;
     setIsSavingRecord(true);
-    setSavingMessage(savedRecordId ? `Updating ${documentType}…` : `Saving ${documentType}…`);
+
+    const hasLinkedJob = Boolean(
+      linkedJobId || (searchParams.get('jobId') ? decodeId(searchParams.get('jobId')) : null)
+    );
+    setSavingMessage(
+      !savedRecordId && !hasLinkedJob
+        ? 'Creating linked job…'
+        : savedRecordId
+        ? `Updating ${documentType}…`
+        : `Saving ${documentType}…`
+    );
 
     if (!user) {
       isSavingRef.current = false;
@@ -944,14 +980,8 @@ const NewQuotationPage = () => {
       // Resolve job_id — auto-create a job if one isn't already linked
       let resolvedJobId = linkedJobId || (searchParams.get('jobId') ? decodeId(searchParams.get('jobId')) : null);
 
-      if (!resolvedJobId && !bypassJobCheckRef.current) {
-        isSavingRef.current = false;
-        setIsSavingRecord(false);
-        setShowAutoJobDialog(true);
-        return false;
-      }
-
       if (!resolvedJobId) {
+        setSavingMessage('Creating linked job…');
         // Auto-create a job so the document always has a parent job
         const jobPayload = {
           client_id: clientId,
@@ -985,6 +1015,8 @@ const NewQuotationPage = () => {
           console.error('Failed to update linked job details:', jobUpdateError);
         }
       }
+
+      setSavingMessage(savedRecordId && !isTypeChanged ? `Updating ${documentType}…` : `Creating ${documentType}…`);
 
       const recordData = {
         quote_number: docNumber,
@@ -1045,34 +1077,53 @@ const NewQuotationPage = () => {
         error = insertError;
 
         if (!insertError && data) {
-          finalDocNumber = data.quote_number;
-          const returnedContent = data.content || {};
-          const returnedQuoteDetails = returnedContent.quoteDetails || {};
+          const createdDoc = Array.isArray(data) ? data[0] : data;
+          finalDocNumber = createdDoc?.quote_number || docNumber;
+          const newDocId = createdDoc?.id;
 
-          const finalQuoteDetails = {
-            ...quoteDetails,
-            ...returnedQuoteDetails,
-            quoteNumber: finalDocNumber,
-          };
+          // If we have a jobId and just created a Quotation or Purchase Order, update the job status
+          const targetJobId = resolvedJobId || (searchParams.get('jobId') ? decodeId(searchParams.get('jobId')) : null);
+          if (targetJobId) {
+            let targetStatus = null;
+            if (documentType === 'Quotation') targetStatus = 'QUOTATION_SENT';
+            if (documentType === 'Purchase Order') targetStatus = 'WORK_ORDER_RECEIVED';
 
-          setSavedRecordId(data.id);
-          setLoadedDocumentType(documentType); // Update loaded type to new one
-          setQuoteDetails(finalQuoteDetails);
+            if (targetStatus) {
+              try {
+                await apiClient.from('jobs').update({ status: targetStatus }).eq('id', targetJobId);
+              } catch (err) {
+                console.error('Error updating job status:', err);
+              }
+            }
+          }
 
-          const snapshot = {
-            quoteDetails: finalQuoteDetails,
-            items,
-            documentType,
-            discount,
-            discountShow,
-            daysShow,
-            sealShow,
-            isInterstate,
-          };
-          setLastSavedData(JSON.stringify(snapshot));
+          // Send Telegram Notification
+          try {
+            const message =
+              `📄 *${documentType} Created*\n\n` +
+              `Number: \`${finalDocNumber}\`\n` +
+              `Client: \`${quoteDetails.clientName}\`\n` +
+              `Created By: \`${user.fullName}\``;
+            sendTelegramNotification(message).catch((notifyErr) =>
+              console.error('Error sending Telegram notification:', notifyErr)
+            );
+          } catch (notifyErr) {
+            console.error('Error sending Telegram notification:', notifyErr);
+          }
 
-          isNavigatingRef.current = true;
-          navigate(`/doc/${encodeId(data.id)}`, { replace: true });
+          toast({
+            title: 'Success',
+            description: `${documentType} saved as ${finalDocNumber}.`,
+          });
+
+          // On doc creation api completion, load that doc by page redirect to that doc
+          if (newDocId) {
+            setSavingMessage(`Loading ${documentType}…`);
+            isNavigatingRef.current = true;
+            navigate(`/doc/${encodeId(newDocId)}`, { replace: true });
+            await loadFromApi(newDocId, { showToast: false });
+            return true;
+          }
         }
       }
 
@@ -1080,39 +1131,19 @@ const NewQuotationPage = () => {
 
       toast({
         title: 'Success',
-        description:
-          savedRecordId && !isTypeChanged
-            ? `${documentType} updated successfully.`
-            : `${documentType} saved as ${finalDocNumber}.`,
+        description: `${documentType} updated successfully.`,
       });
-
-      // If we have a jobId and just created a Quotation or Purchase Order, update the job status
-      const rawJobId = searchParams.get('jobId');
-      const jobId = rawJobId ? decodeId(rawJobId) : null;
-      if (jobId && (!savedRecordId || isTypeChanged)) {
-        let targetStatus = null;
-        if (documentType === 'Quotation') targetStatus = 'QUOTATION_SENT';
-        if (documentType === 'Purchase Order') targetStatus = 'WORK_ORDER_RECEIVED';
-
-        if (targetStatus) {
-          try {
-            await apiClient.from('jobs').update({ status: targetStatus }).eq('id', jobId);
-          } catch (err) {
-            console.error('Error updating job status:', err);
-          }
-        }
-      }
 
       // Send Telegram Notification
       try {
-        const action = savedRecordId && !isTypeChanged ? 'Updated' : 'Created';
-        const emoji = savedRecordId && !isTypeChanged ? '📝' : '📄';
         const message =
-          `${emoji} *${documentType} ${action}*\n\n` +
+          `📝 *${documentType} Updated*\n\n` +
           `Number: \`${finalDocNumber}\`\n` +
           `Client: \`${quoteDetails.clientName}\`\n` +
-          `${action} By: \`${user.fullName}\``;
-        await sendTelegramNotification(message);
+          `Updated By: \`${user.fullName}\``;
+        sendTelegramNotification(message).catch((notifyErr) =>
+          console.error('Error sending Telegram notification:', notifyErr)
+        );
       } catch (notifyErr) {
         console.error('Error sending Telegram notification:', notifyErr);
       }
@@ -1237,7 +1268,10 @@ const NewQuotationPage = () => {
 
       if (insertErr) throw insertErr;
 
-      setSavedRecordId(data.id);
+      const createdDoc = Array.isArray(data) ? data[0] : data;
+      const newDocId = createdDoc?.id;
+
+      setSavedRecordId(newDocId);
       setLoadedDocumentType(documentType);
       setCurrentVersion(nextVer);
       setQuoteDetails(updatedQuoteDetails);
@@ -1271,9 +1305,12 @@ const NewQuotationPage = () => {
         console.error('Error sending Telegram notification:', notifyErr);
       }
 
-      isNavigatingRef.current = true;
-      navigate(`/doc/${encodeId(data.id)}`, { replace: true });
-      return true;
+      if (newDocId) {
+        isNavigatingRef.current = true;
+        navigate(`/doc/${encodeId(newDocId)}`, { replace: true });
+        await loadFromApi(newDocId, { showToast: false });
+        return true;
+      }
     } catch (err) {
       console.error('Error saving new version:', err);
       toast({
@@ -2264,7 +2301,21 @@ const NewQuotationPage = () => {
         </div>
       )}
       {isSavingRecord && (
-        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm select-none transition-colors cursor-wait">
+        <div
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm select-none transition-colors cursor-wait pointer-events-auto"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
           <div className="bg-white/95 dark:bg-card/95 shadow-2xl border border-gray-200 dark:border-border rounded-2xl p-6 flex flex-col items-center max-w-sm text-center">
             <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
             <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
@@ -4600,46 +4651,6 @@ const NewQuotationPage = () => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-
-      {/* Auto-create Job Confirmation */}
-      <AlertDialog open={showAutoJobDialog} onOpenChange={setShowAutoJobDialog}>
-        <AlertDialogContent className="max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-xl font-bold">
-              <BriefcaseBusiness className="w-5 h-5 text-primary" />
-              Note
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-600 py-3">
-              Before saving this {documentType.toLowerCase()}, the system will automatically create
-              a <strong>new Job</strong> and link this {documentType.toLowerCase()} to it.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              disabled={isSavingRecord}
-              onClick={() => {
-                bypassJobCheckRef.current = false;
-              }}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={isSavingRecord}
-              className="bg-primary hover:bg-primary-dark"
-              onClick={(e) => {
-                if (isSavingRef.current || isSavingRecord) {
-                  e.preventDefault();
-                  return;
-                }
-                bypassJobCheckRef.current = true;
-                handleSaveToDatabase();
-              }}
-            >
-              OK
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

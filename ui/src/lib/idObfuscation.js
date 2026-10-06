@@ -9,8 +9,9 @@
  * @returns {boolean}
  */
 export function isEncodedId(val) {
-  if (val === null || val === undefined || val === '') return false;
+  if (val === null || val === undefined || val === '' || val === 'undefined' || val === 'null') return false;
   const str = String(val).trim();
+  if (str === 'undefined' || str === 'null') return false;
   // If it's purely digits, it's an unencoded numeric ID
   if (/^\d+$/.test(str)) return false;
 
@@ -33,8 +34,9 @@ export function isEncodedId(val) {
  * @returns {string}
  */
 export function encodeId(id) {
-  if (id === null || id === undefined || id === '') return '';
+  if (id === null || id === undefined || id === '' || id === 'undefined' || id === 'null') return '';
   const str = String(id).trim();
+  if (str === 'undefined' || str === 'null') return '';
   if (isEncodedId(str)) return str;
 
   try {
@@ -51,8 +53,9 @@ export function encodeId(id) {
  * @returns {string}
  */
 export function decodeId(val) {
-  if (val === null || val === undefined || val === '') return '';
+  if (val === null || val === undefined || val === '' || val === 'undefined' || val === 'null') return '';
   const str = String(val).trim();
+  if (str === 'undefined' || str === 'null') return '';
   if (/^\d+$/.test(str)) return str;
 
   try {
