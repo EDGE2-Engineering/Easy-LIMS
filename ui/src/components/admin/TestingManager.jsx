@@ -16,6 +16,13 @@ import {
   Edit,
   Layers,
   LandPlot,
+  Compass,
+  MapPin,
+  Plus,
+  Trash2,
+  ClipboardList,
+  FileText,
+  Calculator,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { apiClient } from '@/lib/apiClient';
@@ -23,12 +30,15 @@ import { logAudit } from '@/lib/auditLog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { AppDatePicker } from '@/components/ui/AppDatePicker';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { computeSoilSbcValues, computeRockSbcValues } from '@/utils/sbcCalculators';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { FIELD_TESTS_NO_SAMPLES } from './MaterialInwardManager';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -52,6 +62,7 @@ import FineAggregateTestModal from './FineAggregateTestModal';
 import SolidHollowBlockTestModal from './SolidHollowBlockTestModal';
 import PaverBlockModal from './PaverBlockModal';
 import AacBlockModal from './AacBlockModal';
+import FieldCbrModal from './FieldCbrModal';
 import WorkflowPanel from '@/components/common/WorkflowPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { camelCaseToTitleCase } from '@/lib/utils';
@@ -75,16 +86,132 @@ const MANUAL_GEOTECH_FIELDS = [
   { key: 'silt_clay', label: 'Silt & Clay (%)', type: 'number' },
 ];
 
+export const FIELD_TEST_DEFAULTS = {
+  'Field CBR (California Bearing Ratio) Test': {
+    standard: 'IS 2720 (Part 31) / IRC 37',
+    unit: '%',
+    resultLabel: 'CBR Value',
+    description: 'Field in-situ California Bearing Ratio test on compacted subgrade/soil layers.',
+  },
+  'DCPT (Dynamic Cone Penetration Test) as per ASTM D6951': {
+    standard: 'ASTM D6951 / D6951M',
+    unit: 'mm/blow',
+    resultLabel: 'DPI (Dynamic Penetration Index)',
+    description: 'In-situ dynamic cone penetration testing using 8-kg hammer.',
+  },
+  'DCPT (Dynamic Cone Penetration Test) as per IS 4968 Part 1': {
+    standard: 'IS 4968 (Part 1)',
+    unit: 'blows / 300 mm',
+    resultLabel: 'N_c Value (Blows)',
+    description: 'Dynamic cone penetration test using standard 50mm cone driven by 65 kg hammer.',
+  },
+  'ERT (Electrical Resistivity Test)': {
+    standard: 'IS 3043 / IS 1892',
+    unit: 'Ω·m',
+    resultLabel: 'Apparent Resistivity',
+    description: 'Wenner / Schlumberger electrode configuration field measurement.',
+  },
+  'Field Permeability Test': {
+    standard: 'IS 5529 (Part 1) / USBR 7310',
+    unit: 'cm/sec',
+    resultLabel: 'Coefficient of Permeability (k)',
+    description: 'Pumping-in / constant head or falling head field permeability test.',
+  },
+  'Static PLT (Plate Load Test)': {
+    standard: 'IS 1888',
+    unit: 'kN/m²',
+    resultLabel: 'Safe Bearing Capacity (SBC)',
+    description: 'Plate load test to determine ultimate bearing capacity and settlement.',
+  },
+  'Cyclic PLT (Plate Load Test)': {
+    standard: 'IS 5249',
+    unit: 'kN/m³',
+    resultLabel: 'Dynamic Coefficient (Cu / Cτ)',
+    description: 'Cyclic plate load test to determine dynamic shear modulus and elastic coefficients.',
+  },
+  'Topographical Survey': {
+    standard: 'Survey of India / Total Station Standard',
+    unit: 'Levels / Coordinates (RL, m)',
+    resultLabel: 'Benchmark / Datum Verified',
+    description: 'Contour, elevation, and boundary topographical mapping with Total Station / DGPS.',
+  },
+  'Geophysical Survey': {
+    standard: 'ASTM D5777 / IS 1892',
+    unit: 'm/sec',
+    resultLabel: 'Wave Velocity (Vp / Vs)',
+    description: 'Seismic refraction / MASW survey for subsurface stratigraphic imaging.',
+  },
+  'Static Vertical/ Compression Pile Load Test': {
+    standard: 'IS 2911 (Part 4)',
+    unit: 'Tonnes',
+    resultLabel: 'Safe Compressive Capacity',
+    description: 'Initial / routine vertical load test on foundation pile with hydraulic jack & dial gauges.',
+  },
+  'Cyclic Vertical/ Compression Pile Load Test': {
+    standard: 'IS 2911 (Part 4)',
+    unit: 'Tonnes',
+    resultLabel: 'Net Elastic & Plastic Settlement (mm)',
+    description: 'Cyclic loading to separate skin friction and point resistance.',
+  },
+  'Lateral Pile Load Test': {
+    standard: 'IS 2911 (Part 4)',
+    unit: 'kN',
+    resultLabel: 'Safe Lateral Load Capacity',
+    description: 'Lateral load test to evaluate lateral resistance and deflection at cut-off level.',
+  },
+  'Pile Pull Out Test': {
+    standard: 'IS 2911 (Part 4)',
+    unit: 'kN',
+    resultLabel: 'Safe Tension / Uplift Capacity',
+    description: 'Tension / pull-out test to evaluate uplift pile capacity and shaft friction.',
+  },
+  'Anchor Pull Out Test': {
+    standard: 'IS 10270 / IS 14448',
+    unit: 'kN',
+    resultLabel: 'Proof Load / Safe Pull-Out',
+    description: 'Pull-out verification test on ground anchors / rock bolts / tiebacks.',
+  },
+  'PIT (Pile Integrity Test)': {
+    standard: 'ASTM D5882',
+    unit: 'Rating',
+    resultLabel: 'Pile Integrity Rating (Cat A/B/C)',
+    description: 'Low strain sonic impact echo test for continuity and integrity of cast-in-place piles.',
+  },
+  'Load Test on Cast- in- situ Footing': {
+    standard: 'IS 1888 / Project Specs',
+    unit: 'kN/m²',
+    resultLabel: 'Safe Bearing Pressure',
+    description: 'Full-scale proof load test on constructed in-situ footing.',
+  },
+};
+
 const TestingManager = ({
   initialJobId,
   initialJobDetails,
   initialSamples,
+  initialFieldTests,
   onClose,
   onSave,
   onLoadingChange,
 }) => {
   const { materials, materialFormAssociations } = useMaterials();
   const { labTests } = useLabTests();
+
+  const getCanonicalCat = useCallback(
+    (cat) => {
+      if (!cat) return null;
+      const str = String(cat).trim();
+      if (!str || str === '0' || str === 'null' || str === 'undefined') return null;
+      const mat = materials.find(
+        (m) =>
+          String(m.id) === str ||
+          (m.name && m.name.toLowerCase().trim() === str.toLowerCase())
+      );
+      return mat ? mat.name : str;
+    },
+    [materials]
+  );
+
   const getMaterialAndForms = useCallback(
     (cat) => {
       const material = materials.find(
@@ -287,6 +414,7 @@ const TestingManager = ({
   );
   const [jobDetails, setJobDetails] = useState(null);
   const [samples, setSamples] = useState([]);
+  const [inwardFieldTests, setInwardFieldTests] = useState(initialFieldTests || []);
   const [testResults, setTestResults] = useState({}); // { category: { testName: { values: {}, remarks: "" } } }
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -302,6 +430,7 @@ const TestingManager = ({
   const [fineAggModalCategory, setFineAggModalCategory] = useState(null);
   const [solidHollowBlocksModalCategory, setSolidHollowBlocksModalCategory] = useState(null);
   const [aacBlockModalCategory, setAacBlockModalCategory] = useState(null);
+  const [fieldCbrModalCategory, setFieldCbrModalCategory] = useState(null);
   const [entryMode, setEntryMode] = useState('Drilling'); // 'Manual' or 'Drilling'
   const [rlValuesNote, setRlValuesNote] = useState('R.L. Values are assumed.');
   const { toast } = useToast();
@@ -327,7 +456,7 @@ const TestingManager = ({
     };
   }, [loading, onLoadingChange]);
 
-  // Sync initialJobDetails and initialSamples if updated from parent
+  // Sync initialJobDetails, initialSamples, and initialFieldTests if updated from parent
   useEffect(() => {
     if (initialJobDetails) {
       setJobDetails(initialJobDetails);
@@ -339,6 +468,12 @@ const TestingManager = ({
       setSamples(initialSamples);
     }
   }, [initialSamples]);
+
+  useEffect(() => {
+    if (initialFieldTests && initialFieldTests.length > 0) {
+      setInwardFieldTests(initialFieldTests);
+    }
+  }, [initialFieldTests]);
 
   // Restore saved entryMode and rlValuesNote from GeotechData when opening a geotech category dialog
   useEffect(() => {
@@ -377,11 +512,31 @@ const TestingManager = ({
 
       // 2. Fetch Samples & Inwards in parallel with Job & Tests
       const samplesPromise = (async () => {
-        if (initialSamples && initialSamples.length > 0) return initialSamples;
+        // Fetch inward register records always to extract field_tests
         const { data: inwards, error: inError } = await apiClient
           .from('material_inward_register')
           .select('*')
           .eq('job_id', initialJobId);
+
+        if (inwards && inwards.length > 0) {
+          let fts = [];
+          inwards.forEach((r) => {
+            let list = r.field_tests;
+            if (typeof list === 'string') {
+              try {
+                list = JSON.parse(list);
+              } catch (_) {}
+            }
+            if (Array.isArray(list)) {
+              fts.push(...list);
+            }
+          });
+          if (fts.length > 0) {
+            setInwardFieldTests((prev) => [...new Set([...prev, ...fts])]);
+          }
+        }
+
+        if (initialSamples && initialSamples.length > 0) return initialSamples;
 
         let flatSamples = [];
         if (inwards && inwards.length > 0) {
@@ -647,16 +802,8 @@ const TestingManager = ({
   const sampleCategories = [
     ...new Set(
       samples
-        .map((s) => {
-          if (!s.material_type) return null;
-          const mat = materials.find(
-            (m) =>
-              String(m.id) === String(s.material_type) ||
-              (m.name && m.name.toLowerCase().trim() === String(s.material_type).toLowerCase().trim())
-          );
-          return mat ? mat.name : String(s.material_type);
-        })
-        .filter((c) => c && c !== '0' && c !== 'null' && c !== 'undefined')
+        .map((s) => getCanonicalCat(s.material_type))
+        .filter(Boolean)
     ),
   ];
 
@@ -669,13 +816,24 @@ const TestingManager = ({
 
   const hasMaterialsGap = samples.length > 0 && sampleCategories.length === 0;
 
-  // Prioritize showing testing forms/input forms related ONLY to the inwarded materials of the job
-  const allCategories =
-    sampleCategories.length > 0
-      ? sampleCategories
-      : [...new Set([...jobCategories, ...dataCats])].filter(
-          (c) => c && c !== '0' && c !== 'null' && c !== 'undefined'
-        );
+  // Prioritize showing testing forms/input forms related to inwarded materials and field tests of the job
+  // If samples or field tests exist for this job, show ONLY them to avoid duplicate IDs/categories from dataCats
+  const rawList =
+    sampleCategories.length > 0 || inwardFieldTests.length > 0
+      ? [...sampleCategories, ...inwardFieldTests]
+      : [...jobCategories, ...dataCats];
+
+  const seenCats = new Set();
+  const allCategories = [];
+  rawList.forEach((raw) => {
+    const canonical = getCanonicalCat(raw);
+    if (!canonical) return;
+    const lower = canonical.toLowerCase();
+    if (!seenCats.has(lower)) {
+      seenCats.add(lower);
+      allCategories.push(canonical);
+    }
+  });
 
   const isAnalyst = user?.role === ROLES.ANALYST.slug;
   const isSoilTech =
@@ -686,6 +844,7 @@ const TestingManager = ({
     isAdmin() || isAnalyst
       ? allCategories
       : allCategories.filter((c) => {
+          if (inwardFieldTests.includes(c) || FIELD_TESTS_NO_SAMPLES.includes(c)) return true;
           if (user?.role !== ROLES.TECHNICIAN.slug) return false;
 
           // Check if it's geotech (Soil Investigation)
@@ -751,18 +910,32 @@ const TestingManager = ({
             </div>
           )}
           <TabsList className="bg-transparent border-b border-border rounded-none p-0 mb-0 flex-wrap h-auto min-h-0 gap-0 justify-start w-full">
-            {visibleCategories.map((cat) => (
-              <TabsTrigger
-                key={cat}
-                value={cat}
-                className="relative px-4 py-2.5 rounded-none bg-transparent shadow-none text-sm font-medium text-muted-foreground hover:text-foreground transition-colors
-                                            data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary
-                                            after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-0.5 after:bg-primary after:scale-x-0 after:transition-transform after:duration-200
-                                            data-[state=active]:after:scale-x-100 mt-0"
-              >
-                {materials.find((m) => String(m.id) === String(cat))?.name || cat}
-              </TabsTrigger>
-            ))}
+            {visibleCategories.map((cat) => {
+              const isFieldTest =
+                inwardFieldTests.includes(cat) ||
+                FIELD_TESTS_NO_SAMPLES.includes(cat) ||
+                Boolean(FIELD_TEST_DEFAULTS[cat]);
+              return (
+                <TabsTrigger
+                  key={cat}
+                  value={cat}
+                  className="relative px-4 py-2.5 rounded-none bg-transparent shadow-none text-sm font-medium text-muted-foreground hover:text-foreground transition-colors
+                                              data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary
+                                              after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-0.5 after:bg-primary after:scale-x-0 after:transition-transform after:duration-200
+                                              data-[state=active]:after:scale-x-100 mt-0"
+                >
+                  {materials.find((m) => String(m.id) === String(cat))?.name || cat}
+                  {isFieldTest && (
+                    <Badge
+                      variant="secondary"
+                      className="ml-2 text-[10px] bg-primary/10 text-primary border-primary/20 py-0 px-1.5 h-4 font-semibold"
+                    >
+                      Field Test
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
 
           {visibleCategories.map((cat) => {
@@ -772,10 +945,46 @@ const TestingManager = ({
               (materialName ? (jobDetails.test_types || {})[materialName] : []) ||
               [];
             const dataTestTypes = Object.keys(testResults[cat] || {}).filter(
-              (k) => k !== 'GeotechData' && k !== 'ManualData' && k !== 'CubeData' && k !== 'ActCubeData' && k !== 'ConcreteCoreData' && k !== 'BrickData' && k !== 'SteelData' && k !== 'StructuralSteelData' && k !== 'FineAggData' && k !== 'SolidHollowBlocksData' && k !== 'BlocksData' && k !== 'PaverBlockData' && k !== 'AacBlockData'
+              (k) =>
+                k !== 'GeotechData' &&
+                k !== 'ManualData' &&
+                k !== 'CubeData' &&
+                k !== 'ActCubeData' &&
+                k !== 'ConcreteCoreData' &&
+                k !== 'BrickData' &&
+                k !== 'SteelData' &&
+                k !== 'StructuralSteelData' &&
+                k !== 'FineAggData' &&
+                k !== 'SolidHollowBlocksData' &&
+                k !== 'BlocksData' &&
+                k !== 'PaverBlockData' &&
+                k !== 'AacBlockData' &&
+                k !== 'status' &&
+                k !== 'remarks'
             );
-            const testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
-            const { isGeotech, isCube, isActCube, isConcreteCore, isBrick, isSteel, isStructuralSteel, isFineAggregate, isSolidHollowBlocks, isPaverBlock, isAacBlock, isRegular, forms } = getMaterialAndForms(cat);
+            const isFieldTest =
+              inwardFieldTests.includes(cat) ||
+              FIELD_TESTS_NO_SAMPLES.includes(cat) ||
+              Boolean(FIELD_TEST_DEFAULTS[cat]);
+            let testTypes = [...new Set([...assignedTestTypes, ...dataTestTypes])];
+            if (testTypes.length === 0 && isFieldTest) {
+              testTypes = [cat];
+            }
+            const {
+              isGeotech,
+              isCube,
+              isActCube,
+              isConcreteCore,
+              isBrick,
+              isSteel,
+              isStructuralSteel,
+              isFineAggregate,
+              isSolidHollowBlocks,
+              isPaverBlock,
+              isAacBlock,
+              isRegular,
+              forms,
+            } = getMaterialAndForms(cat);
             return (
               <TabsContent key={cat} value={cat} className="space-y-6 outline-none mt-0">
                 {isConcreteCore && (
@@ -2614,9 +2823,9 @@ const TestingManager = ({
                     </div>
                   );
                 })()}
-                {isRegular && (
+                {isRegular && !isFieldTest && (
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-gray-800">
+                    <h4 className="text-sm font-bold text-gray-800 dark:text-foreground">
                       {materialName || cat} Test Data
                     </h4>
                     <Tooltip>
@@ -2625,7 +2834,7 @@ const TestingManager = ({
                           variant="outline"
                           size="sm"
                           onClick={() => setSelectedCategory(cat)}
-                          className="h-8 text-xs"
+                          className="h-8 text-xs font-semibold"
                         >
                           <Edit className="w-3 h-3 mr-1" />
                           Edit {materialName || cat} Test Data
@@ -2823,14 +3032,9 @@ const TestingManager = ({
                                                 Compaction (MDD/OMC)
                                               </th>
                                               {showSoilCbr && (
-                                                <>
-                                                  <th className="p-2.5 font-bold whitespace-nowrap">
-                                                    Lab CBR (%)
-                                                  </th>
-                                                  <th className="p-2.5 font-bold whitespace-nowrap">
-                                                    Field CBR (%)
-                                                  </th>
-                                                </>
+                                                <th className="p-2.5 font-bold whitespace-nowrap">
+                                                  Lab CBR (%)
+                                                </th>
                                               )}
                                               {showRockTests && (
                                                 <>
@@ -2955,20 +3159,6 @@ const TestingManager = ({
                                                             {d.labCbr.condition && (
                                                               <span className="text-[10px] text-gray-400 block">
                                                                 ({d.labCbr.condition})
-                                                              </span>
-                                                            )}
-                                                          </div>
-                                                        ) : (
-                                                          '-'
-                                                        )}
-                                                      </td>
-                                                      <td className="p-2.5 text-gray-600 dark:text-muted-foreground">
-                                                        {d.fieldCbr?.reportedCbr ? (
-                                                          <div className="text-emerald-700 dark:text-emerald-300 font-medium">
-                                                            <span>{d.fieldCbr.reportedCbr}%</span>
-                                                            {d.fieldCbr.condition && (
-                                                              <span className="text-[10px] text-gray-400 block">
-                                                                ({d.fieldCbr.condition})
                                                               </span>
                                                             )}
                                                           </div>
@@ -3603,8 +3793,200 @@ const TestingManager = ({
                       </div>
                     )}
                   {testTypes.map((testName) => {
-                    const testValues = testResults[cat]?.[testName]?.values || {};
-                    const hasData = Object.keys(testValues).length > 0;
+                    const testEntry = testResults[cat]?.[testName] || {};
+                    const testValues = testEntry.values || {};
+                    const testPoints = testEntry.points || [];
+                    const remarks = testEntry.remarks || '';
+                    const hasData =
+                      Object.keys(testValues).length > 0 ||
+                      testPoints.length > 0 ||
+                      Boolean(remarks);
+
+                    if (isFieldTest) {
+                      const isFieldCbrTest =
+                        cat === 'Field CBR (California Bearing Ratio) Test' ||
+                        testName === 'Field CBR (California Bearing Ratio) Test';
+                      const cbrData =
+                        testEntry.fieldCbr || testValues['fieldCbr'] || testResults[cat]?.fieldCbr;
+                      const def = FIELD_TEST_DEFAULTS[testName] || FIELD_TEST_DEFAULTS[cat] || {};
+                      const resultVal =
+                        (isFieldCbrTest && cbrData?.reportedCbr)
+                          ? cbrData.reportedCbr
+                          : (testValues['Observed Result'] || testValues['Result']);
+                      const unitVal = testValues['Unit'] || def.unit || '';
+                      const standardVal = testValues['Test Standard'] || def.standard || '';
+                      const dateVal =
+                        (isFieldCbrTest && cbrData?.metadata?.testStartDate)
+                          ? cbrData.metadata.testStartDate
+                          : (testValues['Test Date'] || '');
+                      const locVal =
+                        (isFieldCbrTest && cbrData?.metadata?.depth)
+                          ? cbrData.metadata.depth
+                          : (testValues['Location / Chainage'] || '');
+                      const depthVal =
+                        (isFieldCbrTest && cbrData?.cbr25)
+                          ? `2.5mm: ${cbrData.cbr25}% | 5.0mm: ${cbrData.cbr50 || '-'}%`
+                          : (testValues['Depth / Level'] || '');
+
+                      return (
+                        <div
+                          key={testName}
+                          className="bg-white dark:bg-card p-6 rounded-none border border-gray-100 dark:border-border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full w-full col-span-full md:col-span-2 lg:col-span-3"
+                        >
+                          <div>
+                            {/* Single Top Header - Matching Soil tab structure and spacing */}
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-2">
+                                <Compass className="w-4 h-4 text-primary" />
+                                <h4 className="text-sm font-bold text-gray-800 dark:text-foreground flex items-center gap-2">
+                                  {testName}
+                                </h4>
+                                {standardVal && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[11px] font-mono bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-normal"
+                                  >
+                                    {standardVal}
+                                  </Badge>
+                                )}
+                              </div>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      if (
+                                        cat === 'Field CBR (California Bearing Ratio) Test' ||
+                                        testName === 'Field CBR (California Bearing Ratio) Test'
+                                      ) {
+                                        setFieldCbrModalCategory(cat);
+                                      } else {
+                                        setSelectedCategory(cat);
+                                      }
+                                    }}
+                                    className="h-8 text-xs font-semibold"
+                                  >
+                                    <Edit className="w-3 h-3 mr-1" />
+                                    Edit {materialName || cat} Test Data
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white border-gray-800">
+                                  <p className="text-xs">
+                                    Open data entry form for {materialName || cat}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+
+                            {!hasData ? (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 mt-2">
+                                Pending field test input
+                              </p>
+                            ) : (
+                              <div className="space-y-6 mt-4">
+                                {/* Highlights Grid */}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                                      {def.resultLabel || 'Observed Result'}
+                                    </span>
+                                    <p className="text-lg font-extrabold text-primary mt-0.5">
+                                      {resultVal || '-'}{' '}
+                                      <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                        {unitVal}
+                                      </span>
+                                    </p>
+                                  </div>
+                                  <div className="bg-gray-50 dark:bg-gray-850 border border-gray-100 dark:border-gray-800 rounded-xl p-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                      Test Date
+                                    </span>
+                                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5">
+                                      {dateVal || '-'}
+                                    </p>
+                                  </div>
+                                  <div className="bg-gray-50 dark:bg-gray-850 border border-gray-100 dark:border-gray-800 rounded-xl p-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                      Location / Chainage
+                                    </span>
+                                    <p
+                                      className="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5 truncate"
+                                      title={locVal}
+                                    >
+                                      {locVal || '-'}
+                                    </p>
+                                  </div>
+                                  <div className="bg-gray-50 dark:bg-gray-850 border border-gray-100 dark:border-gray-800 rounded-xl p-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                      Depth / Level
+                                    </span>
+                                    <p
+                                      className="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5 truncate"
+                                      title={depthVal}
+                                    >
+                                      {depthVal || '-'}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Multi-point Readings Table */}
+                                {testPoints && testPoints.length > 0 && (
+                                  <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+                                    <div className="bg-gray-50 dark:bg-gray-800/60 px-3 py-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-600 dark:text-gray-300 flex items-center justify-between">
+                                      <span>Recorded Points / Chainages ({testPoints.length})</span>
+                                    </div>
+                                    <table className="w-full text-left text-xs">
+                                      <thead className="bg-gray-50/50 dark:bg-gray-800/30 border-b border-gray-100 dark:border-gray-800 text-gray-500">
+                                        <tr>
+                                          <th className="p-2 font-semibold">#</th>
+                                          <th className="p-2 font-semibold">Point / Chainage</th>
+                                          <th className="p-2 font-semibold">Depth (m)</th>
+                                          <th className="p-2 font-semibold">Observed Value</th>
+                                          <th className="p-2 font-semibold">Remarks</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                        {testPoints.map((pt, pIdx) => (
+                                          <tr
+                                            key={pIdx}
+                                            className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40"
+                                          >
+                                            <td className="p-2 text-gray-400 font-mono">{pIdx + 1}</td>
+                                            <td className="p-2 font-medium text-gray-900 dark:text-gray-100">
+                                              {pt.point || '-'}
+                                            </td>
+                                            <td className="p-2 text-gray-600 dark:text-gray-400">
+                                              {pt.depth ? `${pt.depth} m` : '-'}
+                                            </td>
+                                            <td className="p-2 font-bold text-primary font-mono">
+                                              {pt.value || '-'} {pt.unit || unitVal}
+                                            </td>
+                                            <td className="p-2 text-gray-500 dark:text-gray-400">
+                                              {pt.remarks || '-'}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+
+                                {/* Remarks & Observations */}
+                                {remarks && (
+                                  <div className="p-3 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40 rounded-xl text-xs text-amber-900 dark:text-amber-300">
+                                    <span className="font-bold uppercase tracking-wider text-[10px] text-amber-700 dark:text-amber-400 block mb-0.5">
+                                      Site Observations & Remarks:
+                                    </span>
+                                    <p className="whitespace-pre-line">{remarks}</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
 
                     return (
                       <div
@@ -3612,12 +3994,22 @@ const TestingManager = ({
                         className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full"
                       >
                         <div>
-                          <h4 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
-                            <div
-                              className={`w-2 h-2 rounded-full ${hasData ? 'bg-green-500' : 'bg-amber-400'}`}
-                            />
-                            {testName}
-                          </h4>
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                              <div
+                                className={`w-2 h-2 rounded-full ${hasData ? 'bg-green-500' : 'bg-amber-400'}`}
+                              />
+                              {testName}
+                            </h4>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedCategory(cat)}
+                              className="h-7 text-xs"
+                            >
+                              <Edit className="w-3 h-3 mr-1" /> Edit
+                            </Button>
+                          </div>
                           {!hasData ? (
                             <p className="text-xs text-gray-500 mb-4">Pending input</p>
                           ) : (
@@ -3761,6 +4153,388 @@ const TestingManager = ({
 
                     {/* Regular Tests (non-geotech categories only) */}
                     {getMaterialAndForms(selectedCategory).isRegular && (
+                      inwardFieldTests.includes(selectedCategory) ||
+                      FIELD_TESTS_NO_SAMPLES.includes(selectedCategory) ||
+                      Boolean(FIELD_TEST_DEFAULTS[selectedCategory])
+                    ) ? (
+                      (() => {
+                        const testName = selectedCategory;
+                        const def = FIELD_TEST_DEFAULTS[selectedCategory] || {};
+                        const currentData = testResults[selectedCategory]?.[testName] || {};
+                        const currentValues = currentData.values || {};
+                        const currentPoints = currentData.points || [];
+                        const currentRemarks = currentData.remarks || '';
+
+                        const testDate = currentValues['Test Date'] || '';
+                        const locationRef = currentValues['Location / Chainage'] || '';
+                        const depthLevel = currentValues['Depth / Level'] || '';
+                        const standardCode = currentValues['Test Standard'] ?? (def.standard || '');
+                        const observedResult = currentValues['Observed Result'] || currentValues['Result'] || '';
+                        const unitVal = currentValues['Unit'] ?? (def.unit || '');
+
+                        const updateFieldValue = (key, val) => {
+                          setTestResults((prev) => {
+                            const catData = prev[selectedCategory] || {};
+                            const tData = catData[testName] || {};
+                            const vals = { ...(tData.values || {}) };
+                            vals[key] = val;
+                            return {
+                              ...prev,
+                              [selectedCategory]: {
+                                ...catData,
+                                [testName]: {
+                                  ...tData,
+                                  values: vals,
+                                },
+                              },
+                            };
+                          });
+                        };
+
+                        const updateRemarks = (remarksVal) => {
+                          setTestResults((prev) => {
+                            const catData = prev[selectedCategory] || {};
+                            const tData = catData[testName] || {};
+                            return {
+                              ...prev,
+                              [selectedCategory]: {
+                                ...catData,
+                                [testName]: {
+                                  ...tData,
+                                  remarks: remarksVal,
+                                },
+                              },
+                            };
+                          });
+                        };
+
+                        const handleAddPoint = () => {
+                          setTestResults((prev) => {
+                            const catData = prev[selectedCategory] || {};
+                            const tData = catData[testName] || {};
+                            const points = [...(tData.points || [])];
+                            points.push({
+                              point: `Point ${points.length + 1}`,
+                              depth: '',
+                              value: '',
+                              unit: unitVal,
+                              remarks: '',
+                            });
+                            return {
+                              ...prev,
+                              [selectedCategory]: {
+                                ...catData,
+                                [testName]: {
+                                  ...tData,
+                                  points,
+                                },
+                              },
+                            };
+                          });
+                        };
+
+                        const handleUpdatePoint = (index, field, val) => {
+                          setTestResults((prev) => {
+                            const catData = prev[selectedCategory] || {};
+                            const tData = catData[testName] || {};
+                            const points = [...(tData.points || [])];
+                            if (points[index]) {
+                              points[index] = { ...points[index], [field]: val };
+                            }
+                            return {
+                              ...prev,
+                              [selectedCategory]: {
+                                ...catData,
+                                [testName]: {
+                                  ...tData,
+                                  points,
+                                },
+                              },
+                            };
+                          });
+                        };
+
+                        const handleRemovePoint = (index) => {
+                          setTestResults((prev) => {
+                            const catData = prev[selectedCategory] || {};
+                            const tData = catData[testName] || {};
+                            const points = (tData.points || []).filter((_, i) => i !== index);
+                            return {
+                              ...prev,
+                              [selectedCategory]: {
+                                ...catData,
+                                [testName]: {
+                                  ...tData,
+                                  points,
+                                },
+                              },
+                            };
+                          });
+                        };
+
+                        return (
+                          <div className="space-y-6">
+                            {/* Field CBR Curve Banner */}
+                            {selectedCategory === 'Field CBR (California Bearing Ratio) Test' && (
+                              <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50/60 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-emerald-950/30 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-7 h-7 rounded-lg bg-emerald-600/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                      <Calculator className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-sm font-bold text-emerald-950 dark:text-emerald-100">
+                                      Load vs Penetration Curve & CBR Calculator
+                                    </span>
+                                    {currentData.fieldCbr?.reportedCbr && (
+                                      <Badge className="bg-emerald-600 text-white text-[11px] font-semibold">
+                                        Calculated: {currentData.fieldCbr.reportedCbr}% ({currentData.fieldCbr.condition || 'Soaked'})
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-600 dark:text-gray-300">
+                                    {currentData.fieldCbr?.reportedCbr
+                                      ? `2.5mm CBR: ${currentData.fieldCbr.cbr25 || '-'}% • 5.0mm CBR: ${currentData.fieldCbr.cbr50 || '-'}%${currentData.fieldCbr.isCorrectionApplied ? ` • Zero Offset: ${currentData.fieldCbr.zeroOffset}mm` : ''}`
+                                      : 'Enter dial gauge readings to automatically construct the load-penetration curve and calculate CBR %.'}
+                                  </p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  onClick={() => setFieldCbrModalCategory(selectedCategory)}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 font-semibold shadow-sm flex items-center gap-1.5"
+                                >
+                                  <Calculator className="w-3.5 h-3.5" />
+                                  {currentData.fieldCbr?.reportedCbr ? 'Edit CBR Curve & Observations' : 'Open Field CBR Calculator'}
+                                </Button>
+                              </div>
+                            )}
+
+                            {/* Field Test Header Summary */}
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 p-4 rounded-xl border border-blue-100 dark:border-blue-900/40">
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <Compass className="w-5 h-5 text-primary" />
+                                    <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                                      {selectedCategory}
+                                    </h3>
+                                    <Badge variant="outline" className="text-[10px] bg-white text-blue-700 border-blue-200 font-semibold uppercase">
+                                      In-Situ Field Test
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                                    {def.description || 'Record in-situ field test observations, readings, and site conditions.'}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Badge className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 text-xs">
+                                    Standard: {standardCode || 'Project Specifications'}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Core Field Test Parameters */}
+                            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-4">
+                              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                                <FileText className="w-3.5 h-3.5 text-primary" /> Primary Test Parameters
+                              </h4>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                <div>
+                                  <Label className="text-xs font-semibold text-gray-700">Test Date</Label>
+                                  <div className="mt-1">
+                                    <AppDatePicker
+                                      value={testDate}
+                                      onChange={(d) => updateFieldValue('Test Date', d)}
+                                      placeholder="Select test date"
+                                      className="w-full h-9 text-xs"
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label className="text-xs font-semibold text-gray-700">Location / Chainage / Reference</Label>
+                                  <Input
+                                    value={locationRef}
+                                    onChange={(e) => updateFieldValue('Location / Chainage', e.target.value)}
+                                    placeholder="e.g. Km 14+350 LHS / Point P-1"
+                                    className="mt-1 h-9 text-xs"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs font-semibold text-gray-700">Depth / Reduced Level</Label>
+                                  <Input
+                                    value={depthLevel}
+                                    onChange={(e) => updateFieldValue('Depth / Level', e.target.value)}
+                                    placeholder="e.g. 0.50 m below subgrade / GL"
+                                    className="mt-1 h-9 text-xs"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs font-semibold text-gray-700">Test Standard / Code</Label>
+                                  <Input
+                                    value={standardCode}
+                                    onChange={(e) => updateFieldValue('Test Standard', e.target.value)}
+                                    placeholder="e.g. IS 2720 / ASTM D6951"
+                                    className="mt-1 h-9 text-xs"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs font-semibold text-gray-700">
+                                    {def.resultLabel ? `${def.resultLabel} (Observed Result)` : 'Observed Result / Value'}
+                                  </Label>
+                                  <div className="relative flex items-center">
+                                    <Input
+                                      value={observedResult}
+                                      onChange={(e) => {
+                                        updateFieldValue('Observed Result', e.target.value);
+                                        updateFieldValue('Result', e.target.value);
+                                      }}
+                                      placeholder="e.g. 8.5 / 15 / 240"
+                                      className={`mt-1 h-9 text-xs font-bold text-primary ${
+                                        selectedCategory === 'Field CBR (California Bearing Ratio) Test' ? 'pr-8' : ''
+                                      }`}
+                                    />
+                                    {selectedCategory === 'Field CBR (California Bearing Ratio) Test' && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setFieldCbrModalCategory(selectedCategory)}
+                                        className="absolute right-1 text-emerald-600 hover:text-emerald-700 p-1.5 rounded transition-colors"
+                                        title="Open Field CBR Curve Calculator"
+                                      >
+                                        <Calculator className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label className="text-xs font-semibold text-gray-700">Unit of Measurement</Label>
+                                  <Input
+                                    value={unitVal}
+                                    onChange={(e) => updateFieldValue('Unit', e.target.value)}
+                                    placeholder="e.g. %, mm/blow, kN/m², Ω·m, Tonnes"
+                                    className="mt-1 h-9 text-xs"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Additional Test Points / Locations (Multi-run) */}
+                            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                                    <MapPin className="w-3.5 h-3.5 text-primary" /> Test Points & Chainage Readings (Optional)
+                                  </h4>
+                                  <p className="text-[11px] text-gray-400">
+                                    Add individual points, trial pits, or chainage measurements if multiple tests were conducted.
+                                  </p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={handleAddPoint}
+                                  className="h-8 text-xs font-bold border-primary/30 text-primary hover:bg-primary/5"
+                                >
+                                  <Plus className="w-3.5 h-3.5 mr-1" /> Add Test Point
+                                </Button>
+                              </div>
+
+                              {currentPoints.length > 0 && (
+                                <div className="border border-gray-100 rounded-xl overflow-hidden">
+                                  <table className="w-full text-left text-xs">
+                                    <thead className="bg-gray-50 border-b border-gray-100 text-gray-600 font-semibold">
+                                      <tr>
+                                        <th className="p-2.5 w-12 text-center">#</th>
+                                        <th className="p-2.5">Point / Chainage</th>
+                                        <th className="p-2.5 w-32">Depth (m)</th>
+                                        <th className="p-2.5 w-36">Reading / Value</th>
+                                        <th className="p-2.5 w-28">Unit</th>
+                                        <th className="p-2.5">Observations / Notes</th>
+                                        <th className="p-2.5 w-14 text-center">Action</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                      {currentPoints.map((pt, pIdx) => (
+                                        <tr key={pIdx} className="hover:bg-gray-50/50">
+                                          <td className="p-2.5 text-center text-gray-400 font-mono font-bold">
+                                            {pIdx + 1}
+                                          </td>
+                                          <td className="p-2.5">
+                                            <Input
+                                              value={pt.point || ''}
+                                              onChange={(e) => handleUpdatePoint(pIdx, 'point', e.target.value)}
+                                              placeholder="e.g. Point 1 / Ch 12+100"
+                                              className="h-8 text-xs"
+                                            />
+                                          </td>
+                                          <td className="p-2.5">
+                                            <Input
+                                              value={pt.depth || ''}
+                                              onChange={(e) => handleUpdatePoint(pIdx, 'depth', e.target.value)}
+                                              placeholder="e.g. 0.50"
+                                              className="h-8 text-xs"
+                                            />
+                                          </td>
+                                          <td className="p-2.5">
+                                            <Input
+                                              value={pt.value || ''}
+                                              onChange={(e) => handleUpdatePoint(pIdx, 'value', e.target.value)}
+                                              placeholder="e.g. 8.2"
+                                              className="h-8 text-xs font-bold text-primary"
+                                            />
+                                          </td>
+                                          <td className="p-2.5">
+                                            <Input
+                                              value={pt.unit || unitVal}
+                                              onChange={(e) => handleUpdatePoint(pIdx, 'unit', e.target.value)}
+                                              placeholder={unitVal || 'Unit'}
+                                              className="h-8 text-xs"
+                                            />
+                                          </td>
+                                          <td className="p-2.5">
+                                            <Input
+                                              value={pt.remarks || ''}
+                                              onChange={(e) => handleUpdatePoint(pIdx, 'remarks', e.target.value)}
+                                              placeholder="Point observation"
+                                              className="h-8 text-xs"
+                                            />
+                                          </td>
+                                          <td className="p-2.5 text-center">
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={() => handleRemovePoint(pIdx)}
+                                              className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Remarks & Site Conditions */}
+                            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm space-y-2">
+                              <Label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                                <ClipboardList className="w-3.5 h-3.5 text-primary" /> Remarks & Site Observations
+                              </Label>
+                              <Textarea
+                                value={currentRemarks}
+                                onChange={(e) => updateRemarks(e.target.value)}
+                                placeholder="Enter site conditions, strata type, ground moisture, weather conditions, equipment used, calibration notes, or overall conclusions..."
+                                rows={4}
+                                className="text-xs leading-relaxed"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })()
+                    ) : getMaterialAndForms(selectedCategory).isRegular && (
                       <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {(() => {
@@ -4216,6 +4990,77 @@ const TestingManager = ({
             setTestResults(updatedResults);
             setAacBlockModalCategory(null);
             await handleSaveResults(categoryToSave, updatedResults);
+          }}
+        />
+      )}
+
+      {/* Field CBR (California Bearing Ratio) Test Modal */}
+      {fieldCbrModalCategory && (
+        <FieldCbrModal
+          isOpen={!!fieldCbrModalCategory}
+          onClose={() => setFieldCbrModalCategory(null)}
+          boreholeNo={
+            testResults[fieldCbrModalCategory]?.['Field CBR (California Bearing Ratio) Test']?.values?.[
+              'Location / Chainage'
+            ] ||
+            testResults[fieldCbrModalCategory]?.fieldCbr?.metadata?.depth ||
+            'Field Point'
+          }
+          depth={
+            testResults[fieldCbrModalCategory]?.['Field CBR (California Bearing Ratio) Test']?.values?.[
+              'Depth / Level'
+            ] ||
+            testResults[fieldCbrModalCategory]?.fieldCbr?.metadata?.depth ||
+            ''
+          }
+          initialData={
+            testResults[fieldCbrModalCategory]?.['Field CBR (California Bearing Ratio) Test']?.fieldCbr ||
+            testResults[fieldCbrModalCategory]?.['Field CBR (California Bearing Ratio) Test']?.values?.fieldCbr ||
+            testResults[fieldCbrModalCategory]?.fieldCbr ||
+            {}
+          }
+          onApply={async (appliedData) => {
+            const categoryToSave = fieldCbrModalCategory;
+            const { fieldCbr, reportedCbr, condition } = appliedData;
+            const testName = 'Field CBR (California Bearing Ratio) Test';
+            const catData = testResults[categoryToSave] || {};
+            const tData = catData[testName] || {};
+            const vals = { ...(tData.values || {}) };
+
+            if (reportedCbr) {
+              vals['Observed Result'] = String(reportedCbr);
+              vals['Result'] = String(reportedCbr);
+            }
+            vals['Unit'] = '%';
+            vals['Test Standard'] = vals['Test Standard'] || 'IS 2720 (Part 31)';
+            vals['Condition'] = condition || 'Soaked';
+            if (fieldCbr?.metadata?.depth) {
+              vals['Location / Chainage'] = fieldCbr.metadata.depth;
+            }
+            if (fieldCbr?.metadata?.testStartDate) {
+              vals['Test Date'] = fieldCbr.metadata.testStartDate;
+            }
+            vals['fieldCbr'] = fieldCbr;
+
+            const updatedResults = {
+              ...testResults,
+              [categoryToSave]: {
+                ...catData,
+                [testName]: {
+                  ...tData,
+                  values: vals,
+                  fieldCbr: fieldCbr || null,
+                },
+                fieldCbr: fieldCbr || null,
+              },
+            };
+            setTestResults(updatedResults);
+            setFieldCbrModalCategory(null);
+            await handleSaveResults(categoryToSave, updatedResults);
+            toast({
+              title: 'Field CBR Applied & Saved',
+              description: `Reported CBR: ${reportedCbr ? `${reportedCbr}%` : '-'} (${condition || 'Soaked'})`,
+            });
           }}
         />
       )}

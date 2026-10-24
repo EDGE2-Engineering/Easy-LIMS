@@ -47,7 +47,6 @@ import ShrinkageLimitModal from './ShrinkageLimitModal';
 import LightCompactionModal from './LightCompactionModal';
 import HeavyCompactionModal from './HeavyCompactionModal';
 import LabCbrModal from './LabCbrModal';
-import FieldCbrModal from './FieldCbrModal';
 import PointLoadIndexModal from './PointLoadIndexModal';
 import RockUcsModal from './RockUcsModal';
 import DirectShearTestSection from './DirectShearTestSection';
@@ -374,11 +373,6 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     depthIndex: 0,
   });
   const [labCbrModalState, setLabCbrModalState] = useState({
-    isOpen: false,
-    boreholeIndex: 0,
-    depthIndex: 0,
-  });
-  const [fieldCbrModalState, setFieldCbrModalState] = useState({
     isOpen: false,
     boreholeIndex: 0,
     depthIndex: 0,
@@ -1051,20 +1045,6 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
     });
   };
 
-  const handleApplyFieldCbrModal = (boreholeIndex, depthIndex, appliedData) => {
-    const newResults = [...formData.labTestResults];
-    const { fieldCbr, reportedCbr } = appliedData;
-    newResults[boreholeIndex][depthIndex] = {
-      ...newResults[boreholeIndex][depthIndex],
-      fieldCbr: fieldCbr || null,
-    };
-    setFormData({ ...formData, labTestResults: newResults });
-    toast({
-      title: 'Field CBR Applied',
-      description: `Reported CBR: ${reportedCbr ? `${reportedCbr}%` : '-'} (${fieldCbr?.condition || 'Soaked'})`,
-    });
-  };
-
   const handleApplyPliModal = (boreholeIndex, depthIndex, appliedData) => {
     const newResults = [...formData.labTestResults];
     const { pointLoadIndex, reportedPli, density } = appliedData;
@@ -1582,31 +1562,6 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
             handleApplyLabCbrModal(
               labCbrModalState.boreholeIndex,
               labCbrModalState.depthIndex,
-              appliedData
-            )
-          }
-        />
-      )}
-
-      {fieldCbrModalState.isOpen && (
-        <FieldCbrModal
-          isOpen={fieldCbrModalState.isOpen}
-          onClose={() => setFieldCbrModalState((prev) => ({ ...prev, isOpen: false }))}
-          boreholeNo={`BH-${fieldCbrModalState.boreholeIndex + 1}`}
-          depth={
-            formData.labTestResults?.[fieldCbrModalState.boreholeIndex]?.[
-              fieldCbrModalState.depthIndex
-            ]?.depth || ''
-          }
-          initialData={
-            formData.labTestResults?.[fieldCbrModalState.boreholeIndex]?.[
-              fieldCbrModalState.depthIndex
-            ]?.fieldCbr || {}
-          }
-          onApply={(appliedData) =>
-            handleApplyFieldCbrModal(
-              fieldCbrModalState.boreholeIndex,
-              fieldCbrModalState.depthIndex,
               appliedData
             )
           }
@@ -2476,7 +2431,6 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                           <th className="px-3 py-2 font-bold">Light Compaction</th>
                           <th className="px-3 py-2 font-bold">Heavy Compaction</th>
                           {!isRock && <th className="px-3 py-2 font-bold">Lab CBR (%)</th>}
-                          {!isRock && <th className="px-3 py-2 font-bold">Field CBR (%)</th>}
                           {showRockTests && <th className="px-3 py-2 font-bold">Point Load Index (MPa)</th>}
                           {showRockTests && <th className="px-3 py-2 font-bold">UCS of Rock (MPa)</th>}
                           <th className="px-3 py-2 w-[50px]"></th>
@@ -2999,48 +2953,6 @@ export default function GeotechTestForm({ value, onChange, materialCategory, ena
                                     }
                                     className="absolute right-1 text-blue-600 hover:text-blue-700 p-1 rounded transition-colors"
                                     title="Open Lab CBR Calculator"
-                                  >
-                                    <Calculator className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </td>
-                            )}
-                            {!isRock && (
-                              <td className="px-2 py-2">
-                                <div className="relative flex items-center">
-                                  <Input
-                                    value={
-                                      depthData.fieldCbr?.reportedCbr
-                                        ? `${depthData.fieldCbr.reportedCbr}%${depthData.fieldCbr.condition ? ` (${depthData.fieldCbr.condition})` : ''}`
-                                        : ''
-                                    }
-                                    readOnly
-                                    onClick={() =>
-                                      setFieldCbrModalState({
-                                        isOpen: true,
-                                        boreholeIndex,
-                                        depthIndex,
-                                      })
-                                    }
-                                    className="h-8 pr-7 cursor-pointer bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/30 font-medium text-xs text-gray-800 dark:text-foreground transition-colors"
-                                    placeholder="Field CBR % (Auto)"
-                                    title={
-                                      depthData.fieldCbr?.reportedCbr
-                                        ? `Field CBR: ${depthData.fieldCbr.reportedCbr}% (${depthData.fieldCbr.condition || 'Soaked'}), 2.5mm: ${depthData.fieldCbr.cbr25 || '-'}%, 5.0mm: ${depthData.fieldCbr.cbr50 || '-'}%${depthData.fieldCbr.isCorrectionApplied ? ` (Zero Offset: ${depthData.fieldCbr.zeroOffset}mm)` : ''}. Click to edit.`
-                                        : 'Click to calculate Field CBR using the same curve method as Lab CBR.'
-                                    }
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setFieldCbrModalState({
-                                        isOpen: true,
-                                        boreholeIndex,
-                                        depthIndex,
-                                      })
-                                    }
-                                    className="absolute right-1 text-emerald-600 hover:text-emerald-700 p-1 rounded transition-colors"
-                                    title="Open Field CBR Calculator"
                                   >
                                     <Calculator className="w-3.5 h-3.5" />
                                   </button>

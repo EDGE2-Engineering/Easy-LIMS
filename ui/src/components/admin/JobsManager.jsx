@@ -506,6 +506,7 @@ const JobsManager = ({ id }) => {
       }
     } else {
       setJobSamples([]);
+      setInwardFieldTests([]);
       setTechAssignments([]);
       setLinkedDocs([]);
       setLoadingJobSamples(false);
@@ -1558,6 +1559,7 @@ const JobsManager = ({ id }) => {
                   initialJobId={editingRecord.id}
                   initialJobDetails={editingRecord}
                   initialSamples={jobSamples}
+                  initialFieldTests={inwardFieldTests}
                   onClose={() => {
                     setShowingTestingForm(false);
                     reloadEditingRecord();
@@ -2069,6 +2071,7 @@ const JobsManager = ({ id }) => {
                     initialJobId={editingRecord.id}
                     initialJobDetails={editingRecord}
                     initialSamples={jobSamples}
+                    initialFieldTests={inwardFieldTests}
                     onSave={reloadEditingRecord}
                     onLoadingChange={setLoadingTestingData}
                   />

@@ -76,13 +76,13 @@ export default function FieldCbrModal({
 
       setMetadata({
         ...DEFAULT_CBR_METADATA,
-        depth: depth || initialData?.depth || '',
-        testStartDate: initialData?.testStartDate || '',
-        testCompletionDate: initialData?.testCompletionDate || '',
-        testNo: initialData?.testNo || '',
-        condition: initialData?.condition || 'Soaked',
-        soakingDays: initialData?.soakingDays || '4',
-        surchargeWeight: initialData?.surchargeWeight || '5.0',
+        depth: depth || initialData?.metadata?.depth || initialData?.depth || '',
+        testStartDate: initialData?.metadata?.testStartDate || initialData?.testStartDate || '',
+        testCompletionDate: initialData?.metadata?.testCompletionDate || initialData?.testCompletionDate || '',
+        testNo: initialData?.metadata?.testNo || initialData?.testNo || '',
+        condition: initialData?.metadata?.condition || initialData?.condition || 'Soaked',
+        soakingDays: initialData?.metadata?.soakingDays || initialData?.soakingDays || '4',
+        surchargeWeight: initialData?.metadata?.surchargeWeight || initialData?.surchargeWeight || '5.0',
       });
 
       if (initialData?.zeroOffset !== undefined && initialData?.zeroOffset !== null) {
