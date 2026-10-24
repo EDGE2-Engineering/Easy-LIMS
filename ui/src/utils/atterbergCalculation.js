@@ -193,6 +193,7 @@ export function calculateCasagrandeLiquidLimit(trials = []) {
   let rawLiquidLimit = null;
   let liquidLimit = null;
   let liquidLimitDisplay = '';
+  let liquidLimitWhole = '';
 
   if (validPoints.length >= 2) {
     regression = calculateLinearRegression(validPoints);
@@ -202,6 +203,7 @@ export function calculateCasagrandeLiquidLimit(trials = []) {
       // IS:2720 Part 5: Reported to nearest first decimal place
       liquidLimit = Number(rawLiquidLimit.toFixed(1));
       liquidLimitDisplay = rawLiquidLimit.toFixed(1);
+      liquidLimitWhole = String(Math.round(rawLiquidLimit));
     }
   }
 
@@ -213,6 +215,7 @@ export function calculateCasagrandeLiquidLimit(trials = []) {
     liquidLimit,
     liquidLimitDisplay,
     flowIndex: regression ? Number((-regression.slope).toFixed(3)) : null, // Flow Index If = -slope
+    liquidLimitWhole,
     isComplete: validPoints.length >= 4, // 5 trials recommended / required by IS code
   };
 }
@@ -316,13 +319,15 @@ export function calculateConePenetrationLiquidLimit(trials = []) {
   let rawLiquidLimit = null;
   let liquidLimit = null;
   let liquidLimitDisplay = '';
+  let liquidLimitWhole = '';
 
   if (validPoints.length >= 2) {
     regression = calculateLinearRegression(validPoints);
     if (regression) {
       rawLiquidLimit = regression.slope * 20.0 + regression.intercept;
-      liquidLimit = Number(rawLiquidLimit.toFixed(1));
-      liquidLimitDisplay = rawLiquidLimit.toFixed(1);
+      liquidLimit = Number((Math.round((rawLiquidLimit + Number.EPSILON) * 10) / 10).toFixed(1));
+      liquidLimitDisplay = (Math.round((rawLiquidLimit + Number.EPSILON) * 10) / 10).toFixed(1);
+      liquidLimitWhole = String(Math.round(rawLiquidLimit));
     }
   }
 
@@ -334,6 +339,7 @@ export function calculateConePenetrationLiquidLimit(trials = []) {
     liquidLimit,
     liquidLimitDisplay,
     isComplete: validPoints.length >= 4, // 4 trials recommended per IS:2720 Part 5
+    liquidLimitWhole,
   };
 }
 
@@ -345,11 +351,18 @@ export function calculateAtterbergLimits({
   casagrandeLiquidTrials = [],
   casagrandePlasticTrials = [],
   coneTrials = [],
+  roundLiquidLimitToWhole = false,
   roundPlasticLimitToWhole = false,
+  roundConeLLToFirstDecimal = true,
 }) {
   if (method === ATTERBERG_METHODS.CONE_PENETRATION) {
     const cone = calculateConePenetrationLiquidLimit(coneTrials);
-    const ll = cone.liquidLimitDisplay || '';
+    let ll = '';
+    if (cone.rawLiquidLimit !== null) {
+      ll = roundConeLLToFirstDecimal
+        ? (Math.round((cone.rawLiquidLimit + Number.EPSILON) * 10) / 10).toFixed(1)
+        : cone.rawLiquidLimit.toFixed(2);
+    }
     const pl = 'NP'; // Non-Plastic per standard
     const pi = '-';  // Hyphen / Dash per reference sheet
 
@@ -368,6 +381,11 @@ export function calculateAtterbergLimits({
   const llCalc = calculateCasagrandeLiquidLimit(casagrandeLiquidTrials);
   const plCalc = calculatePlasticLimit(casagrandePlasticTrials);
 
+  let finalLl = '';
+  if (llCalc.rawLiquidLimit !== null) {
+    finalLl = roundLiquidLimitToWhole ? llCalc.liquidLimitWhole : llCalc.liquidLimitDisplay;
+  }
+
   let finalPl = '';
   if (plCalc.rawPlasticLimit !== null) {
     finalPl = roundPlasticLimitToWhole ? plCalc.plasticLimitWhole : plCalc.plasticLimitDisplay;
@@ -375,14 +393,14 @@ export function calculateAtterbergLimits({
 
   let finalPi = '';
   if (llCalc.rawLiquidLimit !== null && plCalc.rawPlasticLimit !== null) {
-    const numLl = parseFloat(llCalc.liquidLimitDisplay);
+    const numLl = parseFloat(finalLl);
     const numPl = parseFloat(finalPl);
     if (!isNaN(numLl) && !isNaN(numPl)) {
       const diff = numLl - numPl;
       if (diff <= 0) {
         finalPi = '0'; // or 'NP'
       } else {
-        finalPi = roundPlasticLimitToWhole ? String(Math.round(diff)) : diff.toFixed(1);
+        finalPi = (roundLiquidLimitToWhole || roundPlasticLimitToWhole) ? String(Math.round(diff)) : diff.toFixed(1);
       }
     }
   }
@@ -391,7 +409,7 @@ export function calculateAtterbergLimits({
     method,
     liquidLimitCalc: llCalc,
     plasticLimitCalc: plCalc,
-    liquidLimit: llCalc.liquidLimitDisplay || '',
+    liquidLimit: finalLl,
     plasticLimit: finalPl,
     plasticityIndex: finalPi,
     rawLiquidLimit: llCalc.rawLiquidLimit,

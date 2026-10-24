@@ -49,6 +49,7 @@ import {
  */
 function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange }) {
   const { isDark } = useTheme();
+  const [hoveredPoint, setHoveredPoint] = useState(null);
 
   if (!validPoints || validPoints.length < 2 || !regression) {
     return (
@@ -89,8 +90,35 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
   };
 
   // Trendline points across xMin to xMax
-  const yAtMin = regression.slope * logMin + regression.intercept;
-  const yAtMax = regression.slope * logMax + regression.intercept;
+  const getXFromLog = (logVal) => {
+    const ratio = (logVal - logMin) / (logMax - logMin);
+    return padding.left + ratio * (width - padding.left - padding.right);
+  };
+
+  // Trendline points across xMin to xMax clamped to [minY, maxY]
+  let logX1 = logMin;
+  let y1 = regression.slope * logX1 + regression.intercept;
+  let logX2 = logMax;
+  let y2 = regression.slope * logX2 + regression.intercept;
+
+  if (regression.slope !== 0) {
+    if (y1 > maxY) {
+      logX1 = (maxY - regression.intercept) / regression.slope;
+      y1 = maxY;
+    } else if (y1 < minY) {
+      logX1 = (minY - regression.intercept) / regression.slope;
+      y1 = minY;
+    }
+    if (y2 > maxY) {
+      logX2 = (maxY - regression.intercept) / regression.slope;
+      y2 = maxY;
+    } else if (y2 < minY) {
+      logX2 = (minY - regression.intercept) / regression.slope;
+      y2 = minY;
+    }
+  }
+  logX1 = Math.max(logMin, Math.min(logMax, logX1));
+  logX2 = Math.max(logMin, Math.min(logMax, logX2));
 
   // Intersect at 25 blows
   const x25 = getX(25);
@@ -108,7 +136,7 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
   const logTicks = [10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 100];
 
   return (
-    <div className="bg-white dark:bg-card border border-gray-100 dark:border-border rounded-xl p-3 shadow-xs">
+    <div className="bg-white dark:bg-card border border-gray-100 dark:border-border rounded-xl p-3 shadow-xs overflow-hidden">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-gray-700 dark:text-foreground uppercase tracking-wider">
@@ -123,7 +151,17 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
         </div>
       </div>
 
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible select-none">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-hidden select-none">
+        <defs>
+          <clipPath id="casagrande-plot-clip">
+            <rect
+              x={padding.left}
+              y={padding.top}
+              width={width - padding.left - padding.right}
+              height={height - padding.top - padding.bottom}
+            />
+          </clipPath>
+        </defs>
         {/* Background grid */}
         {yTicks.map((yVal) => {
           const yPos = getY(yVal);
@@ -215,15 +253,17 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
         </text>
 
         {/* Regression Trend Line */}
-        <line
-          x1={getX(xMin)}
-          y1={getY(yAtMin)}
-          x2={getX(xMax)}
-          y2={getY(yAtMax)}
-          stroke="#2563eb"
-          strokeWidth="2"
-          strokeDasharray="4,2"
-        />
+        <g clipPath="url(#casagrande-plot-clip)">
+          <line
+            x1={getXFromLog(logX1)}
+            y1={getY(y1)}
+            x2={getXFromLog(logX2)}
+            y2={getY(y2)}
+            stroke="#2563eb"
+            strokeWidth="2"
+            strokeDasharray="4,2"
+          />
+        </g>
 
         {/* Intersect Crosshair at 25 Blows */}
         <g>
@@ -262,7 +302,7 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
             textAnchor="middle"
             className="text-[10px] fill-white font-bold font-mono"
           >
-            LL: {llVal.toFixed(1)}% @ 25N
+            LL: {targetLL !== null && !isNaN(targetLL) ? (Number.isInteger(targetLL) ? targetLL : targetLL.toFixed(1)) : llVal.toFixed(1)}% @ 25N
           </text>
         </g>
 
@@ -270,17 +310,46 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
         {validPoints.map((pt, idx) => {
           const cx = getX(pt.blows);
           const cy = getY(pt.y);
+          const isHovered = hoveredPoint === idx;
           return (
-            <g key={idx} className="cursor-pointer group">
+            <g
+              key={idx}
+              className="cursor-pointer"
+              onMouseEnter={() => setHoveredPoint(idx)}
+              onMouseLeave={() => setHoveredPoint(null)}
+            >
+              {/* Fixed-size hit area to prevent any hover jitter */}
+              <circle cx={cx} cy={cy} r="16" fill="#000" opacity="0" style={{ pointerEvents: 'all' }} />
               <circle
                 cx={cx}
                 cy={cy}
-                r="4.5"
-                fill="#2563eb"
+                r={isHovered ? 6 : 4.5}
+                fill={isHovered ? '#1d4ed8' : '#2563eb'}
                 stroke="#ffffff"
-                strokeWidth="1.5"
-                className="transition-transform group-hover:scale-125"
+                strokeWidth={isHovered ? 2 : 1.5}
+                className="transition-all duration-150 pointer-events-none"
               />
+              {isHovered && (
+                <g className="pointer-events-none">
+                  <rect
+                    x={Math.max(padding.left, Math.min(cx - 48, width - padding.right - 96))}
+                    y={Math.max(padding.top, cy - 28)}
+                    width="96"
+                    height="20"
+                    rx="4"
+                    fill="#1e293b"
+                    opacity="0.92"
+                  />
+                  <text
+                    x={Math.max(padding.left, Math.min(cx - 48, width - padding.right - 96)) + 48}
+                    y={Math.max(padding.top, cy - 28) + 13}
+                    textAnchor="middle"
+                    className="text-[10px] fill-white font-mono font-bold"
+                  >
+                    N={pt.blows}, w={pt.y.toFixed(2)}%
+                  </text>
+                </g>
+              )}
               <title>Trial {idx + 1}: {pt.blows} blows, {pt.y.toFixed(2)}% water content</title>
             </g>
           );
@@ -297,6 +366,7 @@ function CasagrandeFlowCurve({ validPoints, regression, targetLL, onTargetChange
  */
 function ConeFlowCurve({ validPoints, regression, targetLL }) {
   const { isDark } = useTheme();
+  const [hoveredPoint, setHoveredPoint] = useState(null);
 
   if (!validPoints || validPoints.length < 2 || !regression) {
     return (
@@ -333,8 +403,30 @@ function ConeFlowCurve({ validPoints, regression, targetLL }) {
     return height - padding.bottom - ratio * (height - padding.top - padding.bottom);
   };
 
-  const yAtMin = regression.slope * xMin + regression.intercept;
-  const yAtMax = regression.slope * xMax + regression.intercept;
+  // Trendline points across xMin to xMax clamped to [minY, maxY]
+  let x1Val = xMin;
+  let y1 = regression.slope * x1Val + regression.intercept;
+  let x2Val = xMax;
+  let y2 = regression.slope * x2Val + regression.intercept;
+
+  if (regression.slope !== 0) {
+    if (y1 > maxY) {
+      x1Val = (maxY - regression.intercept) / regression.slope;
+      y1 = maxY;
+    } else if (y1 < minY) {
+      x1Val = (minY - regression.intercept) / regression.slope;
+      y1 = minY;
+    }
+    if (y2 > maxY) {
+      x2Val = (maxY - regression.intercept) / regression.slope;
+      y2 = maxY;
+    } else if (y2 < minY) {
+      x2Val = (minY - regression.intercept) / regression.slope;
+      y2 = minY;
+    }
+  }
+  x1Val = Math.max(xMin, Math.min(xMax, x1Val));
+  x2Val = Math.max(xMin, Math.min(xMax, x2Val));
 
   // 20 mm intersection
   const x20 = getX(20.0);
@@ -350,7 +442,7 @@ function ConeFlowCurve({ validPoints, regression, targetLL }) {
   const xTicks = [10, 15, 20, 25, 30];
 
   return (
-    <div className="bg-white dark:bg-card border border-gray-100 dark:border-border rounded-xl p-3 shadow-xs">
+    <div className="bg-white dark:bg-card border border-gray-100 dark:border-border rounded-xl p-3 shadow-xs overflow-hidden">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-gray-700 dark:text-foreground uppercase tracking-wider">
@@ -365,7 +457,17 @@ function ConeFlowCurve({ validPoints, regression, targetLL }) {
         </div>
       </div>
 
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible select-none">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-hidden select-none">
+        <defs>
+          <clipPath id="cone-plot-clip">
+            <rect
+              x={padding.left}
+              y={padding.top}
+              width={width - padding.left - padding.right}
+              height={height - padding.top - padding.bottom}
+            />
+          </clipPath>
+        </defs>
         {/* Y Grid */}
         {yTicks.map((yVal) => {
           const yPos = getY(yVal);
@@ -455,14 +557,16 @@ function ConeFlowCurve({ validPoints, regression, targetLL }) {
         </text>
 
         {/* Trendline */}
-        <line
-          x1={getX(xMin)}
-          y1={getY(yAtMin)}
-          x2={getX(xMax)}
-          y2={getY(yAtMax)}
-          stroke="#059669"
-          strokeWidth="2"
-        />
+        <g clipPath="url(#cone-plot-clip)">
+          <line
+            x1={getX(x1Val)}
+            y1={getY(y1)}
+            x2={getX(x2Val)}
+            y2={getY(y2)}
+            stroke="#059669"
+            strokeWidth="2"
+          />
+        </g>
 
         {/* 20 mm crosshair */}
         <g>
@@ -499,7 +603,7 @@ function ConeFlowCurve({ validPoints, regression, targetLL }) {
             textAnchor="middle"
             className="text-[10px] fill-white font-bold font-mono"
           >
-            LL: {llVal.toFixed(1)}% @ 20mm
+            LL: {targetLL !== null && !isNaN(targetLL) ? targetLL : (Math.round((llVal + Number.EPSILON) * 10) / 10).toFixed(1)}% @ 20mm
           </text>
         </g>
 
@@ -507,25 +611,34 @@ function ConeFlowCurve({ validPoints, regression, targetLL }) {
         {validPoints.map((pt, idx) => {
           const cx = getX(pt.penetration);
           const cy = getY(pt.y);
+          const isHovered = hoveredPoint === idx;
           return (
-            <g key={idx} className="cursor-pointer group">
+            <g
+              key={idx}
+              className="cursor-pointer"
+              onMouseEnter={() => setHoveredPoint(idx)}
+              onMouseLeave={() => setHoveredPoint(null)}
+            >
+              {/* Fixed-size hit area to prevent any hover jitter */}
+              <circle cx={cx} cy={cy} r="16" fill="#000" opacity="0" style={{ pointerEvents: 'all' }} />
               <circle
                 cx={cx}
                 cy={cy}
-                r="4.5"
-                fill="#059669"
+                r={isHovered ? 6 : 4.5}
+                fill={isHovered ? '#047857' : '#059669'}
                 stroke="#ffffff"
-                strokeWidth="1.5"
-                className="transition-transform group-hover:scale-125"
+                strokeWidth={isHovered ? 2 : 1.5}
+                className="transition-all duration-150 pointer-events-none"
               />
               <text
                 x={cx}
-                y={cy - 8}
+                y={cy - (isHovered ? 10 : 8)}
                 textAnchor="middle"
-                className="text-[9px] fill-gray-600 font-mono font-bold group-hover:fill-emerald-700"
+                className={`text-[9px] font-mono font-bold pointer-events-none transition-colors duration-150 ${isHovered ? 'fill-emerald-800 dark:fill-emerald-300' : 'fill-gray-600 dark:fill-gray-400'}`}
               >
                 {pt.roundedY}%
               </text>
+              <title>Trial {idx + 1}: {pt.penetration} mm, {pt.y.toFixed(2)}% water content</title>
             </g>
           );
         })}
@@ -549,7 +662,9 @@ export default function AtterbergLimitsModal({
   const [casagrandeLLTrials, setCasagrandeLLTrials] = useState(DEFAULT_CASAGRANDE_LL_TRIALS);
   const [casagrandePLTrials, setCasagrandePLTrials] = useState(DEFAULT_CASAGRANDE_PL_TRIALS);
   const [coneTrials, setConeTrials] = useState(DEFAULT_CONE_LL_TRIALS);
-  const [roundPlasticLimitToWhole, setRoundPlasticLimitToWhole] = useState(false);
+  const [roundLiquidLimitToWhole, setRoundLiquidLimitToWhole] = useState(true);
+  const [roundPlasticLimitToWhole, setRoundPlasticLimitToWhole] = useState(true);
+  const [roundConeLLToFirstDecimal, setRoundConeLLToFirstDecimal] = useState(true);
 
   // Optional manual override of calculated values (if user reads graph slightly differently)
   const [overrideLL, setOverrideLL] = useState('');
@@ -584,7 +699,21 @@ export default function AtterbergLimitsModal({
 
       setOverrideLL(initialData?.manualLL || '');
       setOverridePL(initialData?.manualPL || '');
-      setRoundPlasticLimitToWhole(Boolean(initialData?.roundPlasticLimitToWhole));
+      setRoundLiquidLimitToWhole(
+        initialData?.roundLiquidLimitToWhole !== undefined
+          ? Boolean(initialData.roundLiquidLimitToWhole)
+          : true
+      );
+      setRoundPlasticLimitToWhole(
+        initialData?.roundPlasticLimitToWhole !== undefined
+          ? Boolean(initialData.roundPlasticLimitToWhole)
+          : true
+      );
+      setRoundConeLLToFirstDecimal(
+        initialData?.roundConeLLToFirstDecimal !== undefined
+          ? Boolean(initialData.roundConeLLToFirstDecimal)
+          : true
+      );
     }
   }, [isOpen, initialData]);
 
@@ -595,9 +724,11 @@ export default function AtterbergLimitsModal({
       casagrandeLiquidTrials: casagrandeLLTrials,
       casagrandePlasticTrials: casagrandePLTrials,
       coneTrials,
+      roundLiquidLimitToWhole,
       roundPlasticLimitToWhole,
+      roundConeLLToFirstDecimal,
     });
-  }, [method, casagrandeLLTrials, casagrandePLTrials, coneTrials, roundPlasticLimitToWhole]);
+  }, [method, casagrandeLLTrials, casagrandePLTrials, coneTrials, roundLiquidLimitToWhole, roundPlasticLimitToWhole, roundConeLLToFirstDecimal]);
 
   // Final values to display & apply (accounting for manual adjustments if specified)
   const effectiveLL = overrideLL !== '' ? overrideLL : calc.liquidLimit;
@@ -610,10 +741,10 @@ export default function AtterbergLimitsModal({
     const numPL = parseFloat(effectivePL);
     if (!isNaN(numLL) && !isNaN(numPL)) {
       const diff = numLL - numPL;
-      return diff <= 0 ? '0' : roundPlasticLimitToWhole ? String(Math.round(diff)) : diff.toFixed(1);
+      return diff <= 0 ? '0' : (roundLiquidLimitToWhole || roundPlasticLimitToWhole) ? String(Math.round(diff)) : diff.toFixed(1);
     }
     return '-';
-  }, [method, effectiveLL, effectivePL, roundPlasticLimitToWhole]);
+  }, [method, effectiveLL, effectivePL, roundLiquidLimitToWhole, roundPlasticLimitToWhole]);
 
   // Handlers for trial inputs
   const handleCasagrandeLLChange = (idx, field, val) => {
@@ -679,7 +810,9 @@ export default function AtterbergLimitsModal({
       coneTrials: method === ATTERBERG_METHODS.CONE_PENETRATION ? coneTrials : null,
       manualLL: overrideLL,
       manualPL: overridePL,
+      roundLiquidLimitToWhole,
       roundPlasticLimitToWhole,
+      roundConeLLToFirstDecimal,
       rawCalc: {
         rawLiquidLimit: calc.rawLiquidLimit,
         rawPlasticLimit: calc.rawPlasticLimit,
@@ -774,9 +907,20 @@ export default function AtterbergLimitsModal({
                     (Standard: IS:2720 Part 5, Clause 3.4)
                   </span>
                 </div>
-                <span className="text-xs text-gray-500 dark:text-muted-foreground">
-                  Target blows: 15 to 35
-                </span>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-gray-500 dark:text-muted-foreground hidden sm:inline">
+                    Target blows: 15 to 35
+                  </span>
+                  <label className="text-xs text-gray-600 dark:text-muted-foreground flex items-center gap-1.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={roundLiquidLimitToWhole}
+                      onChange={(e) => setRoundLiquidLimitToWhole(e.target.checked)}
+                      className="rounded text-primary focus:ring-0 w-3.5 h-3.5"
+                    />
+                    <span>Round LL to nearest whole number</span>
+                  </label>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -864,11 +1008,11 @@ export default function AtterbergLimitsModal({
               </div>
 
               {/* Flow Curve Graph */}
-              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-border">
+              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-border overflow-hidden">
                 <CasagrandeFlowCurve
                   validPoints={calc.liquidLimitCalc.validPoints}
                   regression={calc.liquidLimitCalc.regression}
-                  targetLL={overrideLL !== '' ? parseFloat(overrideLL) : calc.liquidLimitCalc.liquidLimit}
+                  targetLL={overrideLL !== '' ? parseFloat(overrideLL) : (calc.liquidLimit ? parseFloat(calc.liquidLimit) : calc.liquidLimitCalc.liquidLimit)}
                 />
               </div>
             </div>
@@ -1004,9 +1148,20 @@ export default function AtterbergLimitsModal({
                     (Standard: IS:2720 Part 5, Clause 3.5)
                   </span>
                 </div>
-                <span className="text-xs text-gray-500 dark:text-muted-foreground">
-                  Standard penetration range: 14 mm to 28 mm
-                </span>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-gray-500 dark:text-muted-foreground hidden sm:inline">
+                    Standard penetration range: 14 mm to 28 mm
+                  </span>
+                  <label className="text-xs text-gray-600 dark:text-muted-foreground flex items-center gap-1.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={roundConeLLToFirstDecimal}
+                      onChange={(e) => setRoundConeLLToFirstDecimal(e.target.checked)}
+                      className="rounded text-primary focus:ring-0 w-3.5 h-3.5"
+                    />
+                    <span>Round LL to nearest first decimal place</span>
+                  </label>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -1096,11 +1251,11 @@ export default function AtterbergLimitsModal({
               </div>
 
               {/* Linear Flow Curve */}
-              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-border">
+              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-border overflow-hidden">
                 <ConeFlowCurve
                   validPoints={calc.cone.validPoints}
                   regression={calc.cone.regression}
-                  targetLL={overrideLL !== '' ? parseFloat(overrideLL) : calc.cone.liquidLimit}
+                  targetLL={overrideLL !== '' ? parseFloat(overrideLL) : (calc.liquidLimit ? parseFloat(calc.liquidLimit) : calc.cone.liquidLimit)}
                 />
               </div>
 

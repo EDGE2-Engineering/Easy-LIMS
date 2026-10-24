@@ -341,7 +341,11 @@ const CsComputedRow = ({ label, symbol, unit, displayValue, formula, highlight }
       )}
       {unit && <span className="ml-1 font-normal text-gray-400">({unit})</span>}
     </p>
-    {formula && <p className="text-[9px] text-gray-400 font-mono italic">{formula}</p>}
+    {formula && (
+      <p className="text-[9px] text-gray-400 font-mono italic whitespace-pre-line leading-relaxed">
+        {formula}
+      </p>
+    )}
     <p
       className={`text-sm font-bold font-mono tabular-nums mt-0.5 ${highlight ? 'text-primary' : displayValue !== '—' ? 'text-gray-800' : 'text-gray-300'}`}
     >
@@ -397,7 +401,11 @@ const SbcResult = ({ label, symbol, unit, value, formula, highlight }) => (
       )}
       {unit && <span className="ml-1 text-gray-400">({unit})</span>}
     </p>
-    {formula && <p className="text-[9px] text-gray-400 font-mono italic">{formula}</p>}
+    {formula && (
+      <p className="text-[9px] text-gray-400 font-mono italic whitespace-pre-line leading-relaxed">
+        {formula}
+      </p>
+    )}
     <p
       className={`text-sm font-bold font-mono tabular-nums mt-0.5 ${highlight ? 'text-primary' : value !== '—' ? 'text-gray-800' : 'text-gray-300'}`}
     >
@@ -5719,15 +5727,38 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                       symbol="NR"
                       unit="-"
                       value={sNR !== null ? fmt(sNR) : '—'}
-                      formula={
-                        sbcCorrectionType === 'none'
-                          ? 'N (uncorrected)'
-                          : sbcCorrectionType === 'overburden'
-                            ? 'N × CF'
-                            : sbcCorrectionType === 'dilatency'
-                              ? '(N+15)/2'
-                              : '(N×CF+15)/2'
-                      }
+                      formula={(() => {
+                        if (sbcCorrectionType === 'none') {
+                          return hasN ? `N (uncorrected)\n= ${sbcN}` : 'N (uncorrected)';
+                        }
+                        if (sbcCorrectionType === 'overburden') {
+                          const cfDesc =
+                            sCF !== null
+                              ? ` (where CF = ${fmtV(sCF, 3)} -- interpolated from Overburden table at q = ${sQ !== null ? fmtV(sQ, 2) : '?'} kN/m²)`
+                              : '';
+                          const formulaStr = `N × CF${cfDesc}`;
+                          if (!hasN || sCF === null) return formulaStr;
+                          const calcStr = `= ${sbcN} × ${fmtV(sCF, 3)} = ${NR_raw !== null ? fmtV(NR_raw, 2) : '?'}${NR_raw !== null && NR_raw !== sNR ? ` → ${fmt(sNR)} (clamped [5,60])` : ''}`;
+                          return `${formulaStr}\n${calcStr}`;
+                        }
+                        if (sbcCorrectionType === 'dilatency') {
+                          const formulaStr = '(N+15)/2';
+                          if (!hasN) return formulaStr;
+                          const calcStr = `= (${sbcN} + 15) / 2 = ${NR_raw !== null ? fmtV(NR_raw, 2) : '?'}${NR_raw !== null && NR_raw !== sNR ? ` → ${fmt(sNR)} (clamped [5,60])` : ''}`;
+                          return `${formulaStr}\n${calcStr}`;
+                        }
+                        if (sbcCorrectionType === 'both') {
+                          const cfDesc =
+                            sCF !== null
+                              ? ` (where CF = ${fmtV(sCF, 3)} -- interpolated from Overburden table at q = ${sQ !== null ? fmtV(sQ, 2) : '?'} kN/m²)`
+                              : '';
+                          const formulaStr = `(N×CF+15)/2${cfDesc}`;
+                          if (!hasN || sCF === null) return formulaStr;
+                          const calcStr = `= (${sbcN} × ${fmtV(sCF, 3)} + 15) / 2 = ${NR_raw !== null ? fmtV(NR_raw, 2) : '?'}${NR_raw !== null && NR_raw !== sNR ? ` → ${fmt(sNR)} (clamped [5,60])` : ''}`;
+                          return `${formulaStr}\n${calcStr}`;
+                        }
+                        return '—';
+                      })()}
                     />
                     <SbcResult
                       label="Settlement per unit pressure"
@@ -5762,7 +5793,16 @@ dq = dγ = 1 + 0.1 × (${Df.toFixed(3)} / ${B.toFixed(3)}) × tan(45° + ${phi.t
                   {sNR !== null && hasB && hasD && hasL && (
                     <div className="p-3 rounded-xl bg-gray-50 border border-gray-100 text-xs font-mono text-gray-600 whitespace-pre-line leading-relaxed">
                       {[
-                        `N = ${sbcN}  →  NR = ${fmt(sNR)} (clamped [5,60])`,
+                        needsOB
+                          ? `CF = ${sCF !== null ? fmtV(sCF, 3) : 'NA'}  (interpolated from Overburden table at q = ${sQ !== null ? fmtV(sQ, 2) : '?'} kN/m²)`
+                          : null,
+                        sbcCorrectionType === 'overburden'
+                          ? `NR = N × CF = ${sbcN} × ${sCF !== null ? fmtV(sCF, 3) : '?'} = ${NR_raw !== null ? fmtV(NR_raw, 2) : 'NA'}${NR_raw !== null && NR_raw !== sNR ? `  →  ${fmt(sNR)} (clamped [5,60])` : ''}`
+                          : sbcCorrectionType === 'both'
+                            ? `Overburden step: N × CF = ${sbcN} × ${sCF !== null ? fmtV(sCF, 3) : '?'} = ${sCF !== null && sN !== null ? fmtV(sN * sCF, 2) : 'NA'}\nDilatancy step:  NR = (N×CF + 15) / 2 = (${sCF !== null && sN !== null ? fmtV(sN * sCF, 2) : '?'} + 15) / 2 = ${NR_raw !== null ? fmtV(NR_raw, 2) : 'NA'}${NR_raw !== null && NR_raw !== sNR ? `  →  ${fmt(sNR)} (clamped [5,60])` : ''}`
+                            : sbcCorrectionType === 'dilatency'
+                              ? `NR = (N + 15) / 2 = (${sbcN} + 15) / 2 = ${NR_raw !== null ? fmtV(NR_raw, 2) : 'NA'}${NR_raw !== null && NR_raw !== sNR ? `  →  ${fmt(sNR)} (clamped [5,60])` : ''}`
+                              : `NR = N = ${sbcN}${NR_raw !== null && NR_raw !== sNR ? `  →  ${fmt(sNR)} (clamped [5,60])` : ''}  (uncorrected)`,
                         `Sf = ${sSf !== null ? fmtDec(sSf) : 'NA'}  (settlement per unit pressure, m/(kg/cm²))`,
                         `If = ${sIf !== null ? fmtV(sIf, 4) : 'NA'}  (Fox's depth correction)`,
                         `Si = Sf × If × Rf = ${sSf !== null ? fmtDec(sSf) : '?'} × ${sIf !== null ? fmtV(sIf, 4) : '?'} × ${RIGIDITY_FACTOR} = ${sSi !== null ? fmtV(sSi, 6) : 'NA'} m  (${sSi_mm !== null ? fmtV(sSi_mm, 4) : 'NA'} mm)`,
