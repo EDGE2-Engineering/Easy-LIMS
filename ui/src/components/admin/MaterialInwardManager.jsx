@@ -72,6 +72,8 @@ export const FIELD_TESTS_NO_SAMPLES = [
   'Anchor Pull Out Test',
   'PIT (Pile Integrity Test)',
   'Load Test on Cast- in- situ Footing',
+  'Field Density by Sand Replacement Method',
+  'Field Density by Core Cutter Method',
 ];
 
 const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess }) => {
@@ -1296,14 +1298,9 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-mono font-bold text-gray-400 dark:text-gray-500 shrink-0">
-                          #{originalIndex}
-                        </span>
-                        <span className={`text-xs leading-relaxed ${isSelected ? 'text-primary font-semibold' : 'text-gray-800 dark:text-gray-200 font-medium'}`}>
-                          {testName}
-                        </span>
-                      </div>
+                      <span className={`text-xs leading-relaxed ${isSelected ? 'text-primary font-semibold' : 'text-gray-800 dark:text-gray-200 font-medium'}`}>
+                        {testName}
+                      </span>
                     </div>
                   </div>
                 );

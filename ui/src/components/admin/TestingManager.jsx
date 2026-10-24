@@ -183,6 +183,18 @@ export const FIELD_TEST_DEFAULTS = {
     resultLabel: 'Safe Bearing Pressure',
     description: 'Full-scale proof load test on constructed in-situ footing.',
   },
+  'Field Density by Sand Replacement Method': {
+    standard: 'IS 2720 (Part 28)',
+    unit: 'g/cc',
+    resultLabel: 'Field Dry Density (FDD)',
+    description: 'In-situ dry density determination using sand replacement method for coarse/fine soils.',
+  },
+  'Field Density by Core Cutter Method': {
+    standard: 'IS 2720 (Part 29)',
+    unit: 'g/cc',
+    resultLabel: 'Field Dry Density (FDD)',
+    description: 'In-situ dry density determination using standard core cutter for fine-grained cohesive soils.',
+  },
 };
 
 const TestingManager = ({
