@@ -22,6 +22,7 @@ import {
   Filter,
   X,
   Download,
+  ClipboardList,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { apiClient } from '@/lib/apiClient';
@@ -84,6 +85,7 @@ const JobsManager = ({ id }) => {
   const [showingTechForm, setShowingTechForm] = useState(false);
   const [showingTestingForm, setShowingTestingForm] = useState(false);
   const [jobSamples, setJobSamples] = useState([]);
+  const [inwardFieldTests, setInwardFieldTests] = useState([]);
   const [techAssignments, setTechAssignments] = useState([]);
   const [loadingJobSamples, setLoadingJobSamples] = useState(false);
   const [loadingTechAssignments, setLoadingTechAssignments] = useState(false);
@@ -550,14 +552,27 @@ const JobsManager = ({ id }) => {
 
   const fetchJobSamples = async (jobId) => {
     setLoadingJobSamples(true);
+    setInwardFieldTests([]);
     try {
       const { data: inwardRecords } = await apiClient
         .from('material_inward_register')
-        .select('id')
+        .select('id, field_tests')
         .eq('job_id', jobId)
         .order('created_at', { ascending: false });
 
       if (inwardRecords && inwardRecords.length > 0) {
+        let fts = [];
+        inwardRecords.forEach((r) => {
+          let list = r.field_tests;
+          if (typeof list === 'string') {
+            try { list = JSON.parse(list); } catch (_) {}
+          }
+          if (Array.isArray(list)) {
+            fts.push(...list);
+          }
+        });
+        setInwardFieldTests([...new Set(fts)]);
+
         const inwardIds = inwardRecords.map((r) => r.id);
         const { data: rawSamples, error } = await apiClient
           .from('material_samples')
@@ -598,6 +613,7 @@ const JobsManager = ({ id }) => {
         setJobSamples(samples);
       } else {
         setJobSamples([]);
+        setInwardFieldTests([]);
       }
     } catch (err) {
       console.error('Error fetching samples:', err);
@@ -1901,10 +1917,37 @@ const JobsManager = ({ id }) => {
                       <p className="text-xs text-gray-500 font-medium">Loading material inward details...</p>
                     </div>
                   ) : jobSamples.length === 0 ? (
-                    <div className="text-center py-8 px-4 border border-dashed rounded-xl bg-gray-50/50 text-gray-500 text-sm flex flex-col items-center gap-2">
-                      <Package className="w-8 h-8 text-gray-300" />
-                      <p>No material samples needed or registered for this job.</p>
-                    </div>
+                    inwardFieldTests && inwardFieldTests.length > 0 ? (
+                      <div className="p-4 border dark:border-border rounded-xl bg-gray-50/50 dark:bg-card space-y-3">
+                        <div className="flex items-center justify-between border-b dark:border-border pb-2">
+                          <div className="flex items-center gap-2">
+                            <ClipboardList className="w-4 h-4 text-primary" />
+                            <span className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                              Field Tests (No Material Samples Required)
+                            </span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                              {inwardFieldTests.length} tests
+                            </span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+                          {inwardFieldTests.map((testName, i) => (
+                            <div
+                              key={i}
+                              className="flex items-center gap-2.5 p-2.5 px-3 rounded-lg bg-white dark:bg-muted/40 border border-gray-200/80 dark:border-border text-xs text-gray-800 dark:text-gray-200 shadow-xs"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                              <span className="font-medium leading-relaxed">{testName}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 px-4 border border-dashed rounded-xl bg-gray-50/50 text-gray-500 text-sm flex flex-col items-center gap-2">
+                        <Package className="w-8 h-8 text-gray-300" />
+                        <p>No material samples needed or registered for this job.</p>
+                      </div>
+                    )
                   ) : (
                     <div className="overflow-x-auto border dark:border-border rounded-xl shadow-sm bg-white dark:bg-card overflow-hidden">
                       <table className="w-full text-left text-sm">

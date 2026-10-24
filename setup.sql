@@ -121,3 +121,6 @@ CREATE TABLE IF NOT EXISTS app_settings (
 );
 CREATE INDEX IF NOT EXISTS idx_app_settings_key ON app_settings(setting_key);
 
+-- 9. Material Inward Register Auxiliary Columns
+ALTER TABLE material_inward_register ADD COLUMN IF NOT EXISTS field_tests JSONB DEFAULT '[]'::jsonb;
+

@@ -4755,6 +4755,7 @@ class MaterialInwardCreate(BaseModel):
     status: Optional[str] = "RECEIVED"
     client_id: Optional[int] = None
     job_id: Optional[int] = None
+    field_tests: Optional[Any] = None
 
 class MaterialInwardUpdate(BaseModel):
     job_order_no: Optional[str] = None
@@ -4763,6 +4764,7 @@ class MaterialInwardUpdate(BaseModel):
     client_id: Optional[int] = None
     job_id: Optional[int] = None
     updated_by: Optional[int] = None
+    field_tests: Optional[Any] = None
 
 @app.get("/api/materials", tags=["Materials & Material Inward"], summary="List master materials")
 async def list_materials():
@@ -4880,7 +4882,14 @@ async def list_material_inward(page: Optional[int] = None, limit: Optional[int] 
             total_pages = 1
 
         rows = await fetch_with_coerced_params(conn, f"SELECT * FROM material_inward_register {where_sql} ORDER BY created_at DESC {limit_sql}", query_params)
-        return {"data": [dict(r) for r in rows], "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
+        enriched = []
+        for r in rows:
+            doc = dict(r)
+            if isinstance(doc.get("field_tests"), str):
+                try: doc["field_tests"] = json.loads(doc["field_tests"])
+                except Exception: pass
+            enriched.append(doc)
+        return {"data": enriched, "total": total, "page": p_val, "limit": l_val, "total_pages": total_pages}
 
 @app.get("/api/material-inward/{inward_id}", tags=["Materials & Material Inward"], summary="Get material inward entry by ID")
 async def get_material_inward(inward_id: int):
@@ -4890,20 +4899,29 @@ async def get_material_inward(inward_id: int):
         rows = await fetch_with_coerced_params(conn, "SELECT * FROM material_inward_register WHERE id = $1", [inward_id])
         if not rows:
             raise HTTPException(status_code=404, detail="Material inward entry not found")
-        return dict(rows[0])
+        doc = dict(rows[0])
+        if isinstance(doc.get("field_tests"), str):
+            try: doc["field_tests"] = json.loads(doc["field_tests"])
+            except Exception: pass
+        return doc
 
 @app.post("/api/material-inward", tags=["Materials & Material Inward"], status_code=201, summary="Register material inward")
 async def create_material_inward(mi: MaterialInwardCreate):
     if not db_pool:
         raise HTTPException(status_code=500, detail="Database not connected")
+    ft_str = format_content(mi.field_tests) if mi.field_tests is not None else "[]"
     query = """
-        INSERT INTO material_inward_register (job_order_no, po_wo_number, status, client_id, job_id, created_by, updated_by, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $6, NOW(), NOW()) RETURNING *
+        INSERT INTO material_inward_register (job_order_no, po_wo_number, status, client_id, job_id, field_tests, created_by, updated_by, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $7, NOW(), NOW()) RETURNING *
     """
-    params = [mi.job_order_no, mi.po_wo_number, mi.status or "RECEIVED", mi.client_id, mi.job_id, mi.created_by]
+    params = [mi.job_order_no, mi.po_wo_number, mi.status or "RECEIVED", mi.client_id, mi.job_id, ft_str, mi.created_by]
     async with db_pool.acquire() as conn:
         rows = await fetch_with_coerced_params(conn, query, params)
-        return dict(rows[0])
+        doc = dict(rows[0])
+        if isinstance(doc.get("field_tests"), str):
+            try: doc["field_tests"] = json.loads(doc["field_tests"])
+            except Exception: pass
+        return doc
 
 @app.put("/api/material-inward/{inward_id}", tags=["Materials & Material Inward"], summary="Update material inward entry")
 async def update_material_inward(inward_id: int, payload: MaterialInwardUpdate):
@@ -4912,8 +4930,12 @@ async def update_material_inward(inward_id: int, payload: MaterialInwardUpdate):
     fields, params = [], []
     for k, v in payload.model_dump(exclude_unset=True).items():
         if v is not None:
-            params.append(v)
-            fields.append(f"{k} = ${len(params)}")
+            if k == "field_tests":
+                params.append(format_content(v))
+                fields.append(f"field_tests = ${len(params)}::jsonb")
+            else:
+                params.append(v)
+                fields.append(f"{k} = ${len(params)}")
     if not fields:
         raise HTTPException(status_code=400, detail="No fields to update")
     fields.append("updated_at = NOW()")
@@ -4923,7 +4945,11 @@ async def update_material_inward(inward_id: int, payload: MaterialInwardUpdate):
         rows = await fetch_with_coerced_params(conn, query, params)
         if not rows:
             raise HTTPException(status_code=404, detail="Material inward entry not found")
-        return dict(rows[0])
+        doc = dict(rows[0])
+        if isinstance(doc.get("field_tests"), str):
+            try: doc["field_tests"] = json.loads(doc["field_tests"])
+            except Exception: pass
+        return doc
 
 @app.delete("/api/material-inward/{inward_id}", tags=["Materials & Material Inward"], summary="Delete material inward entry")
 async def delete_material_inward(inward_id: int):

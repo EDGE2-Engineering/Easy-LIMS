@@ -135,6 +135,24 @@ const TechnicianAssignment = ({ jobId, onComplete }) => {
         }
       } catch (_) {}
 
+      try {
+        const { data: inwardRecs } = await apiClient
+          .from('material_inward_register')
+          .select('field_tests')
+          .eq('job_id', jobId);
+        if (inwardRecs) {
+          inwardRecs.forEach((r) => {
+            let fts = r.field_tests;
+            if (typeof fts === 'string') {
+              try { fts = JSON.parse(fts); } catch (_) {}
+            }
+            if (Array.isArray(fts)) {
+              fts.forEach((t) => catalogOptions.add(t));
+            }
+          });
+        }
+      } catch (_) {}
+
       setAvailableTestOptions(Array.from(catalogOptions));
     } catch (err) {
       console.error(err);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Search,
   Trash2,
@@ -16,6 +16,8 @@ import {
   X,
   Save,
   ArrowLeft,
+  ClipboardList,
+  Check,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { apiClient } from '@/lib/apiClient';
@@ -24,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AppDatePicker } from '@/components/ui/AppDatePicker';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,6 +54,25 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+
+export const FIELD_TESTS_NO_SAMPLES = [
+  'Field CBR (California Bearing Ratio) Test',
+  'DCPT (Dynamic Cone Penetration Test) as per ASTM D6951',
+  'DCPT (Dynamic Cone Penetration Test) as per IS 4968 Part 1',
+  'ERT (Electrical Resistivity Test)',
+  'Field Permeability Test',
+  'Static PLT (Plate Load Test)',
+  'Cyclic PLT (Plate Load Test)',
+  'Topographical Survey',
+  'Geophysical Survey',
+  'Static Vertical/ Compression Pile Load Test',
+  'Cyclic Vertical/ Compression Pile Load Test',
+  'Lateral Pile Load Test',
+  'Pile Pull Out Test',
+  'Anchor Pull Out Test',
+  'PIT (Pile Integrity Test)',
+  'Load Test on Cast- in- situ Footing',
+];
 
 const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess }) => {
   const [records, setRecords] = useState([]);
@@ -90,6 +112,7 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
         po_wo_number: initialJob?.work_order_id || '',
         client_id: initialJob?.client_id ? String(initialJob.client_id) : '',
         job_id: initialJobId,
+        field_tests: [],
         samples: [
           {
             sample_code: '',
@@ -111,6 +134,13 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
   const [isSaving, setIsSaving] = useState(false);
   const [inwardOption, setInwardOption] = useState('add_samples');
   const [showNoSamplesConfirm, setShowNoSamplesConfirm] = useState(false);
+  const [fieldTestFilter, setFieldTestFilter] = useState('');
+
+  const filteredFieldTests = useMemo(() => {
+    if (!fieldTestFilter.trim()) return FIELD_TESTS_NO_SAMPLES;
+    const q = fieldTestFilter.toLowerCase();
+    return FIELD_TESTS_NO_SAMPLES.filter((t) => t.toLowerCase().includes(q));
+  }, [fieldTestFilter]);
 
   const fetchClients = async () => {
     try {
@@ -221,9 +251,22 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
             if (samplesError) throw samplesError;
             if (!isMounted) return;
 
+            let parsedFieldTests = [];
+            if (Array.isArray(existing.field_tests)) {
+              parsedFieldTests = existing.field_tests;
+            } else if (typeof existing.field_tests === 'string') {
+              try {
+                parsedFieldTests = JSON.parse(existing.field_tests);
+              } catch (_) {}
+            }
+
+            const hasSamples = samples && samples.length > 0;
+            setInwardOption(hasSamples ? 'add_samples' : 'no_samples');
+
             setEditingRecord({
               ...existing,
               client_id: existing.client_id ? String(existing.client_id) : '',
+              field_tests: parsedFieldTests || [],
               samples:
                 samples?.map((s) => ({
                   ...s,
@@ -261,6 +304,7 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
             po_wo_number: job?.work_order_id || '',
             client_id: job?.client_id ? String(job.client_id) : '',
             job_id: job?.id || jobId,
+            field_tests: [],
             samples: [
               {
                 sample_code: '',
@@ -275,6 +319,7 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
               },
             ],
           });
+          setInwardOption('add_samples');
           setIsAddingNew(true);
         } catch (error) {
           console.error('Error in inward check:', error);
@@ -314,6 +359,7 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
       job_order_no: '',
       po_wo_number: '',
       client_id: '',
+      field_tests: [],
       samples: [
         {
           sample_code: '',
@@ -328,6 +374,7 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
         },
       ],
     });
+    setInwardOption('add_samples');
     setIsAddingNew(true);
   };
 
@@ -341,8 +388,18 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
 
       if (error) throw error;
 
+      let parsedFieldTests = [];
+      if (Array.isArray(record.field_tests)) {
+        parsedFieldTests = record.field_tests;
+      } else if (typeof record.field_tests === 'string') {
+        try {
+          parsedFieldTests = JSON.parse(record.field_tests);
+        } catch (_) {}
+      }
+
       setEditingRecord({
         ...record,
+        field_tests: parsedFieldTests || [],
         samples:
           samples.map((s) => ({
             ...s,
@@ -363,6 +420,31 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleToggleFieldTest = (testName) => {
+    setEditingRecord((prev) => {
+      const current = prev?.field_tests || [];
+      const exists = current.includes(testName);
+      const updated = exists
+        ? current.filter((t) => t !== testName)
+        : [...current, testName];
+      return { ...prev, field_tests: updated };
+    });
+  };
+
+  const handleSelectAllFieldTests = () => {
+    setEditingRecord((prev) => ({
+      ...prev,
+      field_tests: [...FIELD_TESTS_NO_SAMPLES],
+    }));
+  };
+
+  const handleClearAllFieldTests = () => {
+    setEditingRecord((prev) => ({
+      ...prev,
+      field_tests: [],
+    }));
   };
 
   const handleAddSample = () => {
@@ -409,6 +491,14 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
       });
       return;
     }
+    if (inwardOption === 'no_samples' && (!editingRecord.field_tests || editingRecord.field_tests.length === 0)) {
+      toast({
+        title: 'Error',
+        description: 'Please select at least one field test',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -445,6 +535,7 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
                 ? parseInt(editingRecord.client_id)
                 : editingRecord.client_id,
             job_id: editingRecord.job_id || null,
+            field_tests: inwardOption === 'no_samples' ? (editingRecord.field_tests || []) : [],
             created_by: userId,
             updated_by: userId,
             status: 'RECEIVED',
@@ -472,6 +563,7 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
               typeof editingRecord.client_id === 'string'
                 ? parseInt(editingRecord.client_id)
                 : editingRecord.client_id,
+            field_tests: inwardOption === 'no_samples' ? (editingRecord.field_tests || []) : [],
             status: editingRecord.status,
             updated_by: userId,
             updated_at: new Date().toISOString(),
@@ -559,7 +651,10 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
         clients.find((c) => c.id === editingRecord.client_id)?.client_name || 'Unknown Client';
       const action = isAddingNew ? 'New Entry' : 'Entry Updated';
       const emoji = isAddingNew ? '📥' : '✏️';
-      const message = `${emoji} *Material Inward ${action}*\n\nJob OrderNo: \`${editingRecord.job_order_no || inwardId}\`\nClient: \`${clientName}\`\nSamples: \`${editingRecord.samples.length}\`\nBy: \`${user?.fullName || 'Unknown'}\``;
+      const countMsg = inwardOption === 'no_samples'
+        ? `Field Tests: \`${(editingRecord.field_tests || []).length}\``
+        : `Samples: \`${editingRecord.samples.length}\``;
+      const message = `${emoji} *Material Inward ${action}*\n\nJob OrderNo: \`${editingRecord.job_order_no || inwardId}\`\nClient: \`${clientName}\`\n${countMsg}\nBy: \`${user?.fullName || 'Unknown'}\``;
       sendTelegramNotification(message);
       if (editingRecord.job_id) {
         // Robustly determine the integer user ID for bigint columns
@@ -1129,6 +1224,101 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
           </div>
         )}
 
+        {inwardOption === 'no_samples' && (
+          <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-top-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-foreground flex items-center gap-2">
+                  <ClipboardList className="w-5 h-5 text-primary" />
+                  Field Tests (No Sample Inward Required)
+                  <span className="ml-2 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    {(editingRecord.field_tests || []).length} of {FIELD_TESTS_NO_SAMPLES.length} selected
+                  </span>
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-muted-foreground mt-0.5">
+                  Select the field test(s) to be conducted which do not require physical sample collection or inwarding.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAllFieldTests}
+                  className="h-8 text-xs font-medium"
+                >
+                  Select All
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearAllFieldTests}
+                  disabled={!(editingRecord.field_tests && editingRecord.field_tests.length > 0)}
+                  className="h-8 text-xs font-medium text-gray-500 hover:text-red-600"
+                >
+                  Clear All
+                </Button>
+              </div>
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Search field tests (e.g. CBR, DCPT, PLT, Pile, Survey)..."
+                value={fieldTestFilter}
+                onChange={(e) => setFieldTestFilter(e.target.value)}
+                className="pl-9 h-9 text-xs bg-gray-50/50 dark:bg-muted/30 border-gray-200 dark:border-border"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-[460px] overflow-y-auto pr-1">
+              {filteredFieldTests.map((testName) => {
+                const isSelected = (editingRecord.field_tests || []).includes(testName);
+                const originalIndex = FIELD_TESTS_NO_SAMPLES.indexOf(testName) + 1;
+                return (
+                  <div
+                    key={testName}
+                    onClick={() => handleToggleFieldTest(testName)}
+                    className={`flex items-start gap-3 p-3 rounded-xl border text-sm cursor-pointer transition-all select-none ${
+                      isSelected
+                        ? 'bg-primary/5 dark:bg-primary/15 border-primary shadow-sm text-gray-900 dark:text-foreground'
+                        : 'bg-white dark:bg-card border-gray-200 dark:border-border text-gray-700 dark:text-muted-foreground hover:bg-gray-50 dark:hover:bg-muted/40 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="pt-0.5">
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => handleToggleFieldTest(testName)}
+                        onClick={(e) => e.stopPropagation()}
+                        id={`field-test-${originalIndex}`}
+                        className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-mono font-bold text-gray-400 dark:text-gray-500 shrink-0">
+                          #{originalIndex}
+                        </span>
+                        <span className={`text-xs leading-relaxed ${isSelected ? 'text-primary font-semibold' : 'text-gray-800 dark:text-gray-200 font-medium'}`}>
+                          {testName}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {(editingRecord.field_tests || []).length === 0 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5 pt-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                Please select at least one field test before saving this entry.
+              </p>
+            )}
+          </div>
+        )}
+
         {cubeModalState.isOpen && (
           <ConcreteCubeModal
             isOpen={cubeModalState.isOpen}
@@ -1389,15 +1579,28 @@ const MaterialInwardManager = ({ initialJobId, initialJob, onClose, onSuccess })
                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                   >
                     <td className="py-4 px-4 align-middle text-gray-600">
-                      <span className="font-semibold font-mono text-gray-750 text-sm bg-gray-100 px-2 py-1 rounded">
-                        {record.job_order_no}
-                      </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold font-mono text-gray-750 text-sm bg-gray-100 px-2 py-1 rounded">
+                          {record.job_order_no}
+                        </span>
+                        {record.field_tests && record.field_tests.length > 0 && (
+                          <span className="text-[10px] bg-blue-50 text-blue-700 font-medium px-1.5 py-0.5 rounded border border-blue-200">
+                            {record.field_tests.length} Field Tests
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-4 px-4 text-gray-600 align-middle">
                       {safeFormatDate(record.created_at)}
                     </td>
                     <td className="py-4 px-4 text-gray-600 align-middle">
-                      {safeFormatDate(record.material_samples?.[0]?.received_date)}
+                      {record.material_samples?.[0]?.received_date ? (
+                        safeFormatDate(record.material_samples[0].received_date)
+                      ) : record.field_tests && record.field_tests.length > 0 ? (
+                        <span className="text-xs text-gray-400 italic">No samples (Field Tests)</span>
+                      ) : (
+                        '-'
+                      )}
                     </td>
                     <td className="py-4 px-4 text-gray-600 align-middle">
                       {record.users?.full_name || '-'}
