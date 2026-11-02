@@ -99,6 +99,7 @@ const JobsManager = ({ id }) => {
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [showingReportPreview, setShowingReportPreview] = useState(false);
   const [reportPreviewData, setReportPreviewData] = useState(null);
+  const [reportPdfUrl, setReportPdfUrl] = useState(null);
   const [isSavingReport, setIsSavingReport] = useState(false);
   const [isStatusTransitioning, setIsStatusTransitioning] = useState(false);
   const generateReportActionRef = useRef(null);
@@ -936,6 +937,25 @@ const JobsManager = ({ id }) => {
       };
 
       setReportPreviewData(formData);
+
+      // Call Backend REST API to generate the PDF
+      try {
+        toast({
+          title: 'Generating Report in Backend...',
+          description: 'Sending entire inputs to backend REST API.',
+        });
+        const pdfBlob = await apiClient.api.reports.generatePdf(formData);
+        const url = URL.createObjectURL(pdfBlob);
+        setReportPdfUrl(url);
+        toast({
+          title: 'Report PDF Generated',
+          description: 'PDF received from backend API successfully.',
+          className: 'bg-green-50 border-green-200 text-green-900',
+        });
+      } catch (backendErr) {
+        console.warn('Backend PDF generation notice:', backendErr);
+      }
+
       setShowingReportPreview(true);
     } catch (err) {
       console.error('Error generating report preview:', err);
@@ -1005,6 +1025,7 @@ const JobsManager = ({ id }) => {
         description: 'The report has been saved and the job status updated.',
       });
       setShowingReportPreview(false);
+      setReportPdfUrl(null);
       generateReportActionRef.current = null;
       reloadEditingRecord();
     } catch (err) {
@@ -2109,8 +2130,10 @@ const JobsManager = ({ id }) => {
         {showingReportPreview && reportPreviewData && (
           <ReportPreview
             formData={reportPreviewData}
+            pdfUrl={reportPdfUrl}
             onClose={() => {
               setShowingReportPreview(false);
+              setReportPdfUrl(null);
               if (!linkedDocs.find((d) => d.document_type === 'Report')) {
                 generateReportActionRef.current = null;
               }

@@ -5329,6 +5329,124 @@ async def delete_report(report_id: int):
             raise HTTPException(status_code=404, detail="Report not found")
         return {"message": "Report deleted", "id": report_id}
 
+# ============================================================================
+# Backend Report PDF Generation REST APIs
+# ============================================================================
+try:
+    from report_generator import generate_report_pdf
+except ImportError:
+    try:
+        from server.report_generator import generate_report_pdf
+    except ImportError:
+        generate_report_pdf = None
+
+@app.post("/api/reports/generate", tags=["Test Reports"], summary="Generate PDF report from complete inputs")
+@app.post("/api/reports/generate-pdf", tags=["Test Reports"], summary="Generate PDF report alias")
+async def generate_report_endpoint(payload: Dict[str, Any] = Body(...)):
+    """
+    Takes the entire report input payload (client, project, site, borehole logs,
+    lab tests, sbc details, chemical analysis, recommendations, etc.)
+    and generates a publication-quality multi-page PDF on the backend, returning the binary PDF.
+    """
+    if not generate_report_pdf:
+        raise HTTPException(status_code=500, detail="Report generator engine not initialized")
+    try:
+        data = payload.get("content") or payload.get("formData") or payload
+        if not isinstance(data, dict):
+            data = payload
+
+        pdf_bytes = generate_report_pdf(data)
+
+        raw_num = data.get("reportId") or data.get("report_number") or data.get("siteId") or "Report"
+        safe_num = re.sub(r"[^\w\-.]", "_", str(raw_num))
+        filename = f"{safe_num}.pdf"
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="{filename}"',
+                "Content-Type": "application/pdf",
+                "Access-Control-Expose-Headers": "Content-Disposition",
+            },
+        )
+    except Exception as e:
+        logger.error(f"Error generating PDF report: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to generate report PDF: {str(e)}")
+
+@app.get("/api/reports/{report_id}/pdf", tags=["Test Reports"], summary="Get report PDF by report ID")
+async def get_report_pdf_endpoint(report_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    if not generate_report_pdf:
+        raise HTTPException(status_code=500, detail="Report generator engine not initialized")
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, "SELECT * FROM reports WHERE id = $1", [report_id])
+        if not rows:
+            raise HTTPException(status_code=404, detail="Report not found")
+        report = dict(rows[0])
+        content = report.get("content")
+        if isinstance(content, str):
+            try:
+                content = json.loads(content)
+            except Exception:
+                content = {}
+        if not isinstance(content, dict):
+            content = {}
+        if "reportId" not in content and report.get("report_number"):
+            content["reportId"] = report["report_number"]
+
+        pdf_bytes = generate_report_pdf(content)
+        raw_num = report.get("report_number") or f"report_{report_id}"
+        safe_num = re.sub(r"[^\w\-.]", "_", str(raw_num))
+        filename = f"{safe_num}.pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="{filename}"',
+                "Content-Type": "application/pdf",
+                "Access-Control-Expose-Headers": "Content-Disposition",
+            },
+        )
+
+@app.get("/api/documents/{doc_id}/pdf", tags=["Documents"], summary="Get document PDF by document ID")
+async def get_document_pdf_endpoint(doc_id: int):
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    if not generate_report_pdf:
+        raise HTTPException(status_code=500, detail="Report generator engine not initialized")
+    async with db_pool.acquire() as conn:
+        rows = await fetch_with_coerced_params(conn, "SELECT * FROM documents WHERE id = $1", [doc_id])
+        if not rows:
+            raise HTTPException(status_code=404, detail="Document not found")
+        doc = dict(rows[0])
+        content = doc.get("content")
+        if isinstance(content, str):
+            try:
+                content = json.loads(content)
+            except Exception:
+                content = {}
+        if not isinstance(content, dict):
+            content = {}
+        if "reportId" not in content and doc.get("quote_number"):
+            content["reportId"] = doc["quote_number"]
+
+        pdf_bytes = generate_report_pdf(content)
+        raw_num = doc.get("quote_number") or f"doc_{doc_id}"
+        safe_num = re.sub(r"[^\w\-.]", "_", str(raw_num))
+        filename = f"{safe_num}.pdf"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="{filename}"',
+                "Content-Type": "application/pdf",
+                "Access-Control-Expose-Headers": "Content-Disposition",
+            },
+        )
+
+
 # Serve UI static files (prefer ui/dist if available in dev environment)
 ui_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "../ui/dist"))
 server_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "dist"))

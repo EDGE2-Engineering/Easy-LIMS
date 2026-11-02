@@ -50,7 +50,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import ReportPreview from '@/components/ReportPreview';
-import reportTemplateHtml from '@/templates/report-template.html?raw';
+// reportTemplateHtml removed in favor of backend PDF API
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/apiClient';
 import { sendTelegramNotification } from '@/lib/notifier';
@@ -1985,14 +1985,12 @@ const NewReportForm = ({ editReport, onCancel, onSuccess }) => {
       if (onSuccess) onSuccess();
 
       if (isGenerating) {
-        const currentHtmlContent = reportTemplateHtml;
-        const data = {
-          reportRequestJson: JSON.stringify(formData),
-        };
-        const filledHtml = fillTemplate(currentHtmlContent, data);
-
-        const blob = new Blob([filledHtml], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
+        toast({
+          title: 'Generating Report PDF...',
+          description: 'Compiling report in backend API...',
+        });
+        const pdfBlob = await apiClient.api.reports.generatePdf(formData);
+        const url = URL.createObjectURL(pdfBlob);
         window.open(url, '_blank');
       }
     } catch (error) {

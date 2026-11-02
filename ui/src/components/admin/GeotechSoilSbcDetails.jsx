@@ -40,13 +40,15 @@ const SbcStateUpdater = ({
   computedQa,
   computedQsafe,
   computedRecommendedSbc,
+  computedNR,
 }) => {
   useEffect(() => {
     if (
       value.computedQs !== computedQs ||
       value.computedQa !== computedQa ||
       value.computedQsafe !== computedQsafe ||
-      value.computedRecommendedSbc !== computedRecommendedSbc
+      value.computedRecommendedSbc !== computedRecommendedSbc ||
+      value.computedNR !== computedNR
     ) {
       const timer = setTimeout(() => {
         onChange({
@@ -55,11 +57,12 @@ const SbcStateUpdater = ({
           computedQa,
           computedQsafe,
           computedRecommendedSbc,
+          computedNR,
         });
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [computedQs, computedQa, computedQsafe, computedRecommendedSbc, value, onChange]);
+  }, [computedQs, computedQa, computedQsafe, computedRecommendedSbc, computedNR, value, onChange]);
   return null;
 };
 
@@ -432,7 +435,8 @@ export default function GeotechSoilSbcDetails({ value = {}, onChange }) {
         return sN;
     }
   })();
-  const sNR = NR_raw !== null ? Math.min(60, Math.max(5, NR_raw)) : null;
+  const sNR = NR_raw;
+  const sNR_clamped = sNR !== null ? Math.min(60, Math.max(5, sNR)) : null;
 
   // ── Part 1: Shear Criteria ────────────────────────────────────────
   const phiPrime = hasPhi ? derivePhiPrime(sPhi) : null;
@@ -592,7 +596,7 @@ export default function GeotechSoilSbcDetails({ value = {}, onChange }) {
     return ifLo + t * (ifHi - ifLo);
   };
 
-  const sSf = sNR !== null && hasB ? computeSfSBC(sNR, sB) : null;
+  const sSf = sNR_clamped !== null && hasB ? computeSfSBC(sNR_clamped, sB) : null;
   const sIf = hasD && hasL && hasB ? computeIfSBC(sD, sL, sB) : null;
   const sSi = sSf !== null && sIf !== null ? sSf * sIf * RIGIDITY_FACTOR : null; // m (× 1000 = mm)
   const sSi_mm = sSi !== null ? sSi * 1000 : null;
@@ -1016,13 +1020,13 @@ export default function GeotechSoilSbcDetails({ value = {}, onChange }) {
                     : '';
                 const formulaStr = `N × CF${cfDesc}`;
                 if (!hasN || sCF === null) return formulaStr;
-                const calcStr = `= ${sbcN} × ${fmtV(sCF, 3)} = ${NR_raw !== null ? fmtV(NR_raw, 2) : '?'}${NR_raw !== null && NR_raw !== sNR ? ` → ${fmt(sNR)} (clamped [5,60])` : ''}`;
+                const calcStr = `= ${sbcN} × ${fmtV(sCF, 3)} = ${sNR !== null ? fmtV(sNR, 2) : '?'}`;
                 return `${formulaStr}\n${calcStr}`;
               }
               if (sbcCorrectionType === 'dilatency') {
                 const formulaStr = '(N+15)/2';
                 if (!hasN) return formulaStr;
-                const calcStr = `= (${sbcN} + 15) / 2 = ${NR_raw !== null ? fmtV(NR_raw, 2) : '?'}${NR_raw !== null && NR_raw !== sNR ? ` → ${fmt(sNR)} (clamped [5,60])` : ''}`;
+                const calcStr = `= (${sbcN} + 15) / 2 = ${sNR !== null ? fmtV(sNR, 2) : '?'}`;
                 return `${formulaStr}\n${calcStr}`;
               }
               if (sbcCorrectionType === 'both') {
@@ -1032,7 +1036,7 @@ export default function GeotechSoilSbcDetails({ value = {}, onChange }) {
                     : '';
                 const formulaStr = `(N×CF+15)/2${cfDesc}`;
                 if (!hasN || sCF === null) return formulaStr;
-                const calcStr = `= (${sbcN} × ${fmtV(sCF, 3)} + 15) / 2 = ${NR_raw !== null ? fmtV(NR_raw, 2) : '?'}${NR_raw !== null && NR_raw !== sNR ? ` → ${fmt(sNR)} (clamped [5,60])` : ''}`;
+                const calcStr = `= (${sbcN} × ${fmtV(sCF, 3)} + 15) / 2 = ${sNR !== null ? fmtV(sNR, 2) : '?'}`;
                 return `${formulaStr}\n${calcStr}`;
               }
               return '—';
@@ -1043,7 +1047,13 @@ export default function GeotechSoilSbcDetails({ value = {}, onChange }) {
             symbol="Sf"
             unit="m/(kg/cm²)"
             value={sSf !== null ? fmtDec(sSf) : '—'}
-            formula="Bilinear interp. (NR × B table)"
+            formula={`Bilinear interp. (NR × B table)${
+              sNR !== null && sNR > 60
+                ? `\n(NR = ${fmtV(sNR, 2)} clamped to 60 -- table max)`
+                : sNR !== null && sNR < 5
+                  ? `\n(NR = ${fmtV(sNR, 2)} clamped to 5 -- table min)`
+                  : ''
+            }`}
           />
           <SbcResult
             label="Fox's Correction"
@@ -1057,7 +1067,7 @@ export default function GeotechSoilSbcDetails({ value = {}, onChange }) {
             symbol="Si"
             unit="mm"
             value={sSi_mm !== null ? fmtV(sSi_mm, 4) : '—'}
-            formula="Sf × If × Rf × 1000"
+            formula={`Sf × If × Rf × 1000 (where Rf = ${RIGIDITY_FACTOR} -- IS 8009 rigidity factor)`}
           />
           <SbcResult
             label={`Allowable BC (${sbcFootingType}, ${allowS_mm} mm)`}
@@ -1075,14 +1085,15 @@ export default function GeotechSoilSbcDetails({ value = {}, onChange }) {
                 ? `CF = ${sCF !== null ? fmtV(sCF, 3) : 'NA'}  (interpolated from Overburden table at q = ${sQ !== null ? fmtV(sQ, 2) : '?'} kN/m²)`
                 : null,
               sbcCorrectionType === 'overburden'
-                ? `NR = N × CF = ${sbcN} × ${sCF !== null ? fmtV(sCF, 3) : '?'} = ${NR_raw !== null ? fmtV(NR_raw, 2) : 'NA'}${NR_raw !== null && NR_raw !== sNR ? `  →  ${fmt(sNR)} (clamped [5,60])` : ''}`
+                ? `NR = N × CF = ${sbcN} × ${sCF !== null ? fmtV(sCF, 3) : '?'} = ${sNR !== null ? fmtV(sNR, 2) : 'NA'}`
                 : sbcCorrectionType === 'both'
-                  ? `Overburden step: N × CF = ${sbcN} × ${sCF !== null ? fmtV(sCF, 3) : '?'} = ${sCF !== null && sN !== null ? fmtV(sN * sCF, 2) : 'NA'}\nDilatancy step:  NR = (N×CF + 15) / 2 = (${sCF !== null && sN !== null ? fmtV(sN * sCF, 2) : '?'} + 15) / 2 = ${NR_raw !== null ? fmtV(NR_raw, 2) : 'NA'}${NR_raw !== null && NR_raw !== sNR ? `  →  ${fmt(sNR)} (clamped [5,60])` : ''}`
+                  ? `Overburden step: N × CF = ${sbcN} × ${sCF !== null ? fmtV(sCF, 3) : '?'} = ${sCF !== null && sN !== null ? fmtV(sN * sCF, 2) : 'NA'}\nDilatancy step:  NR = (N×CF + 15) / 2 = (${sCF !== null && sN !== null ? fmtV(sN * sCF, 2) : '?'} + 15) / 2 = ${sNR !== null ? fmtV(sNR, 2) : 'NA'}`
                   : sbcCorrectionType === 'dilatency'
-                    ? `NR = (N + 15) / 2 = (${sbcN} + 15) / 2 = ${NR_raw !== null ? fmtV(NR_raw, 2) : 'NA'}${NR_raw !== null && NR_raw !== sNR ? `  →  ${fmt(sNR)} (clamped [5,60])` : ''}`
-                    : `NR = N = ${sbcN}${NR_raw !== null && NR_raw !== sNR ? `  →  ${fmt(sNR)} (clamped [5,60])` : ''}  (uncorrected)`,
-              `Sf = ${sSf !== null ? fmtDec(sSf) : 'NA'}  (settlement per unit pressure, m/(kg/cm²))`,
+                    ? `NR = (N + 15) / 2 = (${sbcN} + 15) / 2 = ${sNR !== null ? fmtV(sNR, 2) : 'NA'}`
+                    : `NR = N = ${sbcN}  (uncorrected)`,
+              `Sf = ${sSf !== null ? fmtDec(sSf) : 'NA'}  (settlement per unit pressure, m/(kg/cm²)${sNR !== null && sNR > 60 ? `; NR = ${fmtV(sNR, 2)} clamped to 60 [table max 60]` : sNR !== null && sNR < 5 ? `; NR = ${fmtV(sNR, 2)} clamped to 5 [table min 5]` : ''})`,
               `If = ${sIf !== null ? fmtV(sIf, 4) : 'NA'}  (Fox's depth correction)`,
+              `Rf = ${RIGIDITY_FACTOR}  (Rigidity factor, IS:8009)`,
               `Si = Sf × If × Rf = ${sSf !== null ? fmtDec(sSf) : '?'} × ${sIf !== null ? fmtV(sIf, 4) : '?'} × ${RIGIDITY_FACTOR} = ${sSi !== null ? fmtV(sSi, 6) : 'NA'} m  (${sSi_mm !== null ? fmtV(sSi_mm, 4) : 'NA'} mm)`,
               qa_kgcm2 !== null
                 ? `qa = ${allowS_mm} / (${sSi !== null ? fmtV(sSi, 6) : '?'} × 1000) = ${fmtV(qa_kgcm2, 4)} kg/cm²  →  ${fmtV(qa_kNm2, 2)} kN/m²`
@@ -1288,6 +1299,7 @@ export default function GeotechSoilSbcDetails({ value = {}, onChange }) {
               computedQa={qa_kNm2}
               computedQsafe={sqSafe}
               computedRecommendedSbc={recommended}
+              computedNR={sNR}
             />
             <div className="px-4 pt-3 pb-2 bg-gray-50 border-b border-gray-100">
               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">

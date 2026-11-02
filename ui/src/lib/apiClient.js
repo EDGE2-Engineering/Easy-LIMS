@@ -404,6 +404,36 @@ const apiClient = {
       update: (id, data) => authFetch(`${BASE_URL}/api/jobs/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then((r) => r.json()),
       delete: (id) => authFetch(`${BASE_URL}/api/jobs/${id}`, { method: 'DELETE' }).then((r) => r.json()),
     },
+    reports: {
+      generatePdf: async (formData) => {
+        const res = await authFetch(`${BASE_URL}/api/reports/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(errText || 'Failed to generate report PDF');
+        }
+        return res.blob();
+      },
+      getPdf: async (reportId) => {
+        const res = await authFetch(`${BASE_URL}/api/reports/${reportId}/pdf`);
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(errText || 'Failed to fetch report PDF');
+        }
+        return res.blob();
+      },
+      getDocumentPdf: async (docId) => {
+        const res = await authFetch(`${BASE_URL}/api/documents/${docId}/pdf`);
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(errText || 'Failed to fetch document PDF');
+        }
+        return res.blob();
+      },
+    },
     insights: () => authFetch(`${BASE_URL}/api/insights`).then((r) => r.json()),
   },
 };

@@ -327,7 +327,8 @@ export const computeSoilSbcValues = (value, settings) => {
         return sN;
     }
   })();
-  const sNR = NR_raw !== null ? Math.min(60, Math.max(5, NR_raw)) : null;
+  const sNR = NR_raw;
+  const sNR_clamped = sNR !== null ? Math.min(60, Math.max(5, sNR)) : null;
 
   // ── Part 1: Shear Criteria ────────────────────────────────────────
   const phiPrime = hasPhi ? derivePhiPrime(sPhi) : null;
@@ -487,7 +488,7 @@ export const computeSoilSbcValues = (value, settings) => {
     return ifLo + t * (ifHi - ifLo);
   };
 
-  const sSf = sNR !== null && hasB ? computeSfSBC(sNR, sB) : null;
+  const sSf = sNR_clamped !== null && hasB ? computeSfSBC(sNR_clamped, sB) : null;
   const sIf = hasD && hasL && hasB ? computeIfSBC(sD, sL, sB) : null;
   const sSi = sSf !== null && sIf !== null ? sSf * sIf * RIGIDITY_FACTOR : null; // m (× 1000 = mm)
   const sSi_mm = sSi !== null ? sSi * 1000 : null;
@@ -522,6 +523,7 @@ export const computeSoilSbcValues = (value, settings) => {
     computedQa: qa_kNm2,
     computedQsafe: sqSafe,
     computedRecommendedSbc: recommended,
+    computedNR: sNR,
   };
 };
 

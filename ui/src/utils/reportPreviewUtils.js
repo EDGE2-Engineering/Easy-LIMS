@@ -432,7 +432,10 @@ export const computeSbcSummaryRows = (sbcDetails, boreholeLogs) => {
       const L = parseFloat(entry.sbcL ?? entry.footingLength) || B;
       const Df = parseFloat(entry.sbcD ?? entry.depthFromGL) || 0;
       const shape = entry.sbcShape || entry.shapeOfFooting || 'Rectangle';
-      const N_corr = parseFloat(entry.sbcN ?? entry.fieldNValue) || 1;
+      const N_corr =
+        entry.computedNR != null
+          ? Number(entry.computedNR).toFixed(2)
+          : parseFloat(entry.sbcN ?? entry.fieldNValue) || 1;
 
       // ── Use pre-computed values saved by GeotechSoilSbcDetails ────────────
       const sbc_shear = entry.computedQs != null ? Math.round(Number(entry.computedQs)) : null;

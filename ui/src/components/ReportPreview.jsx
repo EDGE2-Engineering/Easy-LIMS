@@ -14,7 +14,8 @@ import { useReactToPrint } from 'react-to-print';
 import { format } from 'date-fns';
 import { safeFormatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { X, Printer } from 'lucide-react';
+import { X, Printer, Download, ExternalLink, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { apiClient } from '@/lib/apiClient';
 import { buildReportPages, formatDisplayValue, formatKey } from '@/utils/reportPreviewUtils';
 import { A4_PRINT_PAGE_STYLE } from '@/utils/a4PrintStyles';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -2499,7 +2500,7 @@ const renderBlock = (block, index) => {
 };
 
 const ReportPreview = forwardRef(function ReportPreview(
-  { formData, onClose, onSave, isSaving },
+  { formData, pdfUrl, onClose, onSave, isSaving },
   ref
 ) {
   const printRef = useRef(null);
@@ -2580,11 +2581,118 @@ const ReportPreview = forwardRef(function ReportPreview(
   const reportId = formData?.reportId || '';
   const reportDate = formData?.reportCreatedOn;
 
-  const handlePrint = useReactToPrint({
+  const [viewMode, setViewMode] = useState('pdf'); // 'pdf' | 'html'
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [currentPdfUrl, setCurrentPdfUrl] = useState(pdfUrl || null);
+  const [loadingBackendPdf, setLoadingBackendPdf] = useState(!pdfUrl);
+  const [backendPdfError, setBackendPdfError] = useState(null);
+  const iframeRef = useRef(null);
+  const createdBlobUrlRef = useRef(null);
+
+  const fetchBackendPdf = async () => {
+    if (!formData) return;
+    try {
+      setLoadingBackendPdf(true);
+      setBackendPdfError(null);
+      const blob = await apiClient.api.reports.generatePdf(formData);
+      if (createdBlobUrlRef.current) {
+        URL.revokeObjectURL(createdBlobUrlRef.current);
+      }
+      const url = URL.createObjectURL(blob);
+      createdBlobUrlRef.current = url;
+      setCurrentPdfUrl(url);
+    } catch (err) {
+      console.error('Failed to generate backend PDF for preview:', err);
+      setBackendPdfError(err.message || 'Failed to generate PDF from backend');
+    } finally {
+      setLoadingBackendPdf(false);
+    }
+  };
+
+  useEffect(() => {
+    if (pdfUrl) {
+      setCurrentPdfUrl(pdfUrl);
+      setLoadingBackendPdf(false);
+      setBackendPdfError(null);
+    } else if (formData && !currentPdfUrl) {
+      fetchBackendPdf();
+    }
+  }, [pdfUrl, formData]);
+
+  useEffect(() => {
+    return () => {
+      if (createdBlobUrlRef.current) {
+        URL.revokeObjectURL(createdBlobUrlRef.current);
+      }
+    };
+  }, []);
+
+  const handleDownloadBackendPdf = async () => {
+    try {
+      setDownloadingPdf(true);
+      let blobUrl = currentPdfUrl;
+      if (!blobUrl) {
+        const blob = await apiClient.api.reports.generatePdf(formData);
+        blobUrl = URL.createObjectURL(blob);
+        setCurrentPdfUrl(blobUrl);
+      }
+      const safeName = (reportId || 'Report').replace(/[^\w\-.]/g, '_');
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `${safeName}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Download backend PDF error:', err);
+      alert('Failed to download PDF from backend: ' + err.message);
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleOpenBackendPdf = async () => {
+    try {
+      setDownloadingPdf(true);
+      let blobUrl = currentPdfUrl;
+      if (!blobUrl) {
+        const blob = await apiClient.api.reports.generatePdf(formData);
+        blobUrl = URL.createObjectURL(blob);
+        setCurrentPdfUrl(blobUrl);
+      }
+      window.open(blobUrl, '_blank');
+    } catch (err) {
+      console.error('Open backend PDF error:', err);
+      alert('Failed to open PDF from backend: ' + err.message);
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleHtmlPrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: reportId || 'Geotechnical-Report',
     pageStyle: A4_PRINT_PAGE_STYLE,
   });
+
+  const handlePrint = () => {
+    if (viewMode === 'pdf') {
+      if (iframeRef.current?.contentWindow) {
+        try {
+          iframeRef.current.contentWindow.focus();
+          iframeRef.current.contentWindow.print();
+          return;
+        } catch (err) {
+          console.warn('Iframe print blocked, opening in window:', err);
+        }
+      }
+      if (currentPdfUrl) {
+        window.open(currentPdfUrl, '_blank');
+        return;
+      }
+    }
+    handleHtmlPrint();
+  };
 
   useImperativeHandle(ref, () => ({ print: handlePrint }));
 
@@ -2618,18 +2726,85 @@ const ReportPreview = forwardRef(function ReportPreview(
         className="report-preview-modal bg-card text-card-foreground border border-border shadow-2xl dark:shadow-black/50"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="report-preview-toolbar no-print bg-card border-b border-border">
-          <div>
-            <h2 className="text-lg font-bold text-foreground">Report Preview</h2>
-            <p className="text-xs text-muted-foreground">
-              {reportId ? `#${reportId}` : 'Unsaved report'} · {totalPages} page
-              {totalPages !== 1 ? 's' : ''}
-            </p>
+        <div className="report-preview-toolbar no-print bg-card border-b border-border flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-foreground">Report Preview</h2>
+              <p className="text-xs text-muted-foreground">
+                {reportId ? `#${reportId}` : 'Unsaved report'} ·{' '}
+                {viewMode === 'pdf' ? (
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    Generated
+                  </span>
+                ) : (
+                  <span>{totalPages} page{totalPages !== 1 ? 's' : ''} (HTML)</span>
+                )}
+              </p>
+            </div>
+            <div className="hidden flex items-center rounded-lg bg-muted p-1 border border-border ml-2">
+              <button
+                type="button"
+                onClick={() => setViewMode('pdf')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                  viewMode === 'pdf'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Report Preview
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('html')}
+                className={`hidden px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                  viewMode === 'html'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                HTML View
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handlePrint}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenBackendPdf}
+              disabled={downloadingPdf || loadingBackendPdf}
+              title="Open official backend PDF in new browser tab"
+              className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950"
+            >
+              {downloadingPdf ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <ExternalLink className="w-4 h-4 mr-2" />
+              )}
+              Open in Tab
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadBackendPdf}
+              disabled={downloadingPdf || loadingBackendPdf}
+              title="Download official PDF generated by backend API"
+              className="text-green-700 border-green-200 hover:bg-green-50 dark:hover:bg-green-950"
+            >
+              {downloadingPdf ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              Download PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrint}
+              title={viewMode === 'pdf' ? 'Print official PDF' : 'Browser HTML print'}
+            >
               <Printer className="w-4 h-4 mr-2" />
-              Print PDF
+              Print
             </Button>
             {onSave && (
               <Button size="sm" onClick={onSave} disabled={isSaving}>
@@ -2642,46 +2817,82 @@ const ReportPreview = forwardRef(function ReportPreview(
           </div>
         </div>
 
-        <div className="a4-preview-wrapper report-preview-scroll rounded-xl border border-border">
-          <div ref={printRef} id="printable-report-root">
-            {pages.map((page) => {
-              if (page.isCoverPage) {
+        {viewMode === 'pdf' ? (
+          <div className="flex-1 min-h-0 w-full h-full bg-slate-100 dark:bg-slate-900 flex flex-col relative">
+            {loadingBackendPdf ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                <Loader2 className="w-10 h-10 animate-spin text-primary mb-3" />
+                <h4 className="text-base font-semibold text-foreground">Generating Official PDF from Backend...</h4>
+                <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                  Please wait while the Python ReportLab engine compiles the geotechnical report.
+                </p>
+              </div>
+            ) : backendPdfError ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center text-destructive">
+                <AlertTriangle className="w-10 h-10 mb-3" />
+                <h4 className="text-base font-semibold">Failed to Generate Official PDF</h4>
+                <p className="text-xs mt-1 max-w-md text-muted-foreground">{backendPdfError}</p>
+                <div className="flex gap-2 mt-4">
+                  <Button variant="outline" size="sm" onClick={fetchBackendPdf}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Retry Backend PDF
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={() => setViewMode('html')}>
+                    Switch to HTML View
+                  </Button>
+                </div>
+              </div>
+            ) : currentPdfUrl ? (
+              <iframe
+                ref={iframeRef}
+                src={`${currentPdfUrl}#toolbar=1&navpanes=1`}
+                className="w-full h-full flex-1 min-h-0 border-0"
+                title="Official Backend PDF Preview"
+              />
+            ) : null}
+          </div>
+        ) : (
+          <div className="a4-preview-wrapper report-preview-scroll rounded-xl border border-border">
+            <div ref={printRef} id="printable-report-root">
+              {pages.map((page) => {
+                if (page.isCoverPage) {
+                  return (
+                    <div
+                      key={page.pageNumber}
+                      className="a4-container bg-white relative flex flex-col justify-between"
+                    >
+                      <ReportWatermark />
+                      <div className="a4-page-content relative z-[1] flex-1 flex flex-col justify-between h-full">
+                        <CoverPageBlock data={formData} />
+                      </div>
+                    </div>
+                  );
+                }
                 return (
-                  <div
-                    key={page.pageNumber}
-                    className="a4-container bg-white relative flex flex-col justify-between"
-                  >
+                  <div key={page.pageNumber} className="a4-container">
                     <ReportWatermark />
-                    <div className="a4-page-content relative z-[1] flex-1 flex flex-col justify-between h-full">
-                      <CoverPageBlock data={formData} />
+                    <div className="a4-page-content relative z-[1]">
+                      <ContentPageHeader />
+                      {page.isContinuation && page.sectionTitle && (
+                        <div className="text-right text-[10px] text-gray-500 italic mt-[-8px] mb-2">
+                          {page.sectionTitle}
+                        </div>
+                      )}
+                      {page.blocks.map((block, i) => renderBlock(block, i))}
+                    </div>
+                    <div className="a4-page-footer">
+                      <span>{COMPANY_NAME}</span>
+                      <span>
+                        Report {reportId ? `#${reportId}` : '#Pending'} | Page {page.pageNumber} of{' '}
+                        {totalPages}
+                      </span>
                     </div>
                   </div>
                 );
-              }
-              return (
-                <div key={page.pageNumber} className="a4-container">
-                  <ReportWatermark />
-                  <div className="a4-page-content relative z-[1]">
-                    <ContentPageHeader />
-                    {page.isContinuation && page.sectionTitle && (
-                      <div className="text-right text-[10px] text-gray-500 italic mt-[-8px] mb-2">
-                        {page.sectionTitle}
-                      </div>
-                    )}
-                    {page.blocks.map((block, i) => renderBlock(block, i))}
-                  </div>
-                  <div className="a4-page-footer">
-                    <span>{COMPANY_NAME}</span>
-                    <span>
-                      Report {reportId ? `#${reportId}` : '#Pending'} | Page {page.pageNumber} of{' '}
-                      {totalPages}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>,
     document.body

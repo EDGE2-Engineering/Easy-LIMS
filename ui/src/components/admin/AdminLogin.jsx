@@ -36,11 +36,11 @@ const AdminLogin = ({ onLoginSuccess }) => {
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 border border-gray-100 animate-in fade-in zoom-in-95 duration-300">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="mx-auto mb-4 flex items-center justify-center">
+          <div className="mx-auto mb-4 flex items-center justify-center bg-transparent">
             <img
               src={`${import.meta.env.BASE_URL}edge2-logo.png`}
               alt="EDGE2 Logo"
-              className="h-16 w-auto object-contain"
+              className="h-16 w-auto object-contain bg-transparent"
             />
           </div>
           <h1 className="text-xl font-bold text-gray-900">{content.global?.siteName}</h1>
