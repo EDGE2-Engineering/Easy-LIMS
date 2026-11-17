@@ -111,7 +111,7 @@ async def ensure_db_connection(request: Request, call_next):
         try:
             await init_db_pool()
         except Exception as e:
-            logger.error(f"Failed to connect to database on demand: {e or repr(e)}")
+            logger.error(f"Failed to connect to database on demand: {str(e) or repr(e)}")
             if request.url.path.startswith("/api/"):
                 return JSONResponse(
                     status_code=500,
@@ -217,7 +217,7 @@ async def startup():
     try:
         await init_db_pool()
     except Exception as e:
-        logger.error(f"Failed to connect to database on startup: {e or repr(e)}")
+        logger.error(f"Failed to connect to database on startup: {str(e) or repr(e)}")
 
 @app.on_event("shutdown")
 async def shutdown():
